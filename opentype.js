@@ -508,7 +508,6 @@
         var segmentMappingTable = _.findWhere(subTables, {platformId: 3, encodingId: 1, format: 4});
         if (!segmentMappingTable) return null;
 
-        console.log(segmentMappingTable);
         var offset = trCmap.offset + segmentMappingTable.offset;
         var format = getUShort(dataView, offset);
         var p = new Parser(dataView, offset);

@@ -33,13 +33,13 @@
 
 <script type="text/javascript">
     var req = new XMLHttpRequest();
-    req.open('get', '_fonts/Verdana.ttf', true);
+    req.open('get', '_fonts/arial.ttf', true);
     req.responseType = 'arraybuffer';
     req.onload = function (e) {
         var arrayBuffer = req.response;
         var font = openType.parseFont(arrayBuffer);
         window.font = font;
-        _.each(font.glyphs, function (glyph, i) {
+        _.each(font.glyphs.slice(0, 100), function (glyph, i) {
             var size = 100;
             var ctx = openType.createCanvas(size, i);
             var path = openType.glyphToPath(glyph);
@@ -48,7 +48,7 @@
             openType.drawGlyphBox(glyph, ctx);
         });
 
-        var path = font.getPath("Frédërìk");
+        var path = font.getPath("Hello there ;-)");
         var ctx = document.getElementById("preview").getContext("2d");
         var size = 200;
         ctx.translate(size / 2, size / 2);
