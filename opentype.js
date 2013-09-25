@@ -504,7 +504,6 @@
             cmapOffset += t._length;
             return t;
         });
-        console.log(subTables);
 
         var segmentMappingTable = _.findWhere(subTables, {platformId: 3, encodingId: 1, format: 4});
         if (!segmentMappingTable) return null;
@@ -544,11 +543,9 @@
                 ranges[i].ids[j] = getUShort(dataView, cmapOffset + p.relativeOffset + idRangeOffset);
                 idRangeOffset += 2;
             }
-            console.log(ranges[i]);
             ranges[i].idDelta = p.parse('uShort');
         }
 
-        console.log(ranges);
         return ranges;
     }
 
@@ -582,12 +579,16 @@
             return self.characterToGlyphIndex(c);
         });
         var glyphs = _.map(glyphIndices, function (i) {
-            return self.glyphs[i];
+            return self.glyphs[i] || self.glyphs[0];
         });
         var x = 0;
         var paths = _.map(glyphs, function (glyph) {
-            var  p = openType.glyphToPath(glyph, x);
-            x += glyph.xMax - glyph.xMin + 300;
+            var p = openType.glyphToPath(glyph, x);
+            if (glyph.xMax && glyph.xMin) {
+                x += glyph.xMax - glyph.xMin + 300;
+            } else {
+                x += 1000;
+            }
             return p;
         });
         var path = new Path();
@@ -644,12 +645,16 @@
         var relativeGlyphOffsets = parseLocaTable(dataView, trIndexToLocation, tMaximumProfile.numGlyphs, tableFormat);
 
         // TODO Remove
-        relativeGlyphOffsets = relativeGlyphOffsets.slice(0, 100);
+//        relativeGlyphOffsets = relativeGlyphOffsets.slice(0, 100);
 
         // 4. For each glyph, use parseGlyph with the relative offsets from the `loca` table.
         var trGlyf = findTableRecord(tableRecords, 'glyf');
         _.each(relativeGlyphOffsets, function (relativeOffset, glyphIndex) {
-            font.glyphs[glyphIndex] = parseGlyph(dataView, trGlyf.offset, relativeOffset);
+            if (glyphIndex < relativeGlyphOffsets.length && relativeOffset == relativeGlyphOffsets[glyphIndex + 1]) {
+                font.glyphs[glyphIndex] = {};
+            } else {
+                font.glyphs[glyphIndex] = parseGlyph(dataView, trGlyf.offset, relativeOffset);
+            }
         });
         return font;
     };
@@ -693,19 +698,20 @@
                 if (i === 0) {
                     // This is the first point of the contour.
                     if (pt.onCurve) {
-                        path.moveTo(tx+pt.x, ty-pt.y);
+                        path.moveTo(tx + pt.x, ty - pt.y);
                         // console.log("M" + pt.x + "," + pt.y);
+                    curvePt = null;
                     } else {
                         midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        path.moveTo(tx+midPt.x, ty-midPt.y);
+                        curvePt = midPt;
+                        path.moveTo(tx + midPt.x, ty - midPt.y);
                         // console.log("M" + pt.x + "," + pt.y);
                     }
-                    curvePt = null;
                 } else {
                     if (prevPt.onCurve && pt.onCurve) {
                         // This is a straight line.
                         console.assert(curvePt === null);
-                        path.lineTo(tx+pt.x, ty-pt.y);
+                        path.lineTo(tx + pt.x, ty - pt.y);
                         // console.log("L" + pt.x + " " + pt.y);
                     } else if (prevPt.onCurve && !pt.onCurve) {
                         console.assert(curvePt === null);
@@ -713,13 +719,13 @@
                     } else if (!prevPt.onCurve && !pt.onCurve) {
                         console.assert(curvePt !== null);
                         midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        path.quadraticCurveTo(tx+prevPt.x, ty-prevPt.y, tx+midPt.x, ty-midPt.y);
+                        path.quadraticCurveTo(tx + prevPt.x, ty - prevPt.y, tx + midPt.x, ty - midPt.y);
                         // console.log("Q" + prevPt.x + "," + prevPt.y + " " + midPt.x + "," + midPt.y);
                         curvePt = pt;
                     } else if (!prevPt.onCurve && pt.onCurve) {
                         console.assert(curvePt !== null);
                         // Previous point off-curve, this point on-curve.
-                        path.quadraticCurveTo(tx+curvePt.x, ty-curvePt.y, tx+pt.x, ty-pt.y);
+                        path.quadraticCurveTo(tx + curvePt.x, ty - curvePt.y, tx + pt.x, ty - pt.y);
                         // console.log("Q" + curvePt.x + "," + curvePt.y + " " + pt.x + "," + pt.y);
                         curvePt = null;
                     } else {
@@ -730,10 +736,10 @@
             }
             // Connect the last and first points
             if (curvePt) {
-                path.quadraticCurveTo(tx+curvePt.x, ty-curvePt.y, tx+firstPt.x, ty-firstPt.y);
+                path.quadraticCurveTo(tx + curvePt.x, ty - curvePt.y, tx + firstPt.x, ty - firstPt.y);
                 // console.log("Q" + curvePt.x + "," + curvePt.y + " " + firstPt.x + "," + firstPt.y);
             } else {
-                path.lineTo(tx+firstPt.x, ty-firstPt.y);
+                path.lineTo(tx + firstPt.x, ty - firstPt.y);
                 // console.log("L" + firstPt.x + " " + firstPt.y);
             }
         });

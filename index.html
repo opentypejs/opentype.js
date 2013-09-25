@@ -44,11 +44,11 @@
             var ctx = openType.createCanvas(size, i);
             var path = openType.glyphToPath(glyph);
             path.draw(ctx);
-            openType.drawGlyphPoints(glyph, ctx, size);
+            // openType.drawGlyphPoints(glyph, ctx, size);
             openType.drawGlyphBox(glyph, ctx);
         });
 
-        var path = font.getPath("What is this magic?");
+        var path = font.getPath("Frédërìk");
         var ctx = document.getElementById("preview").getContext("2d");
         var size = 200;
         ctx.translate(size / 2, size / 2);
