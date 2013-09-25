@@ -357,7 +357,7 @@
         for (i = 0; i < numTables; i++) {
             platformId = getUShort(data, start + 4 + (i * 8));
             encodingId = getUShort(data, start + 4 + (i * 8) + 2);
-            if (platformId === 3 && encodingId === 1) {
+            if (platformId === 3 && (encodingId === 1 || encodingId === 0)) {
                 offset = getULong(data, start + 4 + (i * 8) + 4);
                 break;
             }
