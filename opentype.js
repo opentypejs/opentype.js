@@ -3,6 +3,26 @@
 (function () {
     'use strict';
 
+    var root = this;
+
+    var openType = {};
+
+    var _;
+    if (typeof require !== 'undefined') {
+        _ = require('./underscore.js');
+    } else {
+        _ = this._;
+    }
+
+    if (typeof exports !== 'undefined') {
+        if (typeof module !== 'undefined' && module.exports) {
+            exports = module.exports = openType;
+        }
+        exports.openType = openType;
+    } else {
+        root.openType = openType;
+    }
+
     // Precondition function that checks if the given predicate is true.
     // If not, it will log an error message to the console.
     function checkArgument(predicate, message) {
@@ -67,37 +87,53 @@
         }
     };
 
+
+    function getByte(dataView, offset) {
+        return dataView.getUint8(offset);
+    }
+
+    function getUShort(dataView, offset) {
+        return dataView.getUint16(offset, false);
+    }
+
+    function getShort(dataView, offset) {
+        return dataView.getInt16(offset, false);
+    }
+
+    function getULong(dataView, offset) {
+        return dataView.getUint32(offset, false);
+    }
+
+    function getFixed(dataView, offset) {
+        return -1;
+    }
+
+    function getLongDateTime(dataView, offset) {
+        var v1, v2;
+        v1 = dataView.getUint32(offset, false);
+        v2 = dataView.getUint32(offset + 1, false);
+        return [v1, v2];
+    }
+
+    function getTag(dataView, offset) {
+        var tag = '';
+        _.each(_.range(offset, offset + 4), function (i) {
+            var b = dataView.getInt8(i);
+            tag += String.fromCharCode(b);
+        });
+        return tag;
+    }
+
     var dataTypes = {
-        byte: function (dataView, offset) {
-            return dataView.getUint8(offset);
-        },
-        uShort: function (dataView, offset) {
-            return dataView.getUint16(offset, false);
-        },
-        short: function (dataView, offset) {
-            return dataView.getInt16(offset, false);
-        },
-        uLong: function (dataView, offset) {
-            return dataView.getUint32(offset, false);
-        },
-        fixed: function (dataView, offset) {
-            return -1;
-        },
-        longDateTime: function (dataView, offset) {
-            var v1, v2;
-            v1 = dataView.getUint32(offset, false);
-            v2 = dataView.getUint32(offset + 1, false);
-            return [v1, v2];
-        },
-        tag: function (dataView, offset) {
-            var tag = '';
-            _.each(_.range(offset, offset + 4), function (i) {
-                var b = dataView.getInt8(i);
-                tag += String.fromCharCode(b);
-            });
-            return tag;
-        }
+        byte: getByte,
+        uShort: getUShort,
+        short: getShort,
+        uLong: getULong,
+        fixed: getFixed,
+        longDateTime: getLongDateTime,
+        tag: getTag
     };
+
 
     var typeOffsets = {
         byte: 1,
@@ -227,6 +263,42 @@
         { name: 'offset', type: 'uLong' }
     ];
 
+    // Microsoft standard character to glyph index mapping table (format 4)
+    var cmapSegmentMapping = [
+        // Format number (set to 4).
+        { name: 'format', type: 'uShort' },
+        // Length of the sub-table, in bytes.
+        { name: 'length', type: 'uShort' },
+        // Language.
+        { name: 'language', type: 'uShort' },
+        // Seg count x 2.
+        { name: 'segCountX2', type: 'uShort' },
+        // (2**floor(log2(segCount)))
+        { name: 'searchRange', type: 'uShort' },
+        // log2(searchRange/2)
+        { name: 'entrySelector', type: 'uShort' },
+        // 2 x segCount - searchRange
+        { name: 'rangeShift', type: 'uShort' }
+
+
+
+
+//USHORT	format	Format number is set to 4.
+//USHORT	length	This is the length in bytes of the subtable.
+//USHORT	language	Please see “Note on the language field in 'cmap' subtables“ in this document.
+//USHORT	segCountX2	2 x segCount.
+//USHORT	searchRange	2 x (2**floor(log2(segCount)))
+//USHORT	entrySelector	log2(searchRange/2)
+//USHORT	rangeShift	2 x segCount - searchRange
+//USHORT	endCount[segCount]	End characterCode for each segment, last=0xFFFF.
+//USHORT	reservedPad	Set to 0.
+//USHORT	startCount[segCount]	Start character code for each segment.
+//SHORT	idDelta[segCount]	Delta for all character codes in segment.
+//USHORT	idRangeOffset[segCount]	Offsets into glyphIdArray or 0
+//USHORT	glyphIdArray[ ]	Glyph index array (arbitrary length)
+    ]
+
+
     // This table describes the glyphs in the font in the TrueType outline format.
     // http://www.microsoft.com/typography/otspec/glyf.htm
     var glyfData = [
@@ -277,6 +349,11 @@
         var v = parseFn(this.dataView, this.offset + this.relativeOffset);
         this.relativeOffset += typeOffsets[type];
         return v;
+    };
+
+    Parser.prototype.skip = function (type, amount) {
+        if (typeof amount === 'undefined') amount = 1;
+        this.relativeOffset += typeOffsets[type] * amount;
     };
 
     // Call the given function `count` times with the value of the counter.
@@ -417,14 +494,117 @@
         return glyphOffsets;
     }
 
+    function parseCmapTable(dataView, trCmap) {
+        var tCmapHeader = parseTable(dataView, trCmap, cmapHeader);
+        var cmapOffset = trCmap.offset + tCmapHeader._length;
+
+        var subTables = _.map(_.range(tCmapHeader.numTables), function (i) {
+            var t = parseTable(dataView, cmapOffset, cmapEncodingRecord);
+            t.format = dataTypes.uShort(dataView, trCmap.offset + t.offset);
+            cmapOffset += t._length;
+            return t;
+        });
+        console.log(subTables);
+
+        var segmentMappingTable = _.findWhere(subTables, {platformId: 3, encodingId: 1, format: 4});
+        if (!segmentMappingTable) return null;
+
+        console.log(segmentMappingTable);
+        var offset = trCmap.offset + segmentMappingTable.offset;
+        var format = getUShort(dataView, offset);
+        var p = new Parser(dataView, offset);
+        // Sub-table format (should be 4).
+        var format = p.parse('uShort');
+        console.assert(format == 4);
+        // Length in bytes of the subtables.
+        var length = p.parse('uShort');
+        var language = p.parse('uShort');
+        // segCount is stored x 2.
+        var segCount = p.parse('uShort') / 2;
+        // Skip searchRange, entrySelector, rangeShift.
+        p.skip('uShort', 3);
+        var ranges = [];
+        for (var i = 0; i < segCount; i += 1) {
+            ranges[i] = { end: p.parse('uShort') };
+        }
+        // Skip a padding value.
+        p.skip('uShort');
+        for (var i = 0; i < segCount; i += 1) {
+            ranges[i].start = p.parse('uShort');
+            ranges[i].length = ranges[i].end - ranges[i].start;
+        }
+        for (var i = 0; i < segCount; i += 1) {
+            ranges[i].idDelta = p.parse('short');
+        }
+        for (var i = 0; i < segCount; i += 1) {
+            var idRangeOffset = p.parse('uShort');
+            if (idRangeOffset === 0) continue;
+            ranges[i].ids = [];
+            for (var j = 0; j < ranges[i].length; j++) {
+                ranges[i].ids[j] = getUShort(dataView, cmapOffset + p.relativeOffset + idRangeOffset);
+                idRangeOffset += 2;
+            }
+            console.log(ranges[i]);
+            ranges[i].idDelta = p.parse('uShort');
+        }
+
+        console.log(ranges);
+        return ranges;
+    }
+
+    openType.Font = function () {
+        this.glyphs = [];
+    };
+
+    openType.Font.prototype.characterToGlyphIndex = function (c) {
+        var ranges = this.cmap;
+        var code = c.charCodeAt(0);
+        var l = 0, r = ranges.length - 1;
+        while (l < r) {
+            var c = (l + r + 1) >> 1;
+            if (code < ranges[c].start) {
+                r = c - 1;
+            } else {
+                l = c;
+            }
+        }
+        if (ranges[l].start <= code && code <= ranges[l].end) {
+            return (ranges[l].idDelta + (ranges[l].ids ?
+                ranges[l].ids[code - ranges[l].start] : code)) & 0xFFFF;
+        }
+        return 0;
+    };
+
+    // Get a path representing the text.
+    openType.Font.prototype.getPath = function (text) {
+        var self = this;
+        var glyphIndices = _.map(text, function (c) {
+            return self.characterToGlyphIndex(c);
+        });
+        var glyphs = _.map(glyphIndices, function (i) {
+            return self.glyphs[i];
+        });
+        var x = 0;
+        var paths = _.map(glyphs, function (glyph) {
+            var  p = openType.glyphToPath(glyph, x);
+            x += glyph.xMax - glyph.xMin + 300;
+            return p;
+        });
+        var path = new Path();
+        _.each(paths, function (p) {
+            path.commands.push.apply(path.commands, p.commands);
+        });
+        return path;
+    };
+
 
     // Parse the OpenType file (as a buffer) and returns a Font object.
-    function parseFont(buffer) {
+    openType.parseFont = function (buffer) {
         // OpenType fonts use big endian byte ordering.
         // We can't rely on typed array view types, because they operate with the endianness of the host computer.
         // Instead we use DataViews where we can specify endianness.
 
-        var font = {glyphs: {}};
+        var font = new openType.Font();
 
         var dataView = new DataView(buffer, 0);
 
@@ -445,15 +625,7 @@
         });
 
         var trCmap = findTableRecord(tableRecords, 'cmap');
-        var tCmapHeader = parseTable(dataView, trCmap, cmapHeader);
-
-        var cmapOffset = trCmap.offset + tCmapHeader._length;
-        var cmapEncodingRecords = _.map(_.range(tCmapHeader.numTables), function (i) {
-            var t = parseTable(dataView, cmapOffset, cmapEncodingRecord);
-            cmapOffset += t._length;
-            console.log("FORMAT", t.platformId, t.encodingId, t.offset, dataTypes.uShort(dataView, trCmap.offset + t.offset));
-            return t;
-        });
+        font.cmap = parseCmapTable(dataView, trCmap);
 
         // To get the glyphs:
         // 1. Parse the 'head' table to know if the 'loca' table is in long or short format. (using indexToLocFormat)
@@ -467,6 +639,7 @@
 
         // 3. Parse the 'loca' table to find the offsets of the glyphs.
         var trIndexToLocation = findTableRecord(tableRecords, 'loca');
+        if (!trIndexToLocation) return font;
         var tableFormat = tHead.indexToLocFormat === 0 ? 'uShort' : 'uLong';
         var relativeGlyphOffsets = parseLocaTable(dataView, trIndexToLocation, tMaximumProfile.numGlyphs, tableFormat);
 
@@ -479,8 +652,7 @@
             font.glyphs[glyphIndex] = parseGlyph(dataView, trGlyf.offset, relativeOffset);
         });
         return font;
-
-    }
+    };
 
     // Split the glyph into contours.
     function getContours(glyph) {
@@ -499,8 +671,14 @@
     }
 
     // Convert the glyph to a Path we can draw on a Canvas context.
-    function glyphToPath(glyph) {
+    openType.glyphToPath = function (glyph, tx, ty) {
         var path, contours, pt, firstPt, prevPt, nextPt, midPt, curvePt;
+        if (typeof tx === 'undefined') {
+            tx = 0;
+        }
+        if (typeof ty === 'undefined') {
+            ty = 0;
+        }
         path = new Path();
         if (!glyph.points) return path;
         contours = getContours(glyph);
@@ -515,11 +693,11 @@
                 if (i === 0) {
                     // This is the first point of the contour.
                     if (pt.onCurve) {
-                        path.moveTo(pt.x, -pt.y);
+                        path.moveTo(tx+pt.x, ty-pt.y);
                         // console.log("M" + pt.x + "," + pt.y);
                     } else {
                         midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        path.moveTo(midPt.x, -midPt.y);
+                        path.moveTo(tx+midPt.x, ty-midPt.y);
                         // console.log("M" + pt.x + "," + pt.y);
                     }
                     curvePt = null;
@@ -527,7 +705,7 @@
                     if (prevPt.onCurve && pt.onCurve) {
                         // This is a straight line.
                         console.assert(curvePt === null);
-                        path.lineTo(pt.x, -pt.y);
+                        path.lineTo(tx+pt.x, ty-pt.y);
                         // console.log("L" + pt.x + " " + pt.y);
                     } else if (prevPt.onCurve && !pt.onCurve) {
                         console.assert(curvePt === null);
@@ -535,13 +713,13 @@
                     } else if (!prevPt.onCurve && !pt.onCurve) {
                         console.assert(curvePt !== null);
                         midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        path.quadraticCurveTo(prevPt.x, -prevPt.y, midPt.x, -midPt.y);
+                        path.quadraticCurveTo(tx+prevPt.x, ty-prevPt.y, tx+midPt.x, ty-midPt.y);
                         // console.log("Q" + prevPt.x + "," + prevPt.y + " " + midPt.x + "," + midPt.y);
                         curvePt = pt;
                     } else if (!prevPt.onCurve && pt.onCurve) {
                         console.assert(curvePt !== null);
                         // Previous point off-curve, this point on-curve.
-                        path.quadraticCurveTo(curvePt.x, -curvePt.y, pt.x, -pt.y);
+                        path.quadraticCurveTo(tx+curvePt.x, ty-curvePt.y, tx+pt.x, ty-pt.y);
                         // console.log("Q" + curvePt.x + "," + curvePt.y + " " + pt.x + "," + pt.y);
                         curvePt = null;
                     } else {
@@ -552,16 +730,16 @@
             }
             // Connect the last and first points
             if (curvePt) {
-                path.quadraticCurveTo(curvePt.x, -curvePt.y, firstPt.x, -firstPt.y);
+                path.quadraticCurveTo(tx+curvePt.x, ty-curvePt.y, tx+firstPt.x, ty-firstPt.y);
                 // console.log("Q" + curvePt.x + "," + curvePt.y + " " + firstPt.x + "," + firstPt.y);
             } else {
-                path.lineTo(firstPt.x, -firstPt.y);
+                path.lineTo(tx+firstPt.x, ty-firstPt.y);
                 // console.log("L" + firstPt.x + " " + firstPt.y);
             }
         });
         path.closePath();
         return path;
-    }
+    };
 
     function line(ctx, x1, y1, x2, y2) {
         ctx.beginPath();
@@ -588,7 +766,7 @@
         ctx.fill();
     };
 
-    function drawGlyphPoints(glyph, ctx, size) {
+    openType.drawGlyphPoints = function (glyph, ctx, size) {
         _.each(glyph.points, function (pt) {
             if (pt.onCurve) {
                 ctx.fillStyle = 'blue';
@@ -597,22 +775,22 @@
             }
             ellipse(ctx, pt.x, -pt.y, 60, 60);
         });
-    }
+    };
 
-    function drawGlyphBox(glyph, ctx) {
+    openType.drawGlyphBox = function (glyph, ctx) {
         ctx.strokeStyle = 'red';
         ctx.lineWidth = 5;
         line(ctx, glyph.xMin, -10000, glyph.xMin, 10000);
         line(ctx, glyph.xMax, -10000, glyph.xMax, 10000);
         line(ctx, -10000, -glyph.yMin, 10000, -glyph.yMin);
         line(ctx, -10000, -glyph.yMax, 10000, -glyph.yMax);
-    }
+    };
 
     // Create a canvas and adds it to the document.
     // Returns the 2d drawing context.
-    function createCanvas(size, glyphIndex) {
+    openType.createCanvas = function (size, glyphIndex) {
         var canvasId = 'c' + glyphIndex;
-        var html = '<div class="cwrap" style="width:' + size +'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyphIndex + '</span></div>';
+        var html = '<div class="cwrap" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyphIndex + '</span></div>';
         var body = document.getElementsByTagName('body')[0];
         var wrap = document.createElement('div');
         wrap.innerHTML = html;
@@ -624,20 +802,4 @@
         return ctx;
     }
 
-    var req = new XMLHttpRequest();
-    req.open('get', 'Roboto-Black.ttf', true);
-    req.responseType = 'arraybuffer';
-    req.onload = function (e) {
-        var arrayBuffer = req.response;
-        var font = parseFont(arrayBuffer);
-        _.each(font.glyphs, function (glyph, i) {
-            var size = 100;
-            var ctx = createCanvas(size, i);
-            var path = glyphToPath(glyph);
-            path.draw(ctx);
-            drawGlyphPoints(glyph, ctx, size);
-            drawGlyphBox(glyph, ctx);
-        });
-    };
-    req.send(null);
-})();
+}).call(this);
