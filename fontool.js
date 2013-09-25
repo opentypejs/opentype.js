@@ -14,14 +14,10 @@ function toArrayBuffer(buffer) {
 }
 
 
-function cmapEncodingsForFont(fname) {
-
+function printFontInfo(fname) {
     buffer = fs.readFileSync(fname);
     var font = openType.parseFont(toArrayBuffer(buffer));
-
-    _.each(font.cmapEncodingRecords, function (t) {
-        console.log("  Platform", t.platformId, "Encoding", t.encodingId, "Format", t.format);
-    });
+    console.log("  glyphs:", font.numGlyphs, font.glyphs.length);
 }
 
 // Recursively walk a directory and execute the function for every file.
@@ -38,13 +34,12 @@ function walk(dir, fn) {
     });
 }
 
-walk('_fonts', function (f) {
+walk('/System/Library/Fonts', function (f) {
         var ext = path.extname(f).toLowerCase();
         if (ext === '.ttf' || ext === '.otf') {
-            console.log(f);
-            cmapEncodingsForFont(f);
+            console.log(path.basename(f));
+            printFontInfo(f);
         }
     }
 );
-
 
