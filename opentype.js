@@ -491,7 +491,7 @@
                     break;
                 case 'maxp':
                     // We're only interested in the number of glyphs.
-                    numGlyphs = getUShort(data, offset + 4);
+                    font.numGlyphs = numGlyphs = getUShort(data, offset + 4);
                     break;
             }
             p += 16;
