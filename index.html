@@ -40,12 +40,12 @@
         var arrayBuffer = req.response;
         var font = openType.parseFont(arrayBuffer);
         window.font = font;
-        _.each(font.glyphs.slice(0, 100), function (glyph, i) {
-            var size = 150;
+        _.each(font.glyphs, function (glyph, i) {
+            var size = 200;
             var ctx = openType.createCanvas(size, i);
             var path = openType.glyphToPath(glyph);
             path.draw(ctx);
-            openType.drawGlyphPoints(glyph, ctx);
+//            openType.drawGlyphPoints(glyph, ctx);
             openType.drawGlyphBox(glyph, ctx);
         });
 
