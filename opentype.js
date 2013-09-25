@@ -11,6 +11,62 @@
         }
     }
 
+    var Path = function () {
+        this.commands = [];
+        this.fill = 'black';
+        this.stroke = null;
+        this.strokeWidth = 1;
+    };
+
+    Path.prototype.moveTo = function (x, y) {
+        this.commands.push({type: 'M', x: x, y: y});
+    };
+
+    Path.prototype.lineTo = function (x, y) {
+        this.commands.push({type: 'L', x: x, y: y});
+    };
+
+    Path.prototype.curveTo = Path.prototype.bezierCurveTo = function (x1, y1, x2, y2, x, y) {
+        this.commands.push({type: 'C', x1: x1, y1: y1, x2: x2, y2: y2, x: x, y: y});
+    };
+
+    Path.prototype.quadTo = Path.prototype.quadraticCurveTo = function (x1, y1, x, y) {
+        this.commands.push({type: 'Q', x1: x1, y1: y1, x: x, y: y});
+    };
+
+    Path.prototype.close = Path.prototype.closePath = function () {
+        this.commands.push({type: 'Z'});
+    };
+
+    // Draw the path to a 2D context.
+    Path.prototype.draw = function (ctx) {
+        var i, cmd;
+        ctx.beginPath();
+        for (i = 0; i < this.commands.length; i += 1) {
+            cmd = this.commands[i];
+            if (cmd.type === 'M') {
+                ctx.moveTo(cmd.x, cmd.y);
+            } else if (cmd.type === 'L') {
+                ctx.lineTo(cmd.x, cmd.y);
+            } else if (cmd.type === 'C') {
+                ctx.bezierCurveTo(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
+            } else if (cmd.type === 'Q') {
+                ctx.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
+            } else if (cmd.type === 'Z') {
+                ctx.closePath();
+            }
+        }
+        if (this.fill) {
+            ctx.fillStyle = this.fill;
+            ctx.fill();
+        }
+        if (this.stroke) {
+            ctx.strokeStyle = this.stroke;
+            ctx.lineWidth = this.strokeWidth;
+            ctx.stroke();
+        }
+    };
+
     var dataTypes = {
         byte: function (dataView, offset) {
             return dataView.getUint8(offset);
@@ -164,7 +220,7 @@
     // Encoding record in the cmap table.
     var cmapEncodingRecord = [
         // Platform ID.
-        { name: 'platformID', type: 'uShort' },
+        { name: 'platformId', type: 'uShort' },
         // Platform-specific encoding ID.
         { name: 'encodingId', type: 'uShort' },
         // Byte offset from beginning of table to the sub-table for this encoding.
@@ -362,11 +418,13 @@
     }
 
 
-    // Main function that parses the OpenType file and returns a Font object.
-    function parseBinaryFile(buffer) {
+    // Parse the OpenType file (as a buffer) and returns a Font object.
+    function parseFont(buffer) {
         // OpenType fonts use big endian byte ordering.
         // We can't rely on typed array view types, because they operate with the endianness of the host computer.
         // Instead we use DataViews where we can specify endianness.
+
+        var font = {glyphs: {}};
 
         var dataView = new DataView(buffer, 0);
 
@@ -393,6 +451,7 @@
         var cmapEncodingRecords = _.map(_.range(tCmapHeader.numTables), function (i) {
             var t = parseTable(dataView, cmapOffset, cmapEncodingRecord);
             cmapOffset += t._length;
+            console.log("FORMAT", t.platformId, t.encodingId, t.offset, dataTypes.uShort(dataView, trCmap.offset + t.offset));
             return t;
         });
 
@@ -417,19 +476,14 @@
         // 4. For each glyph, use parseGlyph with the relative offsets from the `loca` table.
         var trGlyf = findTableRecord(tableRecords, 'glyf');
         _.each(relativeGlyphOffsets, function (relativeOffset, glyphIndex) {
-            var glyph = parseGlyph(dataView, trGlyf.offset, relativeOffset);
-            var size = 100;
-            var ctx = createCanvas(size);
-            drawGlyph(glyph, ctx, size);
-            drawGlyphPoints(glyph, ctx, size);
-            drawGlyphBox(glyph, ctx);
-            console.log(glyphIndex, glyph);
+            font.glyphs[glyphIndex] = parseGlyph(dataView, trGlyf.offset, relativeOffset);
         });
+        return font;
 
     }
 
+    // Split the glyph into contours.
     function getContours(glyph) {
-        // Split the glyph into contours.
         var contours = [];
         var currentContour = [];
         for (var i = 0; i < glyph.points.length; i++) {
@@ -444,14 +498,13 @@
         return contours;
     }
 
-
-    function drawGlyph(glyph, ctx) {
-        var contours, pt, firstPt, prevPt, nextPt, midPt, curvePt;
-        if (!glyph.points) return;
+    // Convert the glyph to a Path we can draw on a Canvas context.
+    function glyphToPath(glyph) {
+        var path, contours, pt, firstPt, prevPt, nextPt, midPt, curvePt;
+        path = new Path();
+        if (!glyph.points) return path;
         contours = getContours(glyph);
 
-        ctx.lineWidth = 20;
-        ctx.beginPath();
         _.each(contours, function (contour) {
             firstPt = contour[0];
             curvePt = null;
@@ -462,11 +515,11 @@
                 if (i === 0) {
                     // This is the first point of the contour.
                     if (pt.onCurve) {
-                        ctx.moveTo(pt.x, -pt.y);
+                        path.moveTo(pt.x, -pt.y);
                         // console.log("M" + pt.x + "," + pt.y);
                     } else {
                         midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        ctx.moveTo(midPt.x, -midPt.y);
+                        path.moveTo(midPt.x, -midPt.y);
                         // console.log("M" + pt.x + "," + pt.y);
                     }
                     curvePt = null;
@@ -474,7 +527,7 @@
                     if (prevPt.onCurve && pt.onCurve) {
                         // This is a straight line.
                         console.assert(curvePt === null);
-                        ctx.lineTo(pt.x, -pt.y);
+                        path.lineTo(pt.x, -pt.y);
                         // console.log("L" + pt.x + " " + pt.y);
                     } else if (prevPt.onCurve && !pt.onCurve) {
                         console.assert(curvePt === null);
@@ -482,13 +535,13 @@
                     } else if (!prevPt.onCurve && !pt.onCurve) {
                         console.assert(curvePt !== null);
                         midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        ctx.quadraticCurveTo(prevPt.x, -prevPt.y, midPt.x, -midPt.y);
+                        path.quadraticCurveTo(prevPt.x, -prevPt.y, midPt.x, -midPt.y);
                         // console.log("Q" + prevPt.x + "," + prevPt.y + " " + midPt.x + "," + midPt.y);
                         curvePt = pt;
                     } else if (!prevPt.onCurve && pt.onCurve) {
                         console.assert(curvePt !== null);
                         // Previous point off-curve, this point on-curve.
-                        ctx.quadraticCurveTo(curvePt.x, -curvePt.y, pt.x, -pt.y);
+                        path.quadraticCurveTo(curvePt.x, -curvePt.y, pt.x, -pt.y);
                         // console.log("Q" + curvePt.x + "," + curvePt.y + " " + pt.x + "," + pt.y);
                         curvePt = null;
                     } else {
@@ -499,17 +552,16 @@
             }
             // Connect the last and first points
             if (curvePt) {
-                ctx.quadraticCurveTo(curvePt.x, -curvePt.y, firstPt.x, -firstPt.y);
+                path.quadraticCurveTo(curvePt.x, -curvePt.y, firstPt.x, -firstPt.y);
                 // console.log("Q" + curvePt.x + "," + curvePt.y + " " + firstPt.x + "," + firstPt.y);
             } else {
-                ctx.lineTo(firstPt.x, -firstPt.y);
+                path.lineTo(firstPt.x, -firstPt.y);
                 // console.log("L" + firstPt.x + " " + firstPt.y);
             }
         });
-        ctx.closePath();
-        ctx.fill();
+        path.closePath();
+        return path;
     }
-
 
     function line(ctx, x1, y1, x2, y2) {
         ctx.beginPath();
@@ -558,13 +610,14 @@
 
     // Create a canvas and adds it to the document.
     // Returns the 2d drawing context.
-    function createCanvas(size) {
-        var canvas = document.createElement('canvas');
-        canvas.setAttribute('width', size);
-        canvas.setAttribute('height', size);
-        canvas.setAttribute('style', 'border:1px solid #ccc; margin-right: 4px');
+    function createCanvas(size, glyphIndex) {
+        var canvasId = 'c' + glyphIndex;
+        var html = '<div class="cwrap" style="width:' + size +'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyphIndex + '</span></div>';
         var body = document.getElementsByTagName('body')[0];
-        body.appendChild(canvas);
+        var wrap = document.createElement('div');
+        wrap.innerHTML = html;
+        body.appendChild(wrap);
+        var canvas = document.getElementById(canvasId);
         var ctx = canvas.getContext('2d');
         ctx.translate(size / 2, size / 2);
         ctx.scale(size / 6144, size / 6144);
@@ -576,7 +629,15 @@
     req.responseType = 'arraybuffer';
     req.onload = function (e) {
         var arrayBuffer = req.response;
-        parseBinaryFile(arrayBuffer);
+        var font = parseFont(arrayBuffer);
+        _.each(font.glyphs, function (glyph, i) {
+            var size = 100;
+            var ctx = createCanvas(size, i);
+            var path = glyphToPath(glyph);
+            path.draw(ctx);
+            drawGlyphPoints(glyph, ctx, size);
+            drawGlyphBox(glyph, ctx);
+        });
     };
     req.send(null);
 })();
