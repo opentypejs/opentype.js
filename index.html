@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>OpenType.js</title>
+    <meta charset="utf-8">
     <script type="text/javascript" src="underscore.js"></script>
     <script type="text/javascript" src="opentype.js"></script>
     <style type="text/css">
@@ -9,17 +10,17 @@
             font: 10px arial, sans-serif;
         }
 
-        .cwrap {
+        .wrapper {
             border: 1px solid #ccc;
             margin: 4px;
             float: left;
         }
 
-        canvas {
+        .wrapper canvas {
             display: inline-block;
         }
 
-        .cwrap span {
+        .wrapper span {
             text-align: center;
             background: lightgray;
             display: block;
@@ -33,22 +34,22 @@
 
 <script type="text/javascript">
     var req = new XMLHttpRequest();
-    req.open('get', '_fonts/arial.ttf', true);
+    req.open('get', 'Roboto-Black.ttf', true);
     req.responseType = 'arraybuffer';
     req.onload = function (e) {
         var arrayBuffer = req.response;
         var font = openType.parseFont(arrayBuffer);
         window.font = font;
         _.each(font.glyphs.slice(0, 100), function (glyph, i) {
-            var size = 100;
+            var size = 150;
             var ctx = openType.createCanvas(size, i);
             var path = openType.glyphToPath(glyph);
             path.draw(ctx);
-            // openType.drawGlyphPoints(glyph, ctx, size);
+            openType.drawGlyphPoints(glyph, ctx);
             openType.drawGlyphBox(glyph, ctx);
         });
 
-        var path = font.getPath("Hello there ;-)");
+        var path = font.getPath("Hello, World!");
         var ctx = document.getElementById("preview").getContext("2d");
         var size = 200;
         ctx.translate(size / 2, size / 2);
