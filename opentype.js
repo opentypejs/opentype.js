@@ -439,13 +439,18 @@
     // Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
     // This function augments the glyph array, adding the advanceWidth and leftSideBearing to each glyph.
     // https://www.microsoft.com/typography/OTSPEC/hmtx.htm
-    function parseHmtxTable(data, start, amount, glyphs) {
+    function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
         var p, i, glyph, advanceWidth, leftSideBearing;
         p = new Parser(data, start);
-        for (i = 0; i < amount; i++) {
+        for (i = 0; i < numGlyphs; i++) {
+            // If the font is monospaced, only one entry is needed. This last entry applies to all subsequent glyphs.
+            if (i < numMetrics) {
+                advanceWidth = p.parseUShort();
+                leftSideBearing = p.parseShort();
+            }
             glyph = glyphs[i];
-            glyph.advanceWidth = p.parseUShort();
-            glyph.leftSideBearing = p.parseShort();
+            glyph.advanceWidth = advanceWidth;
+            glyph.leftSideBearing = leftSideBearing;
         }
     }
 
@@ -555,7 +560,7 @@
             var shortVersion = indexToLocFormat === 0;
             loca = parseLocaTable(data, locaOffset, numGlyphs, shortVersion);
             font.glyphs = parseGlyfTable(data, glyfOffset, loca);
-            parseHmtxTable(data, hmtxOffset, font.numberOfHMetrics, font.glyphs);
+            parseHmtxTable(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
         }
 
         return font;
