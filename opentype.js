@@ -227,7 +227,7 @@
 
     // Parse all the glyphs according to the offsets from the `loca` table.
     function parseGlyfTable(data, start, loca) {
-        var glyphs, i, offset, nextOffset;
+        var glyphs, i, j, offset, nextOffset, glyph;
         glyphs = [];
         // The last element of the loca table is invalid.
         for (i = 0; i < loca.length - 1; i += 1) {
@@ -239,7 +239,39 @@
                 glyphs.push({numberOfContours: 0, xMin: 0, xMax: 0, yMin: 0, yMax: 0});
             }
         }
+        // Go over the glyphs again, resolving the composite glyphs.
+        for (i = 0; i < glyphs.length; i += 1) {
+            glyph = glyphs[i];
+            if (glyph.isComposite) {
+                for (j = 0; j < glyph.components.length; j += 1) {
+                    var component = glyph.components[j];
+                    var componentGlyph = glyphs[component.glyphIndex];
+                    if (componentGlyph.points) {
+                        var transformedPoints = transformPoints(componentGlyph.points, component.dx, component.dy);
+                        glyph.points.push.apply(glyph.points, transformedPoints);
+                    }
+                }
+            }
+        }
+
         return glyphs;
+    }
+
+    // Transform an array of points and return a new array.
+    function transformPoints(points, dx, dy) {
+        var newPoints, i, pt, newPt;
+        newPoints = [];
+        for (i = 0; i < points.length; i += 1) {
+            pt = points[i];
+            newPt = {
+                x: pt.x + dx,
+                y: pt.y + dy,
+                onCurve: pt.onCurve,
+                lastPointOfContour: pt.lastPointOfContour
+            };
+            newPoints.push(newPt)
+        }
+        return newPoints;
     }
 
     // Parse an OpenType glyph (described in the glyf table).
@@ -247,7 +279,8 @@
     // The offset is the absolute byte offset of the glyph: the base of the glyph table + the relative offset of the glyph.
     // http://www.microsoft.com/typography/otspec/glyf.htm
     function parseGlyph(data, start) {
-        var p, glyph, flag, i, j;
+        var p, glyph, flag, i, j, flags,
+            component, moreComponents, arg1, arg2, scale, xScale, yScale, scale01, scale10;
         p = new Parser(data, start);
         glyph = {};
         glyph.numberOfContours = p.parseShort();
@@ -269,7 +302,7 @@
             }
 
             var numberOfCoordinates = endPointIndices[endPointIndices.length - 1] + 1;
-            var flags = [];
+            flags = [];
             for (i = 0; i < numberOfCoordinates; i++) {
                 flag = p.parseByte();
                 flags.push(flag);
@@ -318,7 +351,46 @@
         } else if (glyph.numberOfContours === 0) {
             glyph.points = [];
         } else {
-            // TODO Support composite glyphs
+            glyph.isComposite = true;
+            glyph.points = [];
+            glyph.components = [];
+            moreComponents = true;
+            while (moreComponents) {
+                component = {};
+                flags = p.parseUShort();
+                component.glyphIndex = p.parseUShort();
+                if (isBitSet(flags, 0)) {
+                    // The arguments are words
+                    arg1 = p.parseShort();
+                    arg2 = p.parseShort();
+                    component.dx = arg1;
+                    component.dy = arg2;
+                } else {
+                    // The arguments are bytes
+                    arg1 = p.parseByte();
+                    arg2 = p.parseByte();
+                    component.dx = arg1;
+                    component.dy = arg2;
+                }
+                if (isBitSet(flags, 3)) {
+                    // We have a scale
+                    // TODO parse in 16-bit signed fixed number with the low 14 bits of fraction (2.14).
+                    scale = p.parseShort();
+                } else if (isBitSet(flags, 6)) {
+                    // We have an X / Y scale
+                    xScale = p.parseShort();
+                    yScale = p.parseShort();
+                } else if (isBitSet(flags, 7)) {
+                    // We have a 2x2 transformation
+                    xScale = p.parseShort();
+                    scale01 = p.parseShort();
+                    scale10 = p.parseShort();
+                    yScale = p.parseShort();
+                }
+
+                glyph.components.push(component);
+                moreComponents = isBitSet(flags, 5);
+            }
         }
         // Add the number of bytes parsed from the stateful parser to the glyph's object length.
         glyph._length += p.relativeOffset;
