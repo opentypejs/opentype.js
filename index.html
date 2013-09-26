@@ -32,8 +32,9 @@
 <body>
 
 
-<input type="text" style="font-size: 24px; padding: 5px 10px" onkeyup="renderText(this)" value="Hello, World!"
-       autofocus>
+<input type="text" style="font-size: 24px; padding: 5px 10px" onkeyup="renderText()" value="Hello, World!"
+       autofocus id="textField">
+<input type="checkbox" onmouseup="kerningChanged(this)" checked="checked"/>Kerning
 <br>
 
 <canvas id="preview" width="800" height="200" style="border: 1px solid #ccc"></canvas>
@@ -43,11 +44,17 @@
 <script type="text/javascript">
     var fontReady = false;
     var textToRender = "Hello, World!";
+    var kerning = true;
 
-    function renderText(e) {
-        textToRender = e.value;
+    function kerningChanged(e) {
+        kerning = !kerning;
+        renderText();
+    }
+
+    function renderText() {
+        textToRender = document.getElementById('textField').value;
         if (!fontReady) return;
-        var path = font.getPath(textToRender);
+        var path = font.getPath(textToRender, {kerning: kerning});
         var ctx = document.getElementById("preview").getContext("2d");
         var size = 200;
         ctx.clearRect(0, 0, 800, 200);
@@ -82,7 +89,7 @@
             openType.drawGlyphPoints(ctx, glyph);
             openType.drawMetrics(ctx, glyph);
         });
-        renderText({value: textToRender});
+        renderText();
 
     };
     req.send(null);

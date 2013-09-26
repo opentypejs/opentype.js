@@ -58,6 +58,13 @@
         this.commands.push({type: 'Z'});
     };
 
+    Path.prototype.extend = function (pathOrCommands) {
+        if (pathOrCommands.commands) {
+            pathOrCommands = pathOrCommands.commands;
+        }
+        this.commands.push.apply(this.commands, pathOrCommands);
+    };
+
     // Draw the path to a 2D context.
     Path.prototype.draw = function (ctx) {
         var i, cmd;
@@ -234,9 +241,9 @@
             offset = loca[i];
             nextOffset = loca[i + 1];
             if (offset !== nextOffset) {
-                glyphs.push(parseGlyph(data, start + offset));
+                glyphs.push(parseGlyph(data, start + offset, i));
             } else {
-                glyphs.push({numberOfContours: 0, xMin: 0, xMax: 0, yMin: 0, yMax: 0});
+                glyphs.push({index: i, numberOfContours: 0, xMin: 0, xMax: 0, yMin: 0, yMax: 0});
             }
         }
         // Go over the glyphs again, resolving the composite glyphs.
@@ -278,11 +285,12 @@
     // Due to the complexity of the parsing we can't define the glyf table declaratively.
     // The offset is the absolute byte offset of the glyph: the base of the glyph table + the relative offset of the glyph.
     // http://www.microsoft.com/typography/otspec/glyf.htm
-    function parseGlyph(data, start) {
+    function parseGlyph(data, start, index) {
         var p, glyph, flag, i, j, flags,
             component, moreComponents, arg1, arg2, scale, xScale, yScale, scale01, scale10;
         p = new Parser(data, start);
         glyph = {};
+        glyph.index = index;
         glyph.numberOfContours = p.parseShort();
         glyph.xMin = p.parseShort();
         glyph.yMin = p.parseShort();
@@ -526,12 +534,40 @@
         }
     }
 
+    // Parse the `kern` table which contains kerning pairs.
+    // Note that some fonts use the GPOS OpenType layout table to specify kerning.
+    // https://www.microsoft.com/typography/OTSPEC/kern.htm
+    function parseKernTable(data, start, glyphs) {
+        var pairs, p, tableVersion, nTables, subTableVersion, subTableLength, subTableCoverage, nPairs,
+            i, leftIndex, rightIndex, value;
+        pairs = {};
+        p = new Parser(data, start);
+        tableVersion = p.parseUShort();
+        checkArgument(tableVersion === 0, "Unsupported kern table version.");
+        nTables = p.parseUShort();
+        checkArgument(nTables === 1, "Unsupported number of kern sub-tables.");
+        subTableVersion = p.parseUShort();
+        checkArgument(subTableVersion === 0, "Unsupported kern sub-table version.");
+        subTableLength = p.parseUShort();
+        subTableCoverage = p.parseUShort();
+        nPairs = p.parseUShort();
+        // Skip searchRange, entrySelector, rangeShift.
+        p.skip('uShort', 3);
+        for (i = 0; i < nPairs; i++) {
+            leftIndex = p.parseUShort();
+            rightIndex = p.parseUShort();
+            value = p.parseShort();
+            pairs[leftIndex + ',' + rightIndex] = value;
+        }
+        return pairs;
+    }
+
     openType.Font = function () {
         this.supported = true;
         this.glyphs = [];
     };
 
-    openType.Font.prototype.characterToGlyphIndex = function (s) {
+    openType.Font.prototype.charToGlyphIndex = function (s) {
         var ranges = this.cmap;
         var code = s.charCodeAt(0);
         var l = 0, r = ranges.length - 1;
@@ -550,38 +586,62 @@
         return 0;
     };
 
+    openType.Font.prototype.charToGlyph = function (c) {
+        var glyphIndex, glyph;
+        glyphIndex = this.charToGlyphIndex(c);
+        glyph = this.glyphs[glyphIndex];
+        checkArgument(typeof glyph !== 'undefined', 'Could not find glyph for character ' + c + ' glyph index ' + glyphIndex);
+        return glyph;
+    };
+
+    openType.Font.prototype.stringToGlyphs = function (s) {
+        var i, c, glyphs;
+        glyphs = [];
+        for (i = 0; i < s.length; i++) {
+            c = s[i];
+            glyphs.push(this.charToGlyph(c));
+        }
+        return glyphs;
+    };
+
+    openType.Font.prototype.getKerningValue = function (leftGlyph, rightGlyph) {
+        var i;
+        leftGlyph = leftGlyph.index ? leftGlyph.index : leftGlyph;
+        rightGlyph = rightGlyph.index ? rightGlyph.index : rightGlyph;
+        return this.kerningPairs[leftGlyph + ',' + rightGlyph] | 0;
+    };
+
     // Get a path representing the text.
-    openType.Font.prototype.getPath = function (text) {
-        if (!this.supported) return new Path();
-        var self = this;
-        var glyphIndices = _.map(text, function (c) {
-            return self.characterToGlyphIndex(c);
-        });
-        var glyphs = _.map(glyphIndices, function (i) {
-            return self.glyphs[i] || self.glyphs[0];
-        });
-        var x = 0;
-        var paths = _.map(glyphs, function (glyph) {
-            var p = openType.glyphToPath(glyph, x);
+    openType.Font.prototype.getPath = function (text, options) {
+        var glyphs, x, i, glyph, path, fullPath, kerningValue, kerning;
+        if (!this.supported) {
+            return new Path();
+        }
+        options = options || {};
+        kerning = typeof options.kerning === 'undefined' ? true : options.kerning;
+        glyphs = this.stringToGlyphs(text);
+        x = 0;
+        fullPath = new Path();
+        for (i = 0; i < glyphs.length; i += 1) {
+            glyph = glyphs[i];
+            path = openType.glyphToPath(glyph, x, 0);
+            fullPath.extend(path);
             if (glyph.advanceWidth) {
                 x += glyph.advanceWidth;
-            } else {
-                x += 0;
             }
-            return p;
-        });
-        var path = new Path();
-        _.each(paths, function (p) {
-            path.commands.push.apply(path.commands, p.commands);
-        });
-        return path;
+            if (kerning && i < glyphs.length - 1) {
+                kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
+                x += kerningValue;
+            }
+        }
+        return fullPath;
     };
 
 
     // Parse the OpenType file (as a buffer) and returns a Font object.
     openType.parseFont = function (buffer) {
-        var data, numTables, i, p, tag, offset, length, cmap, hmtxOffset, glyfOffset, locaOffset, magicNumber,
-            unitsPerEm, indexToLocFormat, numGlyphs, glyf, loca;
+        var data, numTables, i, p, tag, offset, length, cmap, hmtxOffset, glyfOffset, locaOffset, kernOffset,
+            magicNumber, unitsPerEm, indexToLocFormat, numGlyphs, glyf, loca;
         // OpenType fonts use big endian byte ordering.
         // We can't rely on typed array view types, because they operate with the endianness of the host computer.
         // Instead we use DataViews where we can specify endianness.
@@ -626,6 +686,9 @@
                 case 'loca':
                     locaOffset = offset;
                     break;
+                case 'kern':
+                    kernOffset = offset;
+                    break;
             }
             p += 16;
         }
@@ -635,6 +698,9 @@
             loca = parseLocaTable(data, locaOffset, numGlyphs, shortVersion);
             font.glyphs = parseGlyfTable(data, glyfOffset, loca);
             parseHmtxTable(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
+            if (kernOffset) {
+                font.kerningPairs = parseKernTable(data, kernOffset, font.glyphs);
+            }
         } else {
             font.supported = false;
         }
