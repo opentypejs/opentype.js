@@ -455,6 +455,7 @@
     }
 
     openType.Font = function () {
+        this.supported = true;
         this.glyphs = [];
     };
 
@@ -479,6 +480,7 @@
 
     // Get a path representing the text.
     openType.Font.prototype.getPath = function (text) {
+        if (!this.supported) return new Path();
         var self = this;
         var glyphIndices = _.map(text, function (c) {
             return self.characterToGlyphIndex(c);
@@ -561,6 +563,8 @@
             loca = parseLocaTable(data, locaOffset, numGlyphs, shortVersion);
             font.glyphs = parseGlyfTable(data, glyfOffset, loca);
             parseHmtxTable(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
+        } else {
+            font.supported = false;
         }
 
         return font;

@@ -37,6 +37,8 @@
 <br>
 
 <canvas id="preview" width="800" height="200" style="border: 1px solid #ccc"></canvas>
+<br>
+<span id="message"></span>
 
 <script type="text/javascript">
     var fontReady = false;
@@ -68,6 +70,9 @@
         var arrayBuffer = req.response;
         var font = openType.parseFont(arrayBuffer);
         window.font = font;
+        if (!font.supported) {
+            document.getElementById('message').innerHTML = '<strong>This font is not supported.</strong>';
+        }
         fontReady = true;
         _.each(font.glyphs.slice(0, 100), function (glyph, i) {
             var size = 200;
