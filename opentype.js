@@ -1,5 +1,3 @@
-/*jslint nomen:true */
-/*global _*/
 (function () {
     'use strict';
 
