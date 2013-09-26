@@ -1,18 +1,10 @@
-(function () {
+/*global exports,DataView,document */
+(function (exports) {
     'use strict';
 
-    var root = this;
+    var openType, dataTypes, typeOffsets;
 
-    var openType = {};
-
-    if (typeof exports !== 'undefined') {
-        if (typeof module !== 'undefined' && module.exports) {
-            exports = module.exports = openType;
-        }
-        exports.openType = openType;
-    } else {
-        root.openType = openType;
-    }
+    openType = exports;
 
     // Precondition function that checks if the given predicate is true.
     // If not, it will log an error message to the console.
@@ -22,12 +14,12 @@
         }
     }
 
-    var Path = function () {
+    function Path() {
         this.commands = [];
         this.fill = 'black';
         this.stroke = null;
         this.strokeWidth = 1;
-    };
+    }
 
     Path.prototype.moveTo = function (x, y) {
         this.commands.push({type: 'M', x: x, y: y});
@@ -104,7 +96,7 @@
         function drawCircles(l) {
             var i, PI_SQ = Math.PI * 2;
             ctx.beginPath();
-            for (i = 0; i < l.length; i++) {
+            for (i = 0; i < l.length; i += 1) {
                 ctx.arc(l[i].x, l[i].y, 40, 0, PI_SQ, false);
 
             }
@@ -154,7 +146,7 @@
         return tag;
     }
 
-    var dataTypes = {
+    dataTypes = {
         byte: getByte,
         uShort: getUShort,
         short: getShort,
@@ -165,7 +157,7 @@
     };
 
 
-    var typeOffsets = {
+    typeOffsets = {
         byte: 1,
         uShort: 2,
         short: 2,
@@ -176,15 +168,16 @@
     };
 
     // A stateful parser that changes the offset whenever a value is retrieved.
-    var Parser = function (dataView, offset) {
+    function Parser(dataView, offset) {
         this.dataView = dataView;
         this.offset = offset;
         this.relativeOffset = 0;
-    };
+    }
 
     Parser.prototype.parse = function (type) {
-        var parseFn = dataTypes[type];
-        var v = parseFn(this.dataView, this.offset + this.relativeOffset);
+        var parseFn, v;
+        parseFn = dataTypes[type];
+        v = parseFn(this.dataView, this.offset + this.relativeOffset);
         this.relativeOffset += typeOffsets[type];
         return v;
     };
@@ -214,7 +207,9 @@
     };
 
     Parser.prototype.skip = function (type, amount) {
-        if (typeof amount === 'undefined') amount = 1;
+        if (amount === undefined) {
+            amount = 1;
+        }
         this.relativeOffset += typeOffsets[type] * amount;
     };
 
@@ -223,53 +218,28 @@
         return ((b >> bitIndex) & 1) === 1;
     }
 
-    // Parse all the glyphs according to the offsets from the `loca` table.
-    function parseGlyfTable(data, start, loca) {
-        var glyphs, i, j, offset, nextOffset, glyph;
-        glyphs = [];
-        // The last element of the loca table is invalid.
-        for (i = 0; i < loca.length - 1; i += 1) {
-            offset = loca[i];
-            nextOffset = loca[i + 1];
-            if (offset !== nextOffset) {
-                glyphs.push(parseGlyph(data, start + offset, i));
+    // Parse the coordinate data for a glyph.
+    function parseGlyphCoordinate(p, flag, previousValue, shortVectorBit, sameBit) {
+        var v;
+        if (isBitSet(flag, shortVectorBit)) {
+            // The coordinate is 1 byte long.
+            v = p.parse('byte');
+            // The `same` bit is re-used for short values to signify the sign of the value.
+            if (!isBitSet(flag, sameBit)) {
+                v = -v;
+            }
+            v = previousValue + v;
+        } else {
+            //  The coordinate is 2 bytes long.
+            // If the `same` bit is set, the coordinate is the same as the previous coordinate.
+            if (isBitSet(flag, sameBit)) {
+                v = previousValue;
             } else {
-                glyphs.push({index: i, numberOfContours: 0, xMin: 0, xMax: 0, yMin: 0, yMax: 0});
+                // Parse the coordinate as a signed 16-bit delta value.
+                v = previousValue + p.parse('short');
             }
         }
-        // Go over the glyphs again, resolving the composite glyphs.
-        for (i = 0; i < glyphs.length; i += 1) {
-            glyph = glyphs[i];
-            if (glyph.isComposite) {
-                for (j = 0; j < glyph.components.length; j += 1) {
-                    var component = glyph.components[j];
-                    var componentGlyph = glyphs[component.glyphIndex];
-                    if (componentGlyph.points) {
-                        var transformedPoints = transformPoints(componentGlyph.points, component.dx, component.dy);
-                        glyph.points.push.apply(glyph.points, transformedPoints);
-                    }
-                }
-            }
-        }
-
-        return glyphs;
-    }
-
-    // Transform an array of points and return a new array.
-    function transformPoints(points, dx, dy) {
-        var newPoints, i, pt, newPt;
-        newPoints = [];
-        for (i = 0; i < points.length; i += 1) {
-            pt = points[i];
-            newPt = {
-                x: pt.x + dx,
-                y: pt.y + dy,
-                onCurve: pt.onCurve,
-                lastPointOfContour: pt.lastPointOfContour
-            };
-            newPoints.push(newPt)
-        }
-        return newPoints;
+        return v;
     }
 
     // Parse an OpenType glyph (described in the glyf table).
@@ -278,6 +248,7 @@
     // http://www.microsoft.com/typography/otspec/glyf.htm
     function parseGlyph(data, start, index) {
         var p, glyph, flag, i, j, flags,
+            endPointIndices, numberOfCoordinates, repeatCount, points, point, px, py,
             component, moreComponents, arg1, arg2, scale, xScale, yScale, scale01, scale10;
         p = new Parser(data, start);
         glyph = {};
@@ -289,7 +260,7 @@
         glyph.yMax = p.parseShort();
         if (glyph.numberOfContours > 0) {
             // This glyph is not a composite.
-            var endPointIndices = glyph.endPointIndices = [];
+            endPointIndices = glyph.endPointIndices = [];
             for (i = 0; i < glyph.numberOfContours; i += 1) {
                 endPointIndices.push(p.parseUShort());
             }
@@ -300,46 +271,46 @@
                 glyph.instructions.push(p.parseByte());
             }
 
-            var numberOfCoordinates = endPointIndices[endPointIndices.length - 1] + 1;
+            numberOfCoordinates = endPointIndices[endPointIndices.length - 1] + 1;
             flags = [];
-            for (i = 0; i < numberOfCoordinates; i++) {
+            for (i = 0; i < numberOfCoordinates; i += 1) {
                 flag = p.parseByte();
                 flags.push(flag);
                 // If bit 3 is set, we repeat this flag n times, where n is the next byte.
                 if (isBitSet(flag, 3)) {
-                    var repeatCount = p.parseByte();
+                    repeatCount = p.parseByte();
                     for (j = 0; j < repeatCount; j += 1) {
                         flags.push(flag);
-                        i++;
+                        i += 1;
                     }
                 }
             }
             checkArgument(flags.length === numberOfCoordinates, 'Bad flags.');
 
             if (endPointIndices.length > 0) {
-                var points = [];
+                points = [];
                 // X/Y coordinates are relative to the previous point, except for the first point which is relative to 0,0.
                 if (numberOfCoordinates > 0) {
-                    for (i = 0; i < numberOfCoordinates; i++) {
+                    for (i = 0; i < numberOfCoordinates; i += 1) {
                         flag = flags[i];
-                        var point = {};
+                        point = {};
                         point.onCurve = isBitSet(flag, 0);
                         point.lastPointOfContour = endPointIndices.indexOf(i) >= 0;
                         points.push(point);
                     }
-                    var px = 0;
-                    for (i = 0; i < numberOfCoordinates; i++) {
+                    px = 0;
+                    for (i = 0; i < numberOfCoordinates; i += 1) {
                         flag = flags[i];
                         point = points[i];
-                        point.x = _parseGlyphCoordinate(p, flag, px, 1, 4);
+                        point.x = parseGlyphCoordinate(p, flag, px, 1, 4);
                         px = point.x;
                     }
 
-                    var py = 0;
-                    for (i = 0; i < numberOfCoordinates; i++) {
+                    py = 0;
+                    for (i = 0; i < numberOfCoordinates; i += 1) {
                         flag = flags[i];
                         point = points[i];
-                        point.y = _parseGlyphCoordinate(p, flag, py, 2, 5);
+                        point.y = parseGlyphCoordinate(p, flag, py, 2, 5);
                         py = point.y;
                     }
                 }
@@ -391,33 +362,57 @@
                 moreComponents = isBitSet(flags, 5);
             }
         }
-        // Add the number of bytes parsed from the stateful parser to the glyph's object length.
-        glyph._length += p.relativeOffset;
         return glyph;
     }
 
-    // Parse the coordinate data for a glyph.
-    function _parseGlyphCoordinate(p, flag, previousValue, shortVectorBit, sameBit) {
-        var v;
-        if (isBitSet(flag, shortVectorBit)) {
-            // The coordinate is 1 byte long.
-            v = p.parse('byte');
-            // The `same` bit is re-used for short values to signify the sign of the value.
-            if (!isBitSet(flag, sameBit)) {
-                v = -v;
-            }
-            v = previousValue + v;
-        } else {
-            //  The coordinate is 2 bytes long.
-            // If the `same` bit is set, the coordinate is the same as the previous coordinate.
-            if (isBitSet(flag, sameBit)) {
-                v = previousValue;
+    // Transform an array of points and return a new array.
+    function transformPoints(points, dx, dy) {
+        var newPoints, i, pt, newPt;
+        newPoints = [];
+        for (i = 0; i < points.length; i += 1) {
+            pt = points[i];
+            newPt = {
+                x: pt.x + dx,
+                y: pt.y + dy,
+                onCurve: pt.onCurve,
+                lastPointOfContour: pt.lastPointOfContour
+            };
+            newPoints.push(newPt);
+        }
+        return newPoints;
+    }
+
+    // Parse all the glyphs according to the offsets from the `loca` table.
+    function parseGlyfTable(data, start, loca) {
+        var glyphs, i, j, offset, nextOffset, glyph,
+            component, componentGlyph, transformedPoints;
+        glyphs = [];
+        // The last element of the loca table is invalid.
+        for (i = 0; i < loca.length - 1; i += 1) {
+            offset = loca[i];
+            nextOffset = loca[i + 1];
+            if (offset !== nextOffset) {
+                glyphs.push(parseGlyph(data, start + offset, i));
             } else {
-                // Parse the coordinate as a signed 16-bit delta value.
-                v = previousValue + p.parse('short');
+                glyphs.push({index: i, numberOfContours: 0, xMin: 0, xMax: 0, yMin: 0, yMax: 0});
             }
         }
-        return v;
+        // Go over the glyphs again, resolving the composite glyphs.
+        for (i = 0; i < glyphs.length; i += 1) {
+            glyph = glyphs[i];
+            if (glyph.isComposite) {
+                for (j = 0; j < glyph.components.length; j += 1) {
+                    component = glyph.components[j];
+                    componentGlyph = glyphs[component.glyphIndex];
+                    if (componentGlyph.points) {
+                        transformedPoints = transformPoints(componentGlyph.points, component.dx, component.dy);
+                        glyph.points.push.apply(glyph.points, transformedPoints);
+                    }
+                }
+            }
+        }
+
+        return glyphs;
     }
 
     // Parse the `loca` table. This table stores the offsets to the locations of the glyphs in the font,
@@ -428,13 +423,14 @@
     // (under indexToLocFormat).
     // https://www.microsoft.com/typography/OTSPEC/loca.htm
     function parseLocaTable(data, start, numGlyphs, shortVersion) {
-        var p = new Parser(data, start);
-        var parseFn = shortVersion ? p.parseUShort : p.parseULong;
+        var p, parseFn, glyphOffsets, glyphOffset, i;
+        p = new Parser(data, start);
+        parseFn = shortVersion ? p.parseUShort : p.parseULong;
         // There is an extra entry after the last index element to compute the length of the last glyph.
         // That's why we use numGlyphs + 1.
-        var glyphOffsets = [];
-        for (var i = 0; i < numGlyphs + 1; i++) {
-            var glyphOffset = parseFn.call(p);
+        glyphOffsets = [];
+        for (i = 0; i < numGlyphs + 1; i += 1) {
+            glyphOffset = parseFn.call(p);
             if (shortVersion) {
                 // The short table version stores the actual offset divided by 2.
                 glyphOffset *= 2;
@@ -449,8 +445,8 @@
     // There are many available formats, but we only support the Windows format 4.
     // https://www.microsoft.com/typography/OTSPEC/cmap.htm
     function parseCmapTable(data, start) {
-        var version, numTables, offset, platformId, encodingId, format, length, language, segCount,
-            ranges, i, idRangeOffset;
+        var version, numTables, offset, platformId, encodingId, format, segCount,
+            ranges, i, j, idRangeOffset, p;
         version = getUShort(data, start);
         checkArgument(version === 0, "cmap table version should be 0.");
 
@@ -458,7 +454,7 @@
         // We're only interested in a "platform 1" table. This is a Windows format.
         numTables = getUShort(data, start + 2);
         offset = -1;
-        for (i = 0; i < numTables; i++) {
+        for (i = 0; i < numTables; i += 1) {
             platformId = getUShort(data, start + 4 + (i * 8));
             encodingId = getUShort(data, start + 4 + (i * 8) + 2);
             if (platformId === 3 && (encodingId === 1 || encodingId === 0)) {
@@ -470,12 +466,12 @@
             throw new Error("Could not find supported cmap encoding.");
         }
 
-        var p = new Parser(data, start + offset);
+        p = new Parser(data, start + offset);
         format = p.parseUShort();
         checkArgument(format === 4, "Only format 4 cmap tables are supported.");
         // Length in bytes of the sub-tables.
-        length = p.parseUShort();
-        language = p.parseUShort();
+        // Skip length and language;
+        p.skip('uShort', 2);
         // segCount is stored x 2.
         segCount = p.parseUShort() / 2;
         // Skip searchRange, entrySelector, rangeShift.
@@ -495,13 +491,14 @@
         }
         for (i = 0; i < segCount; i += 1) {
             idRangeOffset = p.parseUShort();
-            if (idRangeOffset === 0) continue;
-            ranges[i].ids = [];
-            for (var j = 0; j < ranges[i].length; j++) {
-                ranges[i].ids[j] = getUShort(data, start + p.relativeOffset + idRangeOffset);
-                idRangeOffset += 2;
+            if (idRangeOffset > 0) {
+                ranges[i].ids = [];
+                for (j = 0; j < ranges[i].length; j += 1) {
+                    ranges[i].ids[j] = getUShort(data, start + p.relativeOffset + idRangeOffset);
+                    idRangeOffset += 2;
+                }
+                ranges[i].idDelta = p.parseUShort();
             }
-            ranges[i].idDelta = p.parseUShort();
         }
 
         return ranges;
@@ -513,7 +510,7 @@
     function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
         var p, i, glyph, advanceWidth, leftSideBearing;
         p = new Parser(data, start);
-        for (i = 0; i < numGlyphs; i++) {
+        for (i = 0; i < numGlyphs; i += 1) {
             // If the font is monospaced, only one entry is needed. This last entry applies to all subsequent glyphs.
             if (i < numMetrics) {
                 advanceWidth = p.parseUShort();
@@ -528,8 +525,8 @@
     // Parse the `kern` table which contains kerning pairs.
     // Note that some fonts use the GPOS OpenType layout table to specify kerning.
     // https://www.microsoft.com/typography/OTSPEC/kern.htm
-    function parseKernTable(data, start, glyphs) {
-        var pairs, p, tableVersion, nTables, subTableVersion, subTableLength, subTableCoverage, nPairs,
+    function parseKernTable(data, start) {
+        var pairs, p, tableVersion, nTables, subTableVersion, nPairs,
             i, leftIndex, rightIndex, value;
         pairs = {};
         p = new Parser(data, start);
@@ -539,12 +536,12 @@
         checkArgument(nTables === 1, "Unsupported number of kern sub-tables.");
         subTableVersion = p.parseUShort();
         checkArgument(subTableVersion === 0, "Unsupported kern sub-table version.");
-        subTableLength = p.parseUShort();
-        subTableCoverage = p.parseUShort();
+        // Skip subTableLength, subTableCoverage
+        p.skip('uShort', 2);
         nPairs = p.parseUShort();
         // Skip searchRange, entrySelector, rangeShift.
         p.skip('uShort', 3);
-        for (i = 0; i < nPairs; i++) {
+        for (i = 0; i < nPairs; i += 1) {
             leftIndex = p.parseUShort();
             rightIndex = p.parseUShort();
             value = p.parseShort();
@@ -559,11 +556,13 @@
     };
 
     openType.Font.prototype.charToGlyphIndex = function (s) {
-        var ranges = this.cmap;
-        var code = s.charCodeAt(0);
-        var l = 0, r = ranges.length - 1;
+        var ranges, code, l, c, r;
+        ranges = this.cmap;
+        code = s.charCodeAt(0);
+        l = 0;
+        r = ranges.length - 1;
         while (l < r) {
-            var c = (l + r + 1) >> 1;
+            c = (l + r + 1) >> 1;
             if (code < ranges[c].start) {
                 r = c - 1;
             } else {
@@ -571,8 +570,7 @@
             }
         }
         if (ranges[l].start <= code && code <= ranges[l].end) {
-            return (ranges[l].idDelta + (ranges[l].ids ?
-                ranges[l].ids[code - ranges[l].start] : code)) & 0xFFFF;
+            return (ranges[l].idDelta + (ranges[l].ids ? ranges[l].ids[code - ranges[l].start] : code)) & 0xFFFF;
         }
         return 0;
     };
@@ -581,14 +579,14 @@
         var glyphIndex, glyph;
         glyphIndex = this.charToGlyphIndex(c);
         glyph = this.glyphs[glyphIndex];
-        checkArgument(typeof glyph !== 'undefined', 'Could not find glyph for character ' + c + ' glyph index ' + glyphIndex);
+        checkArgument(glyph !== undefined, 'Could not find glyph for character ' + c + ' glyph index ' + glyphIndex);
         return glyph;
     };
 
     openType.Font.prototype.stringToGlyphs = function (s) {
         var i, c, glyphs;
         glyphs = [];
-        for (i = 0; i < s.length; i++) {
+        for (i = 0; i < s.length; i += 1) {
             c = s[i];
             glyphs.push(this.charToGlyph(c));
         }
@@ -596,10 +594,9 @@
     };
 
     openType.Font.prototype.getKerningValue = function (leftGlyph, rightGlyph) {
-        var i;
-        leftGlyph = leftGlyph.index ? leftGlyph.index : leftGlyph;
-        rightGlyph = rightGlyph.index ? rightGlyph.index : rightGlyph;
-        return this.kerningPairs[leftGlyph + ',' + rightGlyph] | 0;
+        leftGlyph = leftGlyph.index || leftGlyph;
+        rightGlyph = rightGlyph.index || rightGlyph;
+        return this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0;
     };
 
     // Get a path representing the text.
@@ -609,7 +606,7 @@
             return new Path();
         }
         options = options || {};
-        kerning = typeof options.kerning === 'undefined' ? true : options.kerning;
+        kerning = options.kerning === undefined ? true : options.kerning;
         glyphs = this.stringToGlyphs(text);
         x = 0;
         fullPath = new Path();
@@ -631,13 +628,13 @@
 
     // Parse the OpenType file (as a buffer) and returns a Font object.
     openType.parseFont = function (buffer) {
-        var data, numTables, i, p, tag, offset, length, cmap, hmtxOffset, glyfOffset, locaOffset, kernOffset,
-            magicNumber, unitsPerEm, indexToLocFormat, numGlyphs, glyf, loca;
+        var font, data, numTables, i, p, tag, offset, length, cmap, hmtxOffset, glyfOffset, locaOffset, kernOffset,
+            magicNumber, unitsPerEm, indexToLocFormat, numGlyphs, glyf, loca, shortVersion;
         // OpenType fonts use big endian byte ordering.
         // We can't rely on typed array view types, because they operate with the endianness of the host computer.
         // Instead we use DataViews where we can specify endianness.
 
-        var font = new openType.Font();
+        font = new openType.Font();
 
         data = new DataView(buffer, 0);
         numTables = getUShort(data, 4);
@@ -685,12 +682,12 @@
         }
 
         if (glyfOffset && locaOffset) {
-            var shortVersion = indexToLocFormat === 0;
+            shortVersion = indexToLocFormat === 0;
             loca = parseLocaTable(data, locaOffset, numGlyphs, shortVersion);
             font.glyphs = parseGlyfTable(data, glyfOffset, loca);
             parseHmtxTable(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
             if (kernOffset) {
-                font.kerningPairs = parseKernTable(data, kernOffset, font.glyphs);
+                font.kerningPairs = parseKernTable(data, kernOffset);
             } else {
                 font.kerningPairs = {};
             }
@@ -703,10 +700,11 @@
 
     // Split the glyph into contours.
     function getContours(glyph) {
-        var contours = [];
-        var currentContour = [];
-        for (var i = 0; i < glyph.points.length; i++) {
-            var pt = glyph.points[i];
+        var contours, currentContour, i, pt;
+        contours = [];
+        currentContour = [];
+        for (i = 0; i < glyph.points.length; i += 1) {
+            pt = glyph.points[i];
             currentContour.push(pt);
             if (pt.lastPointOfContour) {
                 contours.push(currentContour);
@@ -720,14 +718,16 @@
     // Convert the glyph to a Path we can draw on a Canvas context.
     openType.glyphToPath = function (glyph, tx, ty) {
         var path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt;
-        if (typeof tx === 'undefined') {
+        if (tx === undefined) {
             tx = 0;
         }
-        if (typeof ty === 'undefined') {
+        if (ty === undefined) {
             ty = 0;
         }
         path = new Path();
-        if (!glyph.points) return path;
+        if (!glyph.points) {
+            return path;
+        }
         contours = getContours(glyph);
         for (i = 0; i < contours.length; i += 1) {
             contour = contours[i];
@@ -785,23 +785,12 @@
         ctx.stroke();
     }
 
-    var ellipse = function (ctx, cx, cy, w, h) {
-        var kappa = 0.5522848;
-        var ox = (w / 2) * kappa; // control point offset horizontal
-        var oy = (h / 2) * kappa; // control point offset vertical
-        var left = cx - w / 2;
-        var top = cy - h / 2;
-        var right = cx + w / 2;
-        var bottom = cy + h / 2;
+    function circle(ctx, cx, cy, r) {
         ctx.beginPath();
-        ctx.moveTo(left, cy);
-        ctx.bezierCurveTo(left, cy - oy, cx - ox, top, cx, top);
-        ctx.bezierCurveTo(cx + ox, top, right, cy - oy, right, cy);
-        ctx.bezierCurveTo(right, cy + oy, cx + ox, bottom, cx, bottom);
-        ctx.bezierCurveTo(cx - ox, bottom, left, cy + oy, left, cy);
+        ctx.arc(cx, cy, r, 0, Math.PI * 2, false);
         ctx.closePath();
         ctx.fill();
-    };
+    }
 
     openType.drawGlyphPoints = function (ctx, glyph) {
         var points, i, pt;
@@ -809,14 +798,14 @@
         if (!points) {
             return;
         }
-        for (i = 0; i < points.length; i++) {
+        for (i = 0; i < points.length; i += 1) {
             pt = points[i];
             if (pt.onCurve) {
                 ctx.fillStyle = 'blue';
             } else {
                 ctx.fillStyle = 'red';
             }
-            ellipse(ctx, pt.x, -pt.y, 60, 60);
+            circle(ctx, pt.x, -pt.y, 40);
         }
     };
 
@@ -840,17 +829,18 @@
     // Create a canvas and adds it to the document.
     // Returns the 2d drawing context.
     openType.createCanvas = function (size, glyphIndex) {
-        var canvasId = 'c' + glyphIndex;
-        var html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyphIndex + '</span></div>';
-        var body = document.getElementsByTagName('body')[0];
-        var wrap = document.createElement('div');
+        var canvasId, html, body, wrap, canvas, ctx;
+        canvasId = 'c' + glyphIndex;
+        html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyphIndex + '</span></div>';
+        body = document.getElementsByTagName('body')[0];
+        wrap = document.createElement('div');
         wrap.innerHTML = html;
         body.appendChild(wrap);
-        var canvas = document.getElementById(canvasId);
-        var ctx = canvas.getContext('2d');
+        canvas = document.getElementById(canvasId);
+        ctx = canvas.getContext('2d');
         ctx.translate(size / 2, size / 2);
         ctx.scale(size / 6144, size / 6144);
         return ctx;
-    }
+    };
 
-}).call(this);
+}(typeof exports === 'undefined' ? this.openType = {} : exports));
