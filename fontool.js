@@ -13,11 +13,16 @@ function toArrayBuffer(buffer) {
     return ab;
 }
 
+function parseFont(file) {
+    var buffer;
+    buffer = fs.readFileSync(file);
+    return openType.parseFont(toArrayBuffer(buffer));
+}
 
-function printFontInfo(fname) {
-    buffer = fs.readFileSync(fname);
-    var font = openType.parseFont(toArrayBuffer(buffer));
+
+function printFontInfo(font) {
     console.log("  glyphs:", font.numGlyphs, font.glyphs.length);
+    console.log("  kerning:", Object.keys(font.kerningPairs).length);
 }
 
 // Recursively walk a directory and execute the function for every file.
@@ -34,11 +39,17 @@ function walk(dir, fn) {
     });
 }
 
-walk('/System/Library/Fonts', function (f) {
-        var ext = path.extname(f).toLowerCase();
+var fontDirectory = path.join(process.env['HOME'], 'Library', 'Fonts');
+
+walk(fontDirectory, function (f) {
+        var ext, font;
+        ext = path.extname(f).toLowerCase();
         if (ext === '.ttf' || ext === '.otf') {
-            console.log(path.basename(f));
-            printFontInfo(f);
+            font = parseFont(f);
+            if (font.supported) {
+                console.log(path.basename(f));
+                printFontInfo(font);
+            }
         }
     }
 );
