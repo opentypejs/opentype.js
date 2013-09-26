@@ -700,6 +700,8 @@
             parseHmtxTable(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
             if (kernOffset) {
                 font.kerningPairs = parseKernTable(data, kernOffset, font.glyphs);
+            } else {
+                font.kerningPairs = {};
             }
         } else {
             font.supported = false;
