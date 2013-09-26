@@ -107,7 +107,7 @@
             var i, PI_SQ = Math.PI * 2;
             ctx.beginPath();
             for (i = 0; i < l.length; i++) {
-                ctx.arc(l[i].x, l[i].y, 40, 0, PI_SQ);
+                ctx.arc(l[i].x, l[i].y, 40, 0, PI_SQ, false);
 
             }
             ctx.closePath();
@@ -453,7 +453,7 @@
         var version, numTables, offset, platformId, encodingId, format, length, language, segCount,
             ranges, i, idRangeOffset;
         version = getUShort(data, start);
-        console.assert(version === 0);
+        checkArgument(version === 0, "cmap table version should be 0.");
 
         // The cmap table can contain many sub-tables, each with their own format.
         // We're only interested in a "platform 1" table. This is a Windows format.
@@ -473,7 +473,7 @@
 
         var p = new Parser(data, start + offset);
         format = p.parseUShort();
-        console.assert(format == 4);
+        checkArgument(format === 4, "Only format 4 cmap tables are supported.");
         // Length in bytes of the sub-tables.
         length = p.parseUShort();
         language = p.parseUShort();
@@ -654,7 +654,7 @@
                 currentContour = [];
             }
         }
-        console.assert(_.isEmpty(currentContour));
+        checkArgument(currentContour.length === 0, "There are still points left in the current contour.");
         return contours;
     }
 
