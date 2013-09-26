@@ -30,9 +30,37 @@
 
 </head>
 <body>
-<canvas id="preview" width="800" height="200"></canvas>
+
+
+<input type="text" style="font-size: 24px; padding: 5px 10px" onkeyup="renderText(this)" value="Hello, World!"
+       autofocus>
+<br>
+
+<canvas id="preview" width="800" height="200" style="border: 1px solid #ccc"></canvas>
 
 <script type="text/javascript">
+    var fontReady = false;
+    var textToRender = "Hello, World!";
+
+    function renderText(e) {
+        textToRender = e.value;
+        if (!fontReady) return;
+        var path = font.getPath(textToRender);
+        var ctx = document.getElementById("preview").getContext("2d");
+        var size = 200;
+        ctx.clearRect(0, 0, 800, 200);
+        ctx.save();
+        ctx.translate(10, size / 2);
+        ctx.beginPath();
+        ctx.moveTo(-10000, 0);
+        ctx.lineTo(10000, 0);
+        ctx.stroke();
+        ctx.scale(size / 6144, size / 6144);
+        path.draw(ctx);
+        path.drawPoints(ctx);
+        ctx.restore();
+    }
+
     var req = new XMLHttpRequest();
     req.open('get', 'Roboto-Black.ttf', true);
     req.responseType = 'arraybuffer';
@@ -40,21 +68,17 @@
         var arrayBuffer = req.response;
         var font = openType.parseFont(arrayBuffer);
         window.font = font;
-        _.each(font.glyphs, function (glyph, i) {
+        fontReady = true;
+        _.each(font.glyphs.slice(0, 100), function (glyph, i) {
             var size = 200;
             var ctx = openType.createCanvas(size, i);
             var path = openType.glyphToPath(glyph);
             path.draw(ctx);
-//            openType.drawGlyphPoints(glyph, ctx);
-            openType.drawGlyphBox(glyph, ctx);
+            openType.drawGlyphPoints(ctx, glyph);
+            openType.drawMetrics(ctx, glyph);
         });
+        renderText({value: textToRender});
 
-        var path = font.getPath("Hello, World!");
-        var ctx = document.getElementById("preview").getContext("2d");
-        var size = 200;
-        ctx.translate(size / 2, size / 2);
-        ctx.scale(size / 6144, size / 6144);
-        path.draw(ctx);
     };
     req.send(null);
 

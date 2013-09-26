@@ -87,6 +87,39 @@
         }
     };
 
+    Path.prototype.drawPoints = function (ctx) {
+        var i, cmd, blueCircles, redCircles;
+        blueCircles = [];
+        redCircles = [];
+        for (i = 0; i < this.commands.length; i += 1) {
+            cmd = this.commands[i];
+            if (cmd.type === 'M') {
+                blueCircles.push(cmd);
+            } else if (cmd.type === 'L') {
+                blueCircles.push(cmd);
+            } else if (cmd.type === 'C') {
+                redCircles.push(cmd);
+            } else if (cmd.type === 'Q') {
+                redCircles.push(cmd);
+            }
+        }
+        function drawCircles(l) {
+            var i, PI_SQ = Math.PI * 2;
+            ctx.beginPath();
+            for (i = 0; i < l.length; i++) {
+                ctx.arc(l[i].x, l[i].y, 40, 0, PI_SQ);
+
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        ctx.fillStyle = 'blue';
+        drawCircles(blueCircles);
+        ctx.fillStyle = 'red';
+        drawCircles(redCircles);
+    };
+
 
     function getByte(dataView, offset) {
         return dataView.getUint8(offset);
@@ -203,7 +236,7 @@
             if (offset !== nextOffset) {
                 glyphs.push(parseGlyph(data, start + offset));
             } else {
-                glyphs.push({});
+                glyphs.push({numberOfContours: 0, xMin: 0, xMax: 0, yMin: 0, yMax: 0});
             }
         }
         return glyphs;
@@ -403,6 +436,19 @@
         return ranges;
     }
 
+    // Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
+    // This function augments the glyph array, adding the advanceWidth and leftSideBearing to each glyph.
+    // https://www.microsoft.com/typography/OTSPEC/hmtx.htm
+    function parseHmtxTable(data, start, amount, glyphs) {
+        var p, i, glyph, advanceWidth, leftSideBearing;
+        p = new Parser(data, start);
+        for (i = 0; i < amount; i++) {
+            glyph = glyphs[i];
+            glyph.advanceWidth = p.parseUShort();
+            glyph.leftSideBearing = p.parseShort();
+        }
+    }
+
     openType.Font = function () {
         this.glyphs = [];
     };
@@ -438,10 +484,10 @@
         var x = 0;
         var paths = _.map(glyphs, function (glyph) {
             var p = openType.glyphToPath(glyph, x);
-            if (glyph.xMax && glyph.xMin) {
-                x += glyph.xMax - glyph.xMin + 300;
+            if (glyph.advanceWidth) {
+                x += glyph.advanceWidth;
             } else {
-                x += 1000;
+                x += 0;
             }
             return p;
         });
@@ -455,8 +501,8 @@
 
     // Parse the OpenType file (as a buffer) and returns a Font object.
     openType.parseFont = function (buffer) {
-        var data, numTables, i, p, tag, offset, length, cmap, glyfOffset, locaOffset, magicNumber, unitsPerEm,
-            indexToLocFormat, numGlyphs, glyf, loca;
+        var data, numTables, i, p, tag, offset, length, cmap, hmtxOffset, glyfOffset, locaOffset, magicNumber,
+            unitsPerEm, indexToLocFormat, numGlyphs, glyf, loca;
         // OpenType fonts use big endian byte ordering.
         // We can't rely on typed array view types, because they operate with the endianness of the host computer.
         // Instead we use DataViews where we can specify endianness.
@@ -476,12 +522,6 @@
                 case 'cmap':
                     font.cmap = parseCmapTable(data, offset);
                     break;
-                case 'glyf':
-                    glyfOffset = offset;
-                    break;
-                case 'loca':
-                    locaOffset = offset;
-                    break;
                 case 'head':
                     // We're only interested in some values from the header.
                     magicNumber = getULong(data, offset + 12);
@@ -489,9 +529,23 @@
                     unitsPerEm = getUShort(data, offset + 18);
                     indexToLocFormat = getUShort(data, offset + 50);
                     break;
+                case 'hhea':
+                    font.ascender = getShort(data, offset + 4);
+                    font.descender = getShort(data, offset + 6);
+                    font.numberOfHMetrics = getUShort(data, offset + 34);
+                    break;
+                case 'hmtx':
+                    hmtxOffset = offset;
+                    break;
                 case 'maxp':
                     // We're only interested in the number of glyphs.
                     font.numGlyphs = numGlyphs = getUShort(data, offset + 4);
+                    break;
+                case 'glyf':
+                    glyfOffset = offset;
+                    break;
+                case 'loca':
+                    locaOffset = offset;
                     break;
             }
             p += 16;
@@ -501,6 +555,7 @@
             var shortVersion = indexToLocFormat === 0;
             loca = parseLocaTable(data, locaOffset, numGlyphs, shortVersion);
             font.glyphs = parseGlyfTable(data, glyfOffset, loca);
+            parseHmtxTable(data, hmtxOffset, font.numberOfHMetrics, font.glyphs);
         }
 
         return font;
@@ -608,7 +663,7 @@
         ctx.fill();
     };
 
-    openType.drawGlyphPoints = function (glyph, ctx) {
+    openType.drawGlyphPoints = function (ctx, glyph) {
         _.each(glyph.points, function (pt) {
             if (pt.onCurve) {
                 ctx.fillStyle = 'blue';
@@ -619,13 +674,21 @@
         });
     };
 
-    openType.drawGlyphBox = function (glyph, ctx) {
-        ctx.strokeStyle = 'red';
-        ctx.lineWidth = 5;
+    openType.drawMetrics = function (ctx, glyph) {
+        ctx.lineWidth = 10;
+        // Draw the origin
+        ctx.strokeStyle = 'black';
+        line(ctx, 0, -10000, 0, 10000);
+        line(ctx, -10000, 0, 10000, 0);
+        // Draw the glyph box
+        ctx.strokeStyle = 'blue';
         line(ctx, glyph.xMin, -10000, glyph.xMin, 10000);
         line(ctx, glyph.xMax, -10000, glyph.xMax, 10000);
         line(ctx, -10000, -glyph.yMin, 10000, -glyph.yMin);
         line(ctx, -10000, -glyph.yMax, 10000, -glyph.yMax);
+        // Draw the advance width
+        ctx.strokeStyle = 'green';
+        line(ctx, glyph.advanceWidth, -10000, glyph.advanceWidth, 10000);
     };
 
     // Create a canvas and adds it to the document.
