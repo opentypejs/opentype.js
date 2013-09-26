@@ -7,13 +7,6 @@
 
     var openType = {};
 
-    var _;
-    if (typeof require !== 'undefined') {
-        _ = require('./underscore.js');
-    } else {
-        _ = this._;
-    }
-
     if (typeof exports !== 'undefined') {
         if (typeof module !== 'undefined' && module.exports) {
             exports = module.exports = openType;
@@ -333,7 +326,7 @@
                         flag = flags[i];
                         var point = {};
                         point.onCurve = isBitSet(flag, 0);
-                        point.lastPointOfContour = _.contains(endPointIndices, i);
+                        point.lastPointOfContour = endPointIndices.indexOf(i) >= 0;
                         points.push(point);
                     }
                     var px = 0;
@@ -728,7 +721,7 @@
 
     // Convert the glyph to a Path we can draw on a Canvas context.
     openType.glyphToPath = function (glyph, tx, ty) {
-        var path, contours, pt, firstPt, prevPt, midPt, curvePt;
+        var path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt;
         if (typeof tx === 'undefined') {
             tx = 0;
         }
@@ -738,15 +731,15 @@
         path = new Path();
         if (!glyph.points) return path;
         contours = getContours(glyph);
-
-        _.each(contours, function (contour) {
+        for (i = 0; i < contours.length; i += 1) {
+            contour = contours[i];
             firstPt = contour[0];
             curvePt = null;
-            for (var i = 0; i < contour.length; i++) {
-                pt = contour[i];
-                prevPt = i === 0 ? contour[contour.length - 1] : contour[i - 1];
+            for (j = 0; j < contour.length; j += 1) {
+                pt = contour[j];
+                prevPt = j === 0 ? contour[contour.length - 1] : contour[j - 1];
 
-                if (i === 0) {
+                if (j === 0) {
                     // This is the first point of the contour.
                     if (pt.onCurve) {
                         path.moveTo(tx + pt.x, ty - pt.y);
@@ -782,7 +775,7 @@
             } else {
                 path.lineTo(tx + firstPt.x, ty - firstPt.y);
             }
-        });
+        }
         path.closePath();
         return path;
     };
@@ -813,14 +806,20 @@
     };
 
     openType.drawGlyphPoints = function (ctx, glyph) {
-        _.each(glyph.points, function (pt) {
+        var points, i, pt;
+        points = glyph.points;
+        if (!points) {
+            return;
+        }
+        for (i = 0; i < points.length; i++) {
+            pt = points[i];
             if (pt.onCurve) {
                 ctx.fillStyle = 'blue';
             } else {
                 ctx.fillStyle = 'red';
             }
             ellipse(ctx, pt.x, -pt.y, 60, 60);
-        });
+        }
     };
 
     openType.drawMetrics = function (ctx, glyph) {

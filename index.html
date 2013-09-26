@@ -3,7 +3,6 @@
 <head>
     <title>OpenType.js</title>
     <meta charset="utf-8">
-    <script type="text/javascript" src="underscore.js"></script>
     <script type="text/javascript" src="opentype.js"></script>
     <style type="text/css">
         body {
@@ -81,14 +80,17 @@
             document.getElementById('message').innerHTML = '<strong>This font is not supported.</strong>';
         }
         fontReady = true;
-        _.each(font.glyphs.slice(0, 100), function (glyph, i) {
+        // Show only the first 100 glyphs.
+        var amount = Math.min(100, font.glyphs.length);
+        for (var i = 0; i < amount; i++) {
+            var glyph = font.glyphs[i];
             var size = 200;
             var ctx = openType.createCanvas(size, i);
             var path = openType.glyphToPath(glyph);
             path.draw(ctx);
             openType.drawGlyphPoints(ctx, glyph);
             openType.drawMetrics(ctx, glyph);
-        });
+        }
         renderText();
 
     };

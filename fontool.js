@@ -1,6 +1,5 @@
 var fs = require('fs');
 var path = require('path');
-var _ = require('./underscore.js');
 
 var openType = require('./opentype.js');
 
@@ -27,16 +26,18 @@ function printFontInfo(font) {
 
 // Recursively walk a directory and execute the function for every file.
 function walk(dir, fn) {
-    var files = fs.readdirSync(dir);
-    _.each(files, function (f) {
-        var fullName = path.join(dir, f);
+    var files, i, file;
+    files = fs.readdirSync(dir);
+    for (i = 0; i < files.length; i += 1) {
+        file = files[i];
+        var fullName = path.join(dir, file);
         var stat = fs.statSync(fullName);
         if (stat.isFile()) {
             fn(fullName);
         } else if (stat.isDirectory()) {
             walk(fullName, fn);
         }
-    });
+    }
 }
 
 var fontDirectory = path.join(process.env['HOME'], 'Library', 'Fonts');
