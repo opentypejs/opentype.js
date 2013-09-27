@@ -98,7 +98,7 @@
             var j, PI_SQ = Math.PI * 2;
             ctx.beginPath();
             for (j = 0; j < l.length; j += 1) {
-                ctx.arc(l[j].x, l[j].y, 40, 0, PI_SQ, false);
+                ctx.arc(l[j].x, l[j].y, 2, 0, PI_SQ, false);
 
             }
             ctx.closePath();
@@ -602,18 +602,23 @@
 
     // Get a path representing the text.
     openType.Font.prototype.getPath = function (text, options) {
-        var glyphs, x, i, glyph, path, fullPath, kerningValue, kerning;
+        var x, y, fontSize, kerning, fontScale, glyphs, i, glyph, path, fullPath, kerningValue;
         if (!this.supported) {
             return new Path();
         }
         options = options || {};
+        x = options.x || 0;
+        y = options.y || 0;
+        fontSize = options.fontSize || 72;
         kerning = options.kerning === undefined ? true : options.kerning;
+        fontScale = 1 / this.unitsPerEm * fontSize;
+        x /= fontScale;
+        y /= fontScale;
         glyphs = this.stringToGlyphs(text);
-        x = 0;
         fullPath = new Path();
         for (i = 0; i < glyphs.length; i += 1) {
             glyph = glyphs[i];
-            path = openType.glyphToPath(glyph, x, 0);
+            path = openType.glyphToPath(glyph, x, y, fontScale);
             fullPath.extend(path);
             if (glyph.advanceWidth) {
                 x += glyph.advanceWidth;
@@ -717,13 +722,16 @@
     }
 
     // Convert the glyph to a Path we can draw on a Canvas context.
-    openType.glyphToPath = function (glyph, tx, ty) {
+    openType.glyphToPath = function (glyph, tx, ty, scale) {
         var path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt;
         if (tx === undefined) {
             tx = 0;
         }
         if (ty === undefined) {
             ty = 0;
+        }
+        if (scale === undefined) {
+            scale = 1;
         }
         path = new Path();
         if (!glyph.points) {
@@ -741,26 +749,26 @@
                 if (j === 0) {
                     // This is the first point of the contour.
                     if (pt.onCurve) {
-                        path.moveTo(tx + pt.x, ty - pt.y);
+                        path.moveTo((tx + pt.x) * scale, (ty - pt.y) * scale);
                         curvePt = null;
                     } else {
                         midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
                         curvePt = midPt;
-                        path.moveTo(tx + midPt.x, ty - midPt.y);
+                        path.moveTo((tx + midPt.x) * scale, (ty - midPt.y) * scale);
                     }
                 } else {
                     if (prevPt.onCurve && pt.onCurve) {
                         // This is a straight line.
-                        path.lineTo(tx + pt.x, ty - pt.y);
+                        path.lineTo((tx + pt.x) * scale, (ty - pt.y) * scale);
                     } else if (prevPt.onCurve && !pt.onCurve) {
                         curvePt = pt;
                     } else if (!prevPt.onCurve && !pt.onCurve) {
                         midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        path.quadraticCurveTo(tx + prevPt.x, ty - prevPt.y, tx + midPt.x, ty - midPt.y);
+                        path.quadraticCurveTo((tx + prevPt.x) * scale, (ty - prevPt.y) * scale, (tx + midPt.x) * scale, (ty - midPt.y) * scale);
                         curvePt = pt;
                     } else if (!prevPt.onCurve && pt.onCurve) {
                         // Previous point off-curve, this point on-curve.
-                        path.quadraticCurveTo(tx + curvePt.x, ty - curvePt.y, tx + pt.x, ty - pt.y);
+                        path.quadraticCurveTo((tx + curvePt.x) * scale, (ty - curvePt.y) * scale, (tx + pt.x) * scale, (ty - pt.y) * scale);
                         curvePt = null;
                     } else {
                         throw new Error("Invalid state.");
@@ -770,9 +778,9 @@
             }
             // Connect the last and first points
             if (curvePt) {
-                path.quadraticCurveTo(tx + curvePt.x, ty - curvePt.y, tx + firstPt.x, ty - firstPt.y);
+                path.quadraticCurveTo((tx + curvePt.x) * scale, (ty - curvePt.y) * scale, (tx + firstPt.x) * scale, (ty - firstPt.y) * scale);
             } else {
-                path.lineTo(tx + firstPt.x, ty - firstPt.y);
+                path.lineTo((tx + firstPt.x) * scale, (ty - firstPt.y) * scale);
             }
         }
         path.closePath();
