@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>opentype.js – JavaScript parser for OpenType and TrueType fonts.</title>
+    <meta description="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
     <meta charset="utf-8">
     <script type="text/javascript" src="opentype.js"></script>
     <style type="text/css">
@@ -11,7 +12,7 @@
             min-width: 1020px;
             color: #333;
             background-color: #fff;
-            margin: 0;
+            margin: 0 0 50px 0;
             padding: 0;
         }
 
@@ -25,7 +26,8 @@
 
         .header h1 {
             margin: 0;
-            padding: 0;
+            padding: 9px 0 0 0;
+            font-size: 18px;
         }
 
         .container {
@@ -34,7 +36,7 @@
             margin-right: auto;
         }
 
-        .intro {
+        .explain {
             color: #222;
             font-size: 16px;
             margin-bottom: 20px;
@@ -47,7 +49,7 @@
             display: block;
         }
 
-        canvas#preview {
+        canvas.text {
             border: 1px solid #ddd;
             box-shadow: 1px 0 5px rgba(0, 0, 0, 0.2);
             margin-bottom: 5px;
@@ -81,6 +83,43 @@
         #glyphs {
             width: 950px;
         }
+
+        .info {
+            float: right;
+            font-size: 11px;
+            color: #999;
+        }
+
+        hr {
+            border: none;
+            border-bottom: 1px solid #ccc;
+            margin: 20px 0 20px 0;
+            padding: 0;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        label input[type="range"] {
+            vertical-align: middle;
+        }
+
+        a.github {
+            float: right;
+            position: relative;
+            top: -22px;
+            text-decoration: none;
+            color: #44d;
+        }
+
+        a {
+            text-decoration: none;
+            color: #44d;
+        }
     </style>
 
 
@@ -89,44 +128,74 @@
 <div class="header">
     <div class="container">
         <h1>opentype.js</h1>
+        <a class="github" href="https://github.com/nodebox/opentype.js">Fork me on GitHub</a>
     </div>
 </div>
 
 <div class="container">
 
-    <div class="intro">
+    <div class="explain">
         opentype.js is an OpenType and TrueType font parser.
-        It gives you access to the <strong>letterforms</strong> of text from the browser or node.js.
+        It allows you to access the <strong>letterforms</strong> of text from the browser or node.js.
     </div>
 
+    <span class="info">Roboto-Black</span>
+    <canvas id="preview" width="940" height="300" class="text"></canvas>
+    <span id="message"></span>
     <input type="text" class="text-input" onkeyup="renderText()" value="Hello, World!"
            autofocus id="textField">
-    <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked"/>Kerning</label>
+    <label>Font Size<input type="range" min="6" max="500" value="150" onchange="fontSizeChanged(this)"/><span id="fontSize">150</span></label>
     <label><input type="checkbox" onchange="drawPointsChanged(this)" checked="checked"/>Draw Points</label>
+    <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked"/>Kerning</label>
     <label><input type="checkbox" onchange="animationChanged(this)"/>Animate</label>
-    <label><input type="range" min="6" max="500" value="72" onchange="fontSizeChanged(this)"/>Font Size: <span
-            id="fontSize">72</span></label>
 
-    <br><br>
+    <hr>
 
-    <canvas id="preview" width="940" height="300"></canvas>
-    <br>
-    <span id="message">Roboto-Black</span>
+    <div class="explain">
+        Once you have the shapes, you can modify them, for example by <strong>snapping</strong> them to a virtual grid:
+    </div>
+
+    <canvas id="snap" width="940" height="300" class="text"></canvas>
+    <label>Strength <input type="range" min="0" max="100" value="80" onchange="snapStrengthChanged(this)"/><span id="snapStrength">80</span></label>
+    <label>Distance<input type="range" min="0" max="100" value="53" onchange="snapDistanceChanged(this)"/><span id="snapDistance">53</span></label>
+    <label>X<input type="range" min="-100" max="100" value="0" onchange="snapXChanged(this)"/><span id="snapX">0</span></label>
+    <label>Y<input type="range" min="-100" max="100" value="0" onchange="snapYChanged(this)"/><span id="snapY">0</span></label>
+
+    <hr>
+
+    <div class="explain">
+        <h1>Glyphs</h1>
+        opentype.js provides you with <strong>raw access</strong> to the glyphs so you can modify them as you please.
+    </div>
 
     <div id="glyphs">
-        <h1>Glyphs</h1>
     </div>
-    <div class="message">Only the first 100 glyphs are loaded.</div>
+    <div class="message">Only the first 100 glyphs are shown.</div>
+
+    <hr>
+
+    <div class="explain">
+        <h1>Free Software</h1>
+        <p>opentype.js is available on <a href="https://github.com/nodebox/opentype.js">GitHub</a> under the <a href="https://raw.github.com/nodebox/opentype.js/master/LICENSE">MIT License</a>.</p>
+        <p>Copyright &copy; 2013 Frederik De Bleser.</p>
+    </div>
+
+    <hr>
 
 
     <script type="text/javascript">
         var fontReady = false;
-        var fontSize = 72;
+        var fontSize = 150;
         var textToRender = "Hello, World!";
         var drawPoints = true;
         var kerning = true;
         var animating = false;
-        var path = null;
+        var previewPath = null;
+        var snapPath = null;
+        var snapStrength = 80;
+        var snapDistance = 53;
+        var snapX = 0;
+        var snapY = 0;
 
         function drawPointsChanged(e) {
             drawPoints = e.checked;
@@ -148,32 +217,84 @@
             renderText();
         }
 
+        function snapStrengthChanged(e) {
+            snapStrength = e.value;
+            document.getElementById('snapStrength').innerHTML = '' + snapStrength;
+            renderText();
+        }
+
+        function snapDistanceChanged(e) {
+            snapDistance = e.value;
+            document.getElementById('snapDistance').innerHTML = '' + snapDistance;
+            renderText();
+        }
+
+        function snapXChanged(e) {
+            snapX = e.value * 1.0;
+            document.getElementById('snapX').innerHTML = '' + snapX;
+            renderText();
+        }
+
+        function snapYChanged(e) {
+            snapY = e.value * 1.0;
+            document.getElementById('snapY').innerHTML = '' + snapY;
+            renderText();
+        }
+
+        // Round a value to the nearest "step".
+        function snap(v, distance, strength) {
+            return (v * (1.0 - strength)) + (strength * Math.round(v / distance) * distance);
+        }
+
+        function doSnap(path) {
+            var i;
+            var strength = snapStrength / 100.0;
+            for (i = 0; i < path.commands.length; i++) {
+                var cmd = path.commands[i];
+                if (cmd.type !== 'Z') {
+                    cmd.x = snap(cmd.x + snapX, snapDistance, strength) - snapX;
+                    cmd.y = snap(cmd.y + snapY, snapDistance, strength) - snapY;
+                }
+                if (cmd.type === 'Q') {
+                    cmd.x1 = snap(cmd.x1 + snapX, snapDistance, strength) - snapX;
+                    cmd.y1 = snap(cmd.y1 + snapY, snapDistance, strength) - snapY;
+                }
+            }
+        }
+
         function renderText() {
             if (!fontReady) return;
             textToRender = document.getElementById('textField').value;
-            path = font.getPath(textToRender, {x: 0, y: 200, fontSize: fontSize, kerning: kerning});
+            previewPath = font.getPath(textToRender, {x: 0, y: 200, fontSize: fontSize, kerning: kerning});
+            snapPath = font.getPath(textToRender, {x: 0, y: 200, fontSize: fontSize, kerning: kerning});
+            doSnap(snapPath);
             drawPath();
         }
 
         function drawPath() {
-            var ctx = document.getElementById("preview").getContext("2d");
-            ctx.clearRect(0, 0, 940, 300);
-            if (path) {
-                path.draw(ctx);
+            var previewCtx = document.getElementById('preview').getContext("2d");
+            previewCtx.clearRect(0, 0, 940, 300);
+            if (previewPath) {
+                previewPath.draw(previewCtx);
                 if (drawPoints) {
-                    path.drawPoints(ctx);
+                    previewPath.drawPoints(previewCtx);
                 }
                 if (animating) {
                     var i;
-                    for (i = 0; i < path.commands.length; i++) {
-                        var command = path.commands[i];
-                        if (command.type !== 'Z') {
-                            command.x += (Math.random() * 0.4) - 0.2;
-                            command.y += (Math.random() * 0.4) - 0.2;
+                    for (i = 0; i < previewPath.commands.length; i++) {
+                        var cmd = previewPath.commands[i];
+                        if (cmd.type !== 'Z') {
+                            cmd.x += (Math.random() * 0.4) - 0.2;
+                            cmd.y += (Math.random() * 0.4) - 0.2;
                         }
                     }
                     window.requestAnimationFrame(drawPath);
                 }
+            }
+            var snapCtx = document.getElementById('snap').getContext("2d");
+            snapCtx.clearRect(0, 0, 940, 300);
+            if (snapPath) {
+                snapPath.draw(snapCtx);
             }
         }
 
