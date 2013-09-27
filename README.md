@@ -4,6 +4,8 @@ opentype.js is a JavaScript parser for TrueType and OpenType fonts.
 
 It gives you access to the <strong>letterforms</strong> of text from the browser or node.js.
 
+![Example of opentype.js](https://raw.github.com/nodebox/opentype.js/master/g/hello-world.png)
+
 Here's an example. We load a font using an XMLHttpRequest, then display it on a canvas with id "canvas":
 
     var req = new XMLHttpRequest();
