@@ -470,7 +470,9 @@
             }
         }
         if (offset === -1) {
-            throw new Error("Could not find supported cmap encoding.");
+            // There is no cmap table in the font that we support, so return null.
+            // This font will be marked as unsupported.
+            return null;
         }
 
         p = new Parser(data, start + offset);
@@ -660,6 +662,10 @@
             switch (tag) {
             case 'cmap':
                 font.cmap = parseCmapTable(data, offset);
+                if (!font.cmap) {
+                    font.cmap = [];
+                    font.supported = false;
+                }
                 break;
             case 'head':
                 // We're only interested in some values from the header.
