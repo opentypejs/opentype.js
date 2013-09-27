@@ -190,7 +190,7 @@
         req.responseType = 'arraybuffer';
         req.onload = function (e) {
             var arrayBuffer = req.response;
-            var font = openType.parseFont(arrayBuffer);
+            var font = opentype.parseFont(arrayBuffer);
             window.font = font;
             if (!font.supported) {
                 document.getElementById('message').innerHTML = '<strong>This font is not supported.</strong>';
@@ -202,10 +202,10 @@
                 var glyph = font.glyphs[i];
                 var size = 150;
                 var ctx = createCanvas(size, i);
-                var path = openType.glyphToPath(glyph);
+                var path = opentype.glyphToPath(glyph);
                 path.draw(ctx);
-                openType.drawGlyphPoints(ctx, glyph);
-                openType.drawMetrics(ctx, glyph);
+                opentype.drawGlyphPoints(ctx, glyph);
+                opentype.drawMetrics(ctx, glyph);
             }
             renderText();
 

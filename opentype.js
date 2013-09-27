@@ -8,9 +8,9 @@
 (function (exports) {
     'use strict';
 
-    var openType, dataTypes, typeOffsets;
+    var opentype, dataTypes, typeOffsets;
 
-    openType = exports;
+    opentype = exports;
 
     // Precondition function that checks if the given predicate is true.
     // If not, it will log an error message to the console.
@@ -556,12 +556,12 @@
         return pairs;
     }
 
-    openType.Font = function () {
+    opentype.Font = function () {
         this.supported = true;
         this.glyphs = [];
     };
 
-    openType.Font.prototype.charToGlyphIndex = function (s) {
+    opentype.Font.prototype.charToGlyphIndex = function (s) {
         var ranges, code, l, c, r;
         ranges = this.cmap;
         code = s.charCodeAt(0);
@@ -581,7 +581,7 @@
         return 0;
     };
 
-    openType.Font.prototype.charToGlyph = function (c) {
+    opentype.Font.prototype.charToGlyph = function (c) {
         var glyphIndex, glyph;
         glyphIndex = this.charToGlyphIndex(c);
         glyph = this.glyphs[glyphIndex];
@@ -589,7 +589,7 @@
         return glyph;
     };
 
-    openType.Font.prototype.stringToGlyphs = function (s) {
+    opentype.Font.prototype.stringToGlyphs = function (s) {
         var i, c, glyphs;
         glyphs = [];
         for (i = 0; i < s.length; i += 1) {
@@ -599,14 +599,14 @@
         return glyphs;
     };
 
-    openType.Font.prototype.getKerningValue = function (leftGlyph, rightGlyph) {
+    opentype.Font.prototype.getKerningValue = function (leftGlyph, rightGlyph) {
         leftGlyph = leftGlyph.index || leftGlyph;
         rightGlyph = rightGlyph.index || rightGlyph;
         return this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0;
     };
 
     // Get a path representing the text.
-    openType.Font.prototype.getPath = function (text, options) {
+    opentype.Font.prototype.getPath = function (text, options) {
         var x, y, fontSize, kerning, fontScale, glyphs, i, glyph, path, fullPath, kerningValue;
         if (!this.supported) {
             return new Path();
@@ -623,7 +623,7 @@
         fullPath = new Path();
         for (i = 0; i < glyphs.length; i += 1) {
             glyph = glyphs[i];
-            path = openType.glyphToPath(glyph, x, y, fontScale);
+            path = opentype.glyphToPath(glyph, x, y, fontScale);
             fullPath.extend(path);
             if (glyph.advanceWidth) {
                 x += glyph.advanceWidth;
@@ -638,14 +638,14 @@
 
 
     // Parse the OpenType file (as a buffer) and returns a Font object.
-    openType.parseFont = function (buffer) {
+    opentype.parseFont = function (buffer) {
         var font, data, numTables, i, p, tag, offset, length, hmtxOffset, glyfOffset, locaOffset, kernOffset,
             magicNumber, indexToLocFormat, numGlyphs, glyf, loca, shortVersion;
         // OpenType fonts use big endian byte ordering.
         // We can't rely on typed array view types, because they operate with the endianness of the host computer.
         // Instead we use DataViews where we can specify endianness.
 
-        font = new openType.Font();
+        font = new opentype.Font();
 
         data = new DataView(buffer, 0);
         numTables = getUShort(data, 4);
@@ -727,7 +727,7 @@
     }
 
     // Convert the glyph to a Path we can draw on a Canvas context.
-    openType.glyphToPath = function (glyph, tx, ty, scale) {
+    opentype.glyphToPath = function (glyph, tx, ty, scale) {
         var path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt;
         if (tx === undefined) {
             tx = 0;
@@ -806,7 +806,7 @@
         ctx.fill();
     }
 
-    openType.drawGlyphPoints = function (ctx, glyph) {
+    opentype.drawGlyphPoints = function (ctx, glyph) {
         var points, i, pt;
         points = glyph.points;
         if (!points) {
@@ -823,7 +823,7 @@
         }
     };
 
-    openType.drawMetrics = function (ctx, glyph) {
+    opentype.drawMetrics = function (ctx, glyph) {
         ctx.lineWidth = 10;
         // Draw the origin
         ctx.strokeStyle = 'black';
@@ -840,4 +840,4 @@
         line(ctx, glyph.advanceWidth, -10000, glyph.advanceWidth, 10000);
     };
 
-}(typeof exports === 'undefined' ? this.openType = {} : exports));
+}(typeof exports === 'undefined' ? this.opentype = {} : exports));

@@ -11,7 +11,7 @@ Here's an example. We load a font using an XMLHttpRequest, then display it on a 
     req.responseType = 'arraybuffer';
     req.onload = function () {
         var arrayBuffer = req.response;
-        var font = openType.parseFont(arrayBuffer);
+        var font = opentype.parseFont(arrayBuffer);
         if (!font.supported) {
             alert('This font is not supported.');
         }
