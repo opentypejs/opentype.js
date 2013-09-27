@@ -1,3 +1,8 @@
+//     opentype.js 0.0.1
+//     https://github.com/nodebox/opentype.js
+//     (c) 2013 Frederik De Bleser
+//     opentype.js may be freely distributed under the MIT license.
+
 /*jslint bitwise: true */
 /*global exports,DataView,document */
 (function (exports) {
@@ -833,23 +838,6 @@
         // Draw the advance width
         ctx.strokeStyle = 'green';
         line(ctx, glyph.advanceWidth, -10000, glyph.advanceWidth, 10000);
-    };
-
-    // Create a canvas and adds it to the document.
-    // Returns the 2d drawing context.
-    openType.createCanvas = function (size, glyphIndex) {
-        var canvasId, html, body, wrap, canvas, ctx;
-        canvasId = 'c' + glyphIndex;
-        html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyphIndex + '</span></div>';
-        body = document.getElementsByTagName('body')[0];
-        wrap = document.createElement('div');
-        wrap.innerHTML = html;
-        body.appendChild(wrap);
-        canvas = document.getElementById(canvasId);
-        ctx = canvas.getContext('2d');
-        ctx.translate(size / 2, size / 2);
-        ctx.scale(size / 6144, size / 6144);
-        return ctx;
     };
 
 }(typeof exports === 'undefined' ? this.openType = {} : exports));

@@ -1,0 +1,21 @@
+{
+    "name": "opentype.js",
+    "description": "OpenType font parser",
+    "version": "0.0.1",
+    "author": {
+        "name": "Frederik De Bleser",
+        "email": "frederik@burocrazy.com"
+    },
+    "dependencies": {},
+    "keywords": ["graphics", "fonts", "type"],
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/nodebox/opentype.js.git"
+    },
+    "licenses": [
+        {
+            "type": "MIT",
+            "url": "https://raw.github.com/nodebox/opentype.js/master/LICENSE"
+        }
+    ]
+}

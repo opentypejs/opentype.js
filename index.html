@@ -1,17 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>OpenType.js</title>
+    <title>opentype.js – JavaScript parser for OpenType and TrueType fonts.</title>
     <meta charset="utf-8">
     <script type="text/javascript" src="opentype.js"></script>
     <style type="text/css">
         body {
-            font: 10px arial, sans-serif;
+            font: 13px Helvetica, arial, freesans, sans--serif;
+            line-height: 1.4;
+            min-width: 1020px;
+            color: #333;
+            background-color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #eee;
+            color: #555;
+            border-bottom: 1px solid #ddd;
+            height: 40px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 940px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .intro {
+            color: #222;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .text-input {
+            font-size: 24px;
+            padding: 5px;
+            width: 930px;
+            display: block;
+        }
+
+        canvas#preview {
+            border: 1px solid #ddd;
+            box-shadow: 1px 0 5px rgba(0, 0, 0, 0.2);
+            margin-bottom: 5px;
         }
 
         .wrapper {
-            border: 1px solid #ccc;
-            margin: 4px;
+            border: 1px solid #ddd;
+            margin: 0 5px 10px 0;
             float: left;
         }
 
@@ -21,81 +65,154 @@
 
         .wrapper span {
             text-align: center;
-            background: lightgray;
+            background: #ddd;
             display: block;
+        }
+
+        #message {
+            font-weight: bold;
+        }
+
+        .message {
+            clear: both;
+            font-style: oblique;
+        }
+
+        #glyphs {
+            width: 950px;
         }
     </style>
 
 
 </head>
 <body>
+<div class="header">
+    <div class="container">
+        <h1>opentype.js</h1>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="intro">
+        opentype.js is an OpenType and TrueType font parser.
+        It gives you access to the <strong>letterforms</strong> of text from the browser or node.js.
+    </div>
+
+    <input type="text" class="text-input" onkeyup="renderText()" value="Hello, World!"
+           autofocus id="textField">
+    <label><input type="checkbox" onchange="kerningChanged()" checked="checked"/>Kerning</label>
+    <label><input type="checkbox" onchange="drawPointsChanged()" checked="checked"/>Draw Points</label>
+    <label><input type="checkbox" onchange="animationChanged()"/>Animate</label>
+    <br><br>
+
+    <canvas id="preview" width="940" height="300"></canvas>
+    <br>
+    <span id="message">Roboto-Black</span>
+
+    <div id="glyphs">
+        <h1>Glyphs</h1>
+    </div>
+    <div class="message">Only the first 100 glyphs are loaded.</div>
 
 
-<input type="text" style="font-size: 24px; padding: 5px 10px" onkeyup="renderText()" value="Hello, World!"
-       autofocus id="textField">
-<input type="checkbox" onmouseup="kerningChanged(this)" checked="checked"/>Kerning
-<br>
+    <script type="text/javascript">
+        var fontReady = false;
+        var textToRender = "Hello, World!";
+        var drawPoints = true;
+        var kerning = true;
+        var animating = false;
+        var path = null;
 
-<canvas id="preview" width="800" height="200" style="border: 1px solid #ccc"></canvas>
-<br>
-<span id="message"></span>
-
-<script type="text/javascript">
-    var fontReady = false;
-    var textToRender = "Hello, World!";
-    var kerning = true;
-
-    function kerningChanged(e) {
-        kerning = !kerning;
-        renderText();
-    }
-
-    function renderText() {
-        textToRender = document.getElementById('textField').value;
-        if (!fontReady) return;
-        var path = font.getPath(textToRender, {kerning: kerning});
-        var ctx = document.getElementById("preview").getContext("2d");
-        var size = 200;
-        ctx.clearRect(0, 0, 800, 200);
-        ctx.save();
-        ctx.translate(10, size / 2);
-        ctx.beginPath();
-        ctx.moveTo(-10000, 0);
-        ctx.lineTo(10000, 0);
-        ctx.stroke();
-        ctx.scale(size / 6144, size / 6144);
-        path.draw(ctx);
-        path.drawPoints(ctx);
-        ctx.restore();
-    }
-
-    var req = new XMLHttpRequest();
-    req.open('get', 'Roboto-Black.ttf', true);
-    req.responseType = 'arraybuffer';
-    req.onload = function (e) {
-        var arrayBuffer = req.response;
-        var font = openType.parseFont(arrayBuffer);
-        window.font = font;
-        if (!font.supported) {
-            document.getElementById('message').innerHTML = '<strong>This font is not supported.</strong>';
+        function drawPointsChanged() {
+            drawPoints = !drawPoints;
+            renderText();
         }
-        fontReady = true;
-        // Show only the first 100 glyphs.
-        var amount = Math.min(100, font.glyphs.length);
-        for (var i = 0; i < amount; i++) {
-            var glyph = font.glyphs[i];
-            var size = 200;
-            var ctx = openType.createCanvas(size, i);
-            var path = openType.glyphToPath(glyph);
-            path.draw(ctx);
-            openType.drawGlyphPoints(ctx, glyph);
-            openType.drawMetrics(ctx, glyph);
+
+        function kerningChanged() {
+            kerning = !kerning;
+            renderText();
         }
-        renderText();
 
-    };
-    req.send(null);
+        function animationChanged() {
+            animating = !animating;
+            renderText();
+        }
 
-</script>
+        function renderText() {
+            if (!fontReady) return;
+            textToRender = document.getElementById('textField').value;
+            path = font.getPath(textToRender, {x: 0, y: 150, fontSize: 72, kerning: kerning});
+            drawPath();
+        }
+
+        function drawPath() {
+            var ctx = document.getElementById("preview").getContext("2d");
+            ctx.clearRect(0, 0, 800, 200);
+            if (path) {
+                path.draw(ctx);
+                if (drawPoints) {
+                    path.drawPoints(ctx);
+                }
+                if (animating) {
+                    var i;
+                    for (i = 0; i < path.commands.length; i++) {
+                        var command = path.commands[i];
+                        if (command.type !== 'Z') {
+                            command.x += (Math.random() * 0.4) - 0.2;
+                            command.y += (Math.random() * 0.4) - 0.2;
+                        }
+                    }
+                    window.requestAnimationFrame(drawPath);
+                }
+            }
+        }
+
+        // Create a canvas and adds it to the document.
+        // Returns the 2d drawing context.
+        function createCanvas(size, glyphIndex) {
+            var canvasId, html, glyphsDiv, wrap, canvas, ctx;
+            canvasId = 'c' + glyphIndex;
+            html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyphIndex + '</span></div>';
+            glyphsDiv = document.getElementById('glyphs');
+            wrap = document.createElement('div');
+            wrap.innerHTML = html;
+            glyphsDiv.appendChild(wrap);
+            canvas = document.getElementById(canvasId);
+            ctx = canvas.getContext('2d');
+            ctx.translate(50, 100);
+            ctx.scale(1 / 2048 * 72, 1 / 2048 * 72);
+            return ctx;
+        }
+
+        var req = new XMLHttpRequest();
+        req.open('get', 'fonts/Roboto-Black.ttf', true);
+        req.responseType = 'arraybuffer';
+        req.onload = function (e) {
+            var arrayBuffer = req.response;
+            var font = openType.parseFont(arrayBuffer);
+            window.font = font;
+            if (!font.supported) {
+                document.getElementById('message').innerHTML = '<strong>This font is not supported.</strong>';
+            }
+            fontReady = true;
+            // Show only the first 100 glyphs.
+            var amount = Math.min(100, font.glyphs.length);
+            for (var i = 0; i < amount; i++) {
+                var glyph = font.glyphs[i];
+                var size = 150;
+                var ctx = createCanvas(size, i);
+                var path = openType.glyphToPath(glyph);
+                path.draw(ctx);
+                openType.drawGlyphPoints(ctx, glyph);
+                openType.drawMetrics(ctx, glyph);
+            }
+            renderText();
+
+        };
+        req.send(null);
+
+    </script>
+</div>
 </body>
 </html>
