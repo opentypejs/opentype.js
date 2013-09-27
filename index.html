@@ -104,6 +104,9 @@
     <label><input type="checkbox" onchange="kerningChanged()" checked="checked"/>Kerning</label>
     <label><input type="checkbox" onchange="drawPointsChanged()" checked="checked"/>Draw Points</label>
     <label><input type="checkbox" onchange="animationChanged()"/>Animate</label>
+    <label><input type="range" min="6" max="500" value="72" onchange="fontSizeChanged(this)"/>Font Size: <span
+            id="fontSize">72</span></label>
+
     <br><br>
 
     <canvas id="preview" width="940" height="300"></canvas>
@@ -118,6 +121,7 @@
 
     <script type="text/javascript">
         var fontReady = false;
+        var fontSize = 72;
         var textToRender = "Hello, World!";
         var drawPoints = true;
         var kerning = true;
@@ -138,17 +142,22 @@
             animating = !animating;
             renderText();
         }
+        function fontSizeChanged(e) {
+            fontSize = e.value;
+            document.getElementById('fontSize').innerHTML = '' + fontSize;
+            renderText();
+        }
 
         function renderText() {
             if (!fontReady) return;
             textToRender = document.getElementById('textField').value;
-            path = font.getPath(textToRender, {x: 0, y: 150, fontSize: 72, kerning: kerning});
+            path = font.getPath(textToRender, {x: 0, y: 200, fontSize: fontSize, kerning: kerning});
             drawPath();
         }
 
         function drawPath() {
             var ctx = document.getElementById("preview").getContext("2d");
-            ctx.clearRect(0, 0, 800, 200);
+            ctx.clearRect(0, 0, 940, 300);
             if (path) {
                 path.draw(ctx);
                 if (drawPoints) {
