@@ -1,8 +1,11 @@
+#!/usr/bin/env node
+
 var fs = require('fs');
 var path = require('path');
+var pkg = require('../package.json')
+var opentype = require('../opentype.js')
 
-var openType = require('./opentype.js');
-
+// Convert a node.js Buffer to an ArrayBuffer.
 function toArrayBuffer(buffer) {
     var ab = new ArrayBuffer(buffer.length);
     var view = new Uint8Array(ab);
@@ -12,16 +15,17 @@ function toArrayBuffer(buffer) {
     return ab;
 }
 
+// Read in the font file.
 function parseFont(file) {
     var buffer;
     buffer = fs.readFileSync(file);
-    return openType.parseFont(toArrayBuffer(buffer));
+    return opentype.parseFont(toArrayBuffer(buffer));
 }
 
-
+// Print out information about the font on the console.
 function printFontInfo(font) {
     console.log("  glyphs:", font.numGlyphs, font.glyphs.length);
-    console.log("  kerning:", Object.keys(font.kerningPairs).length);
+    console.log("  kerning pairs:", Object.keys(font.kerningPairs).length);
 }
 
 // Recursively walk a directory and execute the function for every file.
@@ -40,18 +44,41 @@ function walk(dir, fn) {
     }
 }
 
-var fontDirectory = path.join(process.env['HOME'], 'Library', 'Fonts');
+// Print out usage information.
+function printUsage() {
+  console.log('Usage: ot command [dir]');
+  console.log();
+  console.log('Commands:');
+  console.log();
+  console.log('  info    Get information of fonts in the specified directory.');
+  console.log();
+}
 
-walk(fontDirectory, function (f) {
+function recursiveInfo(fontDirectory) {
+    walk(fontDirectory, function (f) {
         var ext, font;
         ext = path.extname(f).toLowerCase();
         if (ext === '.ttf' || ext === '.otf') {
+            console.log(path.basename(f));
             font = parseFont(f);
             if (font.supported) {
-                console.log(path.basename(f));
                 printFontInfo(font);
+            } else {
+                console.log('  (Unsupported)');
             }
         }
+    });
+}
+
+if (process.argv.length < 3) {
+    printUsage();
+} else {
+    var command = process.argv[2];
+    if (command === 'info') {
+        var dir = process.argv.length === 3 ? '.' : process.argv[3];
+        recursiveInfo(dir);
+    } else {
+        printUsage();
     }
-);
+}
 
