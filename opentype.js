@@ -1,3 +1,4 @@
+/*jslint bitwise: true */
 /*global exports,DataView,document */
 (function (exports) {
     'use strict';
@@ -94,10 +95,10 @@
             }
         }
         function drawCircles(l) {
-            var i, PI_SQ = Math.PI * 2;
+            var j, PI_SQ = Math.PI * 2;
             ctx.beginPath();
-            for (i = 0; i < l.length; i += 1) {
-                ctx.arc(l[i].x, l[i].y, 40, 0, PI_SQ, false);
+            for (j = 0; j < l.length; j += 1) {
+                ctx.arc(l[j].x, l[j].y, 40, 0, PI_SQ, false);
 
             }
             ctx.closePath();
@@ -628,8 +629,8 @@
 
     // Parse the OpenType file (as a buffer) and returns a Font object.
     openType.parseFont = function (buffer) {
-        var font, data, numTables, i, p, tag, offset, length, cmap, hmtxOffset, glyfOffset, locaOffset, kernOffset,
-            magicNumber, unitsPerEm, indexToLocFormat, numGlyphs, glyf, loca, shortVersion;
+        var font, data, numTables, i, p, tag, offset, length, hmtxOffset, glyfOffset, locaOffset, kernOffset,
+            magicNumber, indexToLocFormat, numGlyphs, glyf, loca, shortVersion;
         // OpenType fonts use big endian byte ordering.
         // We can't rely on typed array view types, because they operate with the endianness of the host computer.
         // Instead we use DataViews where we can specify endianness.
@@ -646,37 +647,37 @@
             offset = getULong(data, p + 8);
             length = getULong(data, p + 12);
             switch (tag) {
-                case 'cmap':
-                    font.cmap = parseCmapTable(data, offset);
-                    break;
-                case 'head':
-                    // We're only interested in some values from the header.
-                    magicNumber = getULong(data, offset + 12);
-                    checkArgument(magicNumber === 0x5F0F3CF5, 'Font header has wrong magic number.');
-                    unitsPerEm = getUShort(data, offset + 18);
-                    indexToLocFormat = getUShort(data, offset + 50);
-                    break;
-                case 'hhea':
-                    font.ascender = getShort(data, offset + 4);
-                    font.descender = getShort(data, offset + 6);
-                    font.numberOfHMetrics = getUShort(data, offset + 34);
-                    break;
-                case 'hmtx':
-                    hmtxOffset = offset;
-                    break;
-                case 'maxp':
-                    // We're only interested in the number of glyphs.
-                    font.numGlyphs = numGlyphs = getUShort(data, offset + 4);
-                    break;
-                case 'glyf':
-                    glyfOffset = offset;
-                    break;
-                case 'loca':
-                    locaOffset = offset;
-                    break;
-                case 'kern':
-                    kernOffset = offset;
-                    break;
+            case 'cmap':
+                font.cmap = parseCmapTable(data, offset);
+                break;
+            case 'head':
+                // We're only interested in some values from the header.
+                magicNumber = getULong(data, offset + 12);
+                checkArgument(magicNumber === 0x5F0F3CF5, 'Font header has wrong magic number.');
+                font.unitsPerEm = getUShort(data, offset + 18);
+                indexToLocFormat = getUShort(data, offset + 50);
+                break;
+            case 'hhea':
+                font.ascender = getShort(data, offset + 4);
+                font.descender = getShort(data, offset + 6);
+                font.numberOfHMetrics = getUShort(data, offset + 34);
+                break;
+            case 'hmtx':
+                hmtxOffset = offset;
+                break;
+            case 'maxp':
+                // We're only interested in the number of glyphs.
+                font.numGlyphs = numGlyphs = getUShort(data, offset + 4);
+                break;
+            case 'glyf':
+                glyfOffset = offset;
+                break;
+            case 'loca':
+                locaOffset = offset;
+                break;
+            case 'kern':
+                kernOffset = offset;
+                break;
             }
             p += 16;
         }
