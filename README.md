@@ -24,7 +24,7 @@ Here's an example. We load a font using an XMLHttpRequest, then display it on a 
     };
     req.send(null);
 
-See `index.html` for a bigger example.
+See [the project website](http://nodebox.github.io/opentype.js/) for a live demo.
 
 Features
 ========
