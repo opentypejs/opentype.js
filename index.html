@@ -101,9 +101,9 @@
 
     <input type="text" class="text-input" onkeyup="renderText()" value="Hello, World!"
            autofocus id="textField">
-    <label><input type="checkbox" onchange="kerningChanged()" checked="checked"/>Kerning</label>
-    <label><input type="checkbox" onchange="drawPointsChanged()" checked="checked"/>Draw Points</label>
-    <label><input type="checkbox" onchange="animationChanged()"/>Animate</label>
+    <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked"/>Kerning</label>
+    <label><input type="checkbox" onchange="drawPointsChanged(this)" checked="checked"/>Draw Points</label>
+    <label><input type="checkbox" onchange="animationChanged(this)"/>Animate</label>
     <label><input type="range" min="6" max="500" value="72" onchange="fontSizeChanged(this)"/>Font Size: <span
             id="fontSize">72</span></label>
 
@@ -128,18 +128,18 @@
         var animating = false;
         var path = null;
 
-        function drawPointsChanged() {
-            drawPoints = !drawPoints;
+        function drawPointsChanged(e) {
+            drawPoints = e.checked;
             renderText();
         }
 
-        function kerningChanged() {
-            kerning = !kerning;
+        function kerningChanged(e) {
+            kerning = e.checked;
             renderText();
         }
 
-        function animationChanged() {
-            animating = !animating;
+        function animationChanged(e) {
+            animating = e.checked;
             renderText();
         }
         function fontSizeChanged(e) {
