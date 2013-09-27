@@ -103,6 +103,7 @@
             var j, PI_SQ = Math.PI * 2;
             ctx.beginPath();
             for (j = 0; j < l.length; j += 1) {
+                ctx.moveTo(l[j].x, l[j].y);
                 ctx.arc(l[j].x, l[j].y, 2, 0, PI_SQ, false);
 
             }
