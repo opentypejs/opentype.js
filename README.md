@@ -36,44 +36,37 @@ Features
 
 API
 ===
-
-
-### `opentype.loadFont(pathToFontFile, success, error)`
-
+##### `opentype.loadFont(pathToFontFile, success, error)`
 Loads the font from the passed path and pass the opentype.Font object into the success callback
 
+##### `opentype.parseFont(buffer)`
+Parse the OpenType file (as an `ArrayBuffer`) and returns an opentype.Font object.
 
-### `opentype.parseFont(buffer)`
+##### `opentype.Font.getPath(text, options)`
+Get a Path representing the text. Options is an optional map containing:
+* `x` and `y`: position of the path
+* `fontSize`: size of the text in pixels (default: 72)
+* `kerning`: if true takes kerning information into account (default: true)
 
-Parse the OpenType file (as a buffer) and returns an opentype.Font object.
+##### `opentype.Font.stringToGlyphs(string)`
+Convert the string to a list of glyph objects.
+Note that there is no strict 1-to-1 correspondence between the string and glyph list due to 
+possible substitutions such as ligatures.
 
+##### `opentype.Font.charToGlyph(char)`
+Convert the character to a glyph object. Returns null if the glyph could not be found.
 
-### `opentype.drawGlyphPoints(ctx, glyph)`
-
-
-### `opentype.drawMetrics(ctx, glyph)`
-
-
-### `opentype.glyphToPath(glyph, tx, ty, scale)`
-
+##### `opentype.glyphToPath(glyph, tx, ty, scale)`
 Convert the glyph to a Path we can draw on a Canvas context.
 
+##### `opentype.drawGlyphPoints(ctx, glyph)`
+Draw red and blue dots marking the points of the glyph.
 
-### `opentype.Font.getPath(text, options)`
-Get a path representing the text.
+##### `opentype.drawMetrics(ctx, glyph)`
+Draw lines showing the glyph's bounding box, origin and advance width.
 
-
-### `opentype.Font.getKerningValue(leftGlyph, rightGlyph)`
-
-
-### `opentype.Font.charToGlyphIndex(char)`
-
-
-### `opentype.Font.charToGlyph(char)`
-
-
-### `opentype.Font.stringToGlyphs(string)`
-
+##### `opentype.Font.getKerningValue(leftGlyph, rightGlyph)`
+Get the kerning value for a pair of glyphs. Return 0 if no kerning information is available.
 
 
 Planned
