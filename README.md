@@ -34,6 +34,48 @@ Features
 * Very efficient.
 * Runs in the browser and node.js.
 
+API
+===
+
+
+### `opentype.loadFont(pathToFontFile, success, error)`
+
+Loads the font from the passed path and pass the opentype.Font object into the success callback
+
+
+### `opentype.parseFont(buffer)`
+
+Parse the OpenType file (as a buffer) and returns an opentype.Font object.
+
+
+### `opentype.drawGlyphPoints(ctx, glyph)`
+
+
+### `opentype.drawMetrics(ctx, glyph)`
+
+
+### `opentype.glyphToPath(glyph, tx, ty, scale)`
+
+Convert the glyph to a Path we can draw on a Canvas context.
+
+
+### `opentype.Font.getPath(text, options)`
+Get a path representing the text.
+
+
+### `opentype.Font.getKerningValue(leftGlyph, rightGlyph)`
+
+
+### `opentype.Font.charToGlyphIndex(char)`
+
+
+### `opentype.Font.charToGlyph(char)`
+
+
+### `opentype.Font.stringToGlyphs(string)`
+
+
+
 Planned
 =======
 * Support for PostScript outlines.

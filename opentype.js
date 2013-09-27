@@ -716,6 +716,29 @@
         return font;
     };
 
+    opentype.loadFont = function(pathToFont, success, error) {
+        var req = new XMLHttpRequest();
+        req.open('get', pathToFont, true);
+        req.responseType = 'arraybuffer';
+        req.onload = function() {
+            var errorMessage;
+            if (req.status >= 400) {
+                errorMessage = 'Font could not been loaded'
+            }
+            var arrayBuffer = req.response;
+            var font = opentype.parseFont(arrayBuffer);
+            if (!font.supported) {
+                errorMessage = 'Loaded font is not supported'
+            }
+            if (errorMessage) {
+                error(errorMessage);
+            } else {
+                success(font)
+            }
+        };
+        req.send();
+    }
+
     // Split the glyph into contours.
     function getContours(glyph) {
         var contours, currentContour, i, pt;
