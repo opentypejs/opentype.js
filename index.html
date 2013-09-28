@@ -147,7 +147,6 @@
     <label>Font Size<input type="range" min="6" max="500" value="150" onchange="fontSizeChanged(this)"/><span id="fontSize">150</span></label>
     <label><input type="checkbox" onchange="drawPointsChanged(this)" checked="checked"/>Draw Points</label>
     <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked"/>Kerning</label>
-    <label><input type="checkbox" onchange="animationChanged(this)"/>Animate</label>
 
     <hr>
 
@@ -189,7 +188,6 @@
         var textToRender = "Hello, World!";
         var drawPoints = true;
         var kerning = true;
-        var animating = false;
         var previewPath = null;
         var snapPath = null;
         var snapStrength = 80;
@@ -207,10 +205,6 @@
             renderText();
         }
 
-        function animationChanged(e) {
-            animating = e.checked;
-            renderText();
-        }
         function fontSizeChanged(e) {
             fontSize = e.value;
             document.getElementById('fontSize').innerHTML = '' + fontSize;
@@ -278,17 +272,6 @@
                 previewPath.draw(previewCtx);
                 if (drawPoints) {
                     previewPath.drawPoints(previewCtx);
-                }
-                if (animating) {
-                    var i;
-                    for (i = 0; i < previewPath.commands.length; i++) {
-                        var cmd = previewPath.commands[i];
-                        if (cmd.type !== 'Z') {
-                            cmd.x += (Math.random() * 0.4) - 0.2;
-                            cmd.y += (Math.random() * 0.4) - 0.2;
-                        }
-                    }
-                    window.requestAnimationFrame(drawPath);
                 }
             }
             var snapCtx = document.getElementById('snap').getContext("2d");
