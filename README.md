@@ -50,8 +50,21 @@ Get a Path representing the text. Options is an optional map containing:
 
 ##### `opentype.Font.stringToGlyphs(string)`
 Convert the string to a list of glyph objects.
-Note that there is no strict 1-to-1 correspondence between the string and glyph list due to 
+Note that there is no strict 1-to-1 correspondence between the string and glyph list due to
 possible substitutions such as ligatures.
+
+##### `path.draw(ctx, options)`
+Draw the path to the given context. Context can be either a CanvasRenderingContext2D or a SVG element.
+Options is an optional map containing:
+* `fill` and `stroke`: colors fill and stroke (default is `{fill: 'black'}`)
+
+##### `path.drawPoints(ctx)`
+Draw red and blue dots marking the points of the glyph.
+
+##### `path.drawMetrics(ctx, options)`
+Draw lines showing the glyph's bounding box, origin and advance width.
+Options is an optional map containing:
+* settings for `origin`, `glyphBox` and `advanceWidth` containing `color` and `overlap` of the lines
 
 ##### `opentype.Font.charToGlyph(char)`
 Convert the character to a glyph object. Returns null if the glyph could not be found.
@@ -59,14 +72,9 @@ Convert the character to a glyph object. Returns null if the glyph could not be 
 ##### `opentype.glyphToPath(glyph, tx, ty, scale)`
 Convert the glyph to a Path we can draw on a Canvas context.
 
-##### `opentype.drawGlyphPoints(ctx, glyph)`
-Draw red and blue dots marking the points of the glyph.
-
-##### `opentype.drawMetrics(ctx, glyph)`
-Draw lines showing the glyph's bounding box, origin and advance width.
-
 ##### `opentype.Font.getKerningValue(leftGlyph, rightGlyph)`
 Get the kerning value for a pair of glyphs. Return 0 if no kerning information is available.
+
 
 
 Planned
