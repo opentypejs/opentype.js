@@ -20,11 +20,21 @@
         }
     }
 
+    function initOptions (options, presets) {
+        if (!options) {
+            return presets;
+        }
+        for (var i in presets) {
+            if (typeof options [i] === undefined) {
+                options[i] = preset[i];
+            }
+        }
+        return options;
+    }
+
     function Path() {
         this.commands = [];
-        this.fill = 'black';
-        this.stroke = null;
-        this.strokeWidth = 1;
+        this.metrics = [];
     }
 
     Path.prototype.moveTo = function (x, y) {
@@ -48,73 +58,26 @@
     };
 
     Path.prototype.extend = function (pathOrCommands) {
+        if (pathOrCommands.metrics) {
+            Array.prototype.push.apply(this.metrics, pathOrCommands.metrics)
+        }
+
         if (pathOrCommands.commands) {
             pathOrCommands = pathOrCommands.commands;
         }
-        this.commands.push.apply(this.commands, pathOrCommands);
+        Array.prototype.push.apply(this.commands, pathOrCommands);
     };
 
-    // Draw the path to a 2D context.
-    Path.prototype.draw = function (ctx) {
-        var i, cmd;
-        ctx.beginPath();
-        for (i = 0; i < this.commands.length; i += 1) {
-            cmd = this.commands[i];
-            if (cmd.type === 'M') {
-                ctx.moveTo(cmd.x, cmd.y);
-            } else if (cmd.type === 'L') {
-                ctx.lineTo(cmd.x, cmd.y);
-            } else if (cmd.type === 'C') {
-                ctx.bezierCurveTo(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
-            } else if (cmd.type === 'Q') {
-                ctx.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
-            } else if (cmd.type === 'Z') {
-                ctx.closePath();
-            }
-        }
-        if (this.fill) {
-            ctx.fillStyle = this.fill;
-            ctx.fill();
-        }
-        if (this.stroke) {
-            ctx.strokeStyle = this.stroke;
-            ctx.lineWidth = this.strokeWidth;
-            ctx.stroke();
-        }
+    Path.prototype.draw = function (context, options) {
+        Renderer.get(context).drawPath(this, options);
     };
 
-    Path.prototype.drawPoints = function (ctx) {
-        var i, cmd, blueCircles, redCircles;
-        blueCircles = [];
-        redCircles = [];
-        for (i = 0; i < this.commands.length; i += 1) {
-            cmd = this.commands[i];
-            if (cmd.type === 'M') {
-                blueCircles.push(cmd);
-            } else if (cmd.type === 'L') {
-                blueCircles.push(cmd);
-            } else if (cmd.type === 'C') {
-                redCircles.push(cmd);
-            } else if (cmd.type === 'Q') {
-                redCircles.push(cmd);
-            }
-        }
-        function drawCircles(l) {
-            var j, PI_SQ = Math.PI * 2;
-            ctx.beginPath();
-            for (j = 0; j < l.length; j += 1) {
-                ctx.moveTo(l[j].x, l[j].y);
-                ctx.arc(l[j].x, l[j].y, 2, 0, PI_SQ, false);
+    Path.prototype.drawMetrics = function (context, options) {
+        Renderer.get(context).drawMetrics(this, options);
+    };
 
-            }
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        ctx.fillStyle = 'blue';
-        drawCircles(blueCircles);
-        ctx.fillStyle = 'red';
-        drawCircles(redCircles);
+    Path.prototype.drawPoints = function (context, options) {
+        Renderer.get(context).drawPoints(this, options);
     };
 
 
@@ -772,6 +735,19 @@
         if (!glyph.points) {
             return path;
         }
+
+        path.metrics.push({
+            originX: tx * scale,
+            originY: ty * scale,
+            xMax: (tx + glyph.xMax) * scale,
+            xMin: (tx + glyph.xMin) * scale,
+            yMin: (ty - glyph.yMin) * scale,
+            yMax: (ty - glyph.yMax) * scale,
+            advanceWidth: glyph.advanceWidth * scale
+        });
+
+        path.points = [];
+
         contours = getContours(glyph);
         for (i = 0; i < contours.length; i += 1) {
             contour = contours[i];
@@ -780,7 +756,7 @@
             for (j = 0; j < contour.length; j += 1) {
                 pt = contour[j];
                 prevPt = j === 0 ? contour[contour.length - 1] : contour[j - 1];
-
+                path.points.push(pt);
                 if (j === 0) {
                     // This is the first point of the contour.
                     if (pt.onCurve) {
@@ -822,52 +798,204 @@
         return path;
     };
 
-    function line(ctx, x1, y1, x2, y2) {
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
+
+    var Canvas = function (ctx) {
+        this.ctx = ctx;
     }
 
-    function circle(ctx, cx, cy, r) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2, false);
-        ctx.closePath();
-        ctx.fill();
+    Canvas.prototype.line = function (x1, y1, x2, y2, color) {
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeStyle = color;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x1, y1);
+        this.ctx.lineTo(x2, y2);
+        this.ctx.stroke();
     }
 
-    opentype.drawGlyphPoints = function (ctx, glyph) {
-        var points, i, pt;
-        points = glyph.points;
-        if (!points) {
-            return;
-        }
-        for (i = 0; i < points.length; i += 1) {
-            pt = points[i];
-            if (pt.onCurve) {
-                ctx.fillStyle = 'blue';
-            } else {
-                ctx.fillStyle = 'red';
+    Canvas.prototype.circle = function (cx, cy, r, color) {
+        this.ctx.lineWidth = 1;
+        this.ctx.fillStyle = color;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, r, 0, Math.PI * 2, false);
+        this.ctx.closePath();
+        this.ctx.fill();
+    }
+
+    Canvas.prototype.drawMetrics = function (path, options) {
+        options = initOptions(options, {
+            origin: {
+                overlap: 10000,
+                color: 'black'
+            },
+            glyphBox: {
+                overlap: 10000,
+                color: 'blue'
+            },
+            advanceWidth: {
+                overlap: 10000,
+                color: 'green'
             }
-            circle(ctx, pt.x, -pt.y, 40);
+        });
+
+        for (var i = 0; i < path.metrics.length; i++) {
+            var metrics = path.metrics[i];
+            var xMin = metrics.xMin;
+            var originY = metrics.originY;
+            var originX = metrics.originX;
+            var yMin = metrics.yMin;
+            var yMax = metrics.yMax;
+            var advanceWidth = xMin + metrics.advanceWidth;
+
+            //draw the origin
+
+            var overlap = options.origin.overlap;
+            var color = options.origin.color;
+            this.line(originX - overlap, originY, advanceWidth + overlap, originY, color);
+            this.line(originX, originY + overlap, originX, yMax - overlap, color);
+
+            // draw the glyph box
+
+            overlap = options.glyphBox.overlap;
+            color = options.glyphBox.color;
+            this.line(xMin, yMin + overlap, xMin, yMax - overlap, color);
+            this.line(metrics.xMax, yMin + overlap, metrics.xMax, yMax - overlap, color);
+            this.line(xMin - overlap, yMin, metrics.xMax + overlap, yMin, color);
+            this.line(xMin - overlap, yMax, metrics.xMax + overlap, yMax, color);
+
+            // draw the advance width
+
+            overlap = options.advanceWidth.overlap;
+            color = options.advanceWidth.color;
+            this.line(advanceWidth, originY + overlap, advanceWidth, yMax - overlap, color);
         }
     };
 
-    opentype.drawMetrics = function (ctx, glyph) {
-        ctx.lineWidth = 10;
-        // Draw the origin
-        ctx.strokeStyle = 'black';
-        line(ctx, 0, -10000, 0, 10000);
-        line(ctx, -10000, 0, 10000, 0);
-        // Draw the glyph box
-        ctx.strokeStyle = 'blue';
-        line(ctx, glyph.xMin, -10000, glyph.xMin, 10000);
-        line(ctx, glyph.xMax, -10000, glyph.xMax, 10000);
-        line(ctx, -10000, -glyph.yMin, 10000, -glyph.yMin);
-        line(ctx, -10000, -glyph.yMax, 10000, -glyph.yMax);
-        // Draw the advance width
-        ctx.strokeStyle = 'green';
-        line(ctx, glyph.advanceWidth, -10000, glyph.advanceWidth, 10000);
+    // Draw the path to a 2D context.
+    Canvas.prototype.drawPath = function (path, options) {
+        var i, cmd;
+        options || (options = {fill: 'black'});
+        this.ctx.beginPath();
+        for (i = 0; i < path.commands.length; i += 1) {
+            cmd = path.commands[i];
+            if (cmd.type === 'M') {
+                this.ctx.moveTo(cmd.x, cmd.y);
+            } else if (cmd.type === 'L') {
+                this.ctx.lineTo(cmd.x, cmd.y);
+            } else if (cmd.type === 'C') {
+                this.ctx.bezierCurveTo(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
+            } else if (cmd.type === 'Q') {
+                this.ctx.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
+            } else if (cmd.type === 'Z') {
+                this.ctx.closePath();
+            }
+        }
+        if (options.fill) {
+            this.ctx.fillStyle = options.fill;
+            this.ctx.fill();
+        }
+        if (this.stroke) {
+            this.ctx.strokeStyle = this.stroke;
+            this.ctx.lineWidth = this.strokeWidth;
+            this.ctx.stroke();
+        }
     };
+
+    Canvas.prototype.drawPoints = function (path) {
+        var i, cmd, blueCircles, redCircles;
+        blueCircles = [];
+        redCircles = [];
+        for (i = 0; i < path.commands.length; i += 1) {
+            cmd = path.commands[i];
+            if (cmd.type === 'M' || cmd.type === 'L') {
+                blueCircles.push(cmd);
+            } else if (cmd.type === 'C' || cmd.type === 'Q') {
+                redCircles.push(cmd);
+            }
+        }
+        function drawCircles (l, color) {
+            for (var j = 0; j < l.length; j += 1) {
+                this.circle(l[j].x, l[j].y, 1.5, color)
+            }
+        }
+
+        drawCircles.call(this, blueCircles, 'blue');
+        drawCircles.call(this, redCircles, 'red');
+    };
+
+    var SVG = function (svgElement) {
+        this.svgElement = svgElement;
+    };
+
+    SVG.prototype.createElement = function (type) {
+        return document.createElementNS("http://www.w3.org/2000/svg", type);
+    };
+
+    SVG.prototype.setAttributes = function (el, attributes) {
+        for (var i in attributes) {
+            el.setAttribute(i, attributes[i]);
+        }
+    };
+
+    SVG.prototype.line = function (x1, y1, x2, y2, color) {
+        var line = this.createElement('line');
+        this.setAttributes(line, {x1: x1, y1: y1, x2: x2, y2: y2, stroke: color});
+        this.svgElement.appendChild(line);
+    };
+
+    SVG.prototype.circle = function (cx, cy, r, color) {
+        var line = this.createElement('circle');
+        this.setAttributes(line, {cx: cx, cy: cy, r: r, fill: color});
+        this.svgElement.appendChild(line);
+    };
+
+    // Draw the path to a 2D context.
+    SVG.prototype.drawPath = function (path, options) {
+        options = initOptions(options);
+        var pathElement = this.createElement('path');
+        var i, cmd;
+        var d = '';
+        for (i = 0; i < path.commands.length; i += 1) {
+            cmd = path.commands[i];
+            if (cmd.type === 'M') {
+                d += 'M ' + [cmd.x, cmd.y];
+            } else if (cmd.type === 'L') {
+                d += 'L ' + [cmd.x , cmd.y];
+            } else if (cmd.type === 'C') {
+                d += 'C ' + [cmd.x1 , cmd.y1 , cmd.x2 , cmd.y2 , cmd.x , cmd.y];
+            } else if (cmd.type === 'Q') {
+                d += 'Q ' + [cmd.x1 , cmd.y1 , cmd.x , cmd.y];
+            } else if (cmd.type === 'Z') {
+                d += 'z'
+            }
+        }
+        pathElement.setAttribute('d', d);
+        if (options.fill) {
+        }
+        if (this.stroke) {
+        }
+        this.svgElement.appendChild(pathElement);
+    };
+
+    SVG.prototype.drawMetrics = Canvas.prototype.drawMetrics;
+
+    SVG.prototype.drawPoints = Canvas.prototype.drawPoints;
+
+    var Renderer = {
+        get: function (context) {
+            if (context instanceof  CanvasRenderingContext2D) {
+                return new Canvas(context);
+            } else if (context instanceof SVGElement) {
+                return new SVG(context);
+            }
+        }
+    };
+
+    opentype.drawMetrics = function (context, glyph, options) {
+        Renderer.get(context).drawMetrics(glyph, options);
+    }
+
+    opentype.drawGlyphPoints = function (context, glyph, options) {
+        Renderer.get(context).drawGlyphPoints(glyph, options);
+    }
 
 }(typeof exports === 'undefined' ? this.opentype = {} : exports));

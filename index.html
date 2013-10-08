@@ -292,9 +292,9 @@
             wrap.innerHTML = html;
             glyphsDiv.appendChild(wrap);
             canvas = document.getElementById(canvasId);
-            ctx = canvas.getContext('2d');
+            ctx = canvas.getContext('2d');/*
             ctx.translate(50, 100);
-            ctx.scale(1 / 2048 * 72, 1 / 2048 * 72);
+            ctx.scale(1 / 2048 * 72, 1 / 2048 * 72);*/
             return ctx;
         }
 
@@ -315,10 +315,10 @@
                 var glyph = font.glyphs[i];
                 var size = 150;
                 var ctx = createCanvas(size, i);
-                var path = opentype.glyphToPath(glyph);
-                path.draw(ctx);
-                opentype.drawGlyphPoints(ctx, glyph);
-                opentype.drawMetrics(ctx, glyph);
+                var path = opentype.glyphToPath(glyph, 1500, 2800,1 / 2048 * 72);
+                path.draw(ctx, {fill: 'black'});
+                path.drawPoints(ctx);
+                path.drawMetrics(ctx);
             }
             renderText();
 
