@@ -144,10 +144,9 @@
     <span id="message"></span>
     <input type="text" class="text-input" onkeyup="renderText()" value="Hello, World!"
            autofocus id="textField">
-    <label>Font Size<input type="range" min="6" max="500" value="150" onchange="fontSizeChanged(this)"/><span id="fontSize">150</span></label>
+    <label>Font Size<input type="range" min="6" max="500" value="150" oninput="fontSizeChanged(this)"/><span id="fontSize">150</span></label>
     <label><input type="checkbox" onchange="drawPointsChanged(this)" checked="checked"/>Draw Points</label>
     <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked"/>Kerning</label>
-    <label><input type="checkbox" onchange="animationChanged(this)"/>Animate</label>
 
     <hr>
 
@@ -156,10 +155,10 @@
     </div>
 
     <canvas id="snap" width="940" height="300" class="text"></canvas>
-    <label>Strength <input type="range" min="0" max="100" value="80" onchange="snapStrengthChanged(this)"/><span id="snapStrength">80</span></label>
-    <label>Distance<input type="range" min="0" max="100" value="53" onchange="snapDistanceChanged(this)"/><span id="snapDistance">53</span></label>
-    <label>X<input type="range" min="-100" max="100" value="0" onchange="snapXChanged(this)"/><span id="snapX">0</span></label>
-    <label>Y<input type="range" min="-100" max="100" value="0" onchange="snapYChanged(this)"/><span id="snapY">0</span></label>
+    <label>Strength <input type="range" min="0" max="100" value="80" oninput="snapStrengthChanged(this)"/><span id="snapStrength">80</span></label>
+    <label>Distance<input type="range" min="1" max="100" value="53" oninput="snapDistanceChanged(this)"/><span id="snapDistance">53</span></label>
+    <label>X<input type="range" min="-100" max="100" value="0" oninput="snapXChanged(this)"/><span id="snapX">0</span></label>
+    <label>Y<input type="range" min="-100" max="100" value="0" oninput="snapYChanged(this)"/><span id="snapY">0</span></label>
 
     <hr>
 
@@ -189,7 +188,6 @@
         var textToRender = "Hello, World!";
         var drawPoints = true;
         var kerning = true;
-        var animating = false;
         var previewPath = null;
         var snapPath = null;
         var snapStrength = 80;
@@ -207,10 +205,6 @@
             renderText();
         }
 
-        function animationChanged(e) {
-            animating = e.checked;
-            renderText();
-        }
         function fontSizeChanged(e) {
             fontSize = e.value;
             document.getElementById('fontSize').innerHTML = '' + fontSize;
@@ -278,17 +272,6 @@
                 previewPath.draw(previewCtx);
                 if (drawPoints) {
                     previewPath.drawPoints(previewCtx);
-                }
-                if (animating) {
-                    var i;
-                    for (i = 0; i < previewPath.commands.length; i++) {
-                        var cmd = previewPath.commands[i];
-                        if (cmd.type !== 'Z') {
-                            cmd.x += (Math.random() * 0.4) - 0.2;
-                            cmd.y += (Math.random() * 0.4) - 0.2;
-                        }
-                    }
-                    window.requestAnimationFrame(drawPath);
                 }
             }
             var snapCtx = document.getElementById('snap').getContext("2d");
