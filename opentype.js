@@ -8,7 +8,7 @@
 (function () {
     'use strict';
 
-    var root, opentype, typeOffsets;
+    var root, opentype, typeOffsets, Font;
 
     // Establish the root object, `window` in the browser or `exports` on the server.
     root = this;
@@ -548,12 +548,12 @@
         return pairs;
     }
 
-    opentype.Font = function () {
+    Font = function () {
         this.supported = true;
         this.glyphs = [];
     };
 
-    opentype.Font.prototype.charToGlyphIndex = function (s) {
+    Font.prototype.charToGlyphIndex = function (s) {
         var ranges, code, l, c, r;
         ranges = this.cmap;
         code = s.charCodeAt(0);
@@ -573,7 +573,7 @@
         return 0;
     };
 
-    opentype.Font.prototype.charToGlyph = function (c) {
+    Font.prototype.charToGlyph = function (c) {
         var glyphIndex, glyph;
         glyphIndex = this.charToGlyphIndex(c);
         glyph = this.glyphs[glyphIndex];
@@ -581,7 +581,7 @@
         return glyph;
     };
 
-    opentype.Font.prototype.stringToGlyphs = function (s) {
+    Font.prototype.stringToGlyphs = function (s) {
         var i, c, glyphs;
         glyphs = [];
         for (i = 0; i < s.length; i += 1) {
@@ -591,14 +591,14 @@
         return glyphs;
     };
 
-    opentype.Font.prototype.getKerningValue = function (leftGlyph, rightGlyph) {
+    Font.prototype.getKerningValue = function (leftGlyph, rightGlyph) {
         leftGlyph = leftGlyph.index || leftGlyph;
         rightGlyph = rightGlyph.index || rightGlyph;
         return this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0;
     };
 
     // Get a path representing the text.
-    opentype.Font.prototype.getPath = function (text, options) {
+    Font.prototype.getPath = function (text, options) {
         var x, y, fontSize, kerning, fontScale, glyphs, i, glyph, path, fullPath, kerningValue;
         if (!this.supported) {
             return new Path();
@@ -637,7 +637,7 @@
         // We can't rely on typed array view types, because they operate with the endianness of the host computer.
         // Instead we use DataViews where we can specify endianness.
 
-        font = new opentype.Font();
+        font = new Font();
         data = new DataView(buffer, 0);
 
         version = getFixed(data, 0);
