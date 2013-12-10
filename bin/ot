@@ -19,7 +19,7 @@ function toArrayBuffer(buffer) {
 function parseFont(file) {
     var buffer;
     buffer = fs.readFileSync(file);
-    return opentype.parseFont(toArrayBuffer(buffer));
+    return opentype.parse(toArrayBuffer(buffer));
 }
 
 // Print out information about the font on the console.

@@ -180,152 +180,146 @@
     </div>
 
     <hr>
-
-
-    <script type="text/javascript">
-        var fontReady = false;
-        var fontSize = 150;
-        var textToRender = "Hello, World!";
-        var drawPoints = true;
-        var kerning = true;
-        var previewPath = null;
-        var snapPath = null;
-        var snapStrength = 80;
-        var snapDistance = 53;
-        var snapX = 0;
-        var snapY = 0;
-
-        function drawPointsChanged(e) {
-            drawPoints = e.checked;
-            renderText();
-        }
-
-        function kerningChanged(e) {
-            kerning = e.checked;
-            renderText();
-        }
-
-        function fontSizeChanged(e) {
-            fontSize = e.value;
-            document.getElementById('fontSize').innerHTML = '' + fontSize;
-            renderText();
-        }
-
-        function snapStrengthChanged(e) {
-            snapStrength = e.value;
-            document.getElementById('snapStrength').innerHTML = '' + snapStrength;
-            renderText();
-        }
-
-        function snapDistanceChanged(e) {
-            snapDistance = e.value;
-            document.getElementById('snapDistance').innerHTML = '' + snapDistance;
-            renderText();
-        }
-
-        function snapXChanged(e) {
-            snapX = e.value * 1.0;
-            document.getElementById('snapX').innerHTML = '' + snapX;
-            renderText();
-        }
-
-        function snapYChanged(e) {
-            snapY = e.value * 1.0;
-            document.getElementById('snapY').innerHTML = '' + snapY;
-            renderText();
-        }
-
-        // Round a value to the nearest "step".
-        function snap(v, distance, strength) {
-            return (v * (1.0 - strength)) + (strength * Math.round(v / distance) * distance);
-        }
-
-        function doSnap(path) {
-            var i;
-            var strength = snapStrength / 100.0;
-            for (i = 0; i < path.commands.length; i++) {
-                var cmd = path.commands[i];
-                if (cmd.type !== 'Z') {
-                    cmd.x = snap(cmd.x + snapX, snapDistance, strength) - snapX;
-                    cmd.y = snap(cmd.y + snapY, snapDistance, strength) - snapY;
-                }
-                if (cmd.type === 'Q') {
-                    cmd.x1 = snap(cmd.x1 + snapX, snapDistance, strength) - snapX;
-                    cmd.y1 = snap(cmd.y1 + snapY, snapDistance, strength) - snapY;
-                }
-            }
-        }
-
-        function renderText() {
-            if (!fontReady) return;
-            textToRender = document.getElementById('textField').value;
-            previewPath = font.getPath(textToRender, {x: 0, y: 200, fontSize: fontSize, kerning: kerning});
-            snapPath = font.getPath(textToRender, {x: 0, y: 200, fontSize: fontSize, kerning: kerning});
-            doSnap(snapPath);
-            drawPath();
-        }
-
-        function drawPath() {
-            var previewCtx = document.getElementById('preview').getContext("2d");
-            previewCtx.clearRect(0, 0, 940, 300);
-            if (previewPath) {
-                previewPath.draw(previewCtx);
-                if (drawPoints) {
-                    previewPath.drawPoints(previewCtx);
-                }
-            }
-            var snapCtx = document.getElementById('snap').getContext("2d");
-            snapCtx.clearRect(0, 0, 940, 300);
-            if (snapPath) {
-                snapPath.draw(snapCtx);
-            }
-        }
-
-        // Create a canvas and adds it to the document.
-        // Returns the 2d drawing context.
-        function createCanvas(size, glyphIndex) {
-            var canvasId, html, glyphsDiv, wrap, canvas, ctx;
-            canvasId = 'c' + glyphIndex;
-            html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyphIndex + '</span></div>';
-            glyphsDiv = document.getElementById('glyphs');
-            wrap = document.createElement('div');
-            wrap.innerHTML = html;
-            glyphsDiv.appendChild(wrap);
-            canvas = document.getElementById(canvasId);
-            ctx = canvas.getContext('2d');
-            ctx.translate(50, 100);
-            ctx.scale(1 / 2048 * 72, 1 / 2048 * 72);
-            return ctx;
-        }
-
-        var req = new XMLHttpRequest();
-        req.open('get', 'fonts/Roboto-Black.ttf', true);
-        req.responseType = 'arraybuffer';
-        req.onload = function (e) {
-            var arrayBuffer = req.response;
-            var font = opentype.parseFont(arrayBuffer);
-            window.font = font;
-            if (!font.supported) {
-                document.getElementById('message').innerHTML = '<strong>This font is not supported.</strong>';
-            }
-            fontReady = true;
-            // Show only the first 100 glyphs.
-            var amount = Math.min(100, font.glyphs.length);
-            for (var i = 0; i < amount; i++) {
-                var glyph = font.glyphs[i];
-                var size = 150;
-                var ctx = createCanvas(size, i);
-                var path = opentype.glyphToPath(glyph);
-                path.draw(ctx);
-                opentype.drawGlyphPoints(ctx, glyph);
-                opentype.drawMetrics(ctx, glyph);
-            }
-            renderText();
-
-        };
-        req.send(null);
-
-    </script>
 </div>
+
+
+<script type="text/javascript">
+var font = null;
+var fontSize = 150;
+var textToRender = "Hello, World!";
+var drawPoints = true;
+var kerning = true;
+var previewPath = null;
+var snapPath = null;
+var snapStrength = 80;
+var snapDistance = 53;
+var snapX = 0;
+var snapY = 0;
+
+function drawPointsChanged(e) {
+    drawPoints = e.checked;
+    renderText();
+}
+
+function kerningChanged(e) {
+    kerning = e.checked;
+    renderText();
+}
+
+function fontSizeChanged(e) {
+    fontSize = e.value;
+    document.getElementById('fontSize').innerHTML = '' + fontSize;
+    renderText();
+}
+
+function snapStrengthChanged(e) {
+    snapStrength = e.value;
+    document.getElementById('snapStrength').innerHTML = '' + snapStrength;
+    renderText();
+}
+
+function snapDistanceChanged(e) {
+    snapDistance = e.value;
+    document.getElementById('snapDistance').innerHTML = '' + snapDistance;
+    renderText();
+}
+
+function snapXChanged(e) {
+    snapX = e.value * 1.0;
+    document.getElementById('snapX').innerHTML = '' + snapX;
+    renderText();
+}
+
+function snapYChanged(e) {
+    snapY = e.value * 1.0;
+    document.getElementById('snapY').innerHTML = '' + snapY;
+    renderText();
+}
+
+// Round a value to the nearest "step".
+function snap(v, distance, strength) {
+    return (v * (1.0 - strength)) + (strength * Math.round(v / distance) * distance);
+}
+
+function doSnap(path) {
+    var i;
+    var strength = snapStrength / 100.0;
+    for (i = 0; i < path.commands.length; i++) {
+        var cmd = path.commands[i];
+        if (cmd.type !== 'Z') {
+            cmd.x = snap(cmd.x + snapX, snapDistance, strength) - snapX;
+            cmd.y = snap(cmd.y + snapY, snapDistance, strength) - snapY;
+        }
+        if (cmd.type === 'Q') {
+            cmd.x1 = snap(cmd.x1 + snapX, snapDistance, strength) - snapX;
+            cmd.y1 = snap(cmd.y1 + snapY, snapDistance, strength) - snapY;
+        }
+    }
+}
+
+function renderText() {
+    if (!font) return;
+    textToRender = document.getElementById('textField').value;
+    previewPath = font.getPath(textToRender, {x: 0, y: 200, fontSize: fontSize, kerning: kerning});
+    snapPath = font.getPath(textToRender, {x: 0, y: 200, fontSize: fontSize, kerning: kerning});
+    doSnap(snapPath);
+    drawPath();
+}
+
+function drawPath() {
+    var previewCtx = document.getElementById('preview').getContext("2d");
+    previewCtx.clearRect(0, 0, 940, 300);
+    if (previewPath) {
+        previewPath.draw(previewCtx);
+        if (drawPoints) {
+            previewPath.drawPoints(previewCtx);
+        }
+    }
+    var snapCtx = document.getElementById('snap').getContext("2d");
+    snapCtx.clearRect(0, 0, 940, 300);
+    if (snapPath) {
+        snapPath.draw(snapCtx);
+    }
+}
+
+// Create a canvas and adds it to the document.
+// Returns the 2d drawing context.
+function createCanvas(size, glyphIndex) {
+    var canvasId, html, glyphsDiv, wrap, canvas, ctx;
+    canvasId = 'c' + glyphIndex;
+    html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyphIndex + '</span></div>';
+    glyphsDiv = document.getElementById('glyphs');
+    wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    glyphsDiv.appendChild(wrap);
+    canvas = document.getElementById(canvasId);
+    ctx = canvas.getContext('2d');
+    ctx.translate(50, 100);
+    ctx.scale(1 / 2048 * 72, 1 / 2048 * 72);
+    return ctx;
+}
+
+opentype.load('fonts/Roboto-Black.ttf', function (err, font) {
+    if (err) {
+        alert(err.toString());
+        return;
+    }
+    window.font = font;
+
+    // Show the first 100 glyphs.
+    var amount = Math.min(100, font.glyphs.length);
+    for (var i = 0; i < amount; i++) {
+        var glyph = font.glyphs[i];
+        var size = 150;
+        var ctx = createCanvas(size, i);
+        var path = opentype.glyphToPath(glyph);
+        path.draw(ctx);
+        opentype.drawGlyphPoints(ctx, glyph);
+        opentype.drawMetrics(ctx, glyph);
+    }
+
+    renderText();
+});
+</script>
 </body>
 </html>

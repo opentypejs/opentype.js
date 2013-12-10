@@ -630,7 +630,7 @@
 
 
     // Parse the OpenType file (as a buffer) and returns a Font object.
-    opentype.parseFont = function (buffer) {
+    opentype.parse = function (buffer) {
         var font, data, version, numTables, i, p, tag, offset, hmtxOffset, glyfOffset, locaOffset,
             kernOffset, magicNumber, indexToLocFormat, numGlyphs, loca, shortVersion;
         // OpenType fonts use big endian byte ordering.
@@ -707,27 +707,28 @@
         return font;
     };
 
-    opentype.loadFont = function(pathToFont, success, error) {
-        var req = new XMLHttpRequest();
-        req.open('get', pathToFont, true);
-        req.responseType = 'arraybuffer';
-        req.onload = function() {
-            var errorMessage;
-            if (req.status >= 400) {
-                errorMessage = 'Font could not been loaded';
+    // Load the font from a URL.
+    // The callback gets two arguments `(err, font)`.
+    // The error will be null on success.
+    // We use the node.js callback convention so that 
+    // opentype.js can integrate with frameworks like async.js.
+    opentype.load = function(url, callback) {
+        var request = new XMLHttpRequest();
+        request.open('get', url, true);
+        request.responseType = 'arraybuffer';
+        request.onload = function() {
+            var arrayBuffer, font;
+            if (request.status !== 200) {
+                return callback('Font could not be loaded: ' + request.statusText);
             }
-            var arrayBuffer = req.response;
-            var font = opentype.parseFont(arrayBuffer);
+            arrayBuffer = request.response;
+            font = opentype.parse(arrayBuffer);
             if (!font.supported) {
-                errorMessage = 'Loaded font is not supported';
+                return callback('Font is not supported (is this a Postscript font?)');
             }
-            if (errorMessage) {
-                error(errorMessage);
-            } else {
-                success(font);
-            }
+            return callback(null, font);
         };
-        req.send();
+        request.send();
     };
 
     // Split the glyph into contours.
