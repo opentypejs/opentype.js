@@ -4,7 +4,7 @@
 //     opentype.js may be freely distributed under the MIT license.
 
 /*jslint bitwise: true */
-/*global exports,DataView,document */
+/*global module,define,DataView,XMLHttpRequest */
 (function () {
     'use strict';
 
@@ -140,7 +140,10 @@
     }
 
     function getFixed(dataView, offset) {
-        return -1;
+        var decimal, fraction;
+        decimal = dataView.getInt16(offset, false);
+        fraction = dataView.getUint16(offset + 2, false);
+        return decimal + fraction / 65535;
     }
 
     function getLongDateTime(dataView, offset) {
@@ -647,15 +650,18 @@
 
     // Parse the OpenType file (as a buffer) and returns a Font object.
     opentype.parseFont = function (buffer) {
-        var font, data, numTables, i, p, tag, offset, length, hmtxOffset, glyfOffset, locaOffset, kernOffset,
-            magicNumber, indexToLocFormat, numGlyphs, glyf, loca, shortVersion;
+        var font, data, version, numTables, i, p, tag, offset, hmtxOffset, glyfOffset, locaOffset,
+            kernOffset, magicNumber, indexToLocFormat, numGlyphs, loca, shortVersion;
         // OpenType fonts use big endian byte ordering.
         // We can't rely on typed array view types, because they operate with the endianness of the host computer.
         // Instead we use DataViews where we can specify endianness.
 
         font = new opentype.Font();
-
         data = new DataView(buffer, 0);
+
+        version = getFixed(data, 0);
+        checkArgument(version === 1.0, 'Unsupported OpenType version ' + version);
+
         numTables = getUShort(data, 4);
 
         // Offset into the table records.
@@ -663,7 +669,6 @@
         for (i = 0; i < numTables; i += 1) {
             tag = getTag(data, p);
             offset = getULong(data, p + 8);
-            length = getULong(data, p + 12);
             switch (tag) {
             case 'cmap':
                 font.cmap = parseCmapTable(data, offset);
@@ -728,21 +733,21 @@
         req.onload = function() {
             var errorMessage;
             if (req.status >= 400) {
-                errorMessage = 'Font could not been loaded'
+                errorMessage = 'Font could not been loaded';
             }
             var arrayBuffer = req.response;
             var font = opentype.parseFont(arrayBuffer);
             if (!font.supported) {
-                errorMessage = 'Loaded font is not supported'
+                errorMessage = 'Loaded font is not supported';
             }
             if (errorMessage) {
                 error(errorMessage);
             } else {
-                success(font)
+                success(font);
             }
         };
         req.send();
-    }
+    };
 
     // Split the glyph into contours.
     function getContours(glyph) {
@@ -875,12 +880,12 @@
         line(ctx, glyph.advanceWidth, -10000, glyph.advanceWidth, 10000);
     };
 
-    if (typeof define !== 'undefined' && define.amd) {
+    if (typeof define === 'function' && define.amd) {
         // AMD / RequireJS
         define([], function () {
           return opentype;
         });
-    } else if (typeof module !== 'undefined' && module.exports) {
+    } else if (typeof module === 'object' && module.exports) {
         // node.js
         module.exports = opentype;
     } else {
@@ -888,4 +893,4 @@
         root.opentype = opentype;
     }
 
-}).call(this);
+}.bind(this)());
