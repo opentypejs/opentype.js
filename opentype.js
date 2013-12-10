@@ -5,12 +5,16 @@
 
 /*jslint bitwise: true */
 /*global exports,DataView,document */
-(function (exports) {
+(function () {
     'use strict';
 
-    var opentype, dataTypes, typeOffsets;
+    var root, opentype, dataTypes, typeOffsets;
 
-    opentype = exports;
+    // Establish the root object, `window` in the browser or `exports` on the server.
+    root = this;
+
+    // The exported object / namespace.
+    opentype = {};
 
     // Precondition function that checks if the given predicate is true.
     // If not, it will log an error message to the console.
@@ -53,6 +57,7 @@
         }
         this.commands.push.apply(this.commands, pathOrCommands);
     };
+
 
     // Draw the path to a 2D context.
     Path.prototype.draw = function (ctx) {
@@ -870,4 +875,17 @@
         line(ctx, glyph.advanceWidth, -10000, glyph.advanceWidth, 10000);
     };
 
-}(typeof exports === 'undefined' ? this.opentype = {} : exports));
+    if (typeof define !== 'undefined' && define.amd) {
+        // AMD / RequireJS
+        define([], function () {
+          return opentype;
+        });
+    } else if (typeof module !== 'undefined' && module.exports) {
+        // node.js
+        module.exports = opentype;
+    } else {
+        // Included directly via a <script> tag.
+        root.opentype = opentype;
+    }
+
+}).call(this);
