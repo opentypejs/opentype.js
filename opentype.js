@@ -8,7 +8,7 @@
 (function () {
     'use strict';
 
-    var root, opentype, typeOffsets, Font;
+    var root, opentype, typeOffsets;
 
     // Establish the root object, `window` in the browser or `exports` on the server.
     root = this;
@@ -548,10 +548,10 @@
         return pairs;
     }
 
-    Font = function () {
+    function Font() {
         this.supported = true;
         this.glyphs = [];
-    };
+    }
 
     Font.prototype.charToGlyphIndex = function (s) {
         var ranges, code, l, c, r;
