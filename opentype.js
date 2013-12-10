@@ -8,7 +8,7 @@
 (function () {
     'use strict';
 
-    var root, opentype, dataTypes, typeOffsets;
+    var root, opentype, typeOffsets;
 
     // Establish the root object, `window` in the browser or `exports` on the server.
     root = this;
@@ -161,17 +161,6 @@
         return tag;
     }
 
-    dataTypes = {
-        byte: getByte,
-        uShort: getUShort,
-        short: getShort,
-        uLong: getULong,
-        fixed: getFixed,
-        longDateTime: getLongDateTime,
-        tag: getTag
-    };
-
-
     typeOffsets = {
         byte: 1,
         uShort: 2,
@@ -188,14 +177,6 @@
         this.offset = offset;
         this.relativeOffset = 0;
     }
-
-    Parser.prototype.parse = function (type) {
-        var parseFn, v;
-        parseFn = dataTypes[type];
-        v = parseFn(this.dataView, this.offset + this.relativeOffset);
-        this.relativeOffset += typeOffsets[type];
-        return v;
-    };
 
     Parser.prototype.parseByte = function () {
         var v = getByte(this.dataView, this.offset + this.relativeOffset);
@@ -238,7 +219,7 @@
         var v;
         if (isBitSet(flag, shortVectorBit)) {
             // The coordinate is 1 byte long.
-            v = p.parse('byte');
+            v = p.parseByte();
             // The `same` bit is re-used for short values to signify the sign of the value.
             if (!isBitSet(flag, sameBit)) {
                 v = -v;
@@ -251,7 +232,7 @@
                 v = previousValue;
             } else {
                 // Parse the coordinate as a signed 16-bit delta value.
-                v = previousValue + p.parse('short');
+                v = previousValue + p.parseShort();
             }
         }
         return v;
