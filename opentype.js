@@ -24,6 +24,8 @@
         }
     }
 
+    // Path /////////////////////////////////////////////////////////////////
+
     function Path() {
         this.commands = [];
         this.fill = 'black';
@@ -58,7 +60,6 @@
         this.commands.push.apply(this.commands, pathOrCommands);
     };
 
-
     // Draw the path to a 2D context.
     Path.prototype.draw = function (ctx) {
         var i, cmd;
@@ -88,40 +89,14 @@
         }
     };
 
-    Path.prototype.drawPoints = function (ctx) {
-        var i, cmd, blueCircles, redCircles;
-        blueCircles = [];
-        redCircles = [];
-        for (i = 0; i < this.commands.length; i += 1) {
-            cmd = this.commands[i];
-            if (cmd.type === 'M') {
-                blueCircles.push(cmd);
-            } else if (cmd.type === 'L') {
-                blueCircles.push(cmd);
-            } else if (cmd.type === 'C') {
-                redCircles.push(cmd);
-            } else if (cmd.type === 'Q') {
-                redCircles.push(cmd);
-            }
-        }
-        function drawCircles(l) {
-            var j, PI_SQ = Math.PI * 2;
-            ctx.beginPath();
-            for (j = 0; j < l.length; j += 1) {
-                ctx.moveTo(l[j].x, l[j].y);
-                ctx.arc(l[j].x, l[j].y, 2, 0, PI_SQ, false);
+    function line(ctx, x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
 
-            }
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        ctx.fillStyle = 'blue';
-        drawCircles(blueCircles);
-        ctx.fillStyle = 'red';
-        drawCircles(redCircles);
-    };
-
+    // Parsing utility functions ////////////////////////////////////////////
 
     function getByte(dataView, offset) {
         return dataView.getUint8(offset);
@@ -171,6 +146,11 @@
         tag: 4
     };
 
+    // Return true if the value at the given bit index is set.
+    function isBitSet(b, bitIndex) {
+        return ((b >> bitIndex) & 1) === 1;
+    }
+
     // A stateful parser that changes the offset whenever a value is retrieved.
     function Parser(dataView, offset) {
         this.dataView = dataView;
@@ -209,10 +189,273 @@
         this.relativeOffset += typeOffsets[type] * amount;
     };
 
-    // Return true if the value at the given bit index is set.
-    function isBitSet(b, bitIndex) {
-        return ((b >> bitIndex) & 1) === 1;
+    // Glyph object /////////////////////////////////////////////////////////
+
+    function Glyph(font, index) {
+        this.font = font;
+        this.index = index;
+        this.numberOfContours = 0;
+        this.xMin = this.yMin = this.xMax = this.yMax = 0;
+        this.points = [];
     }
+    // Split the glyph into contours.
+    Glyph.prototype.getContours = function () {
+        var contours, currentContour, i, pt;
+        contours = [];
+        currentContour = [];
+        for (i = 0; i < this.points.length; i += 1) {
+            pt = this.points[i];
+            currentContour.push(pt);
+            if (pt.lastPointOfContour) {
+                contours.push(currentContour);
+                currentContour = [];
+            }
+        }
+        checkArgument(currentContour.length === 0, "There are still points left in the current contour.");
+        return contours;
+    };
+
+    // Convert the glyph to a Path we can draw on a Canvas context.
+    Glyph.prototype.getPath = function (x, y, fontSize) {
+        var scale, path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt;
+        x = x !== undefined ? x : 0;
+        y = y !== undefined ? y : 0;
+        fontSize = fontSize !== undefined ? fontSize : 24;
+        scale = 1 / this.font.unitsPerEm * fontSize;
+        path = new Path();
+        if (!this.points) {
+            return path;
+        }
+        contours = this.getContours();
+        for (i = 0; i < contours.length; i += 1) {
+            contour = contours[i];
+            firstPt = contour[0];
+            curvePt = null;
+            for (j = 0; j < contour.length; j += 1) {
+                pt = contour[j];
+                prevPt = j === 0 ? contour[contour.length - 1] : contour[j - 1];
+
+                if (j === 0) {
+                    // This is the first point of the contour.
+                    if (pt.onCurve) {
+                        path.moveTo(x + (pt.x * scale), y + (-pt.y * scale));
+                        curvePt = null;
+                    } else {
+                        midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
+                        curvePt = midPt;
+                        path.moveTo(x + (midPt.x * scale), y + (-midPt.y * scale));
+                    }
+                } else {
+                    if (prevPt.onCurve && pt.onCurve) {
+                        // This is a straight line.
+                        path.lineTo(x + (pt.x * scale), y + (-pt.y * scale));
+                    } else if (prevPt.onCurve && !pt.onCurve) {
+                        curvePt = pt;
+                    } else if (!prevPt.onCurve && !pt.onCurve) {
+                        midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
+                        path.quadraticCurveTo(x + (prevPt.x * scale), y + (-prevPt.y * scale), x + (midPt.x * scale), y + (-midPt.y * scale));
+                        curvePt = pt;
+                    } else if (!prevPt.onCurve && pt.onCurve) {
+                        // Previous point off-curve, this point on-curve.
+                        path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (pt.x * scale), y + (-pt.y * scale));
+                        curvePt = null;
+                    } else {
+                        throw new Error("Invalid state.");
+                    }
+                }
+
+            }
+            // Connect the last and first points
+            if (curvePt) {
+                path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (firstPt.x * scale), y + (-firstPt.y * scale));
+            } else {
+                path.lineTo(x + (firstPt.x * scale), y + (-firstPt.y * scale));
+            }
+        }
+        path.closePath();
+        return path;
+    };
+
+    // Draw the glyph on the given context.
+    Glyph.prototype.draw = function (ctx, x, y, fontSize) {
+        this.getPath(x, y, fontSize).draw(ctx);
+    };
+
+    // Draw the points of the glyph.
+    // On-curve points will be drawn in blue, off-curve points will be drawn in red.
+    Glyph.prototype.drawPoints = function (ctx, x, y, fontSize) {
+
+        function drawCircles(l, x, y, scale) {
+            var j, PI_SQ = Math.PI * 2;
+            ctx.beginPath();
+            for (j = 0; j < l.length; j += 1) {
+                ctx.moveTo(x + (l[j].x * scale), y + (-l[j].y * scale));
+                ctx.arc(x + (l[j].x * scale), y + (-l[j].y * scale), 2, 0, PI_SQ, false);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        var scale, points, i, pt, blueCircles, redCircles;
+        x = x !== undefined ? x : 0;
+        y = y !== undefined ? y : 0;
+        fontSize = fontSize !== undefined ? fontSize : 24;
+        scale = 1 / this.font.unitsPerEm * fontSize;
+        points = this.points;
+        if (!points) {
+            return;
+        }
+
+        blueCircles = [];
+        redCircles = [];
+        for (i = 0; i < points.length; i += 1) {
+            pt = points[i];
+            if (pt.onCurve) {
+                blueCircles.push(pt);
+            } else {
+                redCircles.push(pt);
+            }
+        }
+
+        ctx.fillStyle = 'blue';
+        drawCircles(blueCircles, x, y, scale);
+        ctx.fillStyle = 'red';
+        drawCircles(redCircles, x, y, scale);
+    };
+
+    // Draw lines indicating the different important font measurements.
+    // We use the following colors:
+    //
+    // black: the origin of the coordinate system; point 0,0
+    // blue: the glyph bounding box
+    // green: the advance width of the glyph
+    Glyph.prototype.drawMetrics = function (ctx, x, y, fontSize) {
+        var scale;
+        x = x !== undefined ? x : 0;
+        y = y !== undefined ? y : 0;
+        fontSize = fontSize !== undefined ? fontSize : 24;
+        scale = 1 / this.font.unitsPerEm * fontSize;
+        ctx.lineWidth = 1;
+        // Draw the origin
+        ctx.strokeStyle = 'black';
+        line(ctx, x, -10000, x, 10000);
+        line(ctx, -10000, y, 10000, y);
+        // Draw the glyph box
+        ctx.strokeStyle = 'blue';
+        line(ctx, x + (this.xMin * scale), -10000, x + (this.xMin * scale), 10000);
+        line(ctx, x + (this.xMax * scale), -10000, x + (this.xMax * scale), 10000);
+        line(ctx, -10000, y + (-this.yMin * scale), 10000, y + (-this.yMin * scale));
+        line(ctx, -10000, y + (-this.yMax * scale), 10000, y + (-this.yMax * scale));
+        // Draw the advance width
+        ctx.strokeStyle = 'green';
+        line(ctx, x + (this.advanceWidth * scale), -10000, x + (this.advanceWidth * scale), 10000);
+    };
+
+    // Font object //////////////////////////////////////////////////////////
+
+    function Font() {
+        this.supported = true;
+        this.glyphs = [];
+    }
+
+    Font.prototype.charToGlyphIndex = function (s) {
+        var ranges, code, l, c, r;
+        ranges = this.cmap;
+        code = s.charCodeAt(0);
+        l = 0;
+        r = ranges.length - 1;
+        while (l < r) {
+            c = (l + r + 1) >> 1;
+            if (code < ranges[c].start) {
+                r = c - 1;
+            } else {
+                l = c;
+            }
+        }
+        if (ranges[l].start <= code && code <= ranges[l].end) {
+            return (ranges[l].idDelta + (ranges[l].ids ? ranges[l].ids[code - ranges[l].start] : code)) & 0xFFFF;
+        }
+        return 0;
+    };
+
+    Font.prototype.charToGlyph = function (c) {
+        var glyphIndex, glyph;
+        glyphIndex = this.charToGlyphIndex(c);
+        glyph = this.glyphs[glyphIndex];
+        checkArgument(glyph !== undefined, 'Could not find glyph for character ' + c + ' glyph index ' + glyphIndex);
+        return glyph;
+    };
+
+    Font.prototype.stringToGlyphs = function (s) {
+        var i, c, glyphs;
+        glyphs = [];
+        for (i = 0; i < s.length; i += 1) {
+            c = s[i];
+            glyphs.push(this.charToGlyph(c));
+        }
+        return glyphs;
+    };
+
+    Font.prototype.getKerningValue = function (leftGlyph, rightGlyph) {
+        leftGlyph = leftGlyph.index || leftGlyph;
+        rightGlyph = rightGlyph.index || rightGlyph;
+        return this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0;
+    };
+
+    Font.prototype._eachGlyph = function(text, x, y, fontSize, options, callback) {
+        var kerning, fontScale, glyphs, i, glyph, kerningValue;
+        if (!this.supported) {
+            return;
+        }
+        x = x !== undefined ? x : 0;
+        y = y !== undefined ? y : 0;
+        fontSize = fontSize !== undefined ? fontSize : 72;
+        options = options || {};
+        kerning = options.kerning === undefined ? true : options.kerning;
+        fontScale = 1 / this.unitsPerEm * fontSize;
+        glyphs = this.stringToGlyphs(text);
+        for (i = 0; i < glyphs.length; i += 1) {
+            glyph = glyphs[i];
+            callback(glyph, x, y, fontSize, options);
+            if (glyph.advanceWidth) {
+                x += glyph.advanceWidth * fontScale;
+            }
+            if (kerning && i < glyphs.length - 1) {
+                kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
+                x += kerningValue * fontScale;
+            }
+        }
+    };
+
+    // Construct a path object representing the text.
+    Font.prototype.getPath = function (text, x, y, fontSize, options) {
+        var fullPath = new Path();
+        this._eachGlyph(text, x, y, fontSize, options, function(glyph, x, y, fontSize) {
+            var path = glyph.getPath(x, y, fontSize);
+            fullPath.extend(path);
+        });
+        return fullPath;
+    };
+
+    Font.prototype.draw = function (ctx, text, x, y, fontSize, options) {
+        this.getPath(text, x, y, fontSize, options).draw(ctx);
+    };
+
+    // Draw the points of the glyphs.
+    // On-curve points will be drawn in blue, off-curve points will be drawn in red.
+    Font.prototype.drawPoints = function (ctx, text, x, y, fontSize, options) {
+        this._eachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
+            glyph.drawPoints(ctx, x, y, fontSize);
+        });
+    };
+
+    Font.prototype.drawMetrics = function (ctx, text, x, y, fontSize, options) {
+        this._eachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
+            glyph.drawMetrics(ctx, x, y, fontSize);
+        });
+    };
+
+    // OpenType format parsing //////////////////////////////////////////////
 
     // Parse the coordinate data for a glyph.
     function parseGlyphCoordinate(p, flag, previousValue, shortVectorBit, sameBit) {
@@ -242,13 +485,12 @@
     // Due to the complexity of the parsing we can't define the glyf table declaratively.
     // The offset is the absolute byte offset of the glyph: the base of the glyph table + the relative offset of the glyph.
     // http://www.microsoft.com/typography/otspec/glyf.htm
-    function parseGlyph(data, start, index) {
+    function parseGlyph(data, start, index, font) {
         var p, glyph, flag, i, j, flags,
             endPointIndices, numberOfCoordinates, repeatCount, points, point, px, py,
             component, moreComponents, arg1, arg2, scale, xScale, yScale, scale01, scale10;
         p = new Parser(data, start);
-        glyph = {};
-        glyph.index = index;
+        glyph = new Glyph(font, index);
         glyph.numberOfContours = p.parseShort();
         glyph.xMin = p.parseShort();
         glyph.yMin = p.parseShort();
@@ -379,7 +621,7 @@
     }
 
     // Parse all the glyphs according to the offsets from the `loca` table.
-    function parseGlyfTable(data, start, loca) {
+    function parseGlyfTable(data, start, loca, font) {
         var glyphs, i, j, offset, nextOffset, glyph,
             component, componentGlyph, transformedPoints;
         glyphs = [];
@@ -388,9 +630,9 @@
             offset = loca[i];
             nextOffset = loca[i + 1];
             if (offset !== nextOffset) {
-                glyphs.push(parseGlyph(data, start + offset, i));
+                glyphs.push(parseGlyph(data, start + offset, i, font));
             } else {
-                glyphs.push({index: i, numberOfContours: 0, xMin: 0, xMax: 0, yMin: 0, yMax: 0});
+                glyphs.push(new Glyph(font, i));
             }
         }
         // Go over the glyphs again, resolving the composite glyphs.
@@ -548,86 +790,7 @@
         return pairs;
     }
 
-    function Font() {
-        this.supported = true;
-        this.glyphs = [];
-    }
-
-    Font.prototype.charToGlyphIndex = function (s) {
-        var ranges, code, l, c, r;
-        ranges = this.cmap;
-        code = s.charCodeAt(0);
-        l = 0;
-        r = ranges.length - 1;
-        while (l < r) {
-            c = (l + r + 1) >> 1;
-            if (code < ranges[c].start) {
-                r = c - 1;
-            } else {
-                l = c;
-            }
-        }
-        if (ranges[l].start <= code && code <= ranges[l].end) {
-            return (ranges[l].idDelta + (ranges[l].ids ? ranges[l].ids[code - ranges[l].start] : code)) & 0xFFFF;
-        }
-        return 0;
-    };
-
-    Font.prototype.charToGlyph = function (c) {
-        var glyphIndex, glyph;
-        glyphIndex = this.charToGlyphIndex(c);
-        glyph = this.glyphs[glyphIndex];
-        checkArgument(glyph !== undefined, 'Could not find glyph for character ' + c + ' glyph index ' + glyphIndex);
-        return glyph;
-    };
-
-    Font.prototype.stringToGlyphs = function (s) {
-        var i, c, glyphs;
-        glyphs = [];
-        for (i = 0; i < s.length; i += 1) {
-            c = s[i];
-            glyphs.push(this.charToGlyph(c));
-        }
-        return glyphs;
-    };
-
-    Font.prototype.getKerningValue = function (leftGlyph, rightGlyph) {
-        leftGlyph = leftGlyph.index || leftGlyph;
-        rightGlyph = rightGlyph.index || rightGlyph;
-        return this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0;
-    };
-
-    // Get a path representing the text.
-    Font.prototype.getPath = function (text, options) {
-        var x, y, fontSize, kerning, fontScale, glyphs, i, glyph, path, fullPath, kerningValue;
-        if (!this.supported) {
-            return new Path();
-        }
-        options = options || {};
-        x = options.x || 0;
-        y = options.y || 0;
-        fontSize = options.fontSize || 72;
-        kerning = options.kerning === undefined ? true : options.kerning;
-        fontScale = 1 / this.unitsPerEm * fontSize;
-        x /= fontScale;
-        y /= fontScale;
-        glyphs = this.stringToGlyphs(text);
-        fullPath = new Path();
-        for (i = 0; i < glyphs.length; i += 1) {
-            glyph = glyphs[i];
-            path = opentype.glyphToPath(glyph, x, y, fontScale);
-            fullPath.extend(path);
-            if (glyph.advanceWidth) {
-                x += glyph.advanceWidth;
-            }
-            if (kerning && i < glyphs.length - 1) {
-                kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
-                x += kerningValue;
-            }
-        }
-        return fullPath;
-    };
-
+    // Public API ///////////////////////////////////////////////////////////
 
     // Parse the OpenType file (as a buffer) and returns a Font object.
     opentype.parse = function (buffer) {
@@ -693,7 +856,7 @@
         if (glyfOffset && locaOffset) {
             shortVersion = indexToLocFormat === 0;
             loca = parseLocaTable(data, locaOffset, numGlyphs, shortVersion);
-            font.glyphs = parseGlyfTable(data, glyfOffset, loca);
+            font.glyphs = parseGlyfTable(data, glyfOffset, loca, font);
             parseHmtxTable(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
             if (kernOffset) {
                 font.kerningPairs = parseKernTable(data, kernOffset);
@@ -710,7 +873,7 @@
     // Load the font from a URL.
     // The callback gets two arguments `(err, font)`.
     // The error will be null on success.
-    // We use the node.js callback convention so that 
+    // We use the node.js callback convention so that
     // opentype.js can integrate with frameworks like async.js.
     opentype.load = function(url, callback) {
         var request = new XMLHttpRequest();
@@ -731,136 +894,7 @@
         request.send();
     };
 
-    // Split the glyph into contours.
-    function getContours(glyph) {
-        var contours, currentContour, i, pt;
-        contours = [];
-        currentContour = [];
-        for (i = 0; i < glyph.points.length; i += 1) {
-            pt = glyph.points[i];
-            currentContour.push(pt);
-            if (pt.lastPointOfContour) {
-                contours.push(currentContour);
-                currentContour = [];
-            }
-        }
-        checkArgument(currentContour.length === 0, "There are still points left in the current contour.");
-        return contours;
-    }
-
-    // Convert the glyph to a Path we can draw on a Canvas context.
-    opentype.glyphToPath = function (glyph, tx, ty, scale) {
-        var path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt;
-        if (tx === undefined) {
-            tx = 0;
-        }
-        if (ty === undefined) {
-            ty = 0;
-        }
-        if (scale === undefined) {
-            scale = 1;
-        }
-        path = new Path();
-        if (!glyph.points) {
-            return path;
-        }
-        contours = getContours(glyph);
-        for (i = 0; i < contours.length; i += 1) {
-            contour = contours[i];
-            firstPt = contour[0];
-            curvePt = null;
-            for (j = 0; j < contour.length; j += 1) {
-                pt = contour[j];
-                prevPt = j === 0 ? contour[contour.length - 1] : contour[j - 1];
-
-                if (j === 0) {
-                    // This is the first point of the contour.
-                    if (pt.onCurve) {
-                        path.moveTo((tx + pt.x) * scale, (ty - pt.y) * scale);
-                        curvePt = null;
-                    } else {
-                        midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        curvePt = midPt;
-                        path.moveTo((tx + midPt.x) * scale, (ty - midPt.y) * scale);
-                    }
-                } else {
-                    if (prevPt.onCurve && pt.onCurve) {
-                        // This is a straight line.
-                        path.lineTo((tx + pt.x) * scale, (ty - pt.y) * scale);
-                    } else if (prevPt.onCurve && !pt.onCurve) {
-                        curvePt = pt;
-                    } else if (!prevPt.onCurve && !pt.onCurve) {
-                        midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        path.quadraticCurveTo((tx + prevPt.x) * scale, (ty - prevPt.y) * scale, (tx + midPt.x) * scale, (ty - midPt.y) * scale);
-                        curvePt = pt;
-                    } else if (!prevPt.onCurve && pt.onCurve) {
-                        // Previous point off-curve, this point on-curve.
-                        path.quadraticCurveTo((tx + curvePt.x) * scale, (ty - curvePt.y) * scale, (tx + pt.x) * scale, (ty - pt.y) * scale);
-                        curvePt = null;
-                    } else {
-                        throw new Error("Invalid state.");
-                    }
-                }
-
-            }
-            // Connect the last and first points
-            if (curvePt) {
-                path.quadraticCurveTo((tx + curvePt.x) * scale, (ty - curvePt.y) * scale, (tx + firstPt.x) * scale, (ty - firstPt.y) * scale);
-            } else {
-                path.lineTo((tx + firstPt.x) * scale, (ty - firstPt.y) * scale);
-            }
-        }
-        path.closePath();
-        return path;
-    };
-
-    function line(ctx, x1, y1, x2, y2) {
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-    }
-
-    function circle(ctx, cx, cy, r) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2, false);
-        ctx.closePath();
-        ctx.fill();
-    }
-
-    opentype.drawGlyphPoints = function (ctx, glyph) {
-        var points, i, pt;
-        points = glyph.points;
-        if (!points) {
-            return;
-        }
-        for (i = 0; i < points.length; i += 1) {
-            pt = points[i];
-            if (pt.onCurve) {
-                ctx.fillStyle = 'blue';
-            } else {
-                ctx.fillStyle = 'red';
-            }
-            circle(ctx, pt.x, -pt.y, 40);
-        }
-    };
-
-    opentype.drawMetrics = function (ctx, glyph) {
-        ctx.lineWidth = 10;
-        // Draw the origin
-        ctx.strokeStyle = 'black';
-        line(ctx, 0, -10000, 0, 10000);
-        line(ctx, -10000, 0, 10000, 0);
-        // Draw the glyph box
-        ctx.strokeStyle = 'blue';
-        line(ctx, glyph.xMin, -10000, glyph.xMin, 10000);
-        line(ctx, glyph.xMax, -10000, glyph.xMax, 10000);
-        line(ctx, -10000, -glyph.yMin, 10000, -glyph.yMin);
-        line(ctx, -10000, -glyph.yMax, 10000, -glyph.yMax);
-        // Draw the advance width
-        ctx.strokeStyle = 'green';
-        line(ctx, glyph.advanceWidth, -10000, glyph.advanceWidth, 10000);
-    };
+    // Module support ///////////////////////////////////////////////////////
 
     if (typeof define === 'function' && define.amd) {
         // AMD / RequireJS
