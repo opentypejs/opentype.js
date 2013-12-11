@@ -235,11 +235,15 @@
     };
 
     // Convert the glyph to a Path we can draw on a drawing context.
+    //
+    // x - Horizontal position of the glyph. (default: 0)
+    // y - Vertical position of the *baseline* of the glyph. (default: 0)
+    // fontSize - Font size, in pixels (default: 72).
     Glyph.prototype.getPath = function (x, y, fontSize) {
         var scale, path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt;
         x = x !== undefined ? x : 0;
         y = y !== undefined ? y : 0;
-        fontSize = fontSize !== undefined ? fontSize : 24;
+        fontSize = fontSize !== undefined ? fontSize : 72;
         scale = 1 / this.font.unitsPerEm * fontSize;
         path = new Path();
         if (!this.points) {
@@ -296,12 +300,22 @@
     };
 
     // Draw the glyph on the given context.
+    //
+    // ctx - The drawing context.
+    // x - Horizontal position of the glyph. (default: 0)
+    // y - Vertical position of the *baseline* of the glyph. (default: 0)
+    // fontSize - Font size, in pixels (default: 72).
     Glyph.prototype.draw = function (ctx, x, y, fontSize) {
         this.getPath(x, y, fontSize).draw(ctx);
     };
 
     // Draw the points of the glyph.
     // On-curve points will be drawn in blue, off-curve points will be drawn in red.
+    //
+    // ctx - The drawing context.
+    // x - Horizontal position of the glyph. (default: 0)
+    // y - Vertical position of the *baseline* of the glyph. (default: 0)
+    // fontSize - Font size, in pixels (default: 72).
     Glyph.prototype.drawPoints = function (ctx, x, y, fontSize) {
 
         function drawCircles(l, x, y, scale) {
@@ -346,6 +360,11 @@
     // Black lines indicate the origin of the coordinate system (point 0,0).
     // Blue lines indicate the glyph bounding box.
     // Green line indicates the advance width of the glyph.
+    //
+    // ctx - The drawing context.
+    // x - Horizontal position of the glyph. (default: 0)
+    // y - Vertical position of the *baseline* of the glyph. (default: 0)
+    // fontSize - Font size, in pixels (default: 72).
     Glyph.prototype.drawMetrics = function (ctx, x, y, fontSize) {
         var scale;
         x = x !== undefined ? x : 0;
@@ -466,11 +485,11 @@
     // Create a Path object that represents the given text.
     //
     // text - The text to create.
-    // x - Horizontal position of the beginning of the text.
-    // y - Vertical position of the *baseline* of the text.
-    // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+    // x - Horizontal position of the beginning of the text. (default: 0)
+    // y - Vertical position of the *baseline* of the text. (default: 0)
+    // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
     // Options is an optional object that contains:
-    // - kerning (default: true) - Whether to take kerning information into account.
+    // - kerning - Whether to take kerning information into account. (default: true)
     //
     // Returns a Path object.
     Font.prototype.getPath = function (text, x, y, fontSize, options) {
@@ -486,11 +505,11 @@
     //
     // ctx - A 2D drawing context, like Canvas.
     // text - The text to create.
-    // x - Horizontal position of the beginning of the text.
-    // y - Vertical position of the *baseline* of the text.
-    // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+    // x - Horizontal position of the beginning of the text. (default: 0)
+    // y - Vertical position of the *baseline* of the text. (default: 0)
+    // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
     // Options is an optional object that contains:
-    // - kerning (default: true) - Whether to take kerning information into account.
+    // - kerning - Whether to take kerning information into account. (default: true)
     Font.prototype.draw = function (ctx, text, x, y, fontSize, options) {
         this.getPath(text, x, y, fontSize, options).draw(ctx);
     };
@@ -500,11 +519,11 @@
     //
     // ctx - A 2D drawing context, like Canvas.
     // text - The text to create.
-    // x - Horizontal position of the beginning of the text.
-    // y - Vertical position of the *baseline* of the text.
-    // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+    // x - Horizontal position of the beginning of the text. (default: 0)
+    // y - Vertical position of the *baseline* of the text. (default: 0)
+    // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
     // Options is an optional object that contains:
-    // - kerning (default: true) - Whether to take kerning information into account.
+    // - kerning - Whether to take kerning information into account. (default: true)
     Font.prototype.drawPoints = function (ctx, text, x, y, fontSize, options) {
         this._eachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
             glyph.drawPoints(ctx, x, y, fontSize);
@@ -516,11 +535,11 @@
     //
     // ctx - A 2D drawing context, like Canvas.
     // text - The text to create.
-    // x - Horizontal position of the beginning of the text.
-    // y - Vertical position of the *baseline* of the text.
-    // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+    // x - Horizontal position of the beginning of the text. (default: 0)
+    // y - Vertical position of the *baseline* of the text. (default: 0)
+    // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
     // Options is an optional object that contains:
-    // - kerning (default: true) - Whether to take kerning information into account.
+    // - kerning - Whether to take kerning information into account. (default: true)
     Font.prototype.drawMetrics = function (ctx, text, x, y, fontSize, options) {
         this._eachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
             glyph.drawMetrics(ctx, x, y, fontSize);
