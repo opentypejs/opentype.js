@@ -26,6 +26,8 @@
 
     // Path /////////////////////////////////////////////////////////////////
 
+    // A bézier path containing a set of path commands similar to a SVG path.
+    // Paths can be drawn on a context using `draw`.
     function Path() {
         this.commands = [];
         this.fill = 'black';
@@ -53,11 +55,12 @@
         this.commands.push({type: 'Z'});
     };
 
+    // Add the given path or list of commands to the commands of this path.
     Path.prototype.extend = function (pathOrCommands) {
         if (pathOrCommands.commands) {
             pathOrCommands = pathOrCommands.commands;
         }
-        this.commands.push.apply(this.commands, pathOrCommands);
+        Array.prototype.push.apply(this.commands, pathOrCommands);
     };
 
     // Draw the path to a 2D context.
@@ -89,6 +92,7 @@
         }
     };
 
+    // Draw a line on the given context from point `x1,y1` to point `x2,y2`.
     function line(ctx, x1, y1, x2, y2) {
         ctx.beginPath();
         ctx.moveTo(x1, y1);
@@ -98,22 +102,31 @@
 
     // Parsing utility functions ////////////////////////////////////////////
 
+    // Retrieve an unsigned byte from the DataView.
     function getByte(dataView, offset) {
         return dataView.getUint8(offset);
     }
 
+    // Retrieve an unsigned 16-bit short from the DataView.
+    // The value is stored in big endian.
     function getUShort(dataView, offset) {
         return dataView.getUint16(offset, false);
     }
 
+    // Retrieve a signed 16-bit short from the DataView.
+    // The value is stored in big endian.
     function getShort(dataView, offset) {
         return dataView.getInt16(offset, false);
     }
 
+    // Retrieve an unsigned 32-bit long from the DataView.
+    // The value is stored in big endian.
     function getULong(dataView, offset) {
         return dataView.getUint32(offset, false);
     }
 
+    // Retrieve a 32-bit signed fixed-point number (16.16) from the DataView.
+    // The value is stored in big endian.
     function getFixed(dataView, offset) {
         var decimal, fraction;
         decimal = dataView.getInt16(offset, false);
@@ -121,6 +134,7 @@
         return decimal + fraction / 65535;
     }
 
+    // Retrieve a date-time from the DataView.
     function getLongDateTime(dataView, offset) {
         var v1, v2;
         v1 = dataView.getUint32(offset, false);
@@ -128,6 +142,8 @@
         return [v1, v2];
     }
 
+    // Retrieve a 4-character tag from the DataView.
+    // Tags are used to identify tables.
     function getTag(dataView, offset) {
         var tag = '', i;
         for (i = offset; i < offset + 4; i += 1) {
@@ -191,6 +207,9 @@
 
     // Glyph object /////////////////////////////////////////////////////////
 
+    // A Glyph is an individual mark that often corresponds to a character.
+    // Some glyphs, such as ligatures, are a combination of many characters.
+    // Glyphs are the basis of a font.
     function Glyph(font, index) {
         this.font = font;
         this.index = index;
@@ -215,7 +234,7 @@
         return contours;
     };
 
-    // Convert the glyph to a Path we can draw on a Canvas context.
+    // Convert the glyph to a Path we can draw on a drawing context.
     Glyph.prototype.getPath = function (x, y, fontSize) {
         var scale, path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt;
         x = x !== undefined ? x : 0;
@@ -324,11 +343,9 @@
     };
 
     // Draw lines indicating the different important font measurements.
-    // We use the following colors:
-    //
-    // black: the origin of the coordinate system; point 0,0
-    // blue: the glyph bounding box
-    // green: the advance width of the glyph
+    // Black lines indicate the origin of the coordinate system (point 0,0).
+    // Blue lines indicate the glyph bounding box.
+    // Green line indicates the advance width of the glyph.
     Glyph.prototype.drawMetrics = function (ctx, x, y, fontSize) {
         var scale;
         x = x !== undefined ? x : 0;
@@ -353,11 +370,17 @@
 
     // Font object //////////////////////////////////////////////////////////
 
+    // A Font represents a loaded OpenType font file.
+    // It contains a set of glyphs and methods to draw text on a drawing context,
+    // or to get a path representing the text.
     function Font() {
         this.supported = true;
         this.glyphs = [];
     }
 
+    // Convert the given character to a single glyph index.
+    // Note that this function assumes that there is a one-to-one mapping between
+    // the given character and a glyph; for complex scripts this might not be the case.
     Font.prototype.charToGlyphIndex = function (s) {
         var ranges, code, l, c, r;
         ranges = this.cmap;
@@ -378,6 +401,9 @@
         return 0;
     };
 
+    // Convert the given character to a single Glyph object.
+    // Note that this function assumes that there is a one-to-one mapping between
+    // the given character and a glyph; for complex scripts this might not be the case.
     Font.prototype.charToGlyph = function (c) {
         var glyphIndex, glyph;
         glyphIndex = this.charToGlyphIndex(c);
@@ -386,6 +412,10 @@
         return glyph;
     };
 
+    // Convert the given text to a list of Glyph objects.
+    // Note that there is no strict one-to-one mapping between characters and
+    // glyphs, so the list of returned glyphs can be larger or smaller than the
+    // length of the given string.
     Font.prototype.stringToGlyphs = function (s) {
         var i, c, glyphs;
         glyphs = [];
@@ -396,12 +426,18 @@
         return glyphs;
     };
 
+    // Retrieve the value of the kerning pair between the left glyph (or its index)
+    // and the right glyph (or its index). If no kerning pair is found, return 0.
+    // The kerning value gets added to the advance width when calculating the spacing
+    // between glyphs.
     Font.prototype.getKerningValue = function (leftGlyph, rightGlyph) {
         leftGlyph = leftGlyph.index || leftGlyph;
         rightGlyph = rightGlyph.index || rightGlyph;
         return this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0;
     };
 
+    // Helper function that invokes the given callback for each glyph in the given text.
+    // The callback gets `(glyph, x, y, fontSize, options)`.
     Font.prototype._eachGlyph = function(text, x, y, fontSize, options, callback) {
         var kerning, fontScale, glyphs, i, glyph, kerningValue;
         if (!this.supported) {
@@ -427,7 +463,16 @@
         }
     };
 
-    // Construct a path object representing the text.
+    // Create a Path object that represents the given text.
+    //
+    // text - The text to create.
+    // x - Horizontal position of the beginning of the text.
+    // y - Vertical position of the *baseline* of the text.
+    // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+    // Options is an optional object that contains:
+    // - kerning (default: true) - Whether to take kerning information into account.
+    //
+    // Returns a Path object.
     Font.prototype.getPath = function (text, x, y, fontSize, options) {
         var fullPath = new Path();
         this._eachGlyph(text, x, y, fontSize, options, function(glyph, x, y, fontSize) {
@@ -437,18 +482,45 @@
         return fullPath;
     };
 
+    // Draw the text on the given drawing context.
+    //
+    // ctx - A 2D drawing context, like Canvas.
+    // text - The text to create.
+    // x - Horizontal position of the beginning of the text.
+    // y - Vertical position of the *baseline* of the text.
+    // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+    // Options is an optional object that contains:
+    // - kerning (default: true) - Whether to take kerning information into account.
     Font.prototype.draw = function (ctx, text, x, y, fontSize, options) {
         this.getPath(text, x, y, fontSize, options).draw(ctx);
     };
 
-    // Draw the points of the glyphs.
+    // Draw the points of all glyphs in the text.
     // On-curve points will be drawn in blue, off-curve points will be drawn in red.
+    //
+    // ctx - A 2D drawing context, like Canvas.
+    // text - The text to create.
+    // x - Horizontal position of the beginning of the text.
+    // y - Vertical position of the *baseline* of the text.
+    // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+    // Options is an optional object that contains:
+    // - kerning (default: true) - Whether to take kerning information into account.
     Font.prototype.drawPoints = function (ctx, text, x, y, fontSize, options) {
         this._eachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
             glyph.drawPoints(ctx, x, y, fontSize);
         });
     };
 
+    // Draw the metrics of all glyphs in the text.
+    // On-curve points will be drawn in blue, off-curve points will be drawn in red.
+    //
+    // ctx - A 2D drawing context, like Canvas.
+    // text - The text to create.
+    // x - Horizontal position of the beginning of the text.
+    // y - Vertical position of the *baseline* of the text.
+    // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+    // Options is an optional object that contains:
+    // - kerning (default: true) - Whether to take kerning information into account.
     Font.prototype.drawMetrics = function (ctx, text, x, y, fontSize, options) {
         this._eachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
             glyph.drawMetrics(ctx, x, y, fontSize);
@@ -792,7 +864,9 @@
 
     // Public API ///////////////////////////////////////////////////////////
 
-    // Parse the OpenType file (as a buffer) and returns a Font object.
+    // Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
+    // If the file could not be parsed (most likely because it contains Postscript outlines)
+    // we return an empty Font object with the `supported` flag set to `false`.
     opentype.parse = function (buffer) {
         var font, data, version, numTables, i, p, tag, offset, hmtxOffset, glyfOffset, locaOffset,
             kernOffset, magicNumber, indexToLocFormat, numGlyphs, loca, shortVersion;
@@ -870,9 +944,10 @@
         return font;
     };
 
-    // Load the font from a URL.
-    // The callback gets two arguments `(err, font)`.
-    // The error will be null on success.
+    // Load the font from a URL asynchronously. When done, call the he callback
+    // with two arguments `(err, font)`. The `err` will be null on success,
+    // the `font` is a Font object.
+    //
     // We use the node.js callback convention so that
     // opentype.js can integrate with frameworks like async.js.
     opentype.load = function(url, callback) {
