@@ -209,7 +209,7 @@
 
     // A Glyph is an individual mark that often corresponds to a character.
     // Some glyphs, such as ligatures, are a combination of many characters.
-    // Glyphs are the basis of a font.
+    // Glyphs are the basic building blocks of a font.
     function Glyph(font, index) {
         this.font = font;
         this.index = index;
@@ -217,6 +217,7 @@
         this.xMin = this.yMin = this.xMax = this.yMax = 0;
         this.points = [];
     }
+
     // Split the glyph into contours.
     Glyph.prototype.getContours = function () {
         var contours, currentContour, i, pt;
@@ -356,7 +357,7 @@
         drawCircles(redCircles, x, y, scale);
     };
 
-    // Draw lines indicating the different important font measurements.
+    // Draw lines indicating important font measurements.
     // Black lines indicate the origin of the coordinate system (point 0,0).
     // Blue lines indicate the glyph bounding box.
     // Green line indicates the advance width of the glyph.
@@ -530,8 +531,10 @@
         });
     };
 
-    // Draw the metrics of all glyphs in the text.
-    // On-curve points will be drawn in blue, off-curve points will be drawn in red.
+    // Draw lines indicating important font measurements for all glyphs in the text.
+    // Black lines indicate the origin of the coordinate system (point 0,0).
+    // Blue lines indicate the glyph bounding box.
+    // Green line indicates the advance width of the glyph.
     //
     // ctx - A 2D drawing context, like Canvas.
     // text - The text to create.
