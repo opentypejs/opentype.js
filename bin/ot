@@ -6,8 +6,8 @@ var opentype = require('../opentype.js');
 
 // Print out information about the font on the console.
 function printFontInfo(font) {
-    console.log("  glyphs:", font.numGlyphs, font.glyphs.length);
-    console.log("  kerning pairs:", Object.keys(font.kerningPairs).length);
+    console.log('  glyphs:', font.numGlyphs, font.glyphs.length);
+    console.log('  kerning pairs:', Object.keys(font.kerningPairs).length);
 }
 
 // Recursively walk a directory and execute the function for every file.
