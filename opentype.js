@@ -549,6 +549,51 @@
         });
     };
 
+    // FontLoader object ////////////////////////////////////////////////////
+
+    // A FontLoader handles font file loading.
+    function FontLoader() {
+        this.handler = typeof module !== 'undefined' && module.exports ?
+            this._handleByNode :
+            this._handleByBrowser;
+    }
+
+    FontLoader.prototype._handleByBrowser = function (path, callback) {
+        var request = new XMLHttpRequest();
+        request.open('get', path, true);
+        request.responseType = 'arraybuffer';
+        request.onload = function() {
+            if (request.status !== 200) {
+                return callback(request.statusText);
+            }
+            return callback(null, request.response);
+        };
+        request.send();
+    };
+
+    FontLoader.prototype._handleByNode = function (path, callback) {
+        FontLoader.fileSystem = FontLoader.fileSystem || require('fs');
+        FontLoader.fileSystem.readFile(path, function (err, buffer) {
+            if (err) {
+                return callback(err.message);
+            }
+
+            // Convert a Node.js Buffer to an ArrayBuffer
+            var arrayBuffer = new ArrayBuffer(buffer.length),
+                data = new Uint8Array(arrayBuffer);
+
+            for (var i = 0; i < buffer.length; ++i) {
+                data[i] = buffer[i];
+            }
+
+            callback(null, arrayBuffer);
+        });
+    };
+
+    FontLoader.prototype.load = function (url, callback) {
+        this.handler(url, callback);
+    };
+
     // OpenType format parsing //////////////////////////////////////////////
 
     // Parse the coordinate data for a glyph.
@@ -910,41 +955,41 @@
             tag = getTag(data, p);
             offset = getULong(data, p + 8);
             switch (tag) {
-            case 'cmap':
-                font.cmap = parseCmapTable(data, offset);
-                if (!font.cmap) {
-                    font.cmap = [];
-                    font.supported = false;
-                }
-                break;
-            case 'head':
-                // We're only interested in some values from the header.
-                magicNumber = getULong(data, offset + 12);
-                checkArgument(magicNumber === 0x5F0F3CF5, 'Font header has wrong magic number.');
-                font.unitsPerEm = getUShort(data, offset + 18);
-                indexToLocFormat = getUShort(data, offset + 50);
-                break;
-            case 'hhea':
-                font.ascender = getShort(data, offset + 4);
-                font.descender = getShort(data, offset + 6);
-                font.numberOfHMetrics = getUShort(data, offset + 34);
-                break;
-            case 'hmtx':
-                hmtxOffset = offset;
-                break;
-            case 'maxp':
-                // We're only interested in the number of glyphs.
-                font.numGlyphs = numGlyphs = getUShort(data, offset + 4);
-                break;
-            case 'glyf':
-                glyfOffset = offset;
-                break;
-            case 'loca':
-                locaOffset = offset;
-                break;
-            case 'kern':
-                kernOffset = offset;
-                break;
+                case 'cmap':
+                    font.cmap = parseCmapTable(data, offset);
+                    if (!font.cmap) {
+                        font.cmap = [];
+                        font.supported = false;
+                    }
+                    break;
+                case 'head':
+                    // We're only interested in some values from the header.
+                    magicNumber = getULong(data, offset + 12);
+                    checkArgument(magicNumber === 0x5F0F3CF5, 'Font header has wrong magic number.');
+                    font.unitsPerEm = getUShort(data, offset + 18);
+                    indexToLocFormat = getUShort(data, offset + 50);
+                    break;
+                case 'hhea':
+                    font.ascender = getShort(data, offset + 4);
+                    font.descender = getShort(data, offset + 6);
+                    font.numberOfHMetrics = getUShort(data, offset + 34);
+                    break;
+                case 'hmtx':
+                    hmtxOffset = offset;
+                    break;
+                case 'maxp':
+                    // We're only interested in the number of glyphs.
+                    font.numGlyphs = numGlyphs = getUShort(data, offset + 4);
+                    break;
+                case 'glyf':
+                    glyfOffset = offset;
+                    break;
+                case 'loca':
+                    locaOffset = offset;
+                    break;
+                case 'kern':
+                    kernOffset = offset;
+                    break;
             }
             p += 16;
         }
@@ -966,29 +1011,24 @@
         return font;
     };
 
-    // Load the font from a URL asynchronously. When done, call the he callback
-    // with two arguments `(err, font)`. The `err` will be null on success,
-    // the `font` is a Font object.
+    // Asynchronously load the font from a URL or a file system. When done,
+    // call the callback with two arguments `(err, font)`. The `err` will be null
+    // on success, the `font` is a Font object.
     //
     // We use the node.js callback convention so that
     // opentype.js can integrate with frameworks like async.js.
-    opentype.load = function(url, callback) {
-        var request = new XMLHttpRequest();
-        request.open('get', url, true);
-        request.responseType = 'arraybuffer';
-        request.onload = function() {
-            var arrayBuffer, font;
-            if (request.status !== 200) {
-                return callback('Font could not be loaded: ' + request.statusText);
+    opentype.load = function (url, callback) {
+        var loader = new FontLoader();
+        loader.load(url, function (err, arrayBuffer) {
+            if (err) {
+                return callback(err);
             }
-            arrayBuffer = request.response;
-            font = opentype.parse(arrayBuffer);
+            var font = opentype.parse(arrayBuffer);
             if (!font.supported) {
-                return callback('Font is not supported (is this a Postscript font?)');
+                return callback('Font is not supported');
             }
-            return callback(null, font);
-        };
-        request.send();
+            callback(null, font);
+        });
     };
 
     // Module support ///////////////////////////////////////////////////////
@@ -996,7 +1036,7 @@
     if (typeof define === 'function' && define.amd) {
         // AMD / RequireJS
         define([], function () {
-          return opentype;
+            return opentype;
         });
     } else if (typeof module === 'object' && module.exports) {
         // node.js
