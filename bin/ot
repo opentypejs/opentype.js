@@ -28,12 +28,12 @@ function walk(dir, fn) {
 
 // Print out usage information.
 function printUsage() {
-  console.log('Usage: ot command [dir]');
-  console.log();
-  console.log('Commands:');
-  console.log();
-  console.log('  info    Get information of fonts in the specified directory.');
-  console.log();
+    console.log('Usage: ot command [dir]');
+    console.log();
+    console.log('Commands:');
+    console.log();
+    console.log('  info    Get information of fonts in the specified directory.');
+    console.log();
 }
 
 function recursiveInfo(fontDirectory) {
