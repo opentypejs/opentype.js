@@ -884,6 +884,46 @@
         return pairs;
     }
 
+    // File loaders /////////////////////////////////////////////////////////
+
+    var fs;
+
+    function loadFromFile(path, callback) {
+        fs = fs || require('fs');
+        fs.readFile(path, function (err, buffer) {
+            if (err) {
+                return callback(err.message);
+            }
+
+            callback(null, toArrayBuffer(buffer));
+        });
+    }
+
+    function loadFromUrl(url, callback) {
+        var request = new XMLHttpRequest();
+        request.open('get', url, true);
+        request.responseType = 'arraybuffer';
+        request.onload = function() {
+            if (request.status !== 200) {
+                return callback('Font could not be loaded: ' + request.statusText);
+            }
+            return callback(null, request.response);
+        };
+        request.send();
+    }
+
+    // Convert a Node.js Buffer to an ArrayBuffer
+    function toArrayBuffer(buffer) {
+        var arrayBuffer = new ArrayBuffer(buffer.length),
+            data = new Uint8Array(arrayBuffer);
+
+        for (var i = 0; i < buffer.length; ++i) {
+            data[i] = buffer[i];
+        }
+
+        return arrayBuffer;
+    }
+
     // Public API ///////////////////////////////////////////////////////////
 
     // Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
@@ -966,29 +1006,24 @@
         return font;
     };
 
-    // Load the font from a URL asynchronously. When done, call the he callback
+    // Asynchronously load the font from a URL or a filesystem. When done, call the callback
     // with two arguments `(err, font)`. The `err` will be null on success,
     // the `font` is a Font object.
     //
     // We use the node.js callback convention so that
     // opentype.js can integrate with frameworks like async.js.
     opentype.load = function(url, callback) {
-        var request = new XMLHttpRequest();
-        request.open('get', url, true);
-        request.responseType = 'arraybuffer';
-        request.onload = function() {
-            var arrayBuffer, font;
-            if (request.status !== 200) {
-                return callback('Font could not be loaded: ' + request.statusText);
+        var loader = typeof module !== 'undefined' && module.exports ? loadFromFile : loadFromUrl;
+        loader(url, function (err, arrayBuffer) {
+            if (err) {
+                return callback(err);
             }
-            arrayBuffer = request.response;
-            font = opentype.parse(arrayBuffer);
+            var font = opentype.parse(arrayBuffer);
             if (!font.supported) {
                 return callback('Font is not supported (is this a Postscript font?)');
             }
             return callback(null, font);
-        };
-        request.send();
+        });
     };
 
     // Module support ///////////////////////////////////////////////////////
