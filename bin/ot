@@ -2,30 +2,12 @@
 
 var fs = require('fs');
 var path = require('path');
-var pkg = require('../package.json')
 var opentype = require('../opentype.js')
-
-// Convert a node.js Buffer to an ArrayBuffer.
-function toArrayBuffer(buffer) {
-    var ab = new ArrayBuffer(buffer.length);
-    var view = new Uint8Array(ab);
-    for (var i = 0; i < buffer.length; ++i) {
-        view[i] = buffer[i];
-    }
-    return ab;
-}
-
-// Read in the font file.
-function parseFont(file) {
-    var buffer;
-    buffer = fs.readFileSync(file);
-    return opentype.parse(toArrayBuffer(buffer));
-}
 
 // Print out information about the font on the console.
 function printFontInfo(font) {
-    console.log("  glyphs:", font.numGlyphs, font.glyphs.length);
-    console.log("  kerning pairs:", Object.keys(font.kerningPairs).length);
+    console.log('  glyphs:', font.numGlyphs, font.glyphs.length);
+    console.log('  kerning pairs:', Object.keys(font.kerningPairs).length);
 }
 
 // Recursively walk a directory and execute the function for every file.
@@ -55,17 +37,19 @@ function printUsage() {
 }
 
 function recursiveInfo(fontDirectory) {
-    walk(fontDirectory, function (f) {
-        var ext, font;
-        ext = path.extname(f).toLowerCase();
+    walk(fontDirectory, function (file) {
+        var ext = path.extname(file).toLowerCase();
         if (ext === '.ttf' || ext === '.otf') {
-            console.log(path.basename(f));
-            font = parseFont(f);
-            if (font.supported) {
-                printFontInfo(font);
-            } else {
-                console.log('  (Unsupported)');
-            }
+            console.log(path.basename(file));
+            opentype.load(file, function (err, font) {
+                if (err) {
+                    console.log('  (Error: ' + error + ')');
+                } else if (!font.supported) {
+                    console.log('  (Unsupported)');
+                } else {
+                    printFontInfo(font);
+                }
+            });
         }
     });
 }
