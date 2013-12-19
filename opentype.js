@@ -8,7 +8,7 @@
 (function () {
     'use strict';
 
-    var root, opentype, getCard8, getCard16, typeOffsets, cffStandardStrings;
+    var root, opentype, getCard8, getCard16, typeOffsets, cffStandardStrings, cffStandardEncoding, cffExpertEncoding;
 
     // Establish the root object, `window` in the browser or `exports` on the server.
     root = this;
@@ -251,6 +251,44 @@
         this.relativeOffset += typeOffsets[type] * amount;
     };
 
+    // Encoding objects /////////////////////////////////////////////////////
+
+    function CmapEncoding(cmap) {
+        this.cmap = cmap;
+    }
+
+    CmapEncoding.prototype.charToGlyphIndex = function (s) {
+        var ranges, code, l, c, r;
+        ranges = this.cmap;
+        code = s.charCodeAt(0);
+        l = 0;
+        r = ranges.length - 1;
+        while (l < r) {
+            c = (l + r + 1) >> 1;
+            if (code < ranges[c].start) {
+                r = c - 1;
+            } else {
+                l = c;
+            }
+        }
+        if (ranges[l].start <= code && code <= ranges[l].end) {
+            return (ranges[l].idDelta + (ranges[l].ids ? ranges[l].ids[code - ranges[l].start] : code)) & 0xFFFF;
+        }
+        return 0;
+    };
+
+    function CffEncoding(encoding, charset) {
+        this.encoding = encoding;
+        this.charset = charset;
+    }
+
+    CffEncoding.prototype.charToGlyphIndex = function (s) {
+        var code, charName;
+        code = s.charCodeAt(0);
+        charName = this.encoding[code];
+        return this.charset.indexOf(charName);
+    };
+
     // Glyph object /////////////////////////////////////////////////////////
 
     // A Glyph is an individual mark that often corresponds to a character.
@@ -442,29 +480,14 @@
     function Font() {
         this.supported = true;
         this.glyphs = [];
+        this.encoding = null;
     }
 
     // Convert the given character to a single glyph index.
     // Note that this function assumes that there is a one-to-one mapping between
     // the given character and a glyph; for complex scripts this might not be the case.
     Font.prototype.charToGlyphIndex = function (s) {
-        var ranges, code, l, c, r;
-        ranges = this.cmap;
-        code = s.charCodeAt(0);
-        l = 0;
-        r = ranges.length - 1;
-        while (l < r) {
-            c = (l + r + 1) >> 1;
-            if (code < ranges[c].start) {
-                r = c - 1;
-            } else {
-                l = c;
-            }
-        }
-        if (ranges[l].start <= code && code <= ranges[l].end) {
-            return (ranges[l].idDelta + (ranges[l].ids ? ranges[l].ids[code - ranges[l].start] : code)) & 0xFFFF;
-        }
-        return 0;
+        return this.encoding.charToGlyphIndex(s);
     };
 
     // Convert the given character to a single Glyph object.
@@ -598,72 +621,96 @@
     // OpenType format parsing //////////////////////////////////////////////
 
     cffStandardStrings = [
-        '.notdef', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar', 'percent',
-        'ampersand', 'quoteright', 'parenleft', 'parenright', 'asterisk', 'plus',
-        'comma', 'hyphen', 'period', 'slash', 'zero', 'one', 'two', 'three', 'four',
-        'five', 'six', 'seven', 'eight', 'nine', 'colon', 'semicolon', 'less',
-        'equal', 'greater', 'question', 'at', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
-        'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
-        'X', 'Y', 'Z', 'bracketleft', 'backslash', 'bracketright', 'asciicircum',
-        'underscore', 'quoteleft', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
-        'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y',
-        'z', 'braceleft', 'bar', 'braceright', 'asciitilde', 'exclamdown', 'cent',
-        'sterling', 'fraction', 'yen', 'florin', 'section', 'currency',
-        'quotesingle', 'quotedblleft', 'guillemotleft', 'guilsinglleft',
-        'guilsinglright', 'fi', 'fl', 'endash', 'dagger', 'daggerdbl',
-        'periodcentered', 'paragraph', 'bullet', 'quotesinglbase', 'quotedblbase',
-        'quotedblright', 'guillemotright', 'ellipsis', 'perthousand', 'questiondown',
-        'grave', 'acute', 'circumflex', 'tilde', 'macron', 'breve', 'dotaccent',
-        'dieresis', 'ring', 'cedilla', 'hungarumlaut', 'ogonek', 'caron', 'emdash',
-        'AE', 'ordfeminine', 'Lslash', 'Oslash', 'OE', 'ordmasculine', 'ae',
-        'dotlessi', 'lslash', 'oslash', 'oe', 'germandbls', 'onesuperior',
-        'logicalnot', 'mu', 'trademark', 'Eth', 'onehalf', 'plusminus', 'Thorn',
-        'onequarter', 'divide', 'brokenbar', 'degree', 'thorn', 'threequarters',
-        'twosuperior', 'registered', 'minus', 'eth', 'multiply', 'threesuperior',
-        'copyright', 'Aacute', 'Acircumflex', 'Adieresis', 'Agrave', 'Aring',
-        'Atilde', 'Ccedilla', 'Eacute', 'Ecircumflex', 'Edieresis', 'Egrave',
-        'Iacute', 'Icircumflex', 'Idieresis', 'Igrave', 'Ntilde', 'Oacute',
-        'Ocircumflex', 'Odieresis', 'Ograve', 'Otilde', 'Scaron', 'Uacute',
-        'Ucircumflex', 'Udieresis', 'Ugrave', 'Yacute', 'Ydieresis', 'Zcaron',
-        'aacute', 'acircumflex', 'adieresis', 'agrave', 'aring', 'atilde',
-        'ccedilla', 'eacute', 'ecircumflex', 'edieresis', 'egrave', 'iacute',
-        'icircumflex', 'idieresis', 'igrave', 'ntilde', 'oacute', 'ocircumflex',
-        'odieresis', 'ograve', 'otilde', 'scaron', 'uacute', 'ucircumflex',
-        'udieresis', 'ugrave', 'yacute', 'ydieresis', 'zcaron', 'exclamsmall',
-        'Hungarumlautsmall', 'dollaroldstyle', 'dollarsuperior', 'ampersandsmall',
-        'Acutesmall', 'parenleftsuperior', 'parenrightsuperior', '266 ff',
-        'onedotenleader', 'zerooldstyle', 'oneoldstyle', 'twooldstyle',
-        'threeoldstyle', 'fouroldstyle', 'fiveoldstyle', 'sixoldstyle',
-        'sevenoldstyle', 'eightoldstyle', 'nineoldstyle', 'commasuperior',
-        'threequartersemdash', 'periodsuperior', 'questionsmall', 'asuperior',
-        'bsuperior', 'centsuperior', 'dsuperior', 'esuperior', 'isuperior',
-        'lsuperior', 'msuperior', 'nsuperior', 'osuperior', 'rsuperior', 'ssuperior',
-        'tsuperior', 'ff', 'ffi', 'ffl', 'parenleftinferior', 'parenrightinferior',
-        'Circumflexsmall', 'hyphensuperior', 'Gravesmall', 'Asmall', 'Bsmall',
-        'Csmall', 'Dsmall', 'Esmall', 'Fsmall', 'Gsmall', 'Hsmall', 'Ismall',
-        'Jsmall', 'Ksmall', 'Lsmall', 'Msmall', 'Nsmall', 'Osmall', 'Psmall',
-        'Qsmall', 'Rsmall', 'Ssmall', 'Tsmall', 'Usmall', 'Vsmall', 'Wsmall',
-        'Xsmall', 'Ysmall', 'Zsmall', 'colonmonetary', 'onefitted', 'rupiah',
-        'Tildesmall', 'exclamdownsmall', 'centoldstyle', 'Lslashsmall',
-        'Scaronsmall', 'Zcaronsmall', 'Dieresissmall', 'Brevesmall', 'Caronsmall',
-        'Dotaccentsmall', 'Macronsmall', 'figuredash', 'hypheninferior',
-        'Ogoneksmall', 'Ringsmall', 'Cedillasmall', 'questiondownsmall', 'oneeighth',
-        'threeeighths', 'fiveeighths', 'seveneighths', 'onethird', 'twothirds',
-        'zerosuperior', 'foursuperior', 'fivesuperior', 'sixsuperior',
-        'sevensuperior', 'eightsuperior', 'ninesuperior', 'zeroinferior',
-        'oneinferior', 'twoinferior', 'threeinferior', 'fourinferior',
-        'fiveinferior', 'sixinferior', 'seveninferior', 'eightinferior',
-        'nineinferior', 'centinferior', 'dollarinferior', 'periodinferior',
-        'commainferior', 'Agravesmall', 'Aacutesmall', 'Acircumflexsmall',
-        'Atildesmall', 'Adieresissmall', 'Aringsmall', 'AEsmall', 'Ccedillasmall',
-        'Egravesmall', 'Eacutesmall', 'Ecircumflexsmall', 'Edieresissmall',
-        'Igravesmall', 'Iacutesmall', 'Icircumflexsmall', 'Idieresissmall',
-        'Ethsmall', 'Ntildesmall', 'Ogravesmall', 'Oacutesmall', 'Ocircumflexsmall',
-        'Otildesmall', 'Odieresissmall', 'OEsmall', 'Oslashsmall', 'Ugravesmall',
-        'Uacutesmall', 'Ucircumflexsmall', 'Udieresissmall', 'Yacutesmall',
-        'Thornsmall', 'Ydieresissmall', '001.000', '001.001', '001.002', '001.003',
-        'Black', 'Bold', 'Book', 'Light', 'Medium', 'Regular', 'Roman', 'Semibold'
-    ];
+        '.notdef', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar', 'percent', 'ampersand', 'quoteright',
+        'parenleft', 'parenright', 'asterisk', 'plus', 'comma', 'hyphen', 'period', 'slash', 'zero', 'one', 'two',
+        'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'colon', 'semicolon', 'less', 'equal', 'greater',
+        'question', 'at', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'bracketleft', 'backslash', 'bracketright', 'asciicircum', 'underscore',
+        'quoteleft', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+        'u', 'v', 'w', 'x', 'y', 'z', 'braceleft', 'bar', 'braceright', 'asciitilde', 'exclamdown', 'cent', 'sterling',
+        'fraction', 'yen', 'florin', 'section', 'currency', 'quotesingle', 'quotedblleft', 'guillemotleft',
+        'guilsinglleft', 'guilsinglright', 'fi', 'fl', 'endash', 'dagger', 'daggerdbl', 'periodcentered', 'paragraph',
+        'bullet', 'quotesinglbase', 'quotedblbase', 'quotedblright', 'guillemotright', 'ellipsis', 'perthousand',
+        'questiondown', 'grave', 'acute', 'circumflex', 'tilde', 'macron', 'breve', 'dotaccent', 'dieresis', 'ring',
+        'cedilla', 'hungarumlaut', 'ogonek', 'caron', 'emdash', 'AE', 'ordfeminine', 'Lslash', 'Oslash', 'OE',
+        'ordmasculine', 'ae', 'dotlessi', 'lslash', 'oslash', 'oe', 'germandbls', 'onesuperior', 'logicalnot', 'mu',
+        'trademark', 'Eth', 'onehalf', 'plusminus', 'Thorn', 'onequarter', 'divide', 'brokenbar', 'degree', 'thorn',
+        'threequarters', 'twosuperior', 'registered', 'minus', 'eth', 'multiply', 'threesuperior', 'copyright',
+        'Aacute', 'Acircumflex', 'Adieresis', 'Agrave', 'Aring', 'Atilde', 'Ccedilla', 'Eacute', 'Ecircumflex',
+        'Edieresis', 'Egrave', 'Iacute', 'Icircumflex', 'Idieresis', 'Igrave', 'Ntilde', 'Oacute', 'Ocircumflex',
+        'Odieresis', 'Ograve', 'Otilde', 'Scaron', 'Uacute', 'Ucircumflex', 'Udieresis', 'Ugrave', 'Yacute',
+        'Ydieresis', 'Zcaron', 'aacute', 'acircumflex', 'adieresis', 'agrave', 'aring', 'atilde', 'ccedilla', 'eacute',
+        'ecircumflex', 'edieresis', 'egrave', 'iacute', 'icircumflex', 'idieresis', 'igrave', 'ntilde', 'oacute',
+        'ocircumflex', 'odieresis', 'ograve', 'otilde', 'scaron', 'uacute', 'ucircumflex', 'udieresis', 'ugrave',
+        'yacute', 'ydieresis', 'zcaron', 'exclamsmall', 'Hungarumlautsmall', 'dollaroldstyle', 'dollarsuperior',
+        'ampersandsmall', 'Acutesmall', 'parenleftsuperior', 'parenrightsuperior', '266 ff', 'onedotenleader',
+        'zerooldstyle', 'oneoldstyle', 'twooldstyle', 'threeoldstyle', 'fouroldstyle', 'fiveoldstyle', 'sixoldstyle',
+        'sevenoldstyle', 'eightoldstyle', 'nineoldstyle', 'commasuperior', 'threequartersemdash', 'periodsuperior',
+        'questionsmall', 'asuperior', 'bsuperior', 'centsuperior', 'dsuperior', 'esuperior', 'isuperior', 'lsuperior',
+        'msuperior', 'nsuperior', 'osuperior', 'rsuperior', 'ssuperior', 'tsuperior', 'ff', 'ffi', 'ffl',
+        'parenleftinferior', 'parenrightinferior', 'Circumflexsmall', 'hyphensuperior', 'Gravesmall', 'Asmall',
+        'Bsmall', 'Csmall', 'Dsmall', 'Esmall', 'Fsmall', 'Gsmall', 'Hsmall', 'Ismall', 'Jsmall', 'Ksmall', 'Lsmall',
+        'Msmall', 'Nsmall', 'Osmall', 'Psmall', 'Qsmall', 'Rsmall', 'Ssmall', 'Tsmall', 'Usmall', 'Vsmall', 'Wsmall',
+        'Xsmall', 'Ysmall', 'Zsmall', 'colonmonetary', 'onefitted', 'rupiah', 'Tildesmall', 'exclamdownsmall',
+        'centoldstyle', 'Lslashsmall', 'Scaronsmall', 'Zcaronsmall', 'Dieresissmall', 'Brevesmall', 'Caronsmall',
+        'Dotaccentsmall', 'Macronsmall', 'figuredash', 'hypheninferior', 'Ogoneksmall', 'Ringsmall', 'Cedillasmall',
+        'questiondownsmall', 'oneeighth', 'threeeighths', 'fiveeighths', 'seveneighths', 'onethird', 'twothirds',
+        'zerosuperior', 'foursuperior', 'fivesuperior', 'sixsuperior', 'sevensuperior', 'eightsuperior', 'ninesuperior',
+        'zeroinferior', 'oneinferior', 'twoinferior', 'threeinferior', 'fourinferior', 'fiveinferior', 'sixinferior',
+        'seveninferior', 'eightinferior', 'nineinferior', 'centinferior', 'dollarinferior', 'periodinferior',
+        'commainferior', 'Agravesmall', 'Aacutesmall', 'Acircumflexsmall', 'Atildesmall', 'Adieresissmall',
+        'Aringsmall', 'AEsmall', 'Ccedillasmall', 'Egravesmall', 'Eacutesmall', 'Ecircumflexsmall', 'Edieresissmall',
+        'Igravesmall', 'Iacutesmall', 'Icircumflexsmall', 'Idieresissmall', 'Ethsmall', 'Ntildesmall', 'Ogravesmall',
+        'Oacutesmall', 'Ocircumflexsmall', 'Otildesmall', 'Odieresissmall', 'OEsmall', 'Oslashsmall', 'Ugravesmall',
+        'Uacutesmall', 'Ucircumflexsmall', 'Udieresissmall', 'Yacutesmall', 'Thornsmall', 'Ydieresissmall', '001.000',
+        '001.001', '001.002', '001.003', 'Black', 'Bold', 'Book', 'Light', 'Medium', 'Regular', 'Roman', 'Semibold'];
+
+    cffStandardEncoding = [
+        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        '', '', '', '', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar', 'percent', 'ampersand', 'quoteright',
+        'parenleft', 'parenright', 'asterisk', 'plus', 'comma', 'hyphen', 'period', 'slash', 'zero', 'one', 'two',
+        'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'colon', 'semicolon', 'less', 'equal', 'greater',
+        'question', 'at', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'bracketleft', 'backslash', 'bracketright', 'asciicircum', 'underscore',
+        'quoteleft', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+        'u', 'v', 'w', 'x', 'y', 'z', 'braceleft', 'bar', 'braceright', 'asciitilde', '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        'exclamdown', 'cent', 'sterling', 'fraction', 'yen', 'florin', 'section', 'currency', 'quotesingle',
+        'quotedblleft', 'guillemotleft', 'guilsinglleft', 'guilsinglright', 'fi', 'fl', '', 'endash', 'dagger',
+        'daggerdbl', 'periodcentered', '', 'paragraph', 'bullet', 'quotesinglbase', 'quotedblbase', 'quotedblright',
+        'guillemotright', 'ellipsis', 'perthousand', '', 'questiondown', '', 'grave', 'acute', 'circumflex', 'tilde',
+        'macron', 'breve', 'dotaccent', 'dieresis', '', 'ring', 'cedilla', '', 'hungarumlaut', 'ogonek', 'caron',
+        'emdash', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'AE', '', 'ordfeminine', '', '', '',
+        '', 'Lslash', 'Oslash', 'OE', 'ordmasculine', '', '', '', '', '', 'ae', '', '', '', 'dotlessi', '', '',
+        'lslash', 'oslash', 'oe', 'germandbls'];
+
+    cffExpertEncoding = [
+        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        '', '', '', '', 'space', 'exclamsmall', 'Hungarumlautsmall', '', 'dollaroldstyle', 'dollarsuperior',
+        'ampersandsmall', 'Acutesmall', 'parenleftsuperior', 'parenrightsuperior', 'twodotenleader', 'onedotenleader',
+        'comma', 'hyphen', 'period', 'fraction', 'zerooldstyle', 'oneoldstyle', 'twooldstyle', 'threeoldstyle',
+        'fouroldstyle', 'fiveoldstyle', 'sixoldstyle', 'sevenoldstyle', 'eightoldstyle', 'nineoldstyle', 'colon',
+        'semicolon', 'commasuperior', 'threequartersemdash', 'periodsuperior', 'questionsmall', '', 'asuperior',
+        'bsuperior', 'centsuperior', 'dsuperior', 'esuperior', '', '', 'isuperior', '', '', 'lsuperior', 'msuperior',
+        'nsuperior', 'osuperior', '', '', 'rsuperior', 'ssuperior', 'tsuperior', '', 'ff', 'fi', 'fl', 'ffi', 'ffl',
+        'parenleftinferior', '', 'parenrightinferior', 'Circumflexsmall', 'hyphensuperior', 'Gravesmall', 'Asmall',
+        'Bsmall', 'Csmall', 'Dsmall', 'Esmall', 'Fsmall', 'Gsmall', 'Hsmall', 'Ismall', 'Jsmall', 'Ksmall', 'Lsmall',
+        'Msmall', 'Nsmall', 'Osmall', 'Psmall', 'Qsmall', 'Rsmall', 'Ssmall', 'Tsmall', 'Usmall', 'Vsmall', 'Wsmall',
+        'Xsmall', 'Ysmall', 'Zsmall', 'colonmonetary', 'onefitted', 'rupiah', 'Tildesmall', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        'exclamdownsmall', 'centoldstyle', 'Lslashsmall', '', '', 'Scaronsmall', 'Zcaronsmall', 'Dieresissmall',
+        'Brevesmall', 'Caronsmall', '', 'Dotaccentsmall', '', '', 'Macronsmall', '', '', 'figuredash', 'hypheninferior',
+        '', '', 'Ogoneksmall', 'Ringsmall', 'Cedillasmall', '', '', '', 'onequarter', 'onehalf', 'threequarters',
+        'questiondownsmall', 'oneeighth', 'threeeighths', 'fiveeighths', 'seveneighths', 'onethird', 'twothirds', '',
+        '', 'zerosuperior', 'onesuperior', 'twosuperior', 'threesuperior', 'foursuperior', 'fivesuperior',
+        'sixsuperior', 'sevensuperior', 'eightsuperior', 'ninesuperior', 'zeroinferior', 'oneinferior', 'twoinferior',
+        'threeinferior', 'fourinferior', 'fiveinferior', 'sixinferior', 'seveninferior', 'eightinferior',
+        'nineinferior', 'centinferior', 'dollarinferior', 'periodinferior', 'commainferior', 'Agravesmall',
+        'Aacutesmall', 'Acircumflexsmall', 'Atildesmall', 'Adieresissmall', 'Aringsmall', 'AEsmall', 'Ccedillasmall',
+        'Egravesmall', 'Eacutesmall', 'Ecircumflexsmall', 'Edieresissmall', 'Igravesmall', 'Iacutesmall',
+        'Icircumflexsmall', 'Idieresissmall', 'Ethsmall', 'Ntildesmall', 'Ogravesmall', 'Oacutesmall',
+        'Ocircumflexsmall', 'Otildesmall', 'Odieresissmall', 'OEsmall', 'Oslashsmall', 'Ugravesmall', 'Uacutesmall',
+        'Ucircumflexsmall', 'Udieresissmall', 'Yacutesmall', 'Thornsmall', 'Ydieresissmall'];
 
     // Parse the coordinate data for a glyph.
     function parseGlyphCoordinate(p, flag, previousValue, shortVectorBit, sameBit) {
@@ -690,8 +737,6 @@
     }
 
     // Parse an OpenType glyph (described in the glyf table).
-    // Due to the complexity of the parsing we can't define the glyf table declaratively.
-    // The offset is the absolute byte offset of the glyph: the base of the glyph table + the relative offset of the glyph.
     // http://www.microsoft.com/typography/otspec/glyf.htm
     function parseGlyph(data, start, index, font) {
         var p, glyph, flag, i, j, flags,
@@ -887,10 +932,11 @@
     }
 
 
-    // Parse the `cmap` table. This table stores the mappings from characters to glyphs.
-    // There are many available formats, but we only support the Windows format 4.
-    // https://www.microsoft.com/typography/OTSPEC/cmap.htm
     function parseCmapTable(data, start) {
+        // Parse the `cmap` table. This table stores the mappings from characters to glyphs.
+        // There are many available formats, but we only support the Windows format 4.
+        // This function returns a `CmapEncoding` object or null if no supported format could be found.
+        // https://www.microsoft.com/typography/OTSPEC/cmap.htm
         var version, numTables, offset, platformId, encodingId, format, segCount,
             ranges, i, j, idRangeOffset, p;
         version = getUShort(data, start);
@@ -949,7 +995,7 @@
             }
         }
 
-        return ranges;
+        return new CmapEncoding(ranges);
     }
 
     // Parse a `CFF` INDEX array.
@@ -987,8 +1033,7 @@
         var s, eof, lookup, b, n1, n2;
         s = '';
         eof = 15;
-        lookup = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-            '.', 'E', 'E-', null, '-'];
+        lookup = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', 'E', 'E-', null, '-'];
         while (true) {
             b = parser.parseByte();
             n1 = b >> 4;
@@ -1181,13 +1226,13 @@
     // This function will return a list of glyph names.
     // See Adobe TN #5176 chapter 13, "Charsets".
     function parseCFFCharset(data, start, nGlyphs, strings) {
-        var format, parser, charset, i, sid, count;
-        parser = new Parser(data, start + 1);
+        var parser, format, charset, i, sid, count;
+        parser = new Parser(data, start);
         // The .notdef glyph is not included, so subtract 1.
         nGlyphs -= 1;
         charset = ['.notdef'];
 
-        format = getCard8(data, start);
+        format = parser.parseCard8();
         if (format === 0) {
             for (i = 0; i < nGlyphs; i += 1) {
                 sid = parser.parseSID();
@@ -1218,11 +1263,40 @@
         return charset;
     }
 
-    // Take in charstring code and create a Path object.
+    // Parse the CFF encoding data. Only one encoding can be specified per font.
+    // See Adobe TN #5176 chapter 12, "Encodings".
+    function parseCFFEncoding(data, start, charset) {
+        var encoding, parser, format, nCodes, i, code, nRanges, first, nLeft, j;
+        encoding = {};
+        parser = new Parser(data, start);
+        format = parser.parseCard8();
+        if (format === 0) {
+            nCodes = parser.parseCard8();
+            for (i = 0; i < nCodes; i += 1) {
+                code = parser.parseCard8();
+                encoding[code] = i;
+            }
+        } else if (format === 1) {
+            nRanges = parser.parseCard8();
+            code = 1;
+            for (i = 0; i < nRanges; i += 1) {
+                first = parser.parseCard8();
+                nLeft = parser.parseCard8();
+                for (j = first; j <= first + nLeft; j += 1) {
+                    encoding[j] = code++;
+                }
+            }
+        } else {
+            throw new Error('Unknown encoding format ' + format);
+        }
+        return new CffEncoding(encoding, charset);
+    }
+
+    // Take in charstring code and return a Glyph object.
     // The encoding is described in the Type 2 Charstring Format
     // https://www.microsoft.com/typography/OTSPEC/charstr2.htm
-    function compileCharString(code, font) {
-        var path, stack, nStems, x, y, c1x, c1y, c2x, c2y, v;
+    function parseCFFCharstring(code, font, index) {
+        var path, glyph, stack, nStems, x, y, c1x, c1y, c2x, c2y, v;
         path = new Path();
         stack = [];
         nStems = 0;
@@ -1466,15 +1540,16 @@
                             b3 = code[i + 2];
                             b4 = code[i + 3];
                             i += 4;
-                            stack.push(((b1 << 24) | (b2 << 16) |
-                                (b3 << 8) | b4) / 65536);
+                            stack.push(((b1 << 24) | (b2 << 16) | (b3 << 8) | b4) / 65536);
                         }
                 }
             }
         }
 
         parse(code);
-        return path;
+        glyph = new Glyph(font, index);
+        glyph.path = path;
+        return glyph;
     }
 
     // Subroutines are encoded using the negative half of the number space.
@@ -1493,8 +1568,8 @@
 
     // Parse the `CFF` table, which contains the glyph outlines in PostScript format.
     function parseCFFTable(data, start, font) {
-        var header, nameIndex, topDictIndex, stringIndex, globalSubrIndex, topDict,
-            privateDictOffset, privateDict, subrOffset, subrIndex, charString;
+        var header, nameIndex, topDictIndex, stringIndex, globalSubrIndex, topDict, privateDictOffset, privateDict,
+            subrOffset, subrIndex, charString;
         header = parseCFFHeader(data, start);
         nameIndex = parseCFFIndex(data, header.endOffset, bytesToString);
         topDictIndex = parseCFFIndex(data, nameIndex.endOffset);
@@ -1517,11 +1592,18 @@
         font.nGlyphs = charStringsIndex.objects.length;
 
         var charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
+        if (topDict.encoding === 0) { // Standard encoding
+            font.encoding = new CffEncoding(cffStandardEncoding, charset);
+        } else if (topDict.encoding === 1) { // Expert encoding
+            font.encoding = new CffEncoding(cffExpertEncoding, charset);
+        } else {
+            font.encoding = parseCFFEncoding(data, start + topDict.encoding, charset);
+        }
 
         font.glyphs = [];
         for (var i = 0; i < font.nGlyphs; i += 1) {
             charString = charStringsIndex.objects[i];
-            font.glyphs.push(compileCharString(charString, font));
+            font.glyphs.push(parseCFFCharstring(charString, font, i));
         }
     }
 
@@ -1607,9 +1689,8 @@
             offset = getULong(data, p + 8);
             switch (tag) {
                 case 'cmap':
-                    font.cmap = parseCmapTable(data, offset);
-                    if (!font.cmap) {
-                        font.cmap = [];
+                    font.encoding = parseCmapTable(data, offset);
+                    if (!font.encoding) {
                         font.supported = false;
                     }
                     break;
