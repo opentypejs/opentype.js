@@ -1236,7 +1236,7 @@
         if (format === 0) {
             for (i = 0; i < nGlyphs; i += 1) {
                 sid = parser.parseSID();
-                charset.push(strings.get(sid));
+                charset.push(getCFFString(strings, sid));
             }
         } else if (format === 1) {
             while (charset.length <= nGlyphs) {
