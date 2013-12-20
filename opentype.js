@@ -527,7 +527,7 @@
 
     // Helper function that invokes the given callback for each glyph in the given text.
     // The callback gets `(glyph, x, y, fontSize, options)`.
-    Font.prototype._eachGlyph = function (text, x, y, fontSize, options, callback) {
+    Font.prototype.forEachGlyph = function (text, x, y, fontSize, options, callback) {
         var kerning, fontScale, glyphs, i, glyph, kerningValue;
         if (!this.supported) {
             return;
@@ -564,7 +564,7 @@
     // Returns a Path object.
     Font.prototype.getPath = function (text, x, y, fontSize, options) {
         var fullPath = new Path();
-        this._eachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
+        this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
             var path = glyph.getPath(x, y, fontSize);
             fullPath.extend(path);
         });
@@ -595,7 +595,7 @@
     // Options is an optional object that contains:
     // - kerning - Whether to take kerning information into account. (default: true)
     Font.prototype.drawPoints = function (ctx, text, x, y, fontSize, options) {
-        this._eachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
+        this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
             glyph.drawPoints(ctx, x, y, fontSize);
         });
     };
@@ -613,7 +613,7 @@
     // Options is an optional object that contains:
     // - kerning - Whether to take kerning information into account. (default: true)
     Font.prototype.drawMetrics = function (ctx, text, x, y, fontSize, options) {
-        this._eachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
+        this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
             glyph.drawMetrics(ctx, x, y, fontSize);
         });
     };
