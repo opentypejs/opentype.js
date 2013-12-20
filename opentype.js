@@ -294,95 +294,11 @@
     // A Glyph is an individual mark that often corresponds to a character.
     // Some glyphs, such as ligatures, are a combination of many characters.
     // Glyphs are the basic building blocks of a font.
-    function Glyph(font, index) {
-        this.font = font;
-        this.index = index;
-        this.numberOfContours = 0;
-        this.xMin = this.yMin = this.xMax = this.yMax = 0;
-        this.points = [];
-    }
-
-    // Split the glyph into contours.
-    Glyph.prototype.getContours = function () {
-        var contours, currentContour, i, pt;
-        contours = [];
-        currentContour = [];
-        for (i = 0; i < this.points.length; i += 1) {
-            pt = this.points[i];
-            currentContour.push(pt);
-            if (pt.lastPointOfContour) {
-                contours.push(currentContour);
-                currentContour = [];
-            }
-        }
-        checkArgument(currentContour.length === 0, "There are still points left in the current contour.");
-        return contours;
-    };
-
-    // Convert the glyph to a Path we can draw on a drawing context.
     //
-    // x - Horizontal position of the glyph. (default: 0)
-    // y - Vertical position of the *baseline* of the glyph. (default: 0)
-    // fontSize - Font size, in pixels (default: 72).
-    Glyph.prototype.getPath = function (x, y, fontSize) {
-        var scale, path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt;
-        x = x !== undefined ? x : 0;
-        y = y !== undefined ? y : 0;
-        fontSize = fontSize !== undefined ? fontSize : 72;
-        scale = 1 / this.font.unitsPerEm * fontSize;
-        path = new Path();
-        if (!this.points) {
-            return path;
-        }
-        contours = this.getContours();
-        for (i = 0; i < contours.length; i += 1) {
-            contour = contours[i];
-            firstPt = contour[0];
-            curvePt = null;
-            for (j = 0; j < contour.length; j += 1) {
-                pt = contour[j];
-                prevPt = j === 0 ? contour[contour.length - 1] : contour[j - 1];
-
-                if (j === 0) {
-                    // This is the first point of the contour.
-                    if (pt.onCurve) {
-                        path.moveTo(x + (pt.x * scale), y + (-pt.y * scale));
-                        curvePt = null;
-                    } else {
-                        midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        curvePt = midPt;
-                        path.moveTo(x + (midPt.x * scale), y + (-midPt.y * scale));
-                    }
-                } else {
-                    if (prevPt.onCurve && pt.onCurve) {
-                        // This is a straight line.
-                        path.lineTo(x + (pt.x * scale), y + (-pt.y * scale));
-                    } else if (prevPt.onCurve && !pt.onCurve) {
-                        curvePt = pt;
-                    } else if (!prevPt.onCurve && !pt.onCurve) {
-                        midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        path.quadraticCurveTo(x + (prevPt.x * scale), y + (-prevPt.y * scale), x + (midPt.x * scale), y + (-midPt.y * scale));
-                        curvePt = pt;
-                    } else if (!prevPt.onCurve && pt.onCurve) {
-                        // Previous point off-curve, this point on-curve.
-                        path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (pt.x * scale), y + (-pt.y * scale));
-                        curvePt = null;
-                    } else {
-                        throw new Error("Invalid state.");
-                    }
-                }
-
-            }
-            // Connect the last and first points
-            if (curvePt) {
-                path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (firstPt.x * scale), y + (-firstPt.y * scale));
-            } else {
-                path.lineTo(x + (firstPt.x * scale), y + (-firstPt.y * scale));
-            }
-        }
-        path.closePath();
-        return path;
-    };
+    // The `Glyph` class is an abstract object that contains utility methods for drawing the path and its points.
+    // Concrete classes are `TrueTypeGlyph` and `CffGlyph` that implement `getPath`.
+    function Glyph() {
+    }
 
     // Draw the glyph on the given context.
     //
@@ -470,6 +386,148 @@
         // Draw the advance width
         ctx.strokeStyle = 'green';
         line(ctx, x + (this.advanceWidth * scale), -10000, x + (this.advanceWidth * scale), 10000);
+    };
+
+    // A concrete implementation of glyph for TrueType outline data.
+    function TrueTypeGlyph(font, index) {
+        Glyph.call(this);
+        this.font = font;
+        this.index = index;
+        this.numberOfContours = 0;
+        this.xMin = this.yMin = this.xMax = this.yMax = 0;
+        this.advanceWidth = 0;
+        this.points = [];
+    }
+
+    TrueTypeGlyph.prototype = new Glyph();
+    TrueTypeGlyph.prototype.constructor = TrueTypeGlyph;
+
+    // Split the glyph into contours.
+    TrueTypeGlyph.prototype.getContours = function () {
+        var contours, currentContour, i, pt;
+        contours = [];
+        currentContour = [];
+        for (i = 0; i < this.points.length; i += 1) {
+            pt = this.points[i];
+            currentContour.push(pt);
+            if (pt.lastPointOfContour) {
+                contours.push(currentContour);
+                currentContour = [];
+            }
+        }
+        checkArgument(currentContour.length === 0, "There are still points left in the current contour.");
+        return contours;
+    };
+
+    // Convert the glyph to a Path we can draw on a drawing context.
+    //
+    // x - Horizontal position of the glyph. (default: 0)
+    // y - Vertical position of the *baseline* of the glyph. (default: 0)
+    // fontSize - Font size, in pixels (default: 72).
+    TrueTypeGlyph.prototype.getPath = function (x, y, fontSize) {
+        var scale, path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt;
+        x = x !== undefined ? x : 0;
+        y = y !== undefined ? y : 0;
+        fontSize = fontSize !== undefined ? fontSize : 72;
+        scale = 1 / this.font.unitsPerEm * fontSize;
+        path = new Path();
+        if (!this.points) {
+            return path;
+        }
+        contours = this.getContours();
+        for (i = 0; i < contours.length; i += 1) {
+            contour = contours[i];
+            firstPt = contour[0];
+            curvePt = null;
+            for (j = 0; j < contour.length; j += 1) {
+                pt = contour[j];
+                prevPt = j === 0 ? contour[contour.length - 1] : contour[j - 1];
+
+                if (j === 0) {
+                    // This is the first point of the contour.
+                    if (pt.onCurve) {
+                        path.moveTo(x + (pt.x * scale), y + (-pt.y * scale));
+                        curvePt = null;
+                    } else {
+                        midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
+                        curvePt = midPt;
+                        path.moveTo(x + (midPt.x * scale), y + (-midPt.y * scale));
+                    }
+                } else {
+                    if (prevPt.onCurve && pt.onCurve) {
+                        // This is a straight line.
+                        path.lineTo(x + (pt.x * scale), y + (-pt.y * scale));
+                    } else if (prevPt.onCurve && !pt.onCurve) {
+                        curvePt = pt;
+                    } else if (!prevPt.onCurve && !pt.onCurve) {
+                        midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
+                        path.quadraticCurveTo(x + (prevPt.x * scale), y + (-prevPt.y * scale), x + (midPt.x * scale), y + (-midPt.y * scale));
+                        curvePt = pt;
+                    } else if (!prevPt.onCurve && pt.onCurve) {
+                        // Previous point off-curve, this point on-curve.
+                        path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (pt.x * scale), y + (-pt.y * scale));
+                        curvePt = null;
+                    } else {
+                        throw new Error("Invalid state.");
+                    }
+                }
+
+            }
+            // Connect the last and first points
+            if (curvePt) {
+                path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (firstPt.x * scale), y + (-firstPt.y * scale));
+            } else {
+                path.lineTo(x + (firstPt.x * scale), y + (-firstPt.y * scale));
+            }
+        }
+        path.closePath();
+        return path;
+    };
+
+    // A concrete implementation of glyph for TrueType outline data.
+    function CffGlyph(font, index) {
+        Glyph.call(this);
+        this.font = font;
+        this.index = index;
+        this.numberOfContours = 0;
+        this.xMin = this.yMin = this.xMax = this.yMax = 0;
+        this.advanceWidth = 0;
+        this.path = null;
+    }
+
+    CffGlyph.prototype = new Glyph();
+    CffGlyph.prototype.constructor = CffGlyph;
+
+    // Convert the glyph to a Path we can draw on a drawing context.
+    //
+    // x - Horizontal position of the glyph. (default: 0)
+    // y - Vertical position of the *baseline* of the glyph. (default: 0)
+    // fontSize - Font size, in pixels (default: 72).
+    CffGlyph.prototype.getPath = function (x, y, fontSize) {
+        var scale, newPath, i, cmd;
+        x = x !== undefined ? x : 0;
+        y = y !== undefined ? y : 0;
+        fontSize = fontSize !== undefined ? fontSize : 72;
+        scale = 1 / this.font.unitsPerEm * fontSize;
+        newPath = new Path();
+        for (i = 0; i < this.path.commands.length; i += 1) {
+            cmd = this.path.commands[i];
+            if (cmd.type === 'M') {
+                newPath.moveTo(x + (cmd.x * scale), y + (cmd.y * scale));
+            } else if (cmd.type === 'L') {
+                newPath.lineTo(x + (cmd.x * scale), y + (cmd.y * scale));
+            } else if (cmd.type === 'C') {
+                newPath.bezierCurveTo(x + (cmd.x1 * scale), y + (cmd.y1 * scale),
+                    x + (cmd.x2 * scale), y + (cmd.y2 * scale),
+                    x + (cmd.x * scale), y + (cmd.y * scale));
+            } else if (cmd.type === 'Q') {
+                newPath.quadraticCurveTo(x + (cmd.x1 * scale), y + (cmd.y1 * scale),
+                    x + (cmd.x * scale), y + (cmd.y * scale));
+            } else if (cmd.type === 'Z') {
+                newPath.closePath();
+            }
+        }
+        return newPath;
     };
 
     // Font object //////////////////////////////////////////////////////////
@@ -743,7 +801,7 @@
             endPointIndices, numberOfCoordinates, repeatCount, points, point, px, py,
             component, moreComponents, arg1, arg2, scale, xScale, yScale, scale01, scale10;
         p = new Parser(data, start);
-        glyph = new Glyph(font, index);
+        glyph = new TrueTypeGlyph(font, index);
         glyph.numberOfContours = p.parseShort();
         glyph.xMin = p.parseShort();
         glyph.yMin = p.parseShort();
@@ -885,7 +943,7 @@
             if (offset !== nextOffset) {
                 glyphs.push(parseGlyph(data, start + offset, i, font));
             } else {
-                glyphs.push(new Glyph(font, i));
+                glyphs.push(new TrueTypeGlyph(font, i));
             }
         }
         // Go over the glyphs again, resolving the composite glyphs.
@@ -1283,7 +1341,8 @@
                 first = parser.parseCard8();
                 nLeft = parser.parseCard8();
                 for (j = first; j <= first + nLeft; j += 1) {
-                    encoding[j] = code++;
+                    encoding[j] = code;
+                    code += 1;
                 }
             }
         } else {
@@ -1547,7 +1606,7 @@
         }
 
         parse(code);
-        glyph = new Glyph(font, index);
+        glyph = new CffGlyph(font, index);
         glyph.path = path;
         return glyph;
     }
@@ -1741,6 +1800,7 @@
             }
         } else if (cffOffset) {
             parseCFFTable(data, cffOffset, font);
+            font.kerningPairs = {};
         } else {
             font.supported = false;
         }
