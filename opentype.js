@@ -491,7 +491,7 @@
         this.index = index;
         this.numberOfContours = 0;
         this.xMin = this.yMin = this.xMax = this.yMax = 0;
-        this.advanceWidth = 0;
+        this.advanceWidth = font.defaultWidthX;
         this.path = null;
     }
 
@@ -1607,6 +1607,15 @@
 
         parse(code);
         glyph = new CffGlyph(font, index);
+        if (code[0] < 247) {
+            glyph.advanceWidth = font.nominalWidthX + code[0] - 139;
+        } else if (code[0] < 251) {
+            glyph.advanceWidth = font.nominalWidthX + ((code[0] - 247) * 256 + code[1] + 108);
+        } else if (code[0] < 255) {
+            glyph.advanceWidth = font.nominalWidthX + (-(code[0] - 251) * 256 - code[1] - 108);
+        } else {
+            glyph.advanceWidth = 1000;
+        }
         glyph.path = path;
         return glyph;
     }
@@ -1641,6 +1650,9 @@
 
         privateDictOffset = start + topDict.private[1];
         privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict.private[0], stringIndex.objects);
+        font.defaultWidthX = privateDict.defaultWidthX;
+        font.nominalWidthX = privateDict.nominalWidthX;
+
         subrOffset = privateDictOffset + privateDict.subrs;
         subrIndex = parseCFFIndex(data, subrOffset);
         font.subrs = subrIndex.objects;
