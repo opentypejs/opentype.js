@@ -146,7 +146,7 @@
         It allows you to access the <strong>letterforms</strong> of text from the browser or node.js.
     </div>
 
-    <span class="info">Roboto-Black</span>
+    <span class="info" id="font-name">Roboto-Black</span>
     <canvas id="preview" width="940" height="300" class="text"></canvas>
     <div id="message"></div>
     <input type="text" class="text-input" onkeyup="renderText()" value="Hello, World!"
@@ -312,8 +312,13 @@ function showErrorMessage(message) {
     el.style.display = 'block';
     el.innerHTML = message;
 }
+var font;
+font = 'fonts/Roboto-Black.ttf';
+font = 'fonts/FiraSansOT-Medium.otf';
 
-opentype.load('fonts/Roboto-Black.ttf', function (err, font) {
+document.getElementById('font-name').innerHTML = font.split('/')[1];
+
+opentype.load(font, function (err, font) {
     var amount, glyph, ctx, x, y, fontSize;
     if (err) {
         showErrorMessage(err.toString());
