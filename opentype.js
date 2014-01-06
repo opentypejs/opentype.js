@@ -1204,7 +1204,7 @@
             m = meta[i];
             value = dict[m.op];
             if (value === undefined) {
-                value = m.default !== undefined ? m.default : null;
+                value = m.value !== undefined ? m.value : null;
             }
             if (m.type === 'SID') {
                 value = getCFFString(strings, value);
@@ -1248,21 +1248,21 @@
             {name: 'fullName', op: 2, type: 'SID'},
             {name: 'familyName', op: 3, type: 'SID'},
             {name: 'weight', op: 4, type: 'SID'},
-            {name: 'isFixedPitch', op: 1201, type: 'number', default: 0},
-            {name: 'italicAngle', op: 1202, type: 'number', default: 0},
-            {name: 'underlinePosition', op: 1203, type: 'number', default: -100},
-            {name: 'underlineThickness', op: 1204, type: 'number', default: 50},
-            {name: 'paintType', op: 1205, type: 'number', default: 0},
-            {name: 'charstringType', op: 1206, type: 'number', default: 2},
-            {name: 'fontMatrix', op: 1207, type: ['number', 'number', 'number', 'number'], default: [0.001, 0, 0, 0.001, 0, 0]},
+            {name: 'isFixedPitch', op: 1201, type: 'number', value: 0},
+            {name: 'italicAngle', op: 1202, type: 'number', value: 0},
+            {name: 'underlinePosition', op: 1203, type: 'number', value: -100},
+            {name: 'underlineThickness', op: 1204, type: 'number', value: 50},
+            {name: 'paintType', op: 1205, type: 'number', value: 0},
+            {name: 'charstringType', op: 1206, type: 'number', value: 2},
+            {name: 'fontMatrix', op: 1207, type: ['number', 'number', 'number', 'number'], value: [0.001, 0, 0, 0.001, 0, 0]},
             {name: 'uniqueId', op: 13, type: 'number'},
-            {name: 'fontBBox', op: 5, type: ['number', 'number', 'number', 'number'], default: [0, 0, 0, 0]},
-            {name: 'strokeWidth', op: 1208, type: 'number', default: 0},
+            {name: 'fontBBox', op: 5, type: ['number', 'number', 'number', 'number'], value: [0, 0, 0, 0]},
+            {name: 'strokeWidth', op: 1208, type: 'number', value: 0},
             {name: 'xuid', op: 14, type: []},
-            {name: 'charset', op: 15, type: 'offset', default: 0},
-            {name: 'encoding', op: 16, type: 'offset', default: 0},
-            {name: 'charStrings', op: 17, type: 'number', default: 0},
-            {name: 'private', op: 18, type: ['number', 'offset'], default: [0, 0]}
+            {name: 'charset', op: 15, type: 'offset', value: 0},
+            {name: 'encoding', op: 16, type: 'offset', value: 0},
+            {name: 'charStrings', op: 17, type: 'number', value: 0},
+            {name: 'private', op: 18, type: ['number', 'offset'], value: [0, 0]}
         ];
         dict = parseCFFDict(data, start);
         return interpretDict(dict, meta, strings);
@@ -1272,9 +1272,9 @@
     function parseCFFPrivateDict(data, start, size, strings) {
         var dict, meta;
         meta = [
-            {name: 'subrs', op: 19, type: 'offset', default: 0},
-            {name: 'defaultWidthX', op: 20, type: 'number', default: 0},
-            {name: 'nominalWidthX', op: 21, type: 'number', default: 0}
+            {name: 'subrs', op: 19, type: 'offset', value: 0},
+            {name: 'defaultWidthX', op: 20, type: 'number', value: 0},
+            {name: 'nominalWidthX', op: 21, type: 'number', value: 0}
         ];
         dict = parseCFFDict(data, start, size);
         return interpretDict(dict, meta, strings);
