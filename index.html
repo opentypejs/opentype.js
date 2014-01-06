@@ -264,9 +264,13 @@ function doSnap(path) {
             cmd.x = snap(cmd.x + snapX, snapDistance, strength) - snapX;
             cmd.y = snap(cmd.y + snapY, snapDistance, strength) - snapY;
         }
-        if (cmd.type === 'Q') {
+        if (cmd.type === 'Q' || cmd.type === 'C') {
             cmd.x1 = snap(cmd.x1 + snapX, snapDistance, strength) - snapX;
             cmd.y1 = snap(cmd.y1 + snapY, snapDistance, strength) - snapY;
+        }
+        if (cmd.type === 'C') {
+            cmd.x2 = snap(cmd.x2 + snapX, snapDistance, strength) - snapX;
+            cmd.y2 = snap(cmd.y2 + snapY, snapDistance, strength) - snapY;
         }
     }
 }
