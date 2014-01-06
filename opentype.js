@@ -1193,6 +1193,17 @@
         return entriesToObject(entries);
     }
 
+    // Given a String Index (SID), return the value of the string.
+    // Strings below index 392 are standard CFF strings and are not encoded in the font.
+    function getCFFString(strings, index) {
+        if (index <= 391) {
+            index = cffStandardStrings[index];
+        } else {
+            index = strings[index - 391];
+        }
+        return index;
+    }
+
     // Interpret a dictionary and return a new dictionary with readable keys and values for missing entries.
     // This function takes `meta` which is a list of objects containing `operand`, `name` and `default`.
     function interpretDict(dict, meta, strings) {
@@ -1212,17 +1223,6 @@
             newDict[m.name] = value;
         }
         return newDict;
-    }
-
-    // Given a String Index (SID), return the value of the string.
-    // Strings below index 392 are standard CFF strings and are not encoded in the font.
-    function getCFFString(strings, index) {
-        if (index <= 391) {
-            index = cffStandardStrings[index];
-        } else {
-            index = strings[index - 391];
-        }
-        return index;
     }
 
     // Parse the CFF header.
