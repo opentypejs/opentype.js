@@ -1355,11 +1355,27 @@
     // The encoding is described in the Type 2 Charstring Format
     // https://www.microsoft.com/typography/OTSPEC/charstr2.htm
     function parseCFFCharstring(code, font, index) {
-        var path, glyph, stack, nStems, x, y, c1x, c1y, c2x, c2y, v;
+        var path, glyph, stack, nStems, haveWidth, width, x, y, c1x, c1y, c2x, c2y, v;
         path = new Path();
         stack = [];
         nStems = 0;
+        haveWidth = false;
+        width = font.nominalWidthX;
         x = y = 0;
+
+        function parseStems() {
+            var hasWidthArg;
+            // The number of stem operators on the stack is always even.
+            // If the value is uneven, that means a width is specified.
+            hasWidthArg = stack.length % 2 !== 0;
+            if (hasWidthArg && !haveWidth) {
+                width = stack.shift() + font.nominalWidthX;
+            }
+            nStems += stack.length >> 1;
+            stack.length = 0;
+            haveWidth = true;
+        }
+
         function parse(code) {
             var i, b1, b2, b3, b4, codeIndex, subrCode;
             i = 0;
@@ -1367,18 +1383,28 @@
                 v = code[i];
                 i += 1;
                 switch (v) {
+                case 0:
+                case 2:
+                case 9:
+                case 13:
+                case 15:
+                case 16:
+                case 17:
+                    // console.log('Glyph ' + index + ': unknown operator ' + v);
+                    break;
                 case 1: // hstem
-                    nStems += stack.length >> 1;
-                    stack.length = 0;
+                    parseStems();
                     break;
                 case 3: // vstem
-                    nStems += stack.length >> 1;
-                    stack.length = 0;
+                    parseStems();
                     break;
                 case 4: // vmoveto
+                    if (stack.length > 1 && !haveWidth) {
+                        width = stack.shift() + font.nominalWidthX;
+                        haveWidth = true;
+                    }
                     y += stack.pop();
                     path.moveTo(x, -y);
-                    stack.length = 0;
                     break;
                 case 5: // rlineto
                     while (stack.length > 0) {
@@ -1430,43 +1456,39 @@
                 case 11: // return
                     return;
                 case 12: // escape
-                    //console.log('escape');
                     v = code[i];
                     i += 1;
                     break;
                 case 14: // endchar
-                    // This ends the glyph.
-                    // console.log('endchar stack', stack.length);
+                    if (stack.length > 0 && !haveWidth) {
+                        width = stack.shift() + font.nominalWidthX;
+                        haveWidth = true;
+                    }
+                    path.closePath();
                     break;
                 case 18: // hstemhm
-                    nStems += stack.length >> 1;
-                    stack.length = 0;
-                    break;
                 case 19: // hintmask
-                    nStems += stack.length >> 1;
-                    i += (nStems + 7) >> 3;
-                    stack.length = 0;
-                    break;
                 case 20: // cntrmask
-                    nStems += stack.length >> 1;
+                case 23: // vstemhm
+                    parseStems();
                     i += (nStems + 7) >> 3;
-                    stack.length = 0;
                     break;
                 case 21: // rmoveto
+                    if (stack.length > 2 && !haveWidth) {
+                        width = stack.shift() + font.nominalWidthX;
+                        haveWidth = true;
+                    }
                     y += stack.pop();
                     x += stack.pop();
                     path.moveTo(x, -y);
-                    stack.length = 0;
                     break;
                 case 22: // hmoveto
+                    if (stack.length > 1 && !haveWidth) {
+                        width = stack.shift() + font.nominalWidthX;
+                        haveWidth = true;
+                    }
                     x += stack.pop();
                     path.moveTo(x, -y);
-                    stack.length = 0;
-                    break;
-                case 23: // vstemhm
-                    nStems += stack.length >> 1;
-                    i += (nStems + 7) >> 3;
-                    stack.length = 0;
                     break;
                 case 24: // rcurveline
                     while (stack.length > 2) {
@@ -1607,16 +1629,8 @@
 
         parse(code);
         glyph = new CffGlyph(font, index);
-        if (code[0] < 247) {
-            glyph.advanceWidth = font.nominalWidthX + code[0] - 139;
-        } else if (code[0] < 251) {
-            glyph.advanceWidth = font.nominalWidthX + ((code[0] - 247) * 256 + code[1] + 108);
-        } else if (code[0] < 255) {
-            glyph.advanceWidth = font.nominalWidthX + (-(code[0] - 251) * 256 - code[1] - 108);
-        } else {
-            glyph.advanceWidth = 1000;
-        }
         glyph.path = path;
+        glyph.advanceWidth = width;
         return glyph;
     }
 
