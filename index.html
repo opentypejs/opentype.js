@@ -91,6 +91,12 @@
             width: 950px;
         }
 
+        #file {
+            float: left;
+            font-size: 11px;
+            color: #999;
+        }
+
         .info {
             float: right;
             font-size: 11px;
@@ -146,6 +152,7 @@
         It allows you to access the <strong>letterforms</strong> of text from the browser or node.js.
     </div>
 
+    <input id="file" type="file"></input>
     <span class="info" id="font-name">Roboto-Black</span>
     <canvas id="preview" width="940" height="300" class="text"></canvas>
     <div id="message"></div>
@@ -313,30 +320,27 @@ function createGlyphCanvas(glyph, size) {
 
 function showErrorMessage(message) {
     var el = document.getElementById('message');
-    el.style.display = 'block';
+    if (!message || message.trim().length === 0) {
+        el.style.display = 'none';
+    } else {
+        el.style.display = 'block';
+    }
     el.innerHTML = message;
 }
-var font;
-font = 'fonts/Roboto-Black.ttf';
-font = 'fonts/SourceSansPro-Regular.otf';
-font = 'fonts/FiraSansOT-Medium.otf';
 
-document.getElementById('font-name').innerHTML = font.split('/')[1];
-
-opentype.load(font, function (err, font) {
-    var amount, glyph, ctx, x, y, fontSize;
-    if (err) {
-        showErrorMessage(err.toString());
-        return;
-    }
+function onFontLoaded(font) {
+    var glyphsDiv, i, x, y, fontSize;
     window.font = font;
 
     // Show the first 100 glyphs.
+    glyphsDiv = document.getElementById('glyphs');
+    glyphsDiv.innerHTML = '';
+
     amount = Math.min(100, font.glyphs.length);
     x = 50;
     y = 120;
     fontSize = 72;
-    for (var i = 0; i < amount; i++) {
+    for (i = 0; i < amount; i++) {
         glyph = font.glyphs[i];
         ctx = createGlyphCanvas(glyph, 150);
         glyph.draw(ctx, x, y, fontSize);
@@ -345,6 +349,42 @@ opentype.load(font, function (err, font) {
     }
 
     renderText();
+}
+
+function onReadFile(e) {
+    document.getElementById('font-name').innerHTML = '';
+    var file = e.target.files[0];
+    var reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            font = opentype.parse(e.target.result);
+            onFontLoaded(font);
+            showErrorMessage('');
+        } catch (err) {
+            showErrorMessage(err.toString());
+        }
+    }
+    reader.onerror = function (err) {
+        showErrorMessage(err.toString());
+    }
+
+    reader.readAsArrayBuffer(file);
+}
+
+var fontFileName = 'fonts/FiraSansOT-Medium.otf';
+
+document.getElementById('font-name').innerHTML = fontFileName.split('/')[1];
+
+var fileButton = document.getElementById('file');
+fileButton.addEventListener('change', onReadFile, false);
+
+opentype.load(fontFileName, function (err, font) {
+    var amount, glyph, ctx, x, y, fontSize;
+    if (err) {
+        showErrorMessage(err.toString());
+        return;
+    }
+    onFontLoaded(font);
 });
 </script>
 </body>
