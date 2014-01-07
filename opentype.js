@@ -1383,15 +1383,6 @@
                 v = code[i];
                 i += 1;
                 switch (v) {
-                case 0:
-                case 2:
-                case 9:
-                case 13:
-                case 15:
-                case 16:
-                case 17:
-                    // console.log('Glyph ' + index + ': unknown operator ' + v);
-                    break;
                 case 1: // hstem
                     parseStems();
                     break;
@@ -1467,9 +1458,10 @@
                     path.closePath();
                     break;
                 case 18: // hstemhm
+                    parseStems();
+                    break;
                 case 19: // hintmask
                 case 20: // cntrmask
-                case 23: // vstemhm
                     parseStems();
                     i += (nStems + 7) >> 3;
                     break;
@@ -1489,6 +1481,9 @@
                     }
                     x += stack.pop();
                     path.moveTo(x, -y);
+                    break;
+                case 23: // vstemhm
+                    parseStems();
                     break;
                 case 24: // rcurveline
                     while (stack.length > 2) {
@@ -1603,7 +1598,7 @@
                     break;
                 default:
                     if (v < 32) {
-                        throw new Error('Unknown operator: ' + v);
+                        throw new Error('Glyph ' + index + ': unknown operator ' + v);
                         // console.log('Unknown operator: ' + v);
                     } else if (v < 247) {
                         stack.push(v - 139);
