@@ -330,24 +330,37 @@
             ctx.fill();
         }
 
-        var scale, points, i, pt, blueCircles, redCircles;
+        var scale, points, i, pt, blueCircles, redCircles, path, cmd;
         x = x !== undefined ? x : 0;
         y = y !== undefined ? y : 0;
         fontSize = fontSize !== undefined ? fontSize : 24;
         scale = 1 / this.font.unitsPerEm * fontSize;
-        points = this.points;
-        if (!points) {
-            return;
-        }
 
         blueCircles = [];
         redCircles = [];
-        for (i = 0; i < points.length; i += 1) {
-            pt = points[i];
-            if (pt.onCurve) {
-                blueCircles.push(pt);
-            } else {
-                redCircles.push(pt);
+        if (this.points) {
+            points = this.points;
+            for (i = 0; i < points.length; i += 1) {
+                pt = points[i];
+                if (pt.onCurve) {
+                    blueCircles.push(pt);
+                } else {
+                    redCircles.push(pt);
+                }
+            }
+        } else {
+            path = this.path;
+            for (i = 0; i < path.commands.length; i += 1) {
+                cmd = path.commands[i];
+                if (cmd.x !== undefined) {
+                    blueCircles.push({x: cmd.x, y: -cmd.y});
+                }
+                if (cmd.x1 !== undefined) {
+                    redCircles.push({x: cmd.x1, y: -cmd.y1});
+                }
+                if (cmd.x2 !== undefined) {
+                    redCircles.push({x: cmd.x2, y: -cmd.y2});
+                }
             }
         }
 
