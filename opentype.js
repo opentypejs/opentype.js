@@ -1729,7 +1729,6 @@
         tableVersion = p.parseUShort();
         checkArgument(tableVersion === 0, "Unsupported kern table version.");
         nTables = p.parseUShort();
-        checkArgument(nTables === 1, "Unsupported number of kern sub-tables.");
         subTableVersion = p.parseUShort();
         checkArgument(subTableVersion === 0, "Unsupported kern sub-table version.");
         // Skip subTableLength, subTableCoverage
