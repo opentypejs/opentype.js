@@ -778,12 +778,12 @@
     // https://www.microsoft.com/typography/OTSPEC/cmap.htm
     function parseCmapTable(data, start) {
         var version, numTables, offset, platformId, encodingId, format, segCount,
-            ranges, i, j, idRangeOffset, p;
+            ranges, i, j, parserOffset, idRangeOffset, p;
         version = getUShort(data, start);
         checkArgument(version === 0, "cmap table version should be 0.");
 
         // The cmap table can contain many sub-tables, each with their own format.
-        // We're only interested in a "platform 1" table. This is a Windows format.
+        // We're only interested in a "platform 3" table. This is a Windows format.
         numTables = getUShort(data, start + 2);
         offset = -1;
         for (i = 0; i < numTables; i += 1) {
@@ -807,7 +807,7 @@
         // Skip length and language;
         p.skip('uShort', 2);
         // segCount is stored x 2.
-        segCount = p.parseUShort() / 2;
+        segCount = p.parseUShort() >> 1;
         // Skip searchRange, entrySelector, rangeShift.
         p.skip('uShort', 3);
         ranges = [];
@@ -824,14 +824,14 @@
             ranges[i].idDelta = p.parseShort();
         }
         for (i = 0; i < segCount; i += 1) {
+            parserOffset = p.offset + p.relativeOffset;
             idRangeOffset = p.parseUShort();
             if (idRangeOffset > 0) {
                 ranges[i].ids = [];
                 for (j = 0; j < ranges[i].length; j += 1) {
-                    ranges[i].ids[j] = getUShort(data, start + p.relativeOffset + idRangeOffset);
+                    ranges[i].ids[j] = getUShort(data, parserOffset + idRangeOffset);
                     idRangeOffset += 2;
                 }
-                ranges[i].idDelta = p.parseUShort();
             }
         }
 
