@@ -241,7 +241,7 @@
     // y - Vertical position of the *baseline* of the glyph. (default: 0)
     // fontSize - Font size, in pixels (default: 72).
     Glyph.prototype.getPath = function (x, y, fontSize) {
-        var scale, path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt;
+        var scale, path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt, lastPt;
         x = x !== undefined ? x : 0;
         y = y !== undefined ? y : 0;
         fontSize = fontSize !== undefined ? fontSize : 72;
@@ -254,10 +254,18 @@
         for (i = 0; i < contours.length; i += 1) {
             contour = contours[i];
             firstPt = contour[0];
+            if (firstPt.onCurve) {
+                lastPt = firstPt;
+            } else {
+                lastPt = contour[contour.length - 1];
+                if (!lastPt.onCurve) {
+                    lastPt = { x: (firstPt.x + lastPt.x) / 2, y: (firstPt.y + lastPt.y) / 2 };
+                }
+            }
             curvePt = null;
             for (j = 0; j < contour.length; j += 1) {
                 pt = contour[j];
-                prevPt = j === 0 ? contour[contour.length - 1] : contour[j - 1];
+                prevPt = j === 0 ? lastPt : contour[j - 1];
 
                 if (j === 0) {
                     // This is the first point of the contour.
@@ -267,7 +275,7 @@
                     } else {
                         midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
                         curvePt = midPt;
-                        path.moveTo(x + (midPt.x * scale), y + (-midPt.y * scale));
+                        path.moveTo(x + (prevPt.x * scale), y + (-prevPt.y * scale));
                     }
                 } else {
                     if (prevPt.onCurve && pt.onCurve) {
@@ -291,9 +299,9 @@
             }
             // Connect the last and first points
             if (curvePt) {
-                path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (firstPt.x * scale), y + (-firstPt.y * scale));
+                path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (lastPt.x * scale), y + (-lastPt.y * scale));
             } else {
-                path.lineTo(x + (firstPt.x * scale), y + (-firstPt.y * scale));
+                path.lineTo(x + (lastPt.x * scale), y + (-lastPt.y * scale));
             }
         }
         path.closePath();
