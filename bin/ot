@@ -6,7 +6,7 @@ var opentype = require('../opentype.js');
 
 // Print out information about the font on the console.
 function printFontInfo(font) {
-    console.log('  glyphs:', font.numGlyphs, font.glyphs.length);
+    console.log('  glyphs:', font.glyphs.length);
     console.log('  kerning pairs:', Object.keys(font.kerningPairs).length);
 }
 
@@ -40,8 +40,8 @@ function recursiveInfo(fontDirectory) {
     walk(fontDirectory, function (file) {
         var ext = path.extname(file).toLowerCase();
         if (ext === '.ttf' || ext === '.otf') {
-            console.log(path.basename(file));
             opentype.load(file, function (err, font) {
+                console.log(path.basename(file));
                 if (err) {
                     console.log('  (Error: ' + error + ')');
                 } else if (!font.supported) {
