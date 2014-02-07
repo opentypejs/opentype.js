@@ -1688,12 +1688,14 @@
 
         charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
         if (topDict.encoding === 0) { // Standard encoding
-            font.encoding = new CffEncoding(cffStandardEncoding, charset);
+            font.cffEncoding = new CffEncoding(cffStandardEncoding, charset);
         } else if (topDict.encoding === 1) { // Expert encoding
-            font.encoding = new CffEncoding(cffExpertEncoding, charset);
+            font.cffEncoding = new CffEncoding(cffExpertEncoding, charset);
         } else {
-            font.encoding = parseCFFEncoding(data, start + topDict.encoding, charset);
+            font.cffEncoding = parseCFFEncoding(data, start + topDict.encoding, charset);
         }
+        // Prefer the CMAP encoding to the CFF encoding.
+        font.encoding = font.encoding || font.cffEncoding;
 
         font.glyphs = [];
         for (i = 0; i < font.nGlyphs; i += 1) {
