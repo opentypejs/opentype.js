@@ -1622,7 +1622,6 @@
                 default:
                     if (v < 32) {
                         throw new Error('Glyph ' + index + ': unknown operator ' + v);
-                        // console.log('Unknown operator: ' + v);
                     } else if (v < 247) {
                         stack.push(v - 139);
                     } else if (v < 251) {
