@@ -27,8 +27,8 @@
     "ot": "./bin/ot"
   },
   "devDependencies": {
-    "grunt": "~0.4.1",
-    "grunt-contrib-uglify": "~0.2.4",
-    "grunt-release": "~0.5.1"
+    "grunt": "~0.4.2",
+    "grunt-contrib-uglify": "~0.3.2",
+    "grunt-release": "~0.6.0"
   }
 }
