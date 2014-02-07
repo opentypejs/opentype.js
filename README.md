@@ -127,3 +127,12 @@ Planned
 * Better support for composite glyphs (advanced scaling and transformations).
 * Support for ligatures and contextual alternates.
 * Support for SVG paths.
+
+Thanks
+======
+I would like to acknowledge the work of others withouth which opentype.js wouldn't be possible:
+
+* [pdf.js](http://mozilla.github.io/pdf.js/): for an awesome implementation of font parsing in the browser.
+* [FreeType](http://www.freetype.org/): for the nitty-gritty details and filling in the gaps when the spec was incomplete.
+* [ttf.js](http://ynakajima.github.io/ttf.js/demo/glyflist/): for hints about the TrueType parsing code.
+* [Microsoft Typography](https://www.microsoft.com/typography/OTSPEC/otff.htm): the go-to reference for all things OpenType.
