@@ -1,0 +1,12 @@
+{
+  "name": "opentype.js",
+  "description": "OpenType font parser",
+  "version": "0.2.0",
+  "main": "opentype.js",
+  "ignore": [
+    "**/.*",
+    "fonts",
+    "bin",
+    "g",
+  ]
+}
