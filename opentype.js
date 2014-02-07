@@ -4,11 +4,12 @@
 // opentype.js may be freely distributed under the MIT license.
 
 /*jslint bitwise: true */
-/*global module,define,DataView,XMLHttpRequest */
+/*global module,define,DataView,XMLHttpRequest,require,toArrayBuffer,ArrayBuffer,Uint8Array */
 (function () {
     'use strict';
 
-    var root, opentype, getCard8, getCard16, typeOffsets, cffStandardStrings, cffStandardEncoding, cffExpertEncoding;
+    var root, opentype, getCard8, getCard16, typeOffsets, cffStandardStrings,
+        cffStandardEncoding, cffExpertEncoding, fs;
 
     // Establish the root object, `window` in the browser or `exports` on the server.
     root = this;
@@ -1758,8 +1759,6 @@
 
     // File loaders /////////////////////////////////////////////////////////
 
-    var fs;
-
     function loadFromFile(path, callback) {
         fs = fs || require('fs');
         fs.readFile(path, function (err, buffer) {
@@ -1775,7 +1774,7 @@
         var request = new XMLHttpRequest();
         request.open('get', url, true);
         request.responseType = 'arraybuffer';
-        request.onload = function() {
+        request.onload = function () {
             if (request.status !== 200) {
                 return callback('Font could not be loaded: ' + request.statusText);
             }
@@ -1786,10 +1785,11 @@
 
     // Convert a Node.js Buffer to an ArrayBuffer
     function toArrayBuffer(buffer) {
-        var arrayBuffer = new ArrayBuffer(buffer.length),
+        var i,
+            arrayBuffer = new ArrayBuffer(buffer.length),
             data = new Uint8Array(arrayBuffer);
 
-        for (var i = 0; i < buffer.length; ++i) {
+        for (i = 0; i < buffer.length; i += 1) {
             data[i] = buffer[i];
         }
 
@@ -1898,7 +1898,7 @@
     //
     // We use the node.js callback convention so that
     // opentype.js can integrate with frameworks like async.js.
-    opentype.load = function(url, callback) {
+    opentype.load = function (url, callback) {
         var loader = typeof module !== 'undefined' && module.exports ? loadFromFile : loadFromUrl;
         loader(url, function (err, arrayBuffer) {
             if (err) {
