@@ -439,7 +439,8 @@
     // y - Vertical position of the *baseline* of the glyph. (default: 0)
     // fontSize - Font size, in pixels (default: 72).
     TrueTypeGlyph.prototype.getPath = function (x, y, fontSize) {
-        var scale, path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt, lastPt;
+        var scale, path, contours, i, realFirstPoint, j, contour, pt, firstPt,
+            prevPt, midPt, curvePt, lastPt;
         x = x !== undefined ? x : 0;
         y = y !== undefined ? y : 0;
         fontSize = fontSize !== undefined ? fontSize : 72;
@@ -452,54 +453,54 @@
         for (i = 0; i < contours.length; i += 1) {
             contour = contours[i];
             firstPt = contour[0];
+            lastPt = contour[contour.length - 1];
             if (firstPt.onCurve) {
-                lastPt = firstPt;
+                curvePt = null;
+                // The first point will be consumed by the moveTo command,
+                // so skip it in the loop.
+                realFirstPoint = true;
             } else {
-                lastPt = contour[contour.length - 1];
-                if (!lastPt.onCurve) {
-                    lastPt = { x: (firstPt.x + lastPt.x) / 2, y: (firstPt.y + lastPt.y) / 2 };
-                }
-            }
-            curvePt = null;
-            for (j = 0; j < contour.length; j += 1) {
-                pt = contour[j];
-                prevPt = j === 0 ? lastPt : contour[j - 1];
-
-                if (j === 0) {
-                    // This is the first point of the contour.
-                    if (pt.onCurve) {
-                        path.moveTo(x + (pt.x * scale), y + (-pt.y * scale));
-                        curvePt = null;
-                    } else {
-                        midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        curvePt = midPt;
-                        path.moveTo(x + (prevPt.x * scale), y + (-prevPt.y * scale));
-                    }
+                if (lastPt.onCurve) {
+                    // If the first point is off-curve and the last point is on-curve,
+                    // start at the last point.
+                    firstPt = lastPt;
                 } else {
-                    if (prevPt.onCurve && pt.onCurve) {
-                        // This is a straight line.
-                        path.lineTo(x + (pt.x * scale), y + (-pt.y * scale));
-                    } else if (prevPt.onCurve && !pt.onCurve) {
-                        curvePt = pt;
-                    } else if (!prevPt.onCurve && !pt.onCurve) {
-                        midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                        path.quadraticCurveTo(x + (prevPt.x * scale), y + (-prevPt.y * scale), x + (midPt.x * scale), y + (-midPt.y * scale));
-                        curvePt = pt;
-                    } else if (!prevPt.onCurve && pt.onCurve) {
-                        // Previous point off-curve, this point on-curve.
-                        path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (pt.x * scale), y + (-pt.y * scale));
-                        curvePt = null;
-                    } else {
-                        throw new Error("Invalid state.");
-                    }
+                    // If both first and last points are off-curve, start at their middle.
+                    firstPt = { x: (firstPt.x + lastPt.x) / 2, y: (firstPt.y + lastPt.y) / 2 };
                 }
-
+                curvePt = firstPt;
+                // The first point is synthesized, so don't skip the real first point.
+                realFirstPoint = false;
             }
-            // Connect the last and first points
-            if (curvePt) {
-                path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (lastPt.x * scale), y + (-lastPt.y * scale));
-            } else {
-                path.lineTo(x + (lastPt.x * scale), y + (-lastPt.y * scale));
+            path.moveTo(x + (firstPt.x * scale), y + (-firstPt.y * scale));
+
+            for (j = realFirstPoint ? 1 : 0; j < contour.length; j += 1) {
+                pt = contour[j];
+                prevPt = j === 0 ? firstPt : contour[j - 1];
+                if (prevPt.onCurve && pt.onCurve) {
+                    // This is a straight line.
+                    path.lineTo(x + (pt.x * scale), y + (-pt.y * scale));
+                } else if (prevPt.onCurve && !pt.onCurve) {
+                    curvePt = pt;
+                } else if (!prevPt.onCurve && !pt.onCurve) {
+                    midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
+                    path.quadraticCurveTo(x + (prevPt.x * scale), y + (-prevPt.y * scale), x + (midPt.x * scale), y + (-midPt.y * scale));
+                    curvePt = pt;
+                } else if (!prevPt.onCurve && pt.onCurve) {
+                    // Previous point off-curve, this point on-curve.
+                    path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (pt.x * scale), y + (-pt.y * scale));
+                    curvePt = null;
+                } else {
+                    throw new Error("Invalid state.");
+                }
+            }
+            if (firstPt !== lastPt) {
+                // Connect the last and first points
+                if (curvePt) {
+                    path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (firstPt.x * scale), y + (-firstPt.y * scale));
+                } else {
+                    path.lineTo(x + (firstPt.x * scale), y + (-firstPt.y * scale));
+                }
             }
         }
         path.closePath();
