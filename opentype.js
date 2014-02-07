@@ -438,7 +438,7 @@
     // y - Vertical position of the *baseline* of the glyph. (default: 0)
     // fontSize - Font size, in pixels (default: 72).
     TrueTypeGlyph.prototype.getPath = function (x, y, fontSize) {
-        var scale, path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt;
+        var scale, path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt, lastPt;
         x = x !== undefined ? x : 0;
         y = y !== undefined ? y : 0;
         fontSize = fontSize !== undefined ? fontSize : 72;
@@ -451,10 +451,18 @@
         for (i = 0; i < contours.length; i += 1) {
             contour = contours[i];
             firstPt = contour[0];
+            if (firstPt.onCurve) {
+                lastPt = firstPt;
+            } else {
+                lastPt = contour[contour.length - 1];
+                if (!lastPt.onCurve) {
+                    lastPt = { x: (firstPt.x + lastPt.x) / 2, y: (firstPt.y + lastPt.y) / 2 };
+                }
+            }
             curvePt = null;
             for (j = 0; j < contour.length; j += 1) {
                 pt = contour[j];
-                prevPt = j === 0 ? contour[contour.length - 1] : contour[j - 1];
+                prevPt = j === 0 ? lastPt : contour[j - 1];
 
                 if (j === 0) {
                     // This is the first point of the contour.
@@ -464,7 +472,7 @@
                     } else {
                         midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
                         curvePt = midPt;
-                        path.moveTo(x + (midPt.x * scale), y + (-midPt.y * scale));
+                        path.moveTo(x + (prevPt.x * scale), y + (-prevPt.y * scale));
                     }
                 } else {
                     if (prevPt.onCurve && pt.onCurve) {
@@ -488,9 +496,9 @@
             }
             // Connect the last and first points
             if (curvePt) {
-                path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (firstPt.x * scale), y + (-firstPt.y * scale));
+                path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (lastPt.x * scale), y + (-lastPt.y * scale));
             } else {
-                path.lineTo(x + (firstPt.x * scale), y + (-firstPt.y * scale));
+                path.lineTo(x + (lastPt.x * scale), y + (-lastPt.y * scale));
             }
         }
         path.closePath();
@@ -1005,18 +1013,18 @@
     }
 
 
+    // Parse the `cmap` table. This table stores the mappings from characters to glyphs.
+    // There are many available formats, but we only support the Windows format 4.
+    // This function returns a `CmapEncoding` object or null if no supported format could be found.
+    // https://www.microsoft.com/typography/OTSPEC/cmap.htm
     function parseCmapTable(data, start) {
-        // Parse the `cmap` table. This table stores the mappings from characters to glyphs.
-        // There are many available formats, but we only support the Windows format 4.
-        // This function returns a `CmapEncoding` object or null if no supported format could be found.
-        // https://www.microsoft.com/typography/OTSPEC/cmap.htm
         var version, numTables, offset, platformId, encodingId, format, segCount,
-            ranges, i, j, idRangeOffset, p;
+            ranges, i, j, parserOffset, idRangeOffset, p;
         version = getUShort(data, start);
         checkArgument(version === 0, "cmap table version should be 0.");
 
         // The cmap table can contain many sub-tables, each with their own format.
-        // We're only interested in a "platform 1" table. This is a Windows format.
+        // We're only interested in a "platform 3" table. This is a Windows format.
         numTables = getUShort(data, start + 2);
         offset = -1;
         for (i = 0; i < numTables; i += 1) {
@@ -1040,7 +1048,7 @@
         // Skip length and language;
         p.skip('uShort', 2);
         // segCount is stored x 2.
-        segCount = p.parseUShort() / 2;
+        segCount = p.parseUShort() >> 1;
         // Skip searchRange, entrySelector, rangeShift.
         p.skip('uShort', 3);
         ranges = [];
@@ -1057,14 +1065,14 @@
             ranges[i].idDelta = p.parseShort();
         }
         for (i = 0; i < segCount; i += 1) {
+            parserOffset = p.offset + p.relativeOffset;
             idRangeOffset = p.parseUShort();
             if (idRangeOffset > 0) {
                 ranges[i].ids = [];
                 for (j = 0; j < ranges[i].length; j += 1) {
-                    ranges[i].ids[j] = getUShort(data, start + p.relativeOffset + idRangeOffset);
+                    ranges[i].ids[j] = getUShort(data, parserOffset + idRangeOffset);
                     idRangeOffset += 2;
                 }
-                ranges[i].idDelta = p.parseUShort();
             }
         }
 
@@ -1749,6 +1757,46 @@
         return pairs;
     }
 
+    // File loaders /////////////////////////////////////////////////////////
+
+    var fs;
+
+    function loadFromFile(path, callback) {
+        fs = fs || require('fs');
+        fs.readFile(path, function (err, buffer) {
+            if (err) {
+                return callback(err.message);
+            }
+
+            callback(null, toArrayBuffer(buffer));
+        });
+    }
+
+    function loadFromUrl(url, callback) {
+        var request = new XMLHttpRequest();
+        request.open('get', url, true);
+        request.responseType = 'arraybuffer';
+        request.onload = function() {
+            if (request.status !== 200) {
+                return callback('Font could not be loaded: ' + request.statusText);
+            }
+            return callback(null, request.response);
+        };
+        request.send();
+    }
+
+    // Convert a Node.js Buffer to an ArrayBuffer
+    function toArrayBuffer(buffer) {
+        var arrayBuffer = new ArrayBuffer(buffer.length),
+            data = new Uint8Array(arrayBuffer);
+
+        for (var i = 0; i < buffer.length; ++i) {
+            data[i] = buffer[i];
+        }
+
+        return arrayBuffer;
+    }
+
     // Public API ///////////////////////////////////////////////////////////
 
     // Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
@@ -1845,33 +1893,24 @@
         return font;
     };
 
-    // Load the font from a URL asynchronously. When done, call the he callback
+    // Asynchronously load the font from a URL or a filesystem. When done, call the callback
     // with two arguments `(err, font)`. The `err` will be null on success,
     // the `font` is a Font object.
     //
     // We use the node.js callback convention so that
     // opentype.js can integrate with frameworks like async.js.
-    opentype.load = function (url, callback) {
-        var request = new XMLHttpRequest();
-        request.open('get', url, true);
-        request.responseType = 'arraybuffer';
-        request.onload = function () {
-            var arrayBuffer, font;
-            if (request.status !== 200) {
-                return callback('Font could not be loaded: ' + request.statusText);
-            }
-            arrayBuffer = request.response;
-            try {
-                font = opentype.parse(arrayBuffer);
-                if (!font.supported) {
-                    return callback('Font is not supported (is this a Postscript font?)');
-                }
-                return callback(null, font);
-            } catch (err) {
+    opentype.load = function(url, callback) {
+        var loader = typeof module !== 'undefined' && module.exports ? loadFromFile : loadFromUrl;
+        loader(url, function (err, arrayBuffer) {
+            if (err) {
                 return callback(err);
             }
-        };
-        request.send();
+            var font = opentype.parse(arrayBuffer);
+            if (!font.supported) {
+                return callback('Font is not supported (is this a Postscript font?)');
+            }
+            return callback(null, font);
+        });
     };
 
     // Module support ///////////////////////////////////////////////////////
