@@ -568,7 +568,9 @@
         var glyphIndex, glyph;
         glyphIndex = this.charToGlyphIndex(c);
         glyph = this.glyphs[glyphIndex];
-        checkArgument(glyph !== undefined, 'Could not find glyph for character ' + c + ' glyph index ' + glyphIndex);
+        if (!glyph) {
+            glyph = this.glyphs[0]; // .notdef
+        }
         return glyph;
     };
 
