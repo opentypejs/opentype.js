@@ -28,7 +28,8 @@ Features
 ========
 * Create a bézier path out of a piece of text.
 * Support for composite glyphs (accented letters).
-* Support for kerning tables (configurable and on by default).
+* Support for OpenType (glyf) and PostScript (cff) shapes.
+* Kerning support for OpenType shapes (configurable and on by default).
 * Very efficient.
 * Runs in the browser and node.js.
 
@@ -77,7 +78,7 @@ Green line indicates the advance width of the glyph.
 
 ##### `Font.stringToGlyphs(string)`
 Convert the string to a list of glyph objects.
-Note that there is no strict 1-to-1 correspondence between the string and glyph list due to 
+Note that there is no strict 1-to-1 correspondence between the string and glyph list due to
 possible substitutions such as ligatures. The list of returned glyphs can be larger or smaller than the length of the given string.
 
 ##### `Font.charToGlyph(char)`
@@ -122,7 +123,7 @@ The arguments are the same as `Glyph.draw`.
 
 Planned
 =======
-* Support for PostScript outlines.
+* Kerning support for PostScript shapes.
 * Better support for composite glyphs (advanced scaling and transformations).
 * Support for ligatures and contextual alternates.
 * Support for SVG paths.

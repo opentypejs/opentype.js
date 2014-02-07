@@ -8,7 +8,7 @@
 (function () {
     'use strict';
 
-    var root, opentype, typeOffsets;
+    var root, opentype, getCard8, getCard16, typeOffsets, cffStandardStrings, cffStandardEncoding, cffExpertEncoding;
 
     // Establish the root object, `window` in the browser or `exports` on the server.
     root = this;
@@ -107,11 +107,15 @@
         return dataView.getUint8(offset);
     }
 
+    getCard8 = getByte;
+
     // Retrieve an unsigned 16-bit short from the DataView.
     // The value is stored in big endian.
     function getUShort(dataView, offset) {
         return dataView.getUint16(offset, false);
     }
+
+    getCard16 = getUShort;
 
     // Retrieve a signed 16-bit short from the DataView.
     // The value is stored in big endian.
@@ -152,6 +156,38 @@
         return tag;
     }
 
+    // Retrieve an offset from the DataView.
+    // Offsets are 1 to 4 bytes in length, depending on the offSize argument.
+    function getOffset(dataView, offset, offSize) {
+        var i, v;
+        v = 0;
+        for (i = 0; i < offSize; i += 1) {
+            v <<= 8;
+            v += dataView.getUint8(offset + i);
+        }
+        return v;
+    }
+
+    // Retrieve a number of bytes from start offset to the end offset from the DataView.
+    function getBytes(dataView, startOffset, endOffset) {
+        var bytes, i;
+        bytes = [];
+        for (i = startOffset; i < endOffset; i += 1) {
+            bytes.push(dataView.getUint8(i));
+        }
+        return bytes;
+    }
+
+    // Convert the list of bytes to a string.
+    function bytesToString(bytes) {
+        var s, i;
+        s = '';
+        for (i = 0; i < bytes.length; i += 1) {
+            s += String.fromCharCode(bytes[i]);
+        }
+        return s;
+    }
+
     typeOffsets = {
         byte: 1,
         uShort: 2,
@@ -168,32 +204,42 @@
     }
 
     // A stateful parser that changes the offset whenever a value is retrieved.
-    function Parser(dataView, offset) {
-        this.dataView = dataView;
+    // The data can be either a DataView or an array of bytes.
+    function Parser(data, offset) {
+        this.data = data;
+        this.isDataView = data.constructor.name === 'DataView';
         this.offset = offset;
         this.relativeOffset = 0;
     }
 
     Parser.prototype.parseByte = function () {
-        var v = getByte(this.dataView, this.offset + this.relativeOffset);
+        var v;
+        if (this.isDataView) {
+            v = getByte(this.data, this.offset + this.relativeOffset);
+        } else {
+            v = this.data[this.offset + this.relativeOffset];
+        }
         this.relativeOffset += 1;
         return v;
     };
+    Parser.prototype.parseCard8 = Parser.prototype.parseByte;
 
     Parser.prototype.parseUShort = function () {
-        var v = getUShort(this.dataView, this.offset + this.relativeOffset);
+        var v = getUShort(this.data, this.offset + this.relativeOffset);
         this.relativeOffset += 2;
         return v;
     };
+    Parser.prototype.parseCard16 = Parser.prototype.parseUShort;
+    Parser.prototype.parseSID = Parser.prototype.parseUShort;
 
     Parser.prototype.parseShort = function () {
-        var v = getShort(this.dataView, this.offset + this.relativeOffset);
+        var v = getShort(this.data, this.offset + this.relativeOffset);
         this.relativeOffset += 2;
         return v;
     };
 
     Parser.prototype.parseULong = function () {
-        var v = getULong(this.dataView, this.offset + this.relativeOffset);
+        var v = getULong(this.data, this.offset + this.relativeOffset);
         this.relativeOffset += 4;
         return v;
     };
@@ -205,21 +251,172 @@
         this.relativeOffset += typeOffsets[type] * amount;
     };
 
+    // Encoding objects /////////////////////////////////////////////////////
+
+    function CmapEncoding(cmap) {
+        this.cmap = cmap;
+    }
+
+    CmapEncoding.prototype.charToGlyphIndex = function (s) {
+        var ranges, code, l, c, r;
+        ranges = this.cmap;
+        code = s.charCodeAt(0);
+        l = 0;
+        r = ranges.length - 1;
+        while (l < r) {
+            c = (l + r + 1) >> 1;
+            if (code < ranges[c].start) {
+                r = c - 1;
+            } else {
+                l = c;
+            }
+        }
+        if (ranges[l].start <= code && code <= ranges[l].end) {
+            return (ranges[l].idDelta + (ranges[l].ids ? ranges[l].ids[code - ranges[l].start] : code)) & 0xFFFF;
+        }
+        return 0;
+    };
+
+    function CffEncoding(encoding, charset) {
+        this.encoding = encoding;
+        this.charset = charset;
+    }
+
+    CffEncoding.prototype.charToGlyphIndex = function (s) {
+        var code, charName;
+        code = s.charCodeAt(0);
+        charName = this.encoding[code];
+        return this.charset.indexOf(charName);
+    };
+
     // Glyph object /////////////////////////////////////////////////////////
 
     // A Glyph is an individual mark that often corresponds to a character.
     // Some glyphs, such as ligatures, are a combination of many characters.
     // Glyphs are the basic building blocks of a font.
-    function Glyph(font, index) {
+    //
+    // The `Glyph` class is an abstract object that contains utility methods for drawing the path and its points.
+    // Concrete classes are `TrueTypeGlyph` and `CffGlyph` that implement `getPath`.
+    function Glyph() {
+    }
+
+    // Draw the glyph on the given context.
+    //
+    // ctx - The drawing context.
+    // x - Horizontal position of the glyph. (default: 0)
+    // y - Vertical position of the *baseline* of the glyph. (default: 0)
+    // fontSize - Font size, in pixels (default: 72).
+    Glyph.prototype.draw = function (ctx, x, y, fontSize) {
+        this.getPath(x, y, fontSize).draw(ctx);
+    };
+
+    // Draw the points of the glyph.
+    // On-curve points will be drawn in blue, off-curve points will be drawn in red.
+    //
+    // ctx - The drawing context.
+    // x - Horizontal position of the glyph. (default: 0)
+    // y - Vertical position of the *baseline* of the glyph. (default: 0)
+    // fontSize - Font size, in pixels (default: 72).
+    Glyph.prototype.drawPoints = function (ctx, x, y, fontSize) {
+
+        function drawCircles(l, x, y, scale) {
+            var j, PI_SQ = Math.PI * 2;
+            ctx.beginPath();
+            for (j = 0; j < l.length; j += 1) {
+                ctx.moveTo(x + (l[j].x * scale), y + (-l[j].y * scale));
+                ctx.arc(x + (l[j].x * scale), y + (-l[j].y * scale), 2, 0, PI_SQ, false);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        var scale, points, i, pt, blueCircles, redCircles, path, cmd;
+        x = x !== undefined ? x : 0;
+        y = y !== undefined ? y : 0;
+        fontSize = fontSize !== undefined ? fontSize : 24;
+        scale = 1 / this.font.unitsPerEm * fontSize;
+
+        blueCircles = [];
+        redCircles = [];
+        if (this.points) {
+            points = this.points;
+            for (i = 0; i < points.length; i += 1) {
+                pt = points[i];
+                if (pt.onCurve) {
+                    blueCircles.push(pt);
+                } else {
+                    redCircles.push(pt);
+                }
+            }
+        } else {
+            path = this.path;
+            for (i = 0; i < path.commands.length; i += 1) {
+                cmd = path.commands[i];
+                if (cmd.x !== undefined) {
+                    blueCircles.push({x: cmd.x, y: -cmd.y});
+                }
+                if (cmd.x1 !== undefined) {
+                    redCircles.push({x: cmd.x1, y: -cmd.y1});
+                }
+                if (cmd.x2 !== undefined) {
+                    redCircles.push({x: cmd.x2, y: -cmd.y2});
+                }
+            }
+        }
+
+        ctx.fillStyle = 'blue';
+        drawCircles(blueCircles, x, y, scale);
+        ctx.fillStyle = 'red';
+        drawCircles(redCircles, x, y, scale);
+    };
+
+    // Draw lines indicating important font measurements.
+    // Black lines indicate the origin of the coordinate system (point 0,0).
+    // Blue lines indicate the glyph bounding box.
+    // Green line indicates the advance width of the glyph.
+    //
+    // ctx - The drawing context.
+    // x - Horizontal position of the glyph. (default: 0)
+    // y - Vertical position of the *baseline* of the glyph. (default: 0)
+    // fontSize - Font size, in pixels (default: 72).
+    Glyph.prototype.drawMetrics = function (ctx, x, y, fontSize) {
+        var scale;
+        x = x !== undefined ? x : 0;
+        y = y !== undefined ? y : 0;
+        fontSize = fontSize !== undefined ? fontSize : 24;
+        scale = 1 / this.font.unitsPerEm * fontSize;
+        ctx.lineWidth = 1;
+        // Draw the origin
+        ctx.strokeStyle = 'black';
+        line(ctx, x, -10000, x, 10000);
+        line(ctx, -10000, y, 10000, y);
+        // Draw the glyph box
+        ctx.strokeStyle = 'blue';
+        line(ctx, x + (this.xMin * scale), -10000, x + (this.xMin * scale), 10000);
+        line(ctx, x + (this.xMax * scale), -10000, x + (this.xMax * scale), 10000);
+        line(ctx, -10000, y + (-this.yMin * scale), 10000, y + (-this.yMin * scale));
+        line(ctx, -10000, y + (-this.yMax * scale), 10000, y + (-this.yMax * scale));
+        // Draw the advance width
+        ctx.strokeStyle = 'green';
+        line(ctx, x + (this.advanceWidth * scale), -10000, x + (this.advanceWidth * scale), 10000);
+    };
+
+    // A concrete implementation of glyph for TrueType outline data.
+    function TrueTypeGlyph(font, index) {
+        Glyph.call(this);
         this.font = font;
         this.index = index;
         this.numberOfContours = 0;
         this.xMin = this.yMin = this.xMax = this.yMax = 0;
+        this.advanceWidth = 0;
         this.points = [];
     }
 
+    TrueTypeGlyph.prototype = new Glyph();
+    TrueTypeGlyph.prototype.constructor = TrueTypeGlyph;
+
     // Split the glyph into contours.
-    Glyph.prototype.getContours = function () {
+    TrueTypeGlyph.prototype.getContours = function () {
         var contours, currentContour, i, pt;
         contours = [];
         currentContour = [];
@@ -240,7 +437,7 @@
     // x - Horizontal position of the glyph. (default: 0)
     // y - Vertical position of the *baseline* of the glyph. (default: 0)
     // fontSize - Font size, in pixels (default: 72).
-    Glyph.prototype.getPath = function (x, y, fontSize) {
+    TrueTypeGlyph.prototype.getPath = function (x, y, fontSize) {
         var scale, path, contours, i, j, contour, pt, firstPt, prevPt, midPt, curvePt, lastPt;
         x = x !== undefined ? x : 0;
         y = y !== undefined ? y : 0;
@@ -308,92 +505,50 @@
         return path;
     };
 
-    // Draw the glyph on the given context.
+    // A concrete implementation of glyph for TrueType outline data.
+    function CffGlyph(font, index) {
+        Glyph.call(this);
+        this.font = font;
+        this.index = index;
+        this.numberOfContours = 0;
+        this.xMin = this.yMin = this.xMax = this.yMax = 0;
+        this.advanceWidth = font.defaultWidthX;
+        this.path = null;
+    }
+
+    CffGlyph.prototype = new Glyph();
+    CffGlyph.prototype.constructor = CffGlyph;
+
+    // Convert the glyph to a Path we can draw on a drawing context.
     //
-    // ctx - The drawing context.
     // x - Horizontal position of the glyph. (default: 0)
     // y - Vertical position of the *baseline* of the glyph. (default: 0)
     // fontSize - Font size, in pixels (default: 72).
-    Glyph.prototype.draw = function (ctx, x, y, fontSize) {
-        this.getPath(x, y, fontSize).draw(ctx);
-    };
-
-    // Draw the points of the glyph.
-    // On-curve points will be drawn in blue, off-curve points will be drawn in red.
-    //
-    // ctx - The drawing context.
-    // x - Horizontal position of the glyph. (default: 0)
-    // y - Vertical position of the *baseline* of the glyph. (default: 0)
-    // fontSize - Font size, in pixels (default: 72).
-    Glyph.prototype.drawPoints = function (ctx, x, y, fontSize) {
-
-        function drawCircles(l, x, y, scale) {
-            var j, PI_SQ = Math.PI * 2;
-            ctx.beginPath();
-            for (j = 0; j < l.length; j += 1) {
-                ctx.moveTo(x + (l[j].x * scale), y + (-l[j].y * scale));
-                ctx.arc(x + (l[j].x * scale), y + (-l[j].y * scale), 2, 0, PI_SQ, false);
-            }
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        var scale, points, i, pt, blueCircles, redCircles;
+    CffGlyph.prototype.getPath = function (x, y, fontSize) {
+        var scale, newPath, i, cmd;
         x = x !== undefined ? x : 0;
         y = y !== undefined ? y : 0;
-        fontSize = fontSize !== undefined ? fontSize : 24;
+        fontSize = fontSize !== undefined ? fontSize : 72;
         scale = 1 / this.font.unitsPerEm * fontSize;
-        points = this.points;
-        if (!points) {
-            return;
-        }
-
-        blueCircles = [];
-        redCircles = [];
-        for (i = 0; i < points.length; i += 1) {
-            pt = points[i];
-            if (pt.onCurve) {
-                blueCircles.push(pt);
-            } else {
-                redCircles.push(pt);
+        newPath = new Path();
+        for (i = 0; i < this.path.commands.length; i += 1) {
+            cmd = this.path.commands[i];
+            if (cmd.type === 'M') {
+                newPath.moveTo(x + (cmd.x * scale), y + (cmd.y * scale));
+            } else if (cmd.type === 'L') {
+                newPath.lineTo(x + (cmd.x * scale), y + (cmd.y * scale));
+            } else if (cmd.type === 'C') {
+                newPath.bezierCurveTo(x + (cmd.x1 * scale), y + (cmd.y1 * scale),
+                    x + (cmd.x2 * scale), y + (cmd.y2 * scale),
+                    x + (cmd.x * scale), y + (cmd.y * scale));
+            } else if (cmd.type === 'Q') {
+                newPath.quadraticCurveTo(x + (cmd.x1 * scale), y + (cmd.y1 * scale),
+                    x + (cmd.x * scale), y + (cmd.y * scale));
+            } else if (cmd.type === 'Z') {
+                newPath.closePath();
             }
         }
-
-        ctx.fillStyle = 'blue';
-        drawCircles(blueCircles, x, y, scale);
-        ctx.fillStyle = 'red';
-        drawCircles(redCircles, x, y, scale);
-    };
-
-    // Draw lines indicating important font measurements.
-    // Black lines indicate the origin of the coordinate system (point 0,0).
-    // Blue lines indicate the glyph bounding box.
-    // Green line indicates the advance width of the glyph.
-    //
-    // ctx - The drawing context.
-    // x - Horizontal position of the glyph. (default: 0)
-    // y - Vertical position of the *baseline* of the glyph. (default: 0)
-    // fontSize - Font size, in pixels (default: 72).
-    Glyph.prototype.drawMetrics = function (ctx, x, y, fontSize) {
-        var scale;
-        x = x !== undefined ? x : 0;
-        y = y !== undefined ? y : 0;
-        fontSize = fontSize !== undefined ? fontSize : 24;
-        scale = 1 / this.font.unitsPerEm * fontSize;
-        ctx.lineWidth = 1;
-        // Draw the origin
-        ctx.strokeStyle = 'black';
-        line(ctx, x, -10000, x, 10000);
-        line(ctx, -10000, y, 10000, y);
-        // Draw the glyph box
-        ctx.strokeStyle = 'blue';
-        line(ctx, x + (this.xMin * scale), -10000, x + (this.xMin * scale), 10000);
-        line(ctx, x + (this.xMax * scale), -10000, x + (this.xMax * scale), 10000);
-        line(ctx, -10000, y + (-this.yMin * scale), 10000, y + (-this.yMin * scale));
-        line(ctx, -10000, y + (-this.yMax * scale), 10000, y + (-this.yMax * scale));
-        // Draw the advance width
-        ctx.strokeStyle = 'green';
-        line(ctx, x + (this.advanceWidth * scale), -10000, x + (this.advanceWidth * scale), 10000);
+        return newPath;
     };
 
     // Font object //////////////////////////////////////////////////////////
@@ -404,29 +559,14 @@
     function Font() {
         this.supported = true;
         this.glyphs = [];
+        this.encoding = null;
     }
 
     // Convert the given character to a single glyph index.
     // Note that this function assumes that there is a one-to-one mapping between
     // the given character and a glyph; for complex scripts this might not be the case.
     Font.prototype.charToGlyphIndex = function (s) {
-        var ranges, code, l, c, r;
-        ranges = this.cmap;
-        code = s.charCodeAt(0);
-        l = 0;
-        r = ranges.length - 1;
-        while (l < r) {
-            c = (l + r + 1) >> 1;
-            if (code < ranges[c].start) {
-                r = c - 1;
-            } else {
-                l = c;
-            }
-        }
-        if (ranges[l].start <= code && code <= ranges[l].end) {
-            return (ranges[l].idDelta + (ranges[l].ids ? ranges[l].ids[code - ranges[l].start] : code)) & 0xFFFF;
-        }
-        return 0;
+        return this.encoding.charToGlyphIndex(s);
     };
 
     // Convert the given character to a single Glyph object.
@@ -436,7 +576,9 @@
         var glyphIndex, glyph;
         glyphIndex = this.charToGlyphIndex(c);
         glyph = this.glyphs[glyphIndex];
-        checkArgument(glyph !== undefined, 'Could not find glyph for character ' + c + ' glyph index ' + glyphIndex);
+        if (!glyph) {
+            glyph = this.glyphs[0]; // .notdef
+        }
         return glyph;
     };
 
@@ -466,7 +608,7 @@
 
     // Helper function that invokes the given callback for each glyph in the given text.
     // The callback gets `(glyph, x, y, fontSize, options)`.
-    Font.prototype._eachGlyph = function(text, x, y, fontSize, options, callback) {
+    Font.prototype.forEachGlyph = function (text, x, y, fontSize, options, callback) {
         var kerning, fontScale, glyphs, i, glyph, kerningValue;
         if (!this.supported) {
             return;
@@ -503,7 +645,7 @@
     // Returns a Path object.
     Font.prototype.getPath = function (text, x, y, fontSize, options) {
         var fullPath = new Path();
-        this._eachGlyph(text, x, y, fontSize, options, function(glyph, x, y, fontSize) {
+        this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
             var path = glyph.getPath(x, y, fontSize);
             fullPath.extend(path);
         });
@@ -534,7 +676,7 @@
     // Options is an optional object that contains:
     // - kerning - Whether to take kerning information into account. (default: true)
     Font.prototype.drawPoints = function (ctx, text, x, y, fontSize, options) {
-        this._eachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
+        this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
             glyph.drawPoints(ctx, x, y, fontSize);
         });
     };
@@ -552,12 +694,104 @@
     // Options is an optional object that contains:
     // - kerning - Whether to take kerning information into account. (default: true)
     Font.prototype.drawMetrics = function (ctx, text, x, y, fontSize, options) {
-        this._eachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
+        this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
             glyph.drawMetrics(ctx, x, y, fontSize);
         });
     };
 
     // OpenType format parsing //////////////////////////////////////////////
+
+    cffStandardStrings = [
+        '.notdef', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar', 'percent', 'ampersand', 'quoteright',
+        'parenleft', 'parenright', 'asterisk', 'plus', 'comma', 'hyphen', 'period', 'slash', 'zero', 'one', 'two',
+        'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'colon', 'semicolon', 'less', 'equal', 'greater',
+        'question', 'at', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'bracketleft', 'backslash', 'bracketright', 'asciicircum', 'underscore',
+        'quoteleft', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+        'u', 'v', 'w', 'x', 'y', 'z', 'braceleft', 'bar', 'braceright', 'asciitilde', 'exclamdown', 'cent', 'sterling',
+        'fraction', 'yen', 'florin', 'section', 'currency', 'quotesingle', 'quotedblleft', 'guillemotleft',
+        'guilsinglleft', 'guilsinglright', 'fi', 'fl', 'endash', 'dagger', 'daggerdbl', 'periodcentered', 'paragraph',
+        'bullet', 'quotesinglbase', 'quotedblbase', 'quotedblright', 'guillemotright', 'ellipsis', 'perthousand',
+        'questiondown', 'grave', 'acute', 'circumflex', 'tilde', 'macron', 'breve', 'dotaccent', 'dieresis', 'ring',
+        'cedilla', 'hungarumlaut', 'ogonek', 'caron', 'emdash', 'AE', 'ordfeminine', 'Lslash', 'Oslash', 'OE',
+        'ordmasculine', 'ae', 'dotlessi', 'lslash', 'oslash', 'oe', 'germandbls', 'onesuperior', 'logicalnot', 'mu',
+        'trademark', 'Eth', 'onehalf', 'plusminus', 'Thorn', 'onequarter', 'divide', 'brokenbar', 'degree', 'thorn',
+        'threequarters', 'twosuperior', 'registered', 'minus', 'eth', 'multiply', 'threesuperior', 'copyright',
+        'Aacute', 'Acircumflex', 'Adieresis', 'Agrave', 'Aring', 'Atilde', 'Ccedilla', 'Eacute', 'Ecircumflex',
+        'Edieresis', 'Egrave', 'Iacute', 'Icircumflex', 'Idieresis', 'Igrave', 'Ntilde', 'Oacute', 'Ocircumflex',
+        'Odieresis', 'Ograve', 'Otilde', 'Scaron', 'Uacute', 'Ucircumflex', 'Udieresis', 'Ugrave', 'Yacute',
+        'Ydieresis', 'Zcaron', 'aacute', 'acircumflex', 'adieresis', 'agrave', 'aring', 'atilde', 'ccedilla', 'eacute',
+        'ecircumflex', 'edieresis', 'egrave', 'iacute', 'icircumflex', 'idieresis', 'igrave', 'ntilde', 'oacute',
+        'ocircumflex', 'odieresis', 'ograve', 'otilde', 'scaron', 'uacute', 'ucircumflex', 'udieresis', 'ugrave',
+        'yacute', 'ydieresis', 'zcaron', 'exclamsmall', 'Hungarumlautsmall', 'dollaroldstyle', 'dollarsuperior',
+        'ampersandsmall', 'Acutesmall', 'parenleftsuperior', 'parenrightsuperior', '266 ff', 'onedotenleader',
+        'zerooldstyle', 'oneoldstyle', 'twooldstyle', 'threeoldstyle', 'fouroldstyle', 'fiveoldstyle', 'sixoldstyle',
+        'sevenoldstyle', 'eightoldstyle', 'nineoldstyle', 'commasuperior', 'threequartersemdash', 'periodsuperior',
+        'questionsmall', 'asuperior', 'bsuperior', 'centsuperior', 'dsuperior', 'esuperior', 'isuperior', 'lsuperior',
+        'msuperior', 'nsuperior', 'osuperior', 'rsuperior', 'ssuperior', 'tsuperior', 'ff', 'ffi', 'ffl',
+        'parenleftinferior', 'parenrightinferior', 'Circumflexsmall', 'hyphensuperior', 'Gravesmall', 'Asmall',
+        'Bsmall', 'Csmall', 'Dsmall', 'Esmall', 'Fsmall', 'Gsmall', 'Hsmall', 'Ismall', 'Jsmall', 'Ksmall', 'Lsmall',
+        'Msmall', 'Nsmall', 'Osmall', 'Psmall', 'Qsmall', 'Rsmall', 'Ssmall', 'Tsmall', 'Usmall', 'Vsmall', 'Wsmall',
+        'Xsmall', 'Ysmall', 'Zsmall', 'colonmonetary', 'onefitted', 'rupiah', 'Tildesmall', 'exclamdownsmall',
+        'centoldstyle', 'Lslashsmall', 'Scaronsmall', 'Zcaronsmall', 'Dieresissmall', 'Brevesmall', 'Caronsmall',
+        'Dotaccentsmall', 'Macronsmall', 'figuredash', 'hypheninferior', 'Ogoneksmall', 'Ringsmall', 'Cedillasmall',
+        'questiondownsmall', 'oneeighth', 'threeeighths', 'fiveeighths', 'seveneighths', 'onethird', 'twothirds',
+        'zerosuperior', 'foursuperior', 'fivesuperior', 'sixsuperior', 'sevensuperior', 'eightsuperior', 'ninesuperior',
+        'zeroinferior', 'oneinferior', 'twoinferior', 'threeinferior', 'fourinferior', 'fiveinferior', 'sixinferior',
+        'seveninferior', 'eightinferior', 'nineinferior', 'centinferior', 'dollarinferior', 'periodinferior',
+        'commainferior', 'Agravesmall', 'Aacutesmall', 'Acircumflexsmall', 'Atildesmall', 'Adieresissmall',
+        'Aringsmall', 'AEsmall', 'Ccedillasmall', 'Egravesmall', 'Eacutesmall', 'Ecircumflexsmall', 'Edieresissmall',
+        'Igravesmall', 'Iacutesmall', 'Icircumflexsmall', 'Idieresissmall', 'Ethsmall', 'Ntildesmall', 'Ogravesmall',
+        'Oacutesmall', 'Ocircumflexsmall', 'Otildesmall', 'Odieresissmall', 'OEsmall', 'Oslashsmall', 'Ugravesmall',
+        'Uacutesmall', 'Ucircumflexsmall', 'Udieresissmall', 'Yacutesmall', 'Thornsmall', 'Ydieresissmall', '001.000',
+        '001.001', '001.002', '001.003', 'Black', 'Bold', 'Book', 'Light', 'Medium', 'Regular', 'Roman', 'Semibold'];
+
+    cffStandardEncoding = [
+        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        '', '', '', '', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar', 'percent', 'ampersand', 'quoteright',
+        'parenleft', 'parenright', 'asterisk', 'plus', 'comma', 'hyphen', 'period', 'slash', 'zero', 'one', 'two',
+        'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'colon', 'semicolon', 'less', 'equal', 'greater',
+        'question', 'at', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'bracketleft', 'backslash', 'bracketright', 'asciicircum', 'underscore',
+        'quoteleft', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+        'u', 'v', 'w', 'x', 'y', 'z', 'braceleft', 'bar', 'braceright', 'asciitilde', '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        'exclamdown', 'cent', 'sterling', 'fraction', 'yen', 'florin', 'section', 'currency', 'quotesingle',
+        'quotedblleft', 'guillemotleft', 'guilsinglleft', 'guilsinglright', 'fi', 'fl', '', 'endash', 'dagger',
+        'daggerdbl', 'periodcentered', '', 'paragraph', 'bullet', 'quotesinglbase', 'quotedblbase', 'quotedblright',
+        'guillemotright', 'ellipsis', 'perthousand', '', 'questiondown', '', 'grave', 'acute', 'circumflex', 'tilde',
+        'macron', 'breve', 'dotaccent', 'dieresis', '', 'ring', 'cedilla', '', 'hungarumlaut', 'ogonek', 'caron',
+        'emdash', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'AE', '', 'ordfeminine', '', '', '',
+        '', 'Lslash', 'Oslash', 'OE', 'ordmasculine', '', '', '', '', '', 'ae', '', '', '', 'dotlessi', '', '',
+        'lslash', 'oslash', 'oe', 'germandbls'];
+
+    cffExpertEncoding = [
+        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        '', '', '', '', 'space', 'exclamsmall', 'Hungarumlautsmall', '', 'dollaroldstyle', 'dollarsuperior',
+        'ampersandsmall', 'Acutesmall', 'parenleftsuperior', 'parenrightsuperior', 'twodotenleader', 'onedotenleader',
+        'comma', 'hyphen', 'period', 'fraction', 'zerooldstyle', 'oneoldstyle', 'twooldstyle', 'threeoldstyle',
+        'fouroldstyle', 'fiveoldstyle', 'sixoldstyle', 'sevenoldstyle', 'eightoldstyle', 'nineoldstyle', 'colon',
+        'semicolon', 'commasuperior', 'threequartersemdash', 'periodsuperior', 'questionsmall', '', 'asuperior',
+        'bsuperior', 'centsuperior', 'dsuperior', 'esuperior', '', '', 'isuperior', '', '', 'lsuperior', 'msuperior',
+        'nsuperior', 'osuperior', '', '', 'rsuperior', 'ssuperior', 'tsuperior', '', 'ff', 'fi', 'fl', 'ffi', 'ffl',
+        'parenleftinferior', '', 'parenrightinferior', 'Circumflexsmall', 'hyphensuperior', 'Gravesmall', 'Asmall',
+        'Bsmall', 'Csmall', 'Dsmall', 'Esmall', 'Fsmall', 'Gsmall', 'Hsmall', 'Ismall', 'Jsmall', 'Ksmall', 'Lsmall',
+        'Msmall', 'Nsmall', 'Osmall', 'Psmall', 'Qsmall', 'Rsmall', 'Ssmall', 'Tsmall', 'Usmall', 'Vsmall', 'Wsmall',
+        'Xsmall', 'Ysmall', 'Zsmall', 'colonmonetary', 'onefitted', 'rupiah', 'Tildesmall', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        'exclamdownsmall', 'centoldstyle', 'Lslashsmall', '', '', 'Scaronsmall', 'Zcaronsmall', 'Dieresissmall',
+        'Brevesmall', 'Caronsmall', '', 'Dotaccentsmall', '', '', 'Macronsmall', '', '', 'figuredash', 'hypheninferior',
+        '', '', 'Ogoneksmall', 'Ringsmall', 'Cedillasmall', '', '', '', 'onequarter', 'onehalf', 'threequarters',
+        'questiondownsmall', 'oneeighth', 'threeeighths', 'fiveeighths', 'seveneighths', 'onethird', 'twothirds', '',
+        '', 'zerosuperior', 'onesuperior', 'twosuperior', 'threesuperior', 'foursuperior', 'fivesuperior',
+        'sixsuperior', 'sevensuperior', 'eightsuperior', 'ninesuperior', 'zeroinferior', 'oneinferior', 'twoinferior',
+        'threeinferior', 'fourinferior', 'fiveinferior', 'sixinferior', 'seveninferior', 'eightinferior',
+        'nineinferior', 'centinferior', 'dollarinferior', 'periodinferior', 'commainferior', 'Agravesmall',
+        'Aacutesmall', 'Acircumflexsmall', 'Atildesmall', 'Adieresissmall', 'Aringsmall', 'AEsmall', 'Ccedillasmall',
+        'Egravesmall', 'Eacutesmall', 'Ecircumflexsmall', 'Edieresissmall', 'Igravesmall', 'Iacutesmall',
+        'Icircumflexsmall', 'Idieresissmall', 'Ethsmall', 'Ntildesmall', 'Ogravesmall', 'Oacutesmall',
+        'Ocircumflexsmall', 'Otildesmall', 'Odieresissmall', 'OEsmall', 'Oslashsmall', 'Ugravesmall', 'Uacutesmall',
+        'Ucircumflexsmall', 'Udieresissmall', 'Yacutesmall', 'Thornsmall', 'Ydieresissmall'];
 
     // Parse the coordinate data for a glyph.
     function parseGlyphCoordinate(p, flag, previousValue, shortVectorBit, sameBit) {
@@ -584,15 +818,13 @@
     }
 
     // Parse an OpenType glyph (described in the glyf table).
-    // Due to the complexity of the parsing we can't define the glyf table declaratively.
-    // The offset is the absolute byte offset of the glyph: the base of the glyph table + the relative offset of the glyph.
     // http://www.microsoft.com/typography/otspec/glyf.htm
     function parseGlyph(data, start, index, font) {
         var p, glyph, flag, i, j, flags,
             endPointIndices, numberOfCoordinates, repeatCount, points, point, px, py,
             component, moreComponents, arg1, arg2, scale, xScale, yScale, scale01, scale10;
         p = new Parser(data, start);
-        glyph = new Glyph(font, index);
+        glyph = new TrueTypeGlyph(font, index);
         glyph.numberOfContours = p.parseShort();
         glyph.xMin = p.parseShort();
         glyph.yMin = p.parseShort();
@@ -734,7 +966,7 @@
             if (offset !== nextOffset) {
                 glyphs.push(parseGlyph(data, start + offset, i, font));
             } else {
-                glyphs.push(new Glyph(font, i));
+                glyphs.push(new TrueTypeGlyph(font, i));
             }
         }
         // Go over the glyphs again, resolving the composite glyphs.
@@ -783,6 +1015,7 @@
 
     // Parse the `cmap` table. This table stores the mappings from characters to glyphs.
     // There are many available formats, but we only support the Windows format 4.
+    // This function returns a `CmapEncoding` object or null if no supported format could be found.
     // https://www.microsoft.com/typography/OTSPEC/cmap.htm
     function parseCmapTable(data, start) {
         var version, numTables, offset, platformId, encodingId, format, segCount,
@@ -843,7 +1076,639 @@
             }
         }
 
-        return ranges;
+        return new CmapEncoding(ranges);
+    }
+
+    // Parse a `CFF` INDEX array.
+    // An index array consists of a list of offsets, then a list of objects at those offsets.
+    function parseCFFIndex(data, start, conversionFn) {
+        var offsets, objects, count, endOffset, offsetSize, objectOffset, pos, i, value;
+        offsets = [];
+        objects = [];
+        count = getCard16(data, start);
+        if (count !== 0) {
+            offsetSize = getByte(data, start + 2);
+            objectOffset = start + ((count + 1) * offsetSize) + 2;
+            pos = start + 3;
+            for (i = 0; i < count + 1; i += 1) {
+                offsets.push(getOffset(data, pos, offsetSize));
+                pos += offsetSize;
+            }
+            // The total size of the index array is 4 header bytes + the value of the last offset.
+            endOffset = objectOffset + offsets[count];
+        } else {
+            endOffset = start + 2;
+        }
+        for (i = 0; i < offsets.length - 1; i += 1) {
+            value = getBytes(data, objectOffset + offsets[i], objectOffset + offsets[i + 1]);
+            if (conversionFn) {
+                value = conversionFn(value);
+            }
+            objects.push(value);
+        }
+        return {objects: objects, startOffset: start, endOffset: endOffset};
+    }
+
+    // Parse a `CFF` DICT real value.
+    function parseFloatOperand(parser) {
+        var s, eof, lookup, b, n1, n2;
+        s = '';
+        eof = 15;
+        lookup = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', 'E', 'E-', null, '-'];
+        while (true) {
+            b = parser.parseByte();
+            n1 = b >> 4;
+            n2 = b & 15;
+
+            if (n1 === eof) {
+                break;
+            }
+            s += lookup[n1];
+
+            if (n2 === eof) {
+                break;
+            }
+            s += lookup[n2];
+        }
+        return parseFloat(s);
+    }
+
+    // Parse a `CFF` DICT operand.
+    function parseOperand(parser, b0) {
+        var b1, b2, b3, b4;
+        if (b0 === 28) {
+            b1 = parser.parseByte();
+            b2 = parser.parseByte();
+            return b1 << 8 | b2;
+        }
+        if (b0 === 29) {
+            b1 = parser.parseByte();
+            b2 = parser.parseByte();
+            b3 = parser.parseByte();
+            b4 = parser.parseByte();
+            return b1 << 24 | b2 << 16 | b3 << 8 | b4;
+        }
+        if (b0 === 30) {
+            return parseFloatOperand(parser);
+        }
+        if (b0 >= 32 && b0 <= 246) {
+            return b0 - 139;
+        }
+        if (b0 >= 247 && b0 <= 250) {
+            b1 = parser.parseByte();
+            return (b0 - 247) * 256 + b1 + 108;
+        }
+        if (b0 >= 251 && b0 <= 254) {
+            b1 = parser.parseByte();
+            return -(b0 - 251) * 256 - b1 - 108;
+        }
+        throw new Error('Invalid b0 ' + b0);
+    }
+
+    // Convert the entries returned by `parseDict` to a proper dictionary.
+    // If a value is a list of one, it is unpacked.
+    function entriesToObject(entries) {
+        var o, key, values, i, value;
+        o = {};
+        for (i = 0; i < entries.length; i += 1) {
+            key = entries[i][0];
+            values = entries[i][1];
+            if (values.length === 1) {
+                value = values[0];
+            } else {
+                value = values;
+            }
+            if (o.hasOwnProperty(key)) {
+                throw new Error('Object ' + o + ' already has key ' + key);
+            }
+            o[key] = value;
+        }
+        return o;
+    }
+
+    // Parse a `CFF` DICT object.
+    // A dictionary contains key-value pairs in a compact tokenized format.
+    function parseCFFDict(data, start, size) {
+        var parser, entries, operands, op;
+        start = start !== undefined ? start : 0;
+        parser = new Parser(data, start);
+        entries = [];
+        operands = [];
+        size = size !== undefined ? size : data.length;
+
+        while (parser.relativeOffset < size) {
+            op = parser.parseByte();
+            // The first byte for each dict item distinguishes between operator (key) and operand (value).
+            // Values <= 21 are operators.
+            if (op <= 21) {
+                // Two-byte operators have an initial escape byte of 12.
+                if (op === 12) {
+                    op = 1200 + parser.parseByte();
+                }
+                entries.push([op, operands]);
+                operands = [];
+            } else {
+                // Since the operands (values) come before the operators (keys), we store all operands in a list
+                // until we encounter an operator.
+                operands.push(parseOperand(parser, op));
+            }
+        }
+        return entriesToObject(entries);
+    }
+
+    // Given a String Index (SID), return the value of the string.
+    // Strings below index 392 are standard CFF strings and are not encoded in the font.
+    function getCFFString(strings, index) {
+        if (index <= 391) {
+            index = cffStandardStrings[index];
+        } else {
+            index = strings[index - 391];
+        }
+        return index;
+    }
+
+    // Interpret a dictionary and return a new dictionary with readable keys and values for missing entries.
+    // This function takes `meta` which is a list of objects containing `operand`, `name` and `default`.
+    function interpretDict(dict, meta, strings) {
+        var i, m, value, newDict;
+        newDict = {};
+        // Because we also want to include missing values, we start out from the meta list
+        // and lookup values in the dict.
+        for (i = 0; i < meta.length; i += 1) {
+            m = meta[i];
+            value = dict[m.op];
+            if (value === undefined) {
+                value = m.value !== undefined ? m.value : null;
+            }
+            if (m.type === 'SID') {
+                value = getCFFString(strings, value);
+            }
+            newDict[m.name] = value;
+        }
+        return newDict;
+    }
+
+    // Parse the CFF header.
+    function parseCFFHeader(data, start) {
+        var header = {};
+        header.formatMajor = getCard8(data, start);
+        header.formatMinor = getCard8(data, start + 1);
+        header.size = getCard8(data, start + 2);
+        header.offsetSize = getCard8(data, start + 3);
+        header.startOffset = start;
+        header.endOffset = start + 4;
+        return header;
+    }
+
+    // Parse the CFF top dictionary. A CFF table can contain multiple fonts, each with their own top dictionary.
+    // The top dictionary contains the essential metadata for the font, together with the private dictionary.
+    function parseCFFTopDict(data, start, strings) {
+        var dict, meta;
+        meta = [
+            {name: 'version', op: 0, type: 'SID'},
+            {name: 'notice', op: 1, type: 'SID'},
+            {name: 'copyright', op: 1200, type: 'SID'},
+            {name: 'fullName', op: 2, type: 'SID'},
+            {name: 'familyName', op: 3, type: 'SID'},
+            {name: 'weight', op: 4, type: 'SID'},
+            {name: 'isFixedPitch', op: 1201, type: 'number', value: 0},
+            {name: 'italicAngle', op: 1202, type: 'number', value: 0},
+            {name: 'underlinePosition', op: 1203, type: 'number', value: -100},
+            {name: 'underlineThickness', op: 1204, type: 'number', value: 50},
+            {name: 'paintType', op: 1205, type: 'number', value: 0},
+            {name: 'charstringType', op: 1206, type: 'number', value: 2},
+            {name: 'fontMatrix', op: 1207, type: ['number', 'number', 'number', 'number'], value: [0.001, 0, 0, 0.001, 0, 0]},
+            {name: 'uniqueId', op: 13, type: 'number'},
+            {name: 'fontBBox', op: 5, type: ['number', 'number', 'number', 'number'], value: [0, 0, 0, 0]},
+            {name: 'strokeWidth', op: 1208, type: 'number', value: 0},
+            {name: 'xuid', op: 14, type: []},
+            {name: 'charset', op: 15, type: 'offset', value: 0},
+            {name: 'encoding', op: 16, type: 'offset', value: 0},
+            {name: 'charStrings', op: 17, type: 'number', value: 0},
+            {name: 'private', op: 18, type: ['number', 'offset'], value: [0, 0]}
+        ];
+        dict = parseCFFDict(data, start);
+        return interpretDict(dict, meta, strings);
+    }
+
+    // Parse the CFF private dictionary. We don't fully parse out all the values, only the ones we need.
+    function parseCFFPrivateDict(data, start, size, strings) {
+        var dict, meta;
+        meta = [
+            {name: 'subrs', op: 19, type: 'offset', value: 0},
+            {name: 'defaultWidthX', op: 20, type: 'number', value: 0},
+            {name: 'nominalWidthX', op: 21, type: 'number', value: 0}
+        ];
+        dict = parseCFFDict(data, start, size);
+        return interpretDict(dict, meta, strings);
+    }
+
+    // Parse the CFF charset table, which contains internal names for all the glyphs.
+    // This function will return a list of glyph names.
+    // See Adobe TN #5176 chapter 13, "Charsets".
+    function parseCFFCharset(data, start, nGlyphs, strings) {
+        var parser, format, charset, i, sid, count;
+        parser = new Parser(data, start);
+        // The .notdef glyph is not included, so subtract 1.
+        nGlyphs -= 1;
+        charset = ['.notdef'];
+
+        format = parser.parseCard8();
+        if (format === 0) {
+            for (i = 0; i < nGlyphs; i += 1) {
+                sid = parser.parseSID();
+                charset.push(getCFFString(strings, sid));
+            }
+        } else if (format === 1) {
+            while (charset.length <= nGlyphs) {
+                sid = parser.parseSID();
+                count = parser.parseCard8();
+                for (i = 0; i <= count; i += 1) {
+                    charset.push(getCFFString(strings, sid));
+                    sid += 1;
+                }
+            }
+        } else if (format === 2) {
+            while (charset.length <= nGlyphs) {
+                sid = parser.parseSID();
+                count = parser.parseCard16();
+                for (i = 0; i <= count; i += 1) {
+                    charset.push(getCFFString(strings, sid));
+                    sid += 1;
+                }
+            }
+        } else {
+            throw new Error('Unknown charset format ' + format);
+        }
+
+        return charset;
+    }
+
+    // Parse the CFF encoding data. Only one encoding can be specified per font.
+    // See Adobe TN #5176 chapter 12, "Encodings".
+    function parseCFFEncoding(data, start, charset) {
+        var encoding, parser, format, nCodes, i, code, nRanges, first, nLeft, j;
+        encoding = {};
+        parser = new Parser(data, start);
+        format = parser.parseCard8();
+        if (format === 0) {
+            nCodes = parser.parseCard8();
+            for (i = 0; i < nCodes; i += 1) {
+                code = parser.parseCard8();
+                encoding[code] = i;
+            }
+        } else if (format === 1) {
+            nRanges = parser.parseCard8();
+            code = 1;
+            for (i = 0; i < nRanges; i += 1) {
+                first = parser.parseCard8();
+                nLeft = parser.parseCard8();
+                for (j = first; j <= first + nLeft; j += 1) {
+                    encoding[j] = code;
+                    code += 1;
+                }
+            }
+        } else {
+            throw new Error('Unknown encoding format ' + format);
+        }
+        return new CffEncoding(encoding, charset);
+    }
+
+    // Take in charstring code and return a Glyph object.
+    // The encoding is described in the Type 2 Charstring Format
+    // https://www.microsoft.com/typography/OTSPEC/charstr2.htm
+    function parseCFFCharstring(code, font, index) {
+        var path, glyph, stack, nStems, haveWidth, width, x, y, c1x, c1y, c2x, c2y, v;
+        path = new Path();
+        stack = [];
+        nStems = 0;
+        haveWidth = false;
+        width = font.nominalWidthX;
+        x = y = 0;
+
+        function parseStems() {
+            var hasWidthArg;
+            // The number of stem operators on the stack is always even.
+            // If the value is uneven, that means a width is specified.
+            hasWidthArg = stack.length % 2 !== 0;
+            if (hasWidthArg && !haveWidth) {
+                width = stack.shift() + font.nominalWidthX;
+            }
+            nStems += stack.length >> 1;
+            stack.length = 0;
+            haveWidth = true;
+        }
+
+        function parse(code) {
+            var i, b1, b2, b3, b4, codeIndex, subrCode;
+            i = 0;
+            while (i < code.length) {
+                v = code[i];
+                i += 1;
+                switch (v) {
+                case 1: // hstem
+                    parseStems();
+                    break;
+                case 3: // vstem
+                    parseStems();
+                    break;
+                case 4: // vmoveto
+                    if (stack.length > 1 && !haveWidth) {
+                        width = stack.shift() + font.nominalWidthX;
+                        haveWidth = true;
+                    }
+                    y += stack.pop();
+                    path.moveTo(x, -y);
+                    break;
+                case 5: // rlineto
+                    while (stack.length > 0) {
+                        x += stack.shift();
+                        y += stack.shift();
+                        path.lineTo(x, -y);
+                    }
+                    break;
+                case 6: // hlineto
+                    while (stack.length > 0) {
+                        x += stack.shift();
+                        path.lineTo(x, -y);
+                        if (stack.length === 0) {
+                            break;
+                        }
+                        y += stack.shift();
+                        path.lineTo(x, -y);
+                    }
+                    break;
+                case 7: // vlineto
+                    while (stack.length > 0) {
+                        y += stack.shift();
+                        path.lineTo(x, -y);
+                        if (stack.length === 0) {
+                            break;
+                        }
+                        x += stack.shift();
+                        path.lineTo(x, -y);
+                    }
+                    break;
+                case 8: // rrcurveto
+                    while (stack.length > 0) {
+                        c1x = x + stack.shift();
+                        c1y = y + stack.shift();
+                        c2x = c1x + stack.shift();
+                        c2y = c1y + stack.shift();
+                        x = c2x + stack.shift();
+                        y = c2y + stack.shift();
+                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    }
+                    break;
+                case 10: // callsubr
+                    codeIndex = stack.pop() + font.subrsBias;
+                    subrCode = font.subrs[codeIndex];
+                    if (subrCode) {
+                        parse(subrCode);
+                    }
+                    break;
+                case 11: // return
+                    return;
+                case 12: // escape
+                    v = code[i];
+                    i += 1;
+                    break;
+                case 14: // endchar
+                    if (stack.length > 0 && !haveWidth) {
+                        width = stack.shift() + font.nominalWidthX;
+                        haveWidth = true;
+                    }
+                    path.closePath();
+                    break;
+                case 18: // hstemhm
+                    parseStems();
+                    break;
+                case 19: // hintmask
+                case 20: // cntrmask
+                    parseStems();
+                    i += (nStems + 7) >> 3;
+                    break;
+                case 21: // rmoveto
+                    if (stack.length > 2 && !haveWidth) {
+                        width = stack.shift() + font.nominalWidthX;
+                        haveWidth = true;
+                    }
+                    y += stack.pop();
+                    x += stack.pop();
+                    path.moveTo(x, -y);
+                    break;
+                case 22: // hmoveto
+                    if (stack.length > 1 && !haveWidth) {
+                        width = stack.shift() + font.nominalWidthX;
+                        haveWidth = true;
+                    }
+                    x += stack.pop();
+                    path.moveTo(x, -y);
+                    break;
+                case 23: // vstemhm
+                    parseStems();
+                    break;
+                case 24: // rcurveline
+                    while (stack.length > 2) {
+                        c1x = x + stack.shift();
+                        c1y = y + stack.shift();
+                        c2x = c1x + stack.shift();
+                        c2y = c1y + stack.shift();
+                        x = c2x + stack.shift();
+                        y = c2y + stack.shift();
+                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    }
+                    x += stack.shift();
+                    y += stack.shift();
+                    path.lineTo(x, -y);
+                    break;
+                case 25: // rlinecurve
+                    while (stack.length > 6) {
+                        x += stack.shift();
+                        y += stack.shift();
+                        path.lineTo(x, -y);
+                    }
+                    c1x = x + stack.shift();
+                    c1y = y + stack.shift();
+                    c2x = c1x + stack.shift();
+                    c2y = c1y + stack.shift();
+                    x = c2x + stack.shift();
+                    y = c2y + stack.shift();
+                    path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    break;
+                case 26: // vvcurveto
+                    if (stack.length % 2) {
+                        x += stack.shift();
+                    }
+                    while (stack.length > 0) {
+                        c1x = x;
+                        c1y = y + stack.shift();
+                        c2x = c1x + stack.shift();
+                        c2y = c1y + stack.shift();
+                        x = c2x;
+                        y = c2y + stack.shift();
+                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    }
+                    break;
+                case 27: // hhcurveto
+                    if (stack.length % 2) {
+                        y += stack.shift();
+                    }
+                    while (stack.length > 0) {
+                        c1x = x + stack.shift();
+                        c1y = y;
+                        c2x = c1x + stack.shift();
+                        c2y = c1y + stack.shift();
+                        x = c2x + stack.shift();
+                        y = c2y;
+                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    }
+                    break;
+                case 28: // shortint
+                    b1 = code[i];
+                    b2 = code[i + 1];
+                    stack.push(((b1 << 24) | (b2 << 16)) >> 16);
+                    i += 2;
+                    break;
+                case 29: // callgsubr
+                    codeIndex = stack.pop() + font.gsubrsBias;
+                    subrCode = font.gsubrs[codeIndex];
+                    if (subrCode) {
+                        parse(subrCode);
+                    }
+                    break;
+                case 30: // vhcurveto
+                    while (stack.length > 0) {
+                        c1x = x;
+                        c1y = y + stack.shift();
+                        c2x = c1x + stack.shift();
+                        c2y = c1y + stack.shift();
+                        x = c2x + stack.shift();
+                        y = c2y + (stack.length === 1 ? stack.shift() : 0);
+                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                        if (stack.length === 0) {
+                            break;
+                        }
+                        c1x = x + stack.shift();
+                        c1y = y;
+                        c2x = c1x + stack.shift();
+                        c2y = c1y + stack.shift();
+                        y = c2y + stack.shift();
+                        x = c2x + (stack.length === 1 ? stack.shift() : 0);
+                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    }
+                    break;
+                case 31: // hvcurveto
+                    while (stack.length > 0) {
+                        c1x = x + stack.shift();
+                        c1y = y;
+                        c2x = c1x + stack.shift();
+                        c2y = c1y + stack.shift();
+                        y = c2y + stack.shift();
+                        x = c2x + (stack.length === 1 ? stack.shift() : 0);
+                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                        if (stack.length === 0) {
+                            break;
+                        }
+                        c1x = x;
+                        c1y = y + stack.shift();
+                        c2x = c1x + stack.shift();
+                        c2y = c1y + stack.shift();
+                        x = c2x + stack.shift();
+                        y = c2y + (stack.length === 1 ? stack.shift() : 0);
+                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    }
+                    break;
+                default:
+                    if (v < 32) {
+                        throw new Error('Glyph ' + index + ': unknown operator ' + v);
+                    } else if (v < 247) {
+                        stack.push(v - 139);
+                    } else if (v < 251) {
+                        b1 = code[i];
+                        i += 1;
+                        stack.push((v - 247) * 256 + b1 + 108);
+                    } else if (v < 255) {
+                        b1 = code[i];
+                        i += 1;
+                        stack.push(-(v - 251) * 256 - b1 - 108);
+                    } else {
+                        b1 = code[i];
+                        b2 = code[i + 1];
+                        b3 = code[i + 2];
+                        b4 = code[i + 3];
+                        i += 4;
+                        stack.push(((b1 << 24) | (b2 << 16) | (b3 << 8) | b4) / 65536);
+                    }
+                }
+            }
+        }
+
+        parse(code);
+        glyph = new CffGlyph(font, index);
+        glyph.path = path;
+        glyph.advanceWidth = width;
+        return glyph;
+    }
+
+    // Subroutines are encoded using the negative half of the number space.
+    // See type 2 chapter 4.7 "Subroutine operators".
+    function calcCFFSubroutineBias(subrs) {
+        var bias;
+        if (subrs.length < 1240) {
+            bias = 107;
+        } else if (subrs.length < 33900) {
+            bias = 1131;
+        } else {
+            bias = 32768;
+        }
+        return bias;
+    }
+
+    // Parse the `CFF` table, which contains the glyph outlines in PostScript format.
+    function parseCFFTable(data, start, font) {
+        var header, nameIndex, topDictIndex, stringIndex, globalSubrIndex, topDict, privateDictOffset, privateDict,
+            subrOffset, subrIndex, charString, charStringsIndex, charset, i;
+        header = parseCFFHeader(data, start);
+        nameIndex = parseCFFIndex(data, header.endOffset, bytesToString);
+        topDictIndex = parseCFFIndex(data, nameIndex.endOffset);
+        stringIndex = parseCFFIndex(data, topDictIndex.endOffset, bytesToString);
+        globalSubrIndex = parseCFFIndex(data, stringIndex.endOffset);
+        font.gsubrs = globalSubrIndex.objects;
+        font.gsubrsBias = calcCFFSubroutineBias(font.gsubrs);
+
+        topDict = parseCFFTopDict(topDictIndex.objects[0], 0, stringIndex.objects);
+
+        privateDictOffset = start + topDict['private'][1];
+        privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict['private'][0], stringIndex.objects);
+        font.defaultWidthX = privateDict.defaultWidthX;
+        font.nominalWidthX = privateDict.nominalWidthX;
+
+        subrOffset = privateDictOffset + privateDict.subrs;
+        subrIndex = parseCFFIndex(data, subrOffset);
+        font.subrs = subrIndex.objects;
+        font.subrsBias = calcCFFSubroutineBias(font.subrs);
+
+        // Offsets in the top dict are relative to the beginning of the CFF data, so add the CFF start offset.
+        charStringsIndex = parseCFFIndex(data, start + topDict.charStrings);
+        font.nGlyphs = charStringsIndex.objects.length;
+
+        charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
+        if (topDict.encoding === 0) { // Standard encoding
+            font.cffEncoding = new CffEncoding(cffStandardEncoding, charset);
+        } else if (topDict.encoding === 1) { // Expert encoding
+            font.cffEncoding = new CffEncoding(cffExpertEncoding, charset);
+        } else {
+            font.cffEncoding = parseCFFEncoding(data, start + topDict.encoding, charset);
+        }
+        // Prefer the CMAP encoding to the CFF encoding.
+        font.encoding = font.encoding || font.cffEncoding;
+
+        font.glyphs = [];
+        for (i = 0; i < font.nGlyphs; i += 1) {
+            charString = charStringsIndex.objects[i];
+            font.glyphs.push(parseCFFCharstring(charString, font, i));
+        }
     }
 
     // Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
@@ -875,7 +1740,6 @@
         tableVersion = p.parseUShort();
         checkArgument(tableVersion === 0, "Unsupported kern table version.");
         nTables = p.parseUShort();
-        checkArgument(nTables === 1, "Unsupported number of kern sub-tables.");
         subTableVersion = p.parseUShort();
         checkArgument(subTableVersion === 0, "Unsupported kern sub-table version.");
         // Skip subTableLength, subTableCoverage
@@ -939,7 +1803,7 @@
     // we return an empty Font object with the `supported` flag set to `false`.
     opentype.parse = function (buffer) {
         var font, data, version, numTables, i, p, tag, offset, hmtxOffset, glyfOffset, locaOffset,
-            kernOffset, magicNumber, indexToLocFormat, numGlyphs, loca, shortVersion;
+            cffOffset, kernOffset, magicNumber, indexToLocFormat, numGlyphs, loca, shortVersion;
         // OpenType fonts use big endian byte ordering.
         // We can't rely on typed array view types, because they operate with the endianness of the host computer.
         // Instead we use DataViews where we can specify endianness.
@@ -948,7 +1812,16 @@
         data = new DataView(buffer, 0);
 
         version = getFixed(data, 0);
-        checkArgument(version === 1.0, 'Unsupported OpenType version ' + version);
+        if (version === 1.0) {
+            font.outlinesFormat = 'truetype';
+        } else {
+            version = getTag(data, 0);
+            if (version === 'OTTO') {
+                font.outlinesFormat = 'cff';
+            } else {
+                throw new Error('Unsupported OpenType version ' + version);
+            }
+        }
 
         numTables = getUShort(data, 4);
 
@@ -959,9 +1832,8 @@
             offset = getULong(data, p + 8);
             switch (tag) {
             case 'cmap':
-                font.cmap = parseCmapTable(data, offset);
-                if (!font.cmap) {
-                    font.cmap = [];
+                font.encoding = parseCmapTable(data, offset);
+                if (!font.encoding) {
                     font.supported = false;
                 }
                 break;
@@ -990,6 +1862,9 @@
             case 'loca':
                 locaOffset = offset;
                 break;
+            case 'CFF ':
+                cffOffset = offset;
+                break;
             case 'kern':
                 kernOffset = offset;
                 break;
@@ -1007,6 +1882,9 @@
             } else {
                 font.kerningPairs = {};
             }
+        } else if (cffOffset) {
+            parseCFFTable(data, cffOffset, font);
+            font.kerningPairs = {};
         } else {
             font.supported = false;
         }
@@ -1039,7 +1917,7 @@
     if (typeof define === 'function' && define.amd) {
         // AMD / RequireJS
         define([], function () {
-          return opentype;
+            return opentype;
         });
     } else if (typeof module === 'object' && module.exports) {
         // node.js
