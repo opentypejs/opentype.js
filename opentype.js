@@ -2075,7 +2075,7 @@
                 glyphCount = p.parseUShort(),
                 classes = p.parseUShortList(glyphCount);
             return function(glyphID) {
-                return classes[glyphID - startGlyph];
+                return classes[glyphID - startGlyph] || 0;
             };
         }
         else if (format === 2) {
@@ -2102,8 +2102,9 @@
                     }
                 }
                 if (startGlyphs[l] <= glyphID && glyphID <= endGlyphs[l]) {
-                    return classValues[l];
+                    return classValues[l] || 0;
                 }
+                return 0;
             };
         }
     }
@@ -2158,13 +2159,15 @@
         else if (format === 2) {
             // Pair Positioning Adjustment: Format 2
             var classDef1Offset, classDef2Offset, class1Count, class2Count, i, j,
-                getClass1, getClass2, kerningMatrix, kerningRow;
+                getClass1, getClass2, kerningMatrix, kerningRow, covered;
             classDef1Offset = p.parseUShort();
             classDef2Offset = p.parseUShort();
             class1Count = p.parseUShort();
             class2Count = p.parseUShort();
             getClass1 = parseClassDefTable(data, start+classDef1Offset);
             getClass2 = parseClassDefTable(data, start+classDef2Offset);
+
+            // Parse kerning values by class pair.
             kerningMatrix = [];
             for (i = 0; i < class1Count; i++) {
                 kerningRow = kerningMatrix[i] = [];
@@ -2176,7 +2179,14 @@
                     kerningRow[j] = value1;
                 }
             }
+
+            // Convert coverage list to a hash
+            covered = {};
+            for(i = 0; i < coverage.length; i++) covered[coverage[i]] = 1;
+
+            // Get the kerning value for a specific glyph pair.
             return function(leftGlyph, rightGlyph) {
+                if(!covered[leftGlyph]) return 0;
                 var class1 = getClass1(leftGlyph),
                     class2 = getClass2(rightGlyph),
                     kerningRow = kerningMatrix[class1];
@@ -2240,7 +2250,7 @@
         lookupListAbsoluteOffset = start + lookupListOffset;
         for (i = 0; i < lookupCount; i++) {
             table = parseLookupTable(data, lookupListAbsoluteOffset + lookupTableOffsets[i]);
-            if (table.lookupType === 2) font.getGposKerningValue = table.getKerningValue;
+            if(table.lookupType === 2 && !font.getGposKerningValue) font.getGposKerningValue = table.getKerningValue;
         }
     }
 
