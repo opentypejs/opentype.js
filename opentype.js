@@ -1799,15 +1799,73 @@
         return maxp;
     }
 
+	// NameIDs for teh name table.
+	var nameTableNames = [
+		'copyright',			// 0
+		'fontFamily',			// 1
+		'fontSubfamily',		// 2
+		'uniqueID',				// 3
+		'fullName',				// 4
+		'version',				// 5
+		'postScriptName',		// 6
+		'trademark',			// 7
+		'manufacturer',			// 8
+		'designer',				// 9
+		'description',			// 10
+		'vendorURL',			// 11
+		'designerURL',			// 12
+		'licence',				// 13
+		'licenceURL',			// 14
+		'reserved',				// 15
+		'preferredFamily',		// 16
+		'preferredSubfamily',	// 17
+		'compatibleFullName',	// 18
+		'sampleText',			// 19
+		'postScriptFindFontName',	// 20
+		'wwsFamily',			// 21
+		'wwsSubfamily'			// 22
+	];
+
     // Parse the naming `name` table
     // https://www.microsoft.com/typography/OTSPEC/name.htm
+	// Only Windows Unicode English names are supported.
+	// Format 1 additional fields are not supported
     function parseNameTable(data, start) {
-console.log('name table TODO');
         var name = {},
-            p = new Parser(data, start);
-        name.format = p.parseUShort();
-        name.count = p.parseUShort();
-        var stringOffset = p.parseUShort();
+            p = new Parser(data, start),
+            format = p.parseUShort(),
+            count = p.parseUShort(),
+            stringOffset = p.offset + p.parseUShort();
+		var platformID, encodingID, languageID, nameID, property, byteLength,
+			offset, str, i, j, codePoints;
+		var unknownCount = 0;
+		for(i = 0; i < count; i++) {
+			platformID = p.parseUShort();
+			encodingID = p.parseUShort();
+			languageID = p.parseUShort();
+			nameID = p.parseUShort();
+			property = nameTableNames[nameID];
+			byteLength = p.parseUShort();
+			offset = p.parseUShort();
+			// platformID - encodingID - languageID standard combinations :
+			// 1 - 0 - 0 : Macintosh, Roman, English
+			// 3 - 1 - 0x409 : Windows, Unicode BMP (UCS-2), en-US
+			if(platformID === 3 && encodingID === 1 && languageID === 0x409) {
+				codePoints = [];
+				for(j = 0; j < byteLength; j += 2, offset += 2) {
+					codePoints[j] = getShort(data, stringOffset+offset);
+				}
+				str = String.fromCharCode.apply(null, codePoints);
+				if(property) {
+					name[property] = str;
+				}
+				else {
+					unknownCount++;
+					name['unknown'+unknownCount] = str;
+				}
+			}
+
+		}
         return name;
     }
 
