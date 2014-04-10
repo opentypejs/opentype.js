@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "grunt": "~0.4.2",
-    "grunt-contrib-uglify": "~0.3.2",
-    "grunt-release": "~0.6.0"
+    "grunt-contrib-uglify": "~0.4.0",
+    "grunt-release": "~0.7.0"
   }
 }
