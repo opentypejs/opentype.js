@@ -245,6 +245,15 @@
         return v;
     };
 
+    // LONGDATETIME is a 64-bit integer.
+    // JavaScript and unix timestamps traditionally use 32 bits, so we
+    // only take the last 32 bits.
+    Parser.prototype.parseLongDateTime = function() {
+        var v = getULong(this.data, this.offset + this.relativeOffset + 4);
+        this.relativeOffset += 8;
+        return v;
+    };
+
     Parser.prototype.skip = function (type, amount) {
         if (amount === undefined) {
             amount = 1;
@@ -562,6 +571,7 @@
         this.supported = true;
         this.glyphs = [];
         this.encoding = null;
+        this.tables = {};
     }
 
     // Convert the given character to a single glyph index.
@@ -1713,6 +1723,168 @@
         }
     }
 
+    // Parse the header `head` table
+    // https://www.microsoft.com/typography/OTSPEC/head.htm
+    function parseHeadTable(data, start) {
+        var head = {},
+            p = new Parser(data, start);
+        head.version = getFixed(data, 0);
+        head.fontRevision = getFixed(data, 4);
+        p.relativeOffset = 8;
+        head.checkSumAdjustment = p.parseULong();
+        head.magicNumber = p.parseULong();
+        checkArgument(head.magicNumber === 0x5F0F3CF5, 'Font header has wrong magic number.');
+        head.flags = p.parseUShort();
+        head.unitsPerEm = p.parseUShort();
+        head.created = p.parseLongDateTime();
+        head.modified = p.parseLongDateTime();
+        head.xMin = p.parseShort();
+        head.yMin = p.parseShort();
+        head.xMax = p.parseShort();
+        head.yMax = p.parseShort();
+        head.macStyle = p.parseUShort();
+        head.lowestRecPPEM = p.parseUShort();
+        head.fontDirectionHint = p.parseShort();
+        head.indexToLocFormat = p.parseShort();     // 50
+        head.glyphDataFormat = p.parseShort();
+        return head;
+    }
+
+    // Parse the horizontal header `hhea` table
+    // https://www.microsoft.com/typography/OTSPEC/hhea.htm
+    function parseHheaTable(data, start) {
+        var hhea = {},
+            p = new Parser(data, start);
+        hhea.version = getFixed(data, 0);
+        p.relativeOffset = 4;
+        hhea.ascender = p.parseShort();
+        hhea.descender = p.parseShort();
+        hhea.lineGap = p.parseShort();
+        hhea.advanceWidthMax = p.parseUShort();
+        hhea.minLeftSideBearing = p.parseShort();
+        hhea.minRightSideBearing = p.parseShort();
+        hhea.xMaxExtent = p.parseShort();
+        hhea.caretSlopeRise = p.parseShort();
+        hhea.caretSlopeRun = p.parseShort();
+        hhea.caretOffset = p.parseShort();
+        p.relativeOffset += 8;
+        hhea.metricDataFormat = p.parseShort();
+        hhea.numberOfHMetrics = p.parseUShort();
+        return hhea;
+    }
+
+    // Parse the maximum profile `maxp` table
+    // https://www.microsoft.com/typography/OTSPEC/maxp.htm
+    function parseMaxpTable(data, start) {
+        var maxp = {},
+            p = new Parser(data, start);
+        maxp.version = getFixed(data, 0);
+        p.relativeOffset = 4;
+        maxp.numGlyphs = p.parseUShort();
+        if(maxp.version === 1) {
+            maxp.maxPoints = p.parseUShort();
+            maxp.maxContours = p.parseUShort();
+            maxp.maxCompositePoints = p.parseUShort();
+            maxp.maxCompositeContours = p.parseUShort();
+            maxp.maxZones = p.parseUShort();
+            maxp.maxTwilightPoints = p.parseUShort();
+            maxp.maxStorage = p.parseUShort();
+            maxp.maxFunctionDefs = p.parseUShort();
+            maxp.maxInstructionDefs = p.parseUShort();
+            maxp.maxStackElements = p.parseUShort();
+            maxp.maxSizeOfInstructions = p.parseUShort();
+            maxp.maxComponentElements = p.parseUShort();
+            maxp.maxComponentDepth = p.parseUShort();
+        }
+        return maxp;
+    }
+
+    // Parse the naming `name` table
+    // https://www.microsoft.com/typography/OTSPEC/name.htm
+    function parseNameTable(data, start) {
+console.log('name table TODO');
+        var name = {},
+            p = new Parser(data, start);
+        name.format = p.parseUShort();
+        name.count = p.parseUShort();
+        var stringOffset = p.parseUShort();
+        return name;
+    }
+
+    // Parse the OS/2 and Windows metrics `OS/2` table
+    // https://www.microsoft.com/typography/OTSPEC/os2.htm
+    function parseOS2Table(data, start) {
+        var os2 = {},
+            p = new Parser(data, start);
+        os2.version = p.parseUShort();
+        os2.xAvgCharWidth = p.parseShort();
+        os2.usWeightClass = p.parseUShort();
+        os2.usWidthClass = p.parseUShort();
+        os2.fsType = p.parseUShort();
+        os2.ySubscriptXSize = p.parseShort();
+        os2.ySubscriptYSize = p.parseShort();
+        os2.ySubscriptXOffset = p.parseShort();
+        os2.ySubscriptYOffset = p.parseShort();
+        os2.ySuperscriptXSize = p.parseShort();
+        os2.ySuperscriptYSize = p.parseShort();
+        os2.ySuperscriptXOffset = p.parseShort();
+        os2.ySuperscriptYOffset = p.parseShort();
+        os2.yStrikeoutSize = p.parseShort();
+        os2.yStrikeoutPosition = p.parseShort();
+        os2.sFamilyClass = p.parseShort();
+        os2.panose = [];
+        for(var i = 0; i < 10; i++) {
+            os2.panose[i] = p.parseByte();
+        }
+        os2.ulUnicodeRange1 = p.parseULong();
+        os2.ulUnicodeRange2 = p.parseULong();
+        os2.ulUnicodeRange3 = p.parseULong();
+        os2.ulUnicodeRange4 = p.parseULong();
+        os2.achVendID = String.fromCharCode(p.parseByte(), p.parseByte(), p.parseByte(), p.parseByte());
+        os2.fsSelection = p.parseUShort();
+        os2.usFirstCharIndex = p.parseUShort();
+        os2.usLastCharIndex = p.parseUShort();
+        os2.sTypoAscender = p.parseShort();
+        os2.sTypoDescender = p.parseShort();
+        os2.sTypoLineGap = p.parseShort();
+        os2.usWinAscent = p.parseUShort();
+        os2.usWinDescent = p.parseUShort();
+        os2.ulCodePageRange1 = p.parseULong();
+        os2.ulCodePageRange2 = p.parseULong();
+        os2.sxHeight = p.parseShort();
+        os2.sCapHeight = p.parseShort();
+        os2.usDefaultChar = p.parseUShort();
+        os2.usBreakChar = p.parseUShort();
+        os2.usMaxContent = p.parseUShort();
+        return os2;
+    }
+
+    // Parse the PostScript `post` table
+    // https://www.microsoft.com/typography/OTSPEC/post.htm
+    function parsePostTable(data, start) {
+        var post = {},
+            p = new Parser(data, start);
+        post.version = getFixed(data, 0);
+        post.italicAngle = getFixed(data, 4);
+        p.relativeOffset = 8;
+        post.underlinePosition = p.parseShort();
+        post.underlineThickness = p.parseShort();
+        post.isFixedPitch = p.parseULong();
+        post.minMemType42 = p.parseULong();
+        post.maxMemType42 = p.parseULong();
+        post.minMemType1 = p.parseULong();
+        post.maxMemType1 = p.parseULong();
+        if(post.version === 2) {
+            post.numberOfGlyphs = p.parseULong();
+            // TODO get names
+        }
+        else if(post.version === 2.5) {
+            post.numberOfGlyphs = p.parseULong();
+            // TODO get offsets
+        }
+        return post;
+    }
+
     // Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
     // This function augments the glyph array, adding the advanceWidth and leftSideBearing to each glyph.
     // https://www.microsoft.com/typography/OTSPEC/hmtx.htm
@@ -1839,23 +2011,31 @@
                 }
                 break;
             case 'head':
-                // We're only interested in some values from the header.
-                magicNumber = getULong(data, offset + 12);
-                checkArgument(magicNumber === 0x5F0F3CF5, 'Font header has wrong magic number.');
-                font.unitsPerEm = getUShort(data, offset + 18);
-                indexToLocFormat = getUShort(data, offset + 50);
+                font.tables.head = parseHeadTable(data, offset);
+                font.unitsPerEm = font.tables.head.unitsPerEm;
+                indexToLocFormat = font.tables.head.indexToLocFormat;
                 break;
             case 'hhea':
-                font.ascender = getShort(data, offset + 4);
-                font.descender = getShort(data, offset + 6);
-                font.numberOfHMetrics = getUShort(data, offset + 34);
+                font.tables.hhea = parseHheaTable(data, offset);
+                font.ascender = font.tables.hhea.ascender;
+                font.descender = font.tables.hhea.descender;
+                font.numberOfHMetrics = font.tables.hhea.numberOfHMetrics;
                 break;
             case 'hmtx':
                 hmtxOffset = offset;
                 break;
             case 'maxp':
-                // We're only interested in the number of glyphs.
-                font.numGlyphs = numGlyphs = getUShort(data, offset + 4);
+                font.tables.maxp = parseMaxpTable(data, offset);
+                font.numGlyphs = numGlyphs = font.tables.maxp.numGlyphs;
+                break;
+            case 'name':
+                 font.tables.name = parseNameTable(data, offset);
+                break;
+            case 'OS/2':
+                font.tables.os2 = parseOS2Table(data, offset);
+                break;
+            case 'post':
+                font.tables.post = parsePostTable(data, offset);
                 break;
             case 'glyf':
                 glyfOffset = offset;
