@@ -87,9 +87,39 @@
             font-style: oblique;
         }
 
-        #font-data {
-            white-space: pre;
+        #font-data h3 {
+            font-weight: normal;
+			margin: 0;
+			cursor: pointer;
         }
+
+		#font-data h3.expanded::before {
+			font-size: 85%;
+			content: "▼ ";
+		}
+
+		#font-data h3.collapsed::before {
+			font-size: 85%;
+			content: "► ";
+		}
+
+		#font-data h3.collapsed + dl {
+			display: none;
+		}
+
+        #font-data dl {
+			margin-top: 0;
+			padding-left: 2em;
+			color: #707070;
+		}
+
+        #font-data dt {
+			float: left;
+		}
+
+        #font-data dd {
+			margin-left: 12em;
+		}
 
         #glyphs {
             width: 950px;
@@ -175,6 +205,18 @@
     </div>
 
     <div id="font-data">
+		<h3 class="collapsed">Font Header table <a href="https://www.microsoft.com/typography/OTSPEC/head.htm">head</a></h3>
+		<dl id="head-table"></dl>
+		<h3 class="collapsed">Horizontal Header table <a href="https://www.microsoft.com/typography/OTSPEC/hhea.htm">hhea</a></h3>
+		<dl id="hhea-table"></dl>
+		<h3 class="collapsed">Maximum Profile <a href="https://www.microsoft.com/typography/OTSPEC/maxp.htm">maxp</a></h3>
+		<dl id="maxp-table"></dl>
+		<h3 class="collapsed">Naming <a href="https://www.microsoft.com/typography/OTSPEC/name.htm">name</a></h3>
+		<dl id="name-table"></dl>
+		<h3 class="collapsed">OS/2 and Windows Metrics table <a href="https://www.microsoft.com/typography/OTSPEC/os2.htm">OS/2</a></h3>
+		<dl id="os2-table"></dl>
+		<h3 class="collapsed">PostScript table <a href="https://www.microsoft.com/typography/OTSPEC/post.htm">post</a></h3>
+		<dl id="post-table"></dl>
     </div>
 
     <hr>
@@ -272,7 +314,18 @@ function showErrorMessage(message) {
 }
 
 function displayFontData() {
-    document.getElementById("font-data").innerHTML = JSON.stringify(font.tables, null, 4);
+	var html, tablename, table, property, value;
+	for(tablename in font.tables) {
+		table = font.tables[tablename];
+		html = '';
+		for(property in table) {
+			value = table[property];
+			html += '<dt>'+property+'</dt><dd>';
+			html += value;
+			html += '</dd>';
+		}
+		document.getElementById(tablename+"-table").innerHTML = html;
+	}
 }
     
 function onFontLoaded(font) {
@@ -330,6 +383,13 @@ fileButton.addEventListener('change', onReadFile, false);
 // IE 11 doesn't fire the 'input' event at all, but che 'change' event continuously.
 fontSizeSlider.addEventListener('input', fontSizeChanged, false);
 fontSizeSlider.addEventListener('change', fontSizeChanged, false);
+
+var tableHeaders = document.getElementById('font-data').getElementsByTagName('h3');
+for(var i = tableHeaders.length; i--; ) {
+	tableHeaders[i].addEventListener('click', function(e) {
+		e.target.className = (e.target.className === 'collapsed') ? 'expanded' : 'collapsed';
+	}, false);
+}
 
 opentype.load(fontFileName, function (err, font) {
     var amount, glyph, ctx, x, y, fontSize;
