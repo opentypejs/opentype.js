@@ -152,16 +152,16 @@
         It allows you to access the <strong>letterforms</strong> of text from the browser or node.js.
     </div>
 
-    <input id="file" type="file"></input>
+    <input id="file" type="file">
     <span class="info" id="font-name">Roboto-Black</span>
     <canvas id="preview" width="940" height="300" class="text"></canvas>
     <div id="message"></div>
     <input type="text" class="text-input" onkeyup="renderText()" value="Hello, World!"
            autofocus id="textField">
-    <label>Font Size<input type="range" min="6" max="500" value="150" oninput="fontSizeChanged(this)"/><span id="fontSize">150</span></label>
-    <label><input type="checkbox" onchange="drawPointsChanged(this)" checked="checked"/>Draw Points</label>
-    <label><input type="checkbox" onchange="drawMetricsChanged(this)"/>Draw Metrics</label>
-    <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked"/>Kerning</label>
+    <label>Font Size<input type="range" min="6" max="500" step="2" value="150" id="font-size-range" autocomplete="off"><span id="fontSize">150</span></label>
+    <label><input type="checkbox" onchange="drawPointsChanged(this)" checked="checked">Draw Points</label>
+    <label><input type="checkbox" onchange="drawMetricsChanged(this)">Draw Metrics</label>
+    <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked">Kerning</label>
 
     <hr>
 
@@ -211,6 +211,7 @@ var snapStrength = 80;
 var snapDistance = 53;
 var snapX = 0;
 var snapY = 0;
+var fontSizeSlider = document.getElementById("font-size-range");
 
 function drawPointsChanged(e) {
     drawPoints = e.checked;
@@ -227,8 +228,8 @@ function kerningChanged(e) {
     renderText();
 }
 
-function fontSizeChanged(e) {
-    fontSize = e.value;
+function fontSizeChanged() {
+    fontSize = fontSizeSlider.value;
     document.getElementById('fontSize').innerHTML = '' + fontSize;
     renderText();
 }
@@ -377,6 +378,11 @@ document.getElementById('font-name').innerHTML = fontFileName.split('/')[1];
 
 var fileButton = document.getElementById('file');
 fileButton.addEventListener('change', onReadFile, false);
+
+// FireFox & Chrome fire the 'input' event continuously, then the 'change' event on mouse up.
+// IE 11 doesn't fire the 'input' event at all, but che 'change' event continuously.
+fontSizeSlider.addEventListener('input', fontSizeChanged, false);
+fontSizeSlider.addEventListener('change', fontSizeChanged, false);
 
 opentype.load(fontFileName, function (err, font) {
     var amount, glyph, ctx, x, y, fontSize;
