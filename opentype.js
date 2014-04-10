@@ -208,7 +208,7 @@
     // The data can be either a DataView or an array of bytes.
     function Parser(data, offset) {
         this.data = data;
-        this.isDataView = data.constructor.name === 'DataView';
+        this.isDataView = data instanceof DataView;
         this.offset = offset;
         this.relativeOffset = 0;
     }
