@@ -7,7 +7,8 @@ var opentype = require('../opentype.js');
 // Print out information about the font on the console.
 function printFontInfo(font) {
     console.log('  glyphs:', font.glyphs.length);
-    console.log('  kerning pairs:', Object.keys(font.kerningPairs).length);
+    console.log('  kerning pairs (kern table):', Object.keys(font.kerningPairs).length);
+    console.log('  kerning pairs (GPOS table):', (font.getGposKerningValue) ? 'yes' : 'no');
 }
 
 // Recursively walk a directory and execute the function for every file.
@@ -28,29 +29,33 @@ function walk(dir, fn) {
 
 // Print out usage information.
 function printUsage() {
-    console.log('Usage: ot command [dir]');
+    console.log('Usage: ot command [dir|file]');
     console.log();
     console.log('Commands:');
     console.log();
-    console.log('  info    Get information of fonts in the specified directory.');
+    console.log('  info    Get information of specified font or fonts in the specified directory.');
     console.log();
+}
+
+function fileInfo(file) {
+	opentype.load(file, function (err, font) {
+		console.log(path.basename(file));
+		if (err) {
+			console.log('  (Error: ' + error + ')');
+		} else if (!font.supported) {
+			console.log('  (Unsupported)');
+		} else {
+			printFontInfo(font);
+		}
+	});
 }
 
 function recursiveInfo(fontDirectory) {
     walk(fontDirectory, function (file) {
         var ext = path.extname(file).toLowerCase();
         if (ext === '.ttf' || ext === '.otf') {
-            opentype.load(file, function (err, font) {
-                console.log(path.basename(file));
-                if (err) {
-                    console.log('  (Error: ' + error + ')');
-                } else if (!font.supported) {
-                    console.log('  (Unsupported)');
-                } else {
-                    printFontInfo(font);
-                }
-            });
-        }
+			fileInfo(file);
+		}
     });
 }
 
@@ -59,8 +64,22 @@ if (process.argv.length < 3) {
 } else {
     var command = process.argv[2];
     if (command === 'info') {
-        var dir = process.argv.length === 3 ? '.' : process.argv[3];
-        recursiveInfo(dir);
+        var fontpath = process.argv.length === 3 ? '.' : process.argv[3];
+		if(fs.existsSync(fontpath)) {
+			var ext = path.extname(fontpath).toLowerCase();
+			if(fs.statSync(fontpath).isDirectory()) {
+				recursiveInfo(fontpath);
+			}
+			else if(ext === '.ttf' || ext === '.otf') {
+				fileInfo(fontpath);
+			}
+			else {
+				printUsage();
+			}
+		}
+		else {
+			console.log('Path not found');
+		}
     } else {
         printUsage();
     }
