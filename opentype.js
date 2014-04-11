@@ -3,8 +3,7 @@
 // (c) 2014 Frederik De Bleser
 // opentype.js may be freely distributed under the MIT license.
 
-/*jslint bitwise: true */
-/*global module,define,DataView,XMLHttpRequest,require,toArrayBuffer,ArrayBuffer,Uint8Array */
+/* global module, define, DataView, XMLHttpRequest, require, ArrayBuffer, Uint8Array */
 (function () {
     'use strict';
 
@@ -137,14 +136,6 @@
         decimal = dataView.getInt16(offset, false);
         fraction = dataView.getUint16(offset + 2, false);
         return decimal + fraction / 65535;
-    }
-
-    // Retrieve a date-time from the DataView.
-    function getLongDateTime(dataView, offset) {
-        var v1, v2;
-        v1 = dataView.getUint32(offset, false);
-        v2 = dataView.getUint32(offset + 1, false);
-        return [v1, v2];
     }
 
     // Retrieve a 4-character tag from the DataView.
@@ -429,7 +420,7 @@
                 currentContour = [];
             }
         }
-        checkArgument(currentContour.length === 0, "There are still points left in the current contour.");
+        checkArgument(currentContour.length === 0, 'There are still points left in the current contour.');
         return contours;
     };
 
@@ -491,7 +482,7 @@
                     path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (pt.x * scale), y + (-pt.y * scale));
                     curvePt = null;
                 } else {
-                    throw new Error("Invalid state.");
+                    throw new Error('Invalid state.');
                 }
             }
             if (firstPt !== lastPt) {
@@ -1023,7 +1014,7 @@
         var version, numTables, offset, platformId, encodingId, format, segCount,
             ranges, i, j, parserOffset, idRangeOffset, p;
         version = getUShort(data, start);
-        checkArgument(version === 0, "cmap table version should be 0.");
+        checkArgument(version === 0, 'cmap table version should be 0.');
 
         // The cmap table can contain many sub-tables, each with their own format.
         // We're only interested in a "platform 3" table. This is a Windows format.
@@ -1045,7 +1036,7 @@
 
         p = new Parser(data, start + offset);
         format = p.parseUShort();
-        checkArgument(format === 4, "Only format 4 cmap tables are supported.");
+        checkArgument(format === 4, 'Only format 4 cmap tables are supported.');
         // Length in bytes of the sub-tables.
         // Skip length and language;
         p.skip('uShort', 2);
@@ -1740,10 +1731,10 @@
         pairs = {};
         p = new Parser(data, start);
         tableVersion = p.parseUShort();
-        checkArgument(tableVersion === 0, "Unsupported kern table version.");
+        checkArgument(tableVersion === 0, 'Unsupported kern table version.');
         nTables = p.parseUShort();
         subTableVersion = p.parseUShort();
-        checkArgument(subTableVersion === 0, "Unsupported kern sub-table version.");
+        checkArgument(subTableVersion === 0, 'Unsupported kern sub-table version.');
         // Skip subTableLength, subTableCoverage
         p.skip('uShort', 2);
         nPairs = p.parseUShort();
