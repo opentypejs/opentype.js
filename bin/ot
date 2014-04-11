@@ -41,7 +41,7 @@ function fileInfo(file) {
 	opentype.load(file, function (err, font) {
 		console.log(path.basename(file));
 		if (err) {
-			console.log('  (Error: ' + error + ')');
+			console.log('  (Error: ' + err + ')');
 		} else if (!font.supported) {
 			console.log('  (Unsupported)');
 		} else {
