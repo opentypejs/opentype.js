@@ -290,7 +290,7 @@
         var minor = getUShort(this.data, this.offset + this.relativeOffset + 2);
         this.relativeOffset += 4;
         return major + minor / 0x1000 / 10;
-    }
+    };
 
     Parser.prototype.skip = function (type, amount) {
         if (amount === undefined) {
@@ -1072,7 +1072,7 @@
     function parseCmapTable(data, start) {
         var version, numTables, offset, platformId, encodingId, format, segCount,
             ranges, i, j, parserOffset, idRangeOffset, p;
-        var cmap = {}
+        var cmap = {};
         cmap.version = version = getUShort(data, start);
         checkArgument(version === 0, "cmap table version should be 0.");
 
