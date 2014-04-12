@@ -1074,7 +1074,7 @@
             ranges, i, j, parserOffset, idRangeOffset, p;
         var cmap = {};
         cmap.version = version = getUShort(data, start);
-        checkArgument(version === 0, "cmap table version should be 0.");
+        checkArgument(version === 0, 'cmap table version should be 0.');
 
         // The cmap table can contain many sub-tables, each with their own format.
         // We're only interested in a "platform 3" table. This is a Windows format.
@@ -1096,7 +1096,7 @@
 
         p = new Parser(data, start + offset);
         cmap.format = format = p.parseUShort();
-        checkArgument(format === 4, "Only format 4 cmap tables are supported.");
+        checkArgument(format === 4, 'Only format 4 cmap tables are supported.');
         // Length in bytes of the sub-tables.
         // Skip length and language;
         p.skip('uShort', 2);
@@ -1870,9 +1870,9 @@
 	// Format 1 additional fields are not supported
     function parseNameTable(data, start) {
         var name = {},
-            p = new Parser(data, start),
-            format = p.parseUShort(),
-            count = p.parseUShort(),
+            p = new Parser(data, start);
+        name.format = p.parseUShort();
+        var count = p.parseUShort(),
             stringOffset = p.offset + p.parseUShort();
 		var platformID, encodingID, languageID, nameID, property, byteLength,
 			offset, str, i, j, codePoints;
@@ -1903,6 +1903,9 @@
 				}
 			}
 
+		}
+		if (name.format === 1) {
+			name.langTagCount = p.parseUShort();
 		}
         return name;
     }
@@ -2287,7 +2290,7 @@
     // we return an empty Font object with the `supported` flag set to `false`.
     opentype.parse = function (buffer) {
         var font, data, version, numTables, i, p, tag, offset, hmtxOffset, glyfOffset, locaOffset,
-            cffOffset, kernOffset, gposOffset, magicNumber, indexToLocFormat, numGlyphs, loca,
+            cffOffset, kernOffset, gposOffset, indexToLocFormat, numGlyphs, loca,
             shortVersion;
         // OpenType fonts use big endian byte ordering.
         // We can't rely on typed array view types, because they operate with the endianness of the host computer.
