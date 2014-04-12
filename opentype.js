@@ -277,6 +277,21 @@
         return v;
     };
 
+    Parser.prototype.parseFixed = function() {
+        var v = getULong(this.data, this.offset + this.relativeOffset);
+        this.relativeOffset += 4;
+        return v / 65536;
+    };
+
+    Parser.prototype.parseVersion = function() {
+        var major = getUShort(this.data, this.offset + this.relativeOffset);
+        // How to interpret the minor version is very vague in the spec. 0x5000 is 5, 0x1000 is 1
+        // This returns the correct number if minor = 0xN000 where N is 0-9
+        var minor = getUShort(this.data, this.offset + this.relativeOffset + 2);
+        this.relativeOffset += 4;
+        return major + minor / 0x1000 / 10;
+    }
+
     Parser.prototype.skip = function (type, amount) {
         if (amount === undefined) {
             amount = 1;
@@ -1057,12 +1072,13 @@
     function parseCmapTable(data, start) {
         var version, numTables, offset, platformId, encodingId, format, segCount,
             ranges, i, j, parserOffset, idRangeOffset, p;
-        version = getUShort(data, start);
-        checkArgument(version === 0, 'cmap table version should be 0.');
+        var cmap = {}
+        cmap.version = version = getUShort(data, start);
+        checkArgument(version === 0, "cmap table version should be 0.");
 
         // The cmap table can contain many sub-tables, each with their own format.
         // We're only interested in a "platform 3" table. This is a Windows format.
-        numTables = getUShort(data, start + 2);
+        cmap.numtables = numTables = getUShort(data, start + 2);
         offset = -1;
         for (i = 0; i < numTables; i += 1) {
             platformId = getUShort(data, start + 4 + (i * 8));
@@ -1079,13 +1095,13 @@
         }
 
         p = new Parser(data, start + offset);
-        format = p.parseUShort();
-        checkArgument(format === 4, 'Only format 4 cmap tables are supported.');
+        cmap.format = format = p.parseUShort();
+        checkArgument(format === 4, "Only format 4 cmap tables are supported.");
         // Length in bytes of the sub-tables.
         // Skip length and language;
         p.skip('uShort', 2);
         // segCount is stored x 2.
-        segCount = p.parseUShort() >> 1;
+        cmap.segCount = segCount = p.parseUShort() >> 1;
         // Skip searchRange, entrySelector, rangeShift.
         p.skip('uShort', 3);
         ranges = [];
@@ -1096,7 +1112,7 @@
         p.skip('uShort');
         for (i = 0; i < segCount; i += 1) {
             ranges[i].start = p.parseUShort();
-            ranges[i].length = ranges[i].end - ranges[i].start;
+            ranges[i].length = ranges[i].end - ranges[i].start + 1;
         }
         for (i = 0; i < segCount; i += 1) {
             ranges[i].idDelta = p.parseShort();
@@ -1112,8 +1128,8 @@
                 }
             }
         }
-
-        return new CmapEncoding(ranges);
+        cmap.segments = ranges;
+        return cmap;
     }
 
     // Parse a `CFF` INDEX array.
@@ -1753,9 +1769,8 @@
     function parseHeadTable(data, start) {
         var head = {},
             p = new Parser(data, start);
-        head.version = getFixed(data, 0);
-        head.fontRevision = getFixed(data, 4);
-        p.relativeOffset = 8;
+        head.version = p.parseVersion();
+        head.fontRevision = Math.round(p.parseFixed() * 1000) / 1000;
         head.checkSumAdjustment = p.parseULong();
         head.magicNumber = p.parseULong();
         checkArgument(head.magicNumber === 0x5F0F3CF5, 'Font header has wrong magic number.');
@@ -1780,8 +1795,7 @@
     function parseHheaTable(data, start) {
         var hhea = {},
             p = new Parser(data, start);
-        hhea.version = getFixed(data, 0);
-        p.relativeOffset = 4;
+        hhea.version = p.parseVersion();
         hhea.ascender = p.parseShort();
         hhea.descender = p.parseShort();
         hhea.lineGap = p.parseShort();
@@ -1803,10 +1817,9 @@
     function parseMaxpTable(data, start) {
         var maxp = {},
             p = new Parser(data, start);
-        maxp.version = getFixed(data, 0);
-        p.relativeOffset = 4;
+        maxp.version = p.parseVersion();
         maxp.numGlyphs = p.parseUShort();
-        if(maxp.version === 1) {
+        if(maxp.majorVersion === 1) {
             maxp.maxPoints = p.parseUShort();
             maxp.maxContours = p.parseUShort();
             maxp.maxCompositePoints = p.parseUShort();
@@ -1824,7 +1837,7 @@
         return maxp;
     }
 
-	// NameIDs for teh name table.
+	// NameIDs for the name table.
 	var nameTableNames = [
 		'copyright',			// 0
 		'fontFamily',			// 1
@@ -1947,9 +1960,8 @@
     function parsePostTable(data, start) {
         var post = {},
             p = new Parser(data, start);
-        post.version = getFixed(data, 0);
-        post.italicAngle = getFixed(data, 4);
-        p.relativeOffset = 8;
+        post.version = p.parseVersion();
+        post.italicAngle = p.parseFixed();
         post.underlinePosition = p.parseShort();
         post.underlineThickness = p.parseShort();
         post.isFixedPitch = p.parseULong();
@@ -2305,7 +2317,8 @@
             offset = getULong(data, p + 8);
             switch (tag) {
             case 'cmap':
-                font.encoding = parseCmapTable(data, offset);
+                font.tables.cmap = parseCmapTable(data, offset);
+                font.encoding = new CmapEncoding(font.tables.cmap.segments);
                 if (!font.encoding) {
                     font.supported = false;
                 }

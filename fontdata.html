@@ -42,33 +42,10 @@
             margin-bottom: 20px;
         }
 
-        .text-input {
-            font-size: 24px;
-            padding: 5px;
-            width: 930px;
-            display: block;
-        }
-
         canvas.text {
             border: 1px solid #ddd;
             box-shadow: 1px 0 5px rgba(0, 0, 0, 0.2);
             margin-bottom: 5px;
-        }
-
-        .wrapper {
-            border: 1px solid #ddd;
-            margin: 0 5px 10px 0;
-            float: left;
-        }
-
-        .wrapper canvas {
-            display: inline-block;
-        }
-
-        .wrapper span {
-            text-align: center;
-            background: #ddd;
-            display: block;
         }
 
         #message {
@@ -91,6 +68,7 @@
             font-weight: normal;
 			margin: 0;
 			cursor: pointer;
+            background-color: #f8f8f8;
         }
 
 		#font-data h3.expanded::before {
@@ -121,10 +99,6 @@
 			margin-left: 12em;
 		}
 
-        #glyphs {
-            width: 950px;
-        }
-
         #file {
             float: left;
             font-size: 11px;
@@ -149,10 +123,6 @@
             font-size: 12px;
             display: inline-block;
             margin-right: 10px;
-        }
-
-        label input[type="range"] {
-            vertical-align: middle;
         }
 
         a.github {
@@ -188,14 +158,8 @@
 
     <input id="file" type="file">
     <span class="info" id="font-name">Roboto-Black</span>
-    <canvas id="preview" width="940" height="300" class="text"></canvas>
+    <canvas id="preview" width="940" height="50" class="text"></canvas>
     <div id="message"></div>
-    <input type="text" class="text-input" onkeyup="renderText()" value="Hello, World!"
-           autofocus id="textField">
-    <label>Font Size<input type="range" min="6" max="500" step="2" value="150" id="font-size-range" autocomplete="off"><span id="fontSize">150</span></label>
-    <label><input type="checkbox" onchange="drawPointsChanged(this)" checked="checked">Draw Points</label>
-    <label><input type="checkbox" onchange="drawMetricsChanged(this)">Draw Metrics</label>
-    <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked">Kerning</label>
 
     <hr>
 
@@ -209,26 +173,17 @@
 		<dl id="head-table"></dl>
 		<h3 class="collapsed">Horizontal Header table <a href="https://www.microsoft.com/typography/OTSPEC/hhea.htm">hhea</a></h3>
 		<dl id="hhea-table"></dl>
-		<h3 class="collapsed">Maximum Profile <a href="https://www.microsoft.com/typography/OTSPEC/maxp.htm">maxp</a></h3>
+		<h3 class="collapsed">Maximum Profile table <a href="https://www.microsoft.com/typography/OTSPEC/maxp.htm">maxp</a></h3>
 		<dl id="maxp-table"></dl>
-		<h3 class="collapsed">Naming <a href="https://www.microsoft.com/typography/OTSPEC/name.htm">name</a></h3>
+		<h3 class="collapsed">Naming table <a href="https://www.microsoft.com/typography/OTSPEC/name.htm">name</a></h3>
 		<dl id="name-table"></dl>
 		<h3 class="collapsed">OS/2 and Windows Metrics table <a href="https://www.microsoft.com/typography/OTSPEC/os2.htm">OS/2</a></h3>
 		<dl id="os2-table"></dl>
 		<h3 class="collapsed">PostScript table <a href="https://www.microsoft.com/typography/OTSPEC/post.htm">post</a></h3>
 		<dl id="post-table"></dl>
+		<h3 class="collapsed">Character To Glyph Index Mapping Table <a href="https://www.microsoft.com/typography/OTSPEC/cmap.htm">cmap</a></h3>
+		<dl id="cmap-table"></dl>
     </div>
-
-    <hr>
-
-    <div class="explain">
-        <h1>Glyphs</h1>
-        opentype.js provides you with <strong>raw access</strong> to the glyphs so you can modify them as you please.
-    </div>
-
-    <div id="glyphs">
-    </div>
-    <div class="message">Only the first 100 glyphs are shown.</div>
 
     <hr>
 
@@ -244,63 +199,17 @@
 
 <script type="text/javascript">
 var font = null;
-var fontSize = 150;
-var textToRender = "Hello, World!";
-var drawPoints = true;
-var drawMetrics = false;
-var kerning = true;
+var fontSize = 32;
+var textToRender = 'Grumpy wizards make toxic brew for the evil Queen and Jack.';
 var previewPath = null;
-var fontSizeSlider = document.getElementById("font-size-range");
-
-function drawPointsChanged(e) {
-    drawPoints = e.checked;
-    renderText();
-}
-
-function drawMetricsChanged(e) {
-    drawMetrics = e.checked;
-    renderText();
-}
-
-function kerningChanged(e) {
-    kerning = e.checked;
-    renderText();
-}
-
-function fontSizeChanged() {
-    fontSize = fontSizeSlider.value;
-    document.getElementById('fontSize').innerHTML = '' + fontSize;
-    renderText();
-}
 
 function renderText() {
     if (!font) return;
-    textToRender = document.getElementById('textField').value;
 
-    var previewCtx = document.getElementById('preview').getContext("2d");
-    previewCtx.clearRect(0, 0, 940, 300);
-    font.draw(previewCtx, textToRender, 0, 200, fontSize, {kerning: kerning});
-    if (drawPoints) {
-        font.drawPoints(previewCtx, textToRender, 0, 200, fontSize, {kerning: kerning});
-    }
-    if (drawMetrics) {
-        font.drawMetrics(previewCtx, textToRender, 0, 200, fontSize, {kerning: kerning});
-    }
-}
-
-// Create a canvas and adds it to the document.
-// Returns the 2d drawing context.
-function createGlyphCanvas(glyph, size) {
-    var canvasId, html, glyphsDiv, wrap, canvas, ctx;
-    canvasId = 'c' + glyph.index;
-    html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyph.index + '</span></div>';
-    glyphsDiv = document.getElementById('glyphs');
-    wrap = document.createElement('div');
-    wrap.innerHTML = html;
-    glyphsDiv.appendChild(wrap);
-    canvas = document.getElementById(canvasId);
-    ctx = canvas.getContext('2d');
-    return ctx;
+    var previewCanvas = document.getElementById('preview');
+    var previewCtx = previewCanvas.getContext("2d");
+    previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    font.draw(previewCtx, textToRender, 0, 32, fontSize, {kerning: true});
 }
 
 function showErrorMessage(message) {
@@ -321,7 +230,14 @@ function displayFontData() {
 		for(property in table) {
 			value = table[property];
 			html += '<dt>'+property+'</dt><dd>';
-			html += value;
+            if(Array.isArray(value) && typeof value[0] === 'object') {
+                html += value.map(function(item) {
+                    return JSON.stringify(item);
+                }).join('<br>');
+            }
+            else {
+                html += value;
+            }
 			html += '</dd>';
 		}
 		document.getElementById(tablename+"-table").innerHTML = html;
@@ -329,25 +245,7 @@ function displayFontData() {
 }
     
 function onFontLoaded(font) {
-    var glyphsDiv, i, x, y, fontSize;
     window.font = font;
-
-    // Show the first 100 glyphs.
-    glyphsDiv = document.getElementById('glyphs');
-    glyphsDiv.innerHTML = '';
-
-    amount = Math.min(100, font.glyphs.length);
-    x = 50;
-    y = 120;
-    fontSize = 72;
-    for (i = 0; i < amount; i++) {
-        glyph = font.glyphs[i];
-        ctx = createGlyphCanvas(glyph, 150);
-        glyph.draw(ctx, x, y, fontSize);
-        glyph.drawPoints(ctx, x, y, fontSize);
-        glyph.drawMetrics(ctx, x, y, fontSize);
-    }
-
     renderText();
     displayFontData();
 }
@@ -378,11 +276,6 @@ document.getElementById('font-name').innerHTML = fontFileName.split('/')[1];
 
 var fileButton = document.getElementById('file');
 fileButton.addEventListener('change', onReadFile, false);
-
-// FireFox & Chrome fire the 'input' event continuously, then the 'change' event on mouse up.
-// IE 11 doesn't fire the 'input' event at all, but che 'change' event continuously.
-fontSizeSlider.addEventListener('input', fontSizeChanged, false);
-fontSizeSlider.addEventListener('change', fontSizeChanged, false);
 
 var tableHeaders = document.getElementById('font-data').getElementsByTagName('h3');
 for(var i = tableHeaders.length; i--; ) {
