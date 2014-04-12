@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>opentype.js – JavaScript parser for OpenType and TrueType fonts.</title>
+    <meta description="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
+    <meta charset="utf-8">
+    <script type="text/javascript" src="opentype.js"></script>
+    <style type="text/css">
+        body {
+            font: 13px Helvetica, arial, freesans, sans-serif;
+            line-height: 1.4;
+            min-width: 1020px;
+            color: #333;
+            background-color: #fff;
+            margin: 0 0 50px 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #eee;
+            color: #555;
+            border-bottom: 1px solid #ddd;
+            height: 40px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            padding: 9px 0 0 0;
+            font-size: 18px;
+        }
+
+        .container {
+            width: 940px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .explain {
+            color: #222;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .text-input {
+            font-size: 24px;
+            padding: 5px;
+            width: 930px;
+            display: block;
+        }
+
+        canvas.text {
+            border: 1px solid #ddd;
+            box-shadow: 1px 0 5px rgba(0, 0, 0, 0.2);
+            margin-bottom: 5px;
+        }
+
+        .wrapper {
+            border: 1px solid #ddd;
+            margin: 0 5px 10px 0;
+            float: left;
+        }
+
+        .wrapper canvas {
+            display: inline-block;
+        }
+
+        .wrapper span {
+            text-align: center;
+            background: #ddd;
+            display: block;
+        }
+
+        #message {
+            position: relative;
+            top: -3px;
+            background: red;
+            color: white;
+            padding: 1px 5px;
+            font-weight: bold;
+            border-radius: 2px;
+            display: none;
+        }
+
+        .message {
+            clear: both;
+            font-style: oblique;
+        }
+
+        #font-data {
+            white-space: pre;
+        }
+
+        #glyphs {
+            width: 950px;
+        }
+
+        #file {
+            float: left;
+            font-size: 11px;
+            color: #999;
+        }
+
+        .info {
+            float: right;
+            font-size: 11px;
+            color: #999;
+        }
+
+        hr {
+            border: none;
+            border-bottom: 1px solid #ccc;
+            margin: 20px 0 20px 0;
+            padding: 0;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        label input[type="range"] {
+            vertical-align: middle;
+        }
+
+        a.github {
+            float: right;
+            position: relative;
+            top: -22px;
+            text-decoration: none;
+            color: #44d;
+        }
+
+        a {
+            text-decoration: none;
+            color: #44d;
+        }
+    </style>
+
+
+</head>
+<body>
+<div class="header">
+    <div class="container">
+        <h1>opentype.js</h1>
+        <a class="github" href="https://github.com/nodebox/opentype.js">Fork me on GitHub</a>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="explain">
+        opentype.js is an OpenType and TrueType font parser.
+        It allows you to access the <strong>letterforms</strong> of text from the browser or node.js.
+    </div>
+
+    <input id="file" type="file">
+    <span class="info" id="font-name">Roboto-Black</span>
+    <canvas id="preview" width="940" height="300" class="text"></canvas>
+    <div id="message"></div>
+    <input type="text" class="text-input" onkeyup="renderText()" value="Hello, World!"
+           autofocus id="textField">
+    <label>Font Size<input type="range" min="6" max="500" value="150" oninput="fontSizeChanged(this)"/><span id="fontSize">150</span></label>
+    <label><input type="checkbox" onchange="drawPointsChanged(this)" checked="checked">Draw Points</label>
+    <label><input type="checkbox" onchange="drawMetricsChanged(this)">Draw Metrics</label>
+    <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked">Kerning</label>
+
+    <hr>
+
+    <div class="explain">
+        <h1>Metadata</h1>
+        opentype.js provides you with <strong>raw access</strong> to the font metrics and data.
+    </div>
+
+    <div id="font-data">
+    </div>
+
+    <hr>
+
+    <div class="explain">
+        <h1>Glyphs</h1>
+        opentype.js provides you with <strong>raw access</strong> to the glyphs so you can modify them as you please.
+    </div>
+
+    <div id="glyphs">
+    </div>
+    <div class="message">Only the first 100 glyphs are shown.</div>
+
+    <hr>
+
+    <div class="explain">
+        <h1>Free Software</h1>
+        <p>opentype.js is available on <a href="https://github.com/nodebox/opentype.js">GitHub</a> under the <a href="https://raw.github.com/nodebox/opentype.js/master/LICENSE">MIT License</a>.</p>
+        <p>Copyright &copy; 2014 Frederik De Bleser.</p>
+    </div>
+
+    <hr>
+</div>
+
+
+<script type="text/javascript">
+var font = null;
+var fontSize = 150;
+var textToRender = "Hello, World!";
+var drawPoints = true;
+var drawMetrics = false;
+var kerning = true;
+var previewPath = null;
+
+function drawPointsChanged(e) {
+    drawPoints = e.checked;
+    renderText();
+}
+
+function drawMetricsChanged(e) {
+    drawMetrics = e.checked;
+    renderText();
+}
+
+function kerningChanged(e) {
+    kerning = e.checked;
+    renderText();
+}
+
+function fontSizeChanged(e) {
+    fontSize = e.value;
+    document.getElementById('fontSize').innerHTML = '' + fontSize;
+    renderText();
+}
+
+function renderText() {
+    if (!font) return;
+    textToRender = document.getElementById('textField').value;
+
+    var previewCtx = document.getElementById('preview').getContext("2d");
+    previewCtx.clearRect(0, 0, 940, 300);
+    font.draw(previewCtx, textToRender, 0, 200, fontSize, {kerning: kerning});
+    if (drawPoints) {
+        font.drawPoints(previewCtx, textToRender, 0, 200, fontSize, {kerning: kerning});
+    }
+    if (drawMetrics) {
+        font.drawMetrics(previewCtx, textToRender, 0, 200, fontSize, {kerning: kerning});
+    }
+}
+
+// Create a canvas and adds it to the document.
+// Returns the 2d drawing context.
+function createGlyphCanvas(glyph, size) {
+    var canvasId, html, glyphsDiv, wrap, canvas, ctx;
+    canvasId = 'c' + glyph.index;
+    html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyph.index + '</span></div>';
+    glyphsDiv = document.getElementById('glyphs');
+    wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    glyphsDiv.appendChild(wrap);
+    canvas = document.getElementById(canvasId);
+    ctx = canvas.getContext('2d');
+    return ctx;
+}
+
+function showErrorMessage(message) {
+    var el = document.getElementById('message');
+    if (!message || message.trim().length === 0) {
+        el.style.display = 'none';
+    } else {
+        el.style.display = 'block';
+    }
+    el.innerHTML = message;
+}
+
+function displayFontData() {
+    document.getElementById("font-data").innerHTML = JSON.stringify(font.tables, null, 4);
+}
+    
+function onFontLoaded(font) {
+    var glyphsDiv, i, x, y, fontSize;
+    window.font = font;
+
+    // Show the first 100 glyphs.
+    glyphsDiv = document.getElementById('glyphs');
+    glyphsDiv.innerHTML = '';
+
+    amount = Math.min(100, font.glyphs.length);
+    x = 50;
+    y = 120;
+    fontSize = 72;
+    for (i = 0; i < amount; i++) {
+        glyph = font.glyphs[i];
+        ctx = createGlyphCanvas(glyph, 150);
+        glyph.draw(ctx, x, y, fontSize);
+        glyph.drawPoints(ctx, x, y, fontSize);
+        glyph.drawMetrics(ctx, x, y, fontSize);
+    }
+
+    renderText();
+    displayFontData();
+}
+
+function onReadFile(e) {
+    document.getElementById('font-name').innerHTML = '';
+    var file = e.target.files[0];
+    var reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            font = opentype.parse(e.target.result);
+            onFontLoaded(font);
+            showErrorMessage('');
+        } catch (err) {
+            showErrorMessage(err.toString());
+        }
+    }
+    reader.onerror = function (err) {
+        showErrorMessage(err.toString());
+    }
+
+    reader.readAsArrayBuffer(file);
+}
+
+var fontFileName = 'fonts/Roboto-Black.ttf';
+
+document.getElementById('font-name').innerHTML = fontFileName.split('/')[1];
+
+var fileButton = document.getElementById('file');
+fileButton.addEventListener('change', onReadFile, false);
+
+opentype.load(fontFileName, function (err, font) {
+    var amount, glyph, ctx, x, y, fontSize;
+    if (err) {
+        showErrorMessage(err.toString());
+        return;
+    }
+    onFontLoaded(font);
+});
+</script>
+</body>
+</html>
