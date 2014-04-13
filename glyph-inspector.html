@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>opentype.js glyph inspector</title>
+    <meta description="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
+    <meta charset="utf-8">
+    <script src="opentype.js"></script>
+    <style type="text/css">
+        body {
+            font: 13px Helvetica, arial, freesans, sans-serif;
+            line-height: 1.4;
+            min-width: 1020px;
+            color: #333;
+            background-color: #fff;
+            margin: 0 0 50px 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #eee;
+            color: #555;
+            border-bottom: 1px solid #ddd;
+            height: 40px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            padding: 9px 0 0 0;
+            font-size: 18px;
+        }
+
+        .container {
+            width: 940px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .explain {
+            color: #222;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        #message {
+            position: relative;
+            top: -3px;
+            background: red;
+            color: white;
+            padding: 1px 5px;
+            font-weight: bold;
+            border-radius: 2px;
+            display: none;
+            clear: both;
+            font-style: oblique;
+        }
+		
+		#pagination span {
+			margin: 0 0.5em;
+			color: #505050;
+			cursor: pointer;
+		}
+
+		#pagination span.page-selected {
+			font-weight: bold;
+			color: black;
+		}
+
+		canvas.item {
+			float: left;
+			border: solid 1px #a0a0a0;
+			margin-right: -1px;
+			margin-bottom: -1px;
+			cursor: pointer;
+		}
+
+		canvas.item:hover {
+			background-color: #e0e0e0;
+		}
+
+		#glyph-list-end {
+ 			clear: both;
+			height: 20px;
+		}
+
+		#glyph-display {
+			border: solid 1px #a0a0a0;
+			position: relative;
+			width: 400px;
+			height: 400px;
+		}
+
+		#glyph, glyph-bg {
+			position: absolute;
+			top: 0;
+			left: 0;
+		}
+
+		#glyph-data {
+			display: inline-block;
+		}
+
+		#glyph-data dl {
+			margin-top: 0;
+			padding-left: 2em;
+			color: #707070;
+		}
+
+        #glyph-data dt {
+			float: left;
+		}
+
+        #glyph-data dd {
+			margin-left: 12em;
+		}
+		
+        #file {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .info {
+            float: right;
+            font-size: 11px;
+            color: #999;
+        }
+
+        hr {
+            border: none;
+            border-bottom: 1px solid #ccc;
+            margin: 20px 0 20px 0;
+            padding: 0;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        a.github {
+            float: right;
+            position: relative;
+            top: -22px;
+            text-decoration: none;
+            color: #44d;
+        }
+
+        a {
+            text-decoration: none;
+            color: #44d;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="container">
+        <h1>opentype.js</h1>
+        <a class="github" href="https://github.com/nodebox/opentype.js">Fork me on GitHub</a>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="explain">
+        opentype.js is an OpenType and TrueType font parser.
+        It allows you to access the <strong>letterforms</strong> of text from the browser or node.js.
+    </div>
+
+    <input id="file" type="file">
+    <span class="info" id="font-name">Roboto-Black</span>
+    <div id="message"></div>
+
+    <hr>
+
+    <div class="explain">
+        <h1>Glyphs</h1>
+        opentype.js provides you with <strong>raw access</strong> to the glyph metrics and data.
+    </div>
+
+    <div>
+		Glyphs <span id="pagination"></span>
+		<br>
+		<div id="glyph-list-end"></div>
+		<div id="glyph-display">
+			<canvas id="glyph-bg" width="400" height="400"></canvas>
+			<canvas id="glyph" width="400" height="400"></canvas>
+		</div>
+		<div id="glyph-data">
+
+		</div>
+    </div>
+
+    <hr>
+
+    <div class="explain">
+        <h1>Free Software</h1>
+        <p>opentype.js is available on <a href="https://github.com/nodebox/opentype.js">GitHub</a> under the <a href="https://raw.github.com/nodebox/opentype.js/master/LICENSE">MIT License</a>.</p>
+        <p>Copyright &copy; 2014 Frederik De Bleser.</p>
+    </div>
+
+    <hr>
+</div>
+
+
+<script>
+var cellCount = 100,
+	cellWidth = 44,
+	cellHeight = 40,
+	cellMarginTop = 1,
+	cellMarginBottom = 8,
+	cellMarginLeftRight = 1,
+	glyphMargin = 5;
+
+var pageSelected, font, fontScale, fontSize, fontBaseline, glyphScale, glyphSize, glyphBaseline;
+
+function showErrorMessage(message) {
+    var el = document.getElementById('message');
+    if (!message || message.trim().length === 0) {
+        el.style.display = 'none';
+    } else {
+        el.style.display = 'block';
+    }
+    el.innerHTML = message;
+}
+
+function displayGlyph(glyphIndex) {
+	var canvas = document.getElementById('glyph'),
+		ctx = canvas.getContext('2d');
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	var glyph = font.glyphs[glyphIndex],
+		glyphWidth = glyph.advanceWidth * glyphScale,
+		xmin = (canvas.width - glyphWidth)/2,
+		xmax = (canvas.width + glyphWidth)/2,
+		x0 = xmin;
+	ctx.fillStyle = '#000000';
+	//glyph.draw(ctx, x0, glyphBaseline, glyphSize);
+	var path = glyph.getPath(x0, glyphBaseline, glyphSize);
+	path.fill = '#808080';
+	path.stroke = '#000000';
+	path.strokeWidth = 2;
+	path.draw(ctx);
+}
+
+function renderGlyphItem(canvas, glyphIndex) {
+	var cellMarkSize = 4;
+	var ctx = canvas.getContext('2d');
+	ctx.clearRect(0, 0, cellWidth, cellHeight);
+	if (glyphIndex >= font.numGlyphs) return;
+
+	ctx.fillStyle = '#606060';
+	ctx.font = '9px sans-serif';
+	ctx.fillText(glyphIndex, 1, cellHeight-1);
+	var glyph = font.glyphs[glyphIndex],
+		glyphWidth = glyph.advanceWidth * fontScale,
+		xmin = (cellWidth - glyphWidth)/2,
+		xmax = (cellWidth + glyphWidth)/2,
+		x0 = xmin;
+
+	ctx.fillStyle = '#a0a0a0';
+	ctx.fillRect(xmin-cellMarkSize+1, fontBaseline, cellMarkSize, 1);
+	ctx.fillRect(xmin, fontBaseline, 1, cellMarkSize);
+	ctx.fillRect(xmax, fontBaseline, cellMarkSize, 1);
+	ctx.fillRect(xmax, fontBaseline, 1, cellMarkSize);
+
+	ctx.fillStyle = '#000000';
+	glyph.draw(ctx, x0, fontBaseline, fontSize);
+}
+
+function displayGlyphPage(pageNum) {
+	pageSelected = pageNum;
+	document.getElementById('p'+pageNum).className = 'page-selected';
+	var firstGlyph = pageNum * cellCount;
+	for(var i = 0; i < cellCount; i++) {
+		renderGlyphItem(document.getElementById('g'+i), firstGlyph+i);
+	}
+}
+
+function pageSelect(event) {
+	document.getElementsByClassName('page-selected')[0].className = '';
+	displayGlyphPage(+event.target.id.substr(1));
+}
+
+function initGlyphDisplay() {
+	var glyphBgCanvas = document.getElementById('glyph-bg'),
+		w = glyphBgCanvas.width,
+		h = glyphBgCanvas.height,
+		glyphW = w - glyphMargin*2,
+		glyphH = h - glyphMargin*2,
+		head = font.tables.head,
+		maxHeight = head.yMax - head.yMin,
+		ctx = glyphBgCanvas.getContext('2d');
+
+	glyphScale = Math.min(glyphW/(head.xMax - head.xMin), glyphH/maxHeight);
+	glyphSize = glyphScale * font.unitsPerEm;
+	glyphBaseline = glyphMargin + glyphH * head.yMax / maxHeight;
+	
+	function hline(text, yunits) {
+		ypx = glyphBaseline - yunits * glyphScale;
+		ctx.fillText(text, 2, ypx+3);
+		ctx.fillRect(80, ypx, w, 1);
+	}
+
+	ctx.clearRect(0, 0, w, h);
+	ctx.fillStyle = '#a0a0a0'
+	hline('Baseline', 0);
+	hline('yMax', font.tables.head.yMax);
+	hline('yMin', font.tables.head.yMin);
+	hline('Ascender', font.tables.hhea.ascender);
+	hline('Descender', font.tables.hhea.descender);
+	hline('Typo Ascender', font.tables.os2.sTypoAscender);
+	hline('Typo Descender', font.tables.os2.sTypoDescender);
+}
+
+function onFontLoaded(font) {
+    window.font = font;
+	
+	var w = cellWidth - cellMarginLeftRight * 2,
+		h = cellHeight - cellMarginTop - cellMarginBottom,
+		head = font.tables.head,
+		maxHeight = head.yMax - head.yMin;
+	fontScale = Math.min(w/(head.xMax - head.xMin), h/maxHeight);
+	fontSize = fontScale * font.unitsPerEm;
+	fontBaseline = cellMarginTop + h * head.yMax / maxHeight;
+
+	var pagination = document.getElementById("pagination");
+	pagination.innerHTML = '';
+	var numPages = Math.ceil(font.numGlyphs / cellCount);
+	for(var i = 0; i < numPages; i++) {
+		var link = document.createElement('span');
+		var lastIndex = Math.min(font.numGlyphs-1, (i+1)*cellCount-1);
+		link.textContent = i*cellCount + '-' + lastIndex;
+		link.id = 'p' + i;
+		link.addEventListener('click', pageSelect, false);
+		pagination.appendChild(link);
+	}
+	
+	initGlyphDisplay();
+	displayGlyphPage(0);
+}
+
+function onReadFile(e) {
+    document.getElementById('font-name').innerHTML = '';
+    var file = e.target.files[0];
+    var reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            font = opentype.parse(e.target.result);
+            showErrorMessage('');
+            onFontLoaded(font);
+        } catch (err) {
+            showErrorMessage(err.toString());
+			throw(err);
+        }
+    }
+    reader.onerror = function (err) {
+        showErrorMessage(err.toString());
+    }
+
+    reader.readAsArrayBuffer(file);
+}
+
+function cellSelect(event) {
+	if (!font) return;
+	var firstGlyphIndex = pageSelected*cellCount,
+		cellIndex = +event.target.id.substr(1),
+		glyphIndex = firstGlyphIndex + cellIndex;
+	if (glyphIndex < font.numGlyphs) {
+		displayGlyph(glyphIndex);
+	}
+}
+	
+function prepareGlyphList() {
+	var marker = document.getElementById('glyph-list-end'),
+		parent = marker.parentElement;
+	for(var i = 0; i < cellCount; i++) {
+		var canvas = document.createElement('canvas');
+		canvas.width = cellWidth;
+		canvas.height = cellHeight;
+		canvas.className = 'item';
+		canvas.id = 'g'+i;
+		canvas.addEventListener('click', cellSelect, false);
+		parent.insertBefore(canvas, marker);
+	}
+}
+
+var fontFileName = 'fonts/Roboto-Black.ttf';
+document.getElementById('font-name').innerHTML = fontFileName.split('/')[1];
+
+var fileButton = document.getElementById('file');
+fileButton.addEventListener('change', onReadFile, false);
+
+prepareGlyphList();
+opentype.load(fontFileName, function (err, font) {
+    var amount, glyph, ctx, x, y, fontSize;
+    if (err) {
+        showErrorMessage(err.toString());
+        return;
+    }
+    onFontLoaded(font);
+});
+</script>
+</body>
+</html>
