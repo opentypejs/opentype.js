@@ -248,13 +248,23 @@ function displayGlyphData(glyphIndex) {
 			'<dt>yMin</dt><dd>'+glyph.yMin+'</dd>' +
 			'<dt>yMax</dt><dd>'+glyph.yMax+'</dd>';
 	}
-	html += '<dt>advanceWidth</dt><dd>'+glyph.advanceWidth+'</dd></dl>';
+	html += '<dt>advanceWidth</dt><dd>'+glyph.advanceWidth+'</dd>';
+	if(glyph.leftSideBearing !== undefined) {
+		html += '<dt>leftSideBearing</dt><dd>'+glyph.leftSideBearing+'</dd>';
+	}
+	html += '</dl>';
 	if (glyph.path) {
 		html += 'path:<br><pre>  ' + glyph.path.commands.map(pathCommandToString).join('\n  ') + '\n</pre>';
 	}
 	else if (glyph.numberOfContours > 0) {
 		var contours = glyph.getContours();
 		html += 'contours:<br>' + contours.map(contourToString).join('\n');
+	}
+	else if(glyph.isComposite) {
+		html += '<br>This composite glyph is a combination of :<ul><li>' +
+			glyph.components.map(function(component) {
+				return 'glyph '+component.glyphIndex+' at dx='+component.dx+', dy='+component.dy;
+			}).join('</li><li>') + '</li></ul>';
 	}
 	container.innerHTML = html;
 }
