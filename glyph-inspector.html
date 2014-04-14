@@ -84,10 +84,11 @@
 		}
 
 		#glyph-display {
+			float: left;
 			border: solid 1px #a0a0a0;
 			position: relative;
-			width: 400px;
-			height: 400px;
+			width: 500px;
+			height: 500px;
 		}
 
 		#glyph, glyph-bg {
@@ -96,25 +97,18 @@
 			left: 0;
 		}
 
-		#glyph-data {
-			display: inline-block;
-		}
+		#glyph-data { float: left; margin-left: 2em; }
+		#glyph-data dl { margin: 0; }
+        #glyph-data dt { float: left; }
+        #glyph-data dd { margin-left: 12em; }
 
-		#glyph-data dl {
-			margin-top: 0;
-			padding-left: 2em;
-			color: #707070;
-		}
+		#glyph-data pre { font-size: 11px; }
+		pre:not(.contour) { margin: 0; }
+		pre.contour { margin: 0 0 1em 2em; border-bottom: solid 1px #a0a0a0; }
+		span.oncurve { color: blue; }
+		span.offcurve { color: red; }
 
-        #glyph-data dt {
-			float: left;
-		}
-
-        #glyph-data dd {
-			margin-left: 12em;
-		}
-		
-        #file {
+		#file {
             font-size: 11px;
             color: #999;
         }
@@ -183,14 +177,15 @@
 		Glyphs <span id="pagination"></span>
 		<br>
 		<div id="glyph-list-end"></div>
+	</div>
+	<div style="position: relative">
 		<div id="glyph-display">
-			<canvas id="glyph-bg" width="400" height="400"></canvas>
-			<canvas id="glyph" width="400" height="400"></canvas>
+			<canvas id="glyph-bg" width="500" height="500"></canvas>
+			<canvas id="glyph" width="500" height="500"></canvas>
 		</div>
-		<div id="glyph-data">
-
-		</div>
-    </div>
+		<div id="glyph-data"></div>
+		<div style="clear: both"></div>
+	</div>
 
     <hr>
 
@@ -225,22 +220,73 @@ function showErrorMessage(message) {
     el.innerHTML = message;
 }
 
+function pathCommandToString(cmd) {
+	var str = '<strong>' + cmd.type + '</strong> ' +
+		((cmd.x !== undefined) ? 'x='+cmd.x+' y='+cmd.y+' ' : '') +
+		((cmd.x1 !== undefined) ? 'x1='+cmd.x1+' y1='+cmd.y1+' ' : '') +
+		((cmd.x2 !== undefined) ? 'x2='+cmd.x2+' y2='+cmd.y2 : '');
+	return str;
+}
+
+function contourToString(contour) {
+	return '<pre class="contour">' + contour.map(function(point) {
+		return '<span class="' + (point.onCurve ? 'on' : 'off') + 'curve">x=' + point.x + ' y=' + point.y + '</span>';
+	}).join('\n') + '</pre>';
+}
+
+function displayGlyphData(glyphIndex) {
+	var container = document.getElementById('glyph-data');
+	if (glyphIndex < 0) {
+		container.innerHTML = '';
+		return;
+	}
+	var glyph = font.glyphs[glyphIndex],
+	    html = '<dl><dt>index</dt><dd>'+glyph.index+'</dd>';
+	if (glyph.xMin !== 0 || glyph.xMax !== 0 || glyph.yMin !== 0 || glyph.yMax !== 0) {
+		html += '<dt>xMin</dt><dd>'+glyph.xMin+'</dd>' +
+			'<dt>xMax</dt><dd>'+glyph.xMax+'</dd>' +
+			'<dt>yMin</dt><dd>'+glyph.yMin+'</dd>' +
+			'<dt>yMax</dt><dd>'+glyph.yMax+'</dd>';
+	}
+	html += '<dt>advanceWidth</dt><dd>'+glyph.advanceWidth+'</dd></dl>';
+	if (glyph.path) {
+		html += 'path:<br><pre>  ' + glyph.path.commands.map(pathCommandToString).join('\n  ') + '\n</pre>';
+	}
+	else if (glyph.numberOfContours > 0) {
+		var contours = glyph.getContours();
+		html += 'contours:<br>' + contours.map(contourToString).join('\n');
+	}
+	container.innerHTML = html;
+}
+
 function displayGlyph(glyphIndex) {
 	var canvas = document.getElementById('glyph'),
 		ctx = canvas.getContext('2d');
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	if(glyphIndex < 0) return;
 	var glyph = font.glyphs[glyphIndex],
 		glyphWidth = glyph.advanceWidth * glyphScale,
 		xmin = (canvas.width - glyphWidth)/2,
 		xmax = (canvas.width + glyphWidth)/2,
-		x0 = xmin;
+		x0 = xmin,
+		markSize = 10;
+
+	ctx.fillStyle = '#606060';
+	ctx.fillRect(xmin-markSize+1, glyphBaseline, markSize, 1);
+	ctx.fillRect(xmin, glyphBaseline, 1, markSize);
+	ctx.fillRect(xmax, glyphBaseline, markSize, 1);
+	ctx.fillRect(xmax, glyphBaseline, 1, markSize);
+	ctx.textAlign = 'center';
+	ctx.fillText(xmin.toFixed(1), xmin, glyphBaseline+markSize+10);
+	ctx.fillText(xmax.toFixed(1), xmax, glyphBaseline+markSize+10);
+
 	ctx.fillStyle = '#000000';
-	//glyph.draw(ctx, x0, glyphBaseline, glyphSize);
 	var path = glyph.getPath(x0, glyphBaseline, glyphSize);
 	path.fill = '#808080';
 	path.stroke = '#000000';
 	path.strokeWidth = 2;
 	path.draw(ctx);
+	glyph.drawPoints(ctx, x0, glyphBaseline, glyphSize);
 }
 
 function renderGlyphItem(canvas, glyphIndex) {
@@ -338,6 +384,8 @@ function onFontLoaded(font) {
 	
 	initGlyphDisplay();
 	displayGlyphPage(0);
+	displayGlyph(-1);
+	displayGlyphData(-1);
 }
 
 function onReadFile(e) {
@@ -368,6 +416,7 @@ function cellSelect(event) {
 		glyphIndex = firstGlyphIndex + cellIndex;
 	if (glyphIndex < font.numGlyphs) {
 		displayGlyph(glyphIndex);
+		displayGlyphData(glyphIndex);
 	}
 }
 	
