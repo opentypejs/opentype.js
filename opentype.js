@@ -109,6 +109,11 @@
 
     getCard8 = getByte;
 
+    // Retrieve a signed byte from the DataView.
+    function getChar(dataView, offset) {
+        return dataView.getInt8(offset);
+    }
+
     // Retrieve an unsigned 16-bit short from the DataView.
     // The value is stored in big endian.
     function getUShort(dataView, offset) {
@@ -214,6 +219,18 @@
         this.relativeOffset += 1;
         return v;
     };
+
+    Parser.prototype.parseChar = function () {
+        var v;
+        if (this.isDataView) {
+            v = getChar(this.data, this.offset + this.relativeOffset);
+        } else {
+            v = this.data[this.offset + this.relativeOFfset];
+        }
+        this.relativeOffset += 1;
+        return v;
+    };
+
     Parser.prototype.parseCard8 = Parser.prototype.parseByte;
 
     Parser.prototype.parseUShort = function () {
@@ -936,8 +953,8 @@
                     component.dy = arg2;
                 } else {
                     // The arguments are bytes
-                    arg1 = p.parseByte();
-                    arg2 = p.parseByte();
+                    arg1 = p.parseChar();
+                    arg2 = p.parseChar();
                     component.dx = arg1;
                     component.dy = arg2;
                 }
