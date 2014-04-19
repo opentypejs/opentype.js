@@ -1,0 +1,254 @@
+body {
+    font: 13px Helvetica, arial, freesans, sans-serif;
+    line-height: 1.4;
+    min-width: 1020px;
+    color: #333;
+    background-color: #fff;
+    margin: 0 0 50px 0;
+    padding: 0;
+}
+
+.header {
+    background: #eee;
+    color: #555;
+    border-bottom: 1px solid #ddd;
+    height: 40px;
+    margin-bottom: 20px;
+    line-height: 40px;
+}
+
+.header h1 {
+    line-height: 40px;
+    display: inline-block;
+    margin: 0 20px 0 0;
+    padding: 0;
+    font-size: 18px;
+}
+
+.header nav {
+    display: inline-block;
+    line-height: 40px;
+    margin: 0;
+    padding: 0;
+}
+
+.header nav a {
+    display: inline-block;
+    margin: 0 10px 0 0;
+    padding: 0 5px;
+    color: #44d;
+    font-weight: bold;
+}
+
+.header nav a:hover {
+    background: #ddd;
+}
+
+.container {
+    width: 940px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.explain {
+    color: #222;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.text-input {
+    font-size: 24px;
+    padding: 5px;
+    width: 930px;
+    display: block;
+}
+
+canvas.text {
+    border: 1px solid #ddd;
+    box-shadow: 1px 0 5px rgba(0, 0, 0, 0.2);
+    margin-bottom: 5px;
+}
+
+.wrapper {
+    border: 1px solid #ddd;
+    margin: 0 5px 10px 0;
+    float: left;
+}
+
+.wrapper canvas {
+    display: inline-block;
+}
+
+.wrapper span {
+    text-align: center;
+    background: #ddd;
+    display: block;
+}
+
+#message {
+    position: relative;
+    top: -3px;
+    background: red;
+    color: white;
+    padding: 1px 5px;
+    font-weight: bold;
+    border-radius: 2px;
+    display: none;
+}
+
+.message {
+    clear: both;
+    font-style: oblique;
+}
+
+#glyphs {
+    width: 950px;
+}
+
+#file {
+    float: left;
+    font-size: 11px;
+    color: #999;
+}
+
+.info {
+    float: right;
+    font-size: 11px;
+    color: #999;
+}
+
+h1 {
+    margin: 5px 0;
+}
+
+hr {
+    clear: both;
+    border: none;
+    border-bottom: 1px solid #ccc;
+    margin: 20px 0 20px 0;
+    padding: 0;
+}
+
+label {
+    font-weight: bold;
+    font-size: 12px;
+    display: inline-block;
+    margin-right: 10px;
+}
+
+label input[type="range"] {
+    vertical-align: middle;
+}
+
+a.github {
+    float: right;
+    position: relative;
+    line-height: 40px;
+    text-decoration: none;
+    color: #44d;
+}
+
+a {
+    text-decoration: none;
+    color: #44d;
+}
+
+/* Font Inspector */
+
+#font-data h3 {
+    font-weight: normal;
+    margin: 0;
+    cursor: pointer;
+    background-color: #f8f8f8;
+}
+
+#font-data h3.expanded::before {
+    font-size: 85%;
+    content: "▼ ";
+}
+
+#font-data h3.collapsed::before {
+    font-size: 85%;
+    content: "► ";
+}
+
+#font-data h3.collapsed + dl {
+    display: none;
+}
+
+#font-data dl {
+    margin-top: 0;
+    padding-left: 2em;
+    color: #707070;
+}
+
+#font-data dt {
+    float: left;
+}
+
+#font-data dd {
+    margin-left: 12em;
+}
+
+#file {
+    float: left;
+    font-size: 11px;
+    color: #999;
+}
+
+/* Glyph Inspector */
+
+#pagination span {
+    margin: 0 0.5em;
+    color: #505050;
+    cursor: pointer;
+}
+
+#pagination span.page-selected {
+    font-weight: bold;
+    color: black;
+}
+
+canvas.item {
+    float: left;
+    border: solid 1px #a0a0a0;
+    margin-right: -1px;
+    margin-bottom: -1px;
+    cursor: pointer;
+}
+
+canvas.item:hover {
+    background-color: #e0e0e0;
+}
+
+#glyph-list-end {
+    clear: both;
+    height: 20px;
+}
+
+#glyph-display {
+    float: left;
+    border: solid 1px #a0a0a0;
+    position: relative;
+    width: 500px;
+    height: 500px;
+}
+
+#glyph, glyph-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#glyph-data { float: left; margin-left: 2em; }
+#glyph-data dl { margin: 0; }
+#glyph-data dt { float: left; }
+#glyph-data dd { margin-left: 12em; }
+
+#glyph-data pre { font-size: 11px; }
+pre:not(.contour) { margin: 0; }
+pre.contour { margin: 0 0 1em 2em; border-bottom: solid 1px #a0a0a0; }
+span.oncurve { color: blue; }
+span.offcurve { color: red; }
+
+

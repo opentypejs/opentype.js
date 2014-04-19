@@ -5,142 +5,17 @@
     <meta description="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
     <meta charset="utf-8">
     <script type="text/javascript" src="opentype.js"></script>
-    <style type="text/css">
-        body {
-            font: 13px Helvetica, arial, freesans, sans-serif;
-            line-height: 1.4;
-            min-width: 1020px;
-            color: #333;
-            background-color: #fff;
-            margin: 0 0 50px 0;
-            padding: 0;
-        }
-
-        .header {
-            background: #eee;
-            color: #555;
-            border-bottom: 1px solid #ddd;
-            height: 40px;
-            margin-bottom: 20px;
-        }
-
-        .header h1 {
-            margin: 0;
-            padding: 9px 0 0 0;
-            font-size: 18px;
-        }
-
-        .container {
-            width: 940px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .explain {
-            color: #222;
-            font-size: 16px;
-            margin-bottom: 20px;
-        }
-
-        .text-input {
-            font-size: 24px;
-            padding: 5px;
-            width: 930px;
-            display: block;
-        }
-
-        canvas.text {
-            border: 1px solid #ddd;
-            box-shadow: 1px 0 5px rgba(0, 0, 0, 0.2);
-            margin-bottom: 5px;
-        }
-
-        .wrapper {
-            border: 1px solid #ddd;
-            margin: 0 5px 10px 0;
-            float: left;
-        }
-
-        .wrapper canvas {
-            display: inline-block;
-        }
-
-        .wrapper span {
-            text-align: center;
-            background: #ddd;
-            display: block;
-        }
-
-        #message {
-            position: relative;
-            top: -3px;
-            background: red;
-            color: white;
-            padding: 1px 5px;
-            font-weight: bold;
-            border-radius: 2px;
-            display: none;
-        }
-
-        .message {
-            clear: both;
-            font-style: oblique;
-        }
-
-        #glyphs {
-            width: 950px;
-        }
-
-        #file {
-            float: left;
-            font-size: 11px;
-            color: #999;
-        }
-
-        .info {
-            float: right;
-            font-size: 11px;
-            color: #999;
-        }
-
-        hr {
-            border: none;
-            border-bottom: 1px solid #ccc;
-            margin: 20px 0 20px 0;
-            padding: 0;
-        }
-
-        label {
-            font-weight: bold;
-            font-size: 12px;
-            display: inline-block;
-            margin-right: 10px;
-        }
-
-        label input[type="range"] {
-            vertical-align: middle;
-        }
-
-        a.github {
-            float: right;
-            position: relative;
-            top: -22px;
-            text-decoration: none;
-            color: #44d;
-        }
-
-        a {
-            text-decoration: none;
-            color: #44d;
-        }
-    </style>
-
-
+    <link rel="stylesheet" href="site.css">
 </head>
 <body>
 <div class="header">
     <div class="container">
         <h1>opentype.js</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/font-inspector.html">Font Inspector</a>
+            <a href="/glyph-inspector.html">Glyph Inspector</a>
+        </nav>
         <a class="github" href="https://github.com/nodebox/opentype.js">Fork me on GitHub</a>
     </div>
 </div>
