@@ -35,20 +35,20 @@
     <hr>
 
     <div id="font-data">
-		<h3 class="collapsed">Font Header table <a href="https://www.microsoft.com/typography/OTSPEC/head.htm" target="_blank">head</a></h3>
-		<dl id="head-table"></dl>
-		<h3 class="collapsed">Horizontal Header table <a href="https://www.microsoft.com/typography/OTSPEC/hhea.htm" target="_blank">hhea</a></h3>
-		<dl id="hhea-table"></dl>
-		<h3 class="collapsed">Maximum Profile table <a href="https://www.microsoft.com/typography/OTSPEC/maxp.htm" target="_blank">maxp</a></h3>
-		<dl id="maxp-table"></dl>
-		<h3 class="collapsed">Naming table <a href="https://www.microsoft.com/typography/OTSPEC/name.htm" target="_blank">name</a></h3>
-		<dl id="name-table"></dl>
-		<h3 class="collapsed">OS/2 and Windows Metrics table <a href="https://www.microsoft.com/typography/OTSPEC/os2.htm" target="_blank">OS/2</a></h3>
-		<dl id="os2-table"></dl>
-		<h3 class="collapsed">PostScript table <a href="https://www.microsoft.com/typography/OTSPEC/post.htm" target="_blank">post</a></h3>
-		<dl id="post-table"></dl>
-		<h3 class="collapsed">Character To Glyph Index Mapping Table <a href="https://www.microsoft.com/typography/OTSPEC/cmap.htm" target="_blank">cmap</a></h3>
-		<dl id="cmap-table"></dl>
+        <h3 class="collapsed">Font Header table <a href="https://www.microsoft.com/typography/OTSPEC/head.htm" target="_blank">head</a></h3>
+        <dl id="head-table"></dl>
+        <h3 class="collapsed">Horizontal Header table <a href="https://www.microsoft.com/typography/OTSPEC/hhea.htm" target="_blank">hhea</a></h3>
+        <dl id="hhea-table"></dl>
+        <h3 class="collapsed">Maximum Profile table <a href="https://www.microsoft.com/typography/OTSPEC/maxp.htm" target="_blank">maxp</a></h3>
+        <dl id="maxp-table"></dl>
+        <h3 class="collapsed">Naming table <a href="https://www.microsoft.com/typography/OTSPEC/name.htm" target="_blank">name</a></h3>
+        <dl id="name-table"></dl>
+        <h3 class="collapsed">OS/2 and Windows Metrics table <a href="https://www.microsoft.com/typography/OTSPEC/os2.htm" target="_blank">OS/2</a></h3>
+        <dl id="os2-table"></dl>
+        <h3 class="collapsed">PostScript table <a href="https://www.microsoft.com/typography/OTSPEC/post.htm" target="_blank">post</a></h3>
+        <dl id="post-table"></dl>
+        <h3 class="collapsed">Character To Glyph Index Mapping Table <a href="https://www.microsoft.com/typography/OTSPEC/cmap.htm" target="_blank">cmap</a></h3>
+        <dl id="cmap-table"></dl>
     </div>
 
     <hr>
@@ -89,13 +89,13 @@ function showErrorMessage(message) {
 }
 
 function displayFontData() {
-	var html, tablename, table, property, value;
-	for(tablename in font.tables) {
-		table = font.tables[tablename];
-		html = '';
-		for(property in table) {
-			value = table[property];
-			html += '<dt>'+property+'</dt><dd>';
+    var html, tablename, table, property, value;
+    for(tablename in font.tables) {
+        table = font.tables[tablename];
+        html = '';
+        for(property in table) {
+            value = table[property];
+            html += '<dt>'+property+'</dt><dd>';
             if(Array.isArray(value) && typeof value[0] === 'object') {
                 html += value.map(function(item) {
                     return JSON.stringify(item);
@@ -104,10 +104,10 @@ function displayFontData() {
             else {
                 html += value;
             }
-			html += '</dd>';
-		}
-		document.getElementById(tablename+"-table").innerHTML = html;
-	}
+            html += '</dd>';
+        }
+        document.getElementById(tablename+"-table").innerHTML = html;
+    }
 }
     
 function onFontLoaded(font) {
@@ -145,9 +145,9 @@ fileButton.addEventListener('change', onReadFile, false);
 
 var tableHeaders = document.getElementById('font-data').getElementsByTagName('h3');
 for(var i = tableHeaders.length; i--; ) {
-	tableHeaders[i].addEventListener('click', function(e) {
-		e.target.className = (e.target.className === 'collapsed') ? 'expanded' : 'collapsed';
-	}, false);
+    tableHeaders[i].addEventListener('click', function(e) {
+        e.target.className = (e.target.className === 'collapsed') ? 'expanded' : 'collapsed';
+    }, false);
 }
 
 opentype.load(fontFileName, function (err, font) {
