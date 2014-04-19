@@ -285,6 +285,30 @@
         );
     };
 
+    // LONGDATETIME is a 64-bit integer.
+    // JavaScript and unix timestamps traditionally use 32 bits, so we
+    // only take the last 32 bits.
+    Parser.prototype.parseLongDateTime = function() {
+        var v = getULong(this.data, this.offset + this.relativeOffset + 4);
+        this.relativeOffset += 8;
+        return v;
+    };
+
+    Parser.prototype.parseFixed = function() {
+        var v = getULong(this.data, this.offset + this.relativeOffset);
+        this.relativeOffset += 4;
+        return v / 65536;
+    };
+
+    Parser.prototype.parseVersion = function() {
+        var major = getUShort(this.data, this.offset + this.relativeOffset);
+        // How to interpret the minor version is very vague in the spec. 0x5000 is 5, 0x1000 is 1
+        // This returns the correct number if minor = 0xN000 where N is 0-9
+        var minor = getUShort(this.data, this.offset + this.relativeOffset + 2);
+        this.relativeOffset += 4;
+        return major + minor / 0x1000 / 10;
+    };
+
     Parser.prototype.skip = function (type, amount) {
         if (amount === undefined) {
             amount = 1;
@@ -602,6 +626,7 @@
         this.supported = true;
         this.glyphs = [];
         this.encoding = null;
+        this.tables = {};
     }
 
     // Convert the given character to a single glyph index.
@@ -1064,12 +1089,13 @@
     function parseCmapTable(data, start) {
         var version, numTables, offset, platformId, encodingId, format, segCount,
             ranges, i, j, parserOffset, idRangeOffset, p;
-        version = getUShort(data, start);
+        var cmap = {};
+        cmap.version = version = getUShort(data, start);
         checkArgument(version === 0, 'cmap table version should be 0.');
 
         // The cmap table can contain many sub-tables, each with their own format.
         // We're only interested in a "platform 3" table. This is a Windows format.
-        numTables = getUShort(data, start + 2);
+        cmap.numtables = numTables = getUShort(data, start + 2);
         offset = -1;
         for (i = 0; i < numTables; i += 1) {
             platformId = getUShort(data, start + 4 + (i * 8));
@@ -1086,13 +1112,13 @@
         }
 
         p = new Parser(data, start + offset);
-        format = p.parseUShort();
+        cmap.format = format = p.parseUShort();
         checkArgument(format === 4, 'Only format 4 cmap tables are supported.');
         // Length in bytes of the sub-tables.
         // Skip length and language;
         p.skip('uShort', 2);
         // segCount is stored x 2.
-        segCount = p.parseUShort() >> 1;
+        cmap.segCount = segCount = p.parseUShort() >> 1;
         // Skip searchRange, entrySelector, rangeShift.
         p.skip('uShort', 3);
         ranges = [];
@@ -1103,7 +1129,7 @@
         p.skip('uShort');
         for (i = 0; i < segCount; i += 1) {
             ranges[i].start = p.parseUShort();
-            ranges[i].length = ranges[i].end - ranges[i].start;
+            ranges[i].length = ranges[i].end - ranges[i].start + 1;
         }
         for (i = 0; i < segCount; i += 1) {
             ranges[i].idDelta = p.parseShort();
@@ -1119,8 +1145,8 @@
                 }
             }
         }
-
-        return new CmapEncoding(ranges);
+        cmap.segments = ranges;
+        return cmap;
     }
 
     // Parse a `CFF` INDEX array.
@@ -1738,7 +1764,7 @@
         font.nGlyphs = charStringsIndex.objects.length;
 
         charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
-        if(topDict.encoding === 0) { // Standard encoding
+        if (topDict.encoding === 0) { // Standard encoding
             font.cffEncoding = new CffEncoding(cffStandardEncoding, charset);
         } else if (topDict.encoding === 1) { // Expert encoding
             font.cffEncoding = new CffEncoding(cffExpertEncoding, charset);
@@ -1753,6 +1779,226 @@
             charString = charStringsIndex.objects[i];
             font.glyphs.push(parseCFFCharstring(charString, font, i));
         }
+    }
+
+    // Parse the header `head` table
+    // https://www.microsoft.com/typography/OTSPEC/head.htm
+    function parseHeadTable(data, start) {
+        var head = {},
+            p = new Parser(data, start);
+        head.version = p.parseVersion();
+        head.fontRevision = Math.round(p.parseFixed() * 1000) / 1000;
+        head.checkSumAdjustment = p.parseULong();
+        head.magicNumber = p.parseULong();
+        checkArgument(head.magicNumber === 0x5F0F3CF5, 'Font header has wrong magic number.');
+        head.flags = p.parseUShort();
+        head.unitsPerEm = p.parseUShort();
+        head.created = p.parseLongDateTime();
+        head.modified = p.parseLongDateTime();
+        head.xMin = p.parseShort();
+        head.yMin = p.parseShort();
+        head.xMax = p.parseShort();
+        head.yMax = p.parseShort();
+        head.macStyle = p.parseUShort();
+        head.lowestRecPPEM = p.parseUShort();
+        head.fontDirectionHint = p.parseShort();
+        head.indexToLocFormat = p.parseShort();     // 50
+        head.glyphDataFormat = p.parseShort();
+        return head;
+    }
+
+    // Parse the horizontal header `hhea` table
+    // https://www.microsoft.com/typography/OTSPEC/hhea.htm
+    function parseHheaTable(data, start) {
+        var hhea = {},
+            p = new Parser(data, start);
+        hhea.version = p.parseVersion();
+        hhea.ascender = p.parseShort();
+        hhea.descender = p.parseShort();
+        hhea.lineGap = p.parseShort();
+        hhea.advanceWidthMax = p.parseUShort();
+        hhea.minLeftSideBearing = p.parseShort();
+        hhea.minRightSideBearing = p.parseShort();
+        hhea.xMaxExtent = p.parseShort();
+        hhea.caretSlopeRise = p.parseShort();
+        hhea.caretSlopeRun = p.parseShort();
+        hhea.caretOffset = p.parseShort();
+        p.relativeOffset += 8;
+        hhea.metricDataFormat = p.parseShort();
+        hhea.numberOfHMetrics = p.parseUShort();
+        return hhea;
+    }
+
+    // Parse the maximum profile `maxp` table
+    // https://www.microsoft.com/typography/OTSPEC/maxp.htm
+    function parseMaxpTable(data, start) {
+        var maxp = {},
+            p = new Parser(data, start);
+        maxp.version = p.parseVersion();
+        maxp.numGlyphs = p.parseUShort();
+        if (maxp.majorVersion === 1) {
+            maxp.maxPoints = p.parseUShort();
+            maxp.maxContours = p.parseUShort();
+            maxp.maxCompositePoints = p.parseUShort();
+            maxp.maxCompositeContours = p.parseUShort();
+            maxp.maxZones = p.parseUShort();
+            maxp.maxTwilightPoints = p.parseUShort();
+            maxp.maxStorage = p.parseUShort();
+            maxp.maxFunctionDefs = p.parseUShort();
+            maxp.maxInstructionDefs = p.parseUShort();
+            maxp.maxStackElements = p.parseUShort();
+            maxp.maxSizeOfInstructions = p.parseUShort();
+            maxp.maxComponentElements = p.parseUShort();
+            maxp.maxComponentDepth = p.parseUShort();
+        }
+        return maxp;
+    }
+
+    // NameIDs for the name table.
+    var nameTableNames = [
+        'copyright',              // 0
+        'fontFamily',             // 1
+        'fontSubfamily',          // 2
+        'uniqueID',               // 3
+        'fullName',               // 4
+        'version',                // 5
+        'postScriptName',         // 6
+        'trademark',              // 7
+        'manufacturer',           // 8
+        'designer',               // 9
+        'description',            // 10
+        'vendorURL',              // 11
+        'designerURL',            // 12
+        'licence',                // 13
+        'licenceURL',             // 14
+        'reserved',               // 15
+        'preferredFamily',        // 16
+        'preferredSubfamily',     // 17
+        'compatibleFullName',     // 18
+        'sampleText',             // 19
+        'postScriptFindFontName', // 20
+        'wwsFamily',              // 21
+        'wwsSubfamily'            // 22
+    ];
+
+    // Parse the naming `name` table
+    // https://www.microsoft.com/typography/OTSPEC/name.htm
+    // Only Windows Unicode English names are supported.
+    // Format 1 additional fields are not supported
+    function parseNameTable(data, start) {
+        var name = {},
+            p = new Parser(data, start);
+        name.format = p.parseUShort();
+        var count = p.parseUShort(),
+            stringOffset = p.offset + p.parseUShort();
+        var platformID, encodingID, languageID, nameID, property, byteLength,
+            offset, str, i, j, codePoints;
+        var unknownCount = 0;
+        for(i = 0; i < count; i++) {
+            platformID = p.parseUShort();
+            encodingID = p.parseUShort();
+            languageID = p.parseUShort();
+            nameID = p.parseUShort();
+            property = nameTableNames[nameID];
+            byteLength = p.parseUShort();
+            offset = p.parseUShort();
+            // platformID - encodingID - languageID standard combinations :
+            // 1 - 0 - 0 : Macintosh, Roman, English
+            // 3 - 1 - 0x409 : Windows, Unicode BMP (UCS-2), en-US
+            if (platformID === 3 && encodingID === 1 && languageID === 0x409) {
+                codePoints = [];
+                var length = byteLength/2;
+                for(j = 0; j < length; j++, offset += 2) {
+                    codePoints[j] = getShort(data, stringOffset+offset);
+                }
+                str = String.fromCharCode.apply(null, codePoints);
+                if (property) {
+                    name[property] = str;
+                }
+                else {
+                    unknownCount++;
+                    name['unknown'+unknownCount] = str;
+                }
+            }
+
+        }
+        if (name.format === 1) {
+            name.langTagCount = p.parseUShort();
+        }
+        return name;
+    }
+
+    // Parse the OS/2 and Windows metrics `OS/2` table
+    // https://www.microsoft.com/typography/OTSPEC/os2.htm
+    function parseOS2Table(data, start) {
+        var os2 = {},
+            p = new Parser(data, start);
+        os2.version = p.parseUShort();
+        os2.xAvgCharWidth = p.parseShort();
+        os2.usWeightClass = p.parseUShort();
+        os2.usWidthClass = p.parseUShort();
+        os2.fsType = p.parseUShort();
+        os2.ySubscriptXSize = p.parseShort();
+        os2.ySubscriptYSize = p.parseShort();
+        os2.ySubscriptXOffset = p.parseShort();
+        os2.ySubscriptYOffset = p.parseShort();
+        os2.ySuperscriptXSize = p.parseShort();
+        os2.ySuperscriptYSize = p.parseShort();
+        os2.ySuperscriptXOffset = p.parseShort();
+        os2.ySuperscriptYOffset = p.parseShort();
+        os2.yStrikeoutSize = p.parseShort();
+        os2.yStrikeoutPosition = p.parseShort();
+        os2.sFamilyClass = p.parseShort();
+        os2.panose = [];
+        for(var i = 0; i < 10; i++) {
+            os2.panose[i] = p.parseByte();
+        }
+        os2.ulUnicodeRange1 = p.parseULong();
+        os2.ulUnicodeRange2 = p.parseULong();
+        os2.ulUnicodeRange3 = p.parseULong();
+        os2.ulUnicodeRange4 = p.parseULong();
+        os2.achVendID = String.fromCharCode(p.parseByte(), p.parseByte(), p.parseByte(), p.parseByte());
+        os2.fsSelection = p.parseUShort();
+        os2.usFirstCharIndex = p.parseUShort();
+        os2.usLastCharIndex = p.parseUShort();
+        os2.sTypoAscender = p.parseShort();
+        os2.sTypoDescender = p.parseShort();
+        os2.sTypoLineGap = p.parseShort();
+        os2.usWinAscent = p.parseUShort();
+        os2.usWinDescent = p.parseUShort();
+        os2.ulCodePageRange1 = p.parseULong();
+        os2.ulCodePageRange2 = p.parseULong();
+        os2.sxHeight = p.parseShort();
+        os2.sCapHeight = p.parseShort();
+        os2.usDefaultChar = p.parseUShort();
+        os2.usBreakChar = p.parseUShort();
+        os2.usMaxContent = p.parseUShort();
+        return os2;
+    }
+
+    // Parse the PostScript `post` table
+    // https://www.microsoft.com/typography/OTSPEC/post.htm
+    function parsePostTable(data, start) {
+        var post = {},
+            p = new Parser(data, start);
+        post.version = p.parseVersion();
+        post.italicAngle = p.parseFixed();
+        post.underlinePosition = p.parseShort();
+        post.underlineThickness = p.parseShort();
+        post.isFixedPitch = p.parseULong();
+        post.minMemType42 = p.parseULong();
+        post.maxMemType42 = p.parseULong();
+        post.minMemType1 = p.parseULong();
+        post.maxMemType1 = p.parseULong();
+        if (post.version === 2) {
+            post.numberOfGlyphs = p.parseULong();
+            // TODO get names
+        }
+        else if (post.version === 2.5) {
+            post.numberOfGlyphs = p.parseULong();
+            // TODO get offsets
+        }
+        return post;
     }
 
     // Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
@@ -1847,7 +2093,7 @@
                 glyphCount = p.parseUShort(),
                 classes = p.parseUShortList(glyphCount);
             return function(glyphID) {
-                return classes[glyphID - startGlyph];
+                return classes[glyphID - startGlyph] || 0;
             };
         }
         else if (format === 2) {
@@ -1874,8 +2120,9 @@
                     }
                 }
                 if (startGlyphs[l] <= glyphID && glyphID <= endGlyphs[l]) {
-                    return classValues[l];
+                    return classValues[l] || 0;
                 }
+                return 0;
             };
         }
     }
@@ -1930,13 +2177,15 @@
         else if (format === 2) {
             // Pair Positioning Adjustment: Format 2
             var classDef1Offset, classDef2Offset, class1Count, class2Count, i, j,
-                getClass1, getClass2, kerningMatrix, kerningRow;
+                getClass1, getClass2, kerningMatrix, kerningRow, covered;
             classDef1Offset = p.parseUShort();
             classDef2Offset = p.parseUShort();
             class1Count = p.parseUShort();
             class2Count = p.parseUShort();
             getClass1 = parseClassDefTable(data, start+classDef1Offset);
             getClass2 = parseClassDefTable(data, start+classDef2Offset);
+
+            // Parse kerning values by class pair.
             kerningMatrix = [];
             for (i = 0; i < class1Count; i++) {
                 kerningRow = kerningMatrix[i] = [];
@@ -1948,7 +2197,14 @@
                     kerningRow[j] = value1;
                 }
             }
+
+            // Convert coverage list to a hash
+            covered = {};
+            for(i = 0; i < coverage.length; i++) covered[coverage[i]] = 1;
+
+            // Get the kerning value for a specific glyph pair.
             return function(leftGlyph, rightGlyph) {
+                if (!covered[leftGlyph]) return 0;
                 var class1 = getClass1(leftGlyph),
                     class2 = getClass2(rightGlyph),
                     kerningRow = kerningMatrix[class1];
@@ -2012,7 +2268,7 @@
         lookupListAbsoluteOffset = start + lookupListOffset;
         for (i = 0; i < lookupCount; i++) {
             table = parseLookupTable(data, lookupListAbsoluteOffset + lookupTableOffsets[i]);
-            if (table.lookupType === 2) font.getGposKerningValue = table.getKerningValue;
+            if (table.lookupType === 2 && !font.getGposKerningValue) font.getGposKerningValue = table.getKerningValue;
         }
     }
 
@@ -2062,7 +2318,7 @@
     // we return an empty Font object with the `supported` flag set to `false`.
     opentype.parse = function (buffer) {
         var font, data, version, numTables, i, p, tag, offset, hmtxOffset, glyfOffset, locaOffset,
-            cffOffset, kernOffset, gposOffset, magicNumber, indexToLocFormat, numGlyphs, loca,
+            cffOffset, kernOffset, gposOffset, indexToLocFormat, numGlyphs, loca,
             shortVersion;
         // OpenType fonts use big endian byte ordering.
         // We can't rely on typed array view types, because they operate with the endianness of the host computer.
@@ -2092,29 +2348,38 @@
             offset = getULong(data, p + 8);
             switch (tag) {
             case 'cmap':
-                font.encoding = parseCmapTable(data, offset);
+                font.tables.cmap = parseCmapTable(data, offset);
+                font.encoding = new CmapEncoding(font.tables.cmap.segments);
                 if (!font.encoding) {
                     font.supported = false;
                 }
                 break;
             case 'head':
-                // We're only interested in some values from the header.
-                magicNumber = getULong(data, offset + 12);
-                checkArgument(magicNumber === 0x5F0F3CF5, 'Font header has wrong magic number.');
-                font.unitsPerEm = getUShort(data, offset + 18);
-                indexToLocFormat = getUShort(data, offset + 50);
+                font.tables.head = parseHeadTable(data, offset);
+                font.unitsPerEm = font.tables.head.unitsPerEm;
+                indexToLocFormat = font.tables.head.indexToLocFormat;
                 break;
             case 'hhea':
-                font.ascender = getShort(data, offset + 4);
-                font.descender = getShort(data, offset + 6);
-                font.numberOfHMetrics = getUShort(data, offset + 34);
+                font.tables.hhea = parseHheaTable(data, offset);
+                font.ascender = font.tables.hhea.ascender;
+                font.descender = font.tables.hhea.descender;
+                font.numberOfHMetrics = font.tables.hhea.numberOfHMetrics;
                 break;
             case 'hmtx':
                 hmtxOffset = offset;
                 break;
             case 'maxp':
-                // We're only interested in the number of glyphs.
-                font.numGlyphs = numGlyphs = getUShort(data, offset + 4);
+                font.tables.maxp = parseMaxpTable(data, offset);
+                font.numGlyphs = numGlyphs = font.tables.maxp.numGlyphs;
+                break;
+            case 'name':
+                 font.tables.name = parseNameTable(data, offset);
+                break;
+            case 'OS/2':
+                font.tables.os2 = parseOS2Table(data, offset);
+                break;
+            case 'post':
+                font.tables.post = parsePostTable(data, offset);
                 break;
             case 'glyf':
                 glyfOffset = offset;
