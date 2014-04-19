@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>opentype.js font inspector</title>
+    <meta description="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="site.css">
+    <script type="text/javascript" src="opentype.js"></script>
+</head>
+<body>
+<div class="header">
+    <div class="container">
+        <h1>opentype.js</h1>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="font-inspector.html">Font Inspector</a>
+            <a href="glyph-inspector.html">Glyph Inspector</a>
+        </nav>
+        <a class="github" href="https://github.com/nodebox/opentype.js">Fork me on GitHub</a>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="explain">
+        <h1>Font Inspector</h1>
+        <small>opentype.js is an OpenType and TrueType font parser. Here you can inspect the raw font metadata.</small>
+    </div>
+
+    <input id="file" type="file">
+    <span class="info" id="font-name">Roboto-Black</span>
+    <canvas id="preview" width="940" height="50" class="text"></canvas>
+    <div id="message"></div>
+
+    <hr>
+
+    <div id="font-data">
+		<h3 class="collapsed">Font Header table <a href="https://www.microsoft.com/typography/OTSPEC/head.htm" target="_blank">head</a></h3>
+		<dl id="head-table"></dl>
+		<h3 class="collapsed">Horizontal Header table <a href="https://www.microsoft.com/typography/OTSPEC/hhea.htm" target="_blank">hhea</a></h3>
+		<dl id="hhea-table"></dl>
+		<h3 class="collapsed">Maximum Profile table <a href="https://www.microsoft.com/typography/OTSPEC/maxp.htm" target="_blank">maxp</a></h3>
+		<dl id="maxp-table"></dl>
+		<h3 class="collapsed">Naming table <a href="https://www.microsoft.com/typography/OTSPEC/name.htm" target="_blank">name</a></h3>
+		<dl id="name-table"></dl>
+		<h3 class="collapsed">OS/2 and Windows Metrics table <a href="https://www.microsoft.com/typography/OTSPEC/os2.htm" target="_blank">OS/2</a></h3>
+		<dl id="os2-table"></dl>
+		<h3 class="collapsed">PostScript table <a href="https://www.microsoft.com/typography/OTSPEC/post.htm" target="_blank">post</a></h3>
+		<dl id="post-table"></dl>
+		<h3 class="collapsed">Character To Glyph Index Mapping Table <a href="https://www.microsoft.com/typography/OTSPEC/cmap.htm" target="_blank">cmap</a></h3>
+		<dl id="cmap-table"></dl>
+    </div>
+
+    <hr>
+
+    <div class="explain">
+        <h1>Free Software</h1>
+        <p>opentype.js is available on <a href="https://github.com/nodebox/opentype.js">GitHub</a> under the <a href="https://raw.github.com/nodebox/opentype.js/master/LICENSE">MIT License</a>.</p>
+        <p>Copyright &copy; 2014 Frederik De Bleser.</p>
+    </div>
+
+    <hr>
+</div>
+
+
+<script type="text/javascript">
+var font = null;
+var fontSize = 32;
+var textToRender = 'Grumpy wizards make toxic brew for the evil Queen and Jack.';
+var previewPath = null;
+
+function renderText() {
+    if (!font) return;
+
+    var previewCanvas = document.getElementById('preview');
+    var previewCtx = previewCanvas.getContext("2d");
+    previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    font.draw(previewCtx, textToRender, 0, 32, fontSize, {kerning: true});
+}
+
+function showErrorMessage(message) {
+    var el = document.getElementById('message');
+    if (!message || message.trim().length === 0) {
+        el.style.display = 'none';
+    } else {
+        el.style.display = 'block';
+    }
+    el.innerHTML = message;
+}
+
+function displayFontData() {
+	var html, tablename, table, property, value;
+	for(tablename in font.tables) {
+		table = font.tables[tablename];
+		html = '';
+		for(property in table) {
+			value = table[property];
+			html += '<dt>'+property+'</dt><dd>';
+            if(Array.isArray(value) && typeof value[0] === 'object') {
+                html += value.map(function(item) {
+                    return JSON.stringify(item);
+                }).join('<br>');
+            }
+            else {
+                html += value;
+            }
+			html += '</dd>';
+		}
+		document.getElementById(tablename+"-table").innerHTML = html;
+	}
+}
+    
+function onFontLoaded(font) {
+    window.font = font;
+    renderText();
+    displayFontData();
+}
+
+function onReadFile(e) {
+    document.getElementById('font-name').innerHTML = '';
+    var file = e.target.files[0];
+    var reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            font = opentype.parse(e.target.result);
+            onFontLoaded(font);
+            showErrorMessage('');
+        } catch (err) {
+            showErrorMessage(err.toString());
+        }
+    }
+    reader.onerror = function (err) {
+        showErrorMessage(err.toString());
+    }
+
+    reader.readAsArrayBuffer(file);
+}
+
+var fontFileName = 'fonts/Roboto-Black.ttf';
+
+document.getElementById('font-name').innerHTML = fontFileName.split('/')[1];
+
+var fileButton = document.getElementById('file');
+fileButton.addEventListener('change', onReadFile, false);
+
+var tableHeaders = document.getElementById('font-data').getElementsByTagName('h3');
+for(var i = tableHeaders.length; i--; ) {
+	tableHeaders[i].addEventListener('click', function(e) {
+		e.target.className = (e.target.className === 'collapsed') ? 'expanded' : 'collapsed';
+	}, false);
+}
+
+opentype.load(fontFileName, function (err, font) {
+    var amount, glyph, ctx, x, y, fontSize;
+    if (err) {
+        showErrorMessage(err.toString());
+        return;
+    }
+    onFontLoaded(font);
+});
+</script>
+</body>
+</html>
