@@ -1764,7 +1764,7 @@
         font.nGlyphs = charStringsIndex.objects.length;
 
         charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
-        if(topDict.encoding === 0) { // Standard encoding
+        if (topDict.encoding === 0) { // Standard encoding
             font.cffEncoding = new CffEncoding(cffStandardEncoding, charset);
         } else if (topDict.encoding === 1) { // Expert encoding
             font.cffEncoding = new CffEncoding(cffExpertEncoding, charset);
@@ -1836,7 +1836,7 @@
             p = new Parser(data, start);
         maxp.version = p.parseVersion();
         maxp.numGlyphs = p.parseUShort();
-        if(maxp.majorVersion === 1) {
+        if (maxp.majorVersion === 1) {
             maxp.maxPoints = p.parseUShort();
             maxp.maxContours = p.parseUShort();
             maxp.maxCompositePoints = p.parseUShort();
@@ -1905,14 +1905,14 @@
             // platformID - encodingID - languageID standard combinations :
             // 1 - 0 - 0 : Macintosh, Roman, English
             // 3 - 1 - 0x409 : Windows, Unicode BMP (UCS-2), en-US
-            if(platformID === 3 && encodingID === 1 && languageID === 0x409) {
+            if (platformID === 3 && encodingID === 1 && languageID === 0x409) {
                 codePoints = [];
                 var length = byteLength/2;
                 for(j = 0; j < length; j++, offset += 2) {
                     codePoints[j] = getShort(data, stringOffset+offset);
                 }
                 str = String.fromCharCode.apply(null, codePoints);
-                if(property) {
+                if (property) {
                     name[property] = str;
                 }
                 else {
@@ -1990,11 +1990,11 @@
         post.maxMemType42 = p.parseULong();
         post.minMemType1 = p.parseULong();
         post.maxMemType1 = p.parseULong();
-        if(post.version === 2) {
+        if (post.version === 2) {
             post.numberOfGlyphs = p.parseULong();
             // TODO get names
         }
-        else if(post.version === 2.5) {
+        else if (post.version === 2.5) {
             post.numberOfGlyphs = p.parseULong();
             // TODO get offsets
         }
@@ -2204,7 +2204,7 @@
 
             // Get the kerning value for a specific glyph pair.
             return function(leftGlyph, rightGlyph) {
-                if(!covered[leftGlyph]) return 0;
+                if (!covered[leftGlyph]) return 0;
                 var class1 = getClass1(leftGlyph),
                     class2 = getClass2(rightGlyph),
                     kerningRow = kerningMatrix[class1];
@@ -2268,7 +2268,7 @@
         lookupListAbsoluteOffset = start + lookupListOffset;
         for (i = 0; i < lookupCount; i++) {
             table = parseLookupTable(data, lookupListAbsoluteOffset + lookupTableOffsets[i]);
-            if(table.lookupType === 2 && !font.getGposKerningValue) font.getGposKerningValue = table.getKerningValue;
+            if (table.lookupType === 2 && !font.getGposKerningValue) font.getGposKerningValue = table.getKerningValue;
         }
     }
 
