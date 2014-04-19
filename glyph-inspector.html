@@ -147,8 +147,8 @@ function displayGlyph(glyphIndex) {
 	ctx.fillRect(xmax, glyphBaseline, markSize, 1);
 	ctx.fillRect(xmax, glyphBaseline, 1, markSize);
 	ctx.textAlign = 'center';
-	ctx.fillText(xmin.toFixed(1), xmin, glyphBaseline+markSize+10);
-	ctx.fillText(xmax.toFixed(1), xmax, glyphBaseline+markSize+10);
+	ctx.fillText('0', xmin, glyphBaseline+markSize+10);
+	ctx.fillText(glyph.advanceWidth.toFixed(1), xmax, glyphBaseline+markSize+10);
 
 	ctx.fillStyle = '#000000';
 	var path = glyph.getPath(x0, glyphBaseline, glyphSize);
