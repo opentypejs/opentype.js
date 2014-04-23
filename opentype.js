@@ -8,7 +8,7 @@
     'use strict';
 
     var root, opentype, getCard8, getCard16, typeOffsets, cffStandardStrings,
-        cffStandardEncoding, cffExpertEncoding, fs;
+        cffStandardEncoding, cffExpertEncoding, standardNames, fs;
 
     // Establish the root object, `window` in the browser or `exports` on the server.
     root = this;
@@ -273,16 +273,19 @@
         return offsets;
     };
 
-    Parser.prototype.parseTag = function () {
+    Parser.prototype.parseString = function (length) {
         var dataView = this.data,
-            offset = this.offset + this.relativeOffset;
-        this.relativeOffset += 4;
-        return String.fromCharCode(
-            dataView.getUint8(offset++),
-            dataView.getUint8(offset++),
-            dataView.getUint8(offset++),
-            dataView.getUint8(offset++)
-        );
+            offset = this.offset + this.relativeOffset,
+            string = '';
+        this.relativeOffset += length;
+        for (var i = 0; i < length; i++) {
+            string += String.fromCharCode(dataView.getUint8(offset + i));
+        };
+        return string;
+    }
+
+    Parser.prototype.parseTag = function () {
+        return this.parseString(4);
     };
 
     // LONGDATETIME is a 64-bit integer.
@@ -353,6 +356,39 @@
         charName = this.encoding[code];
         return this.charset.indexOf(charName);
     };
+
+    // GlyphNames object //////////////////////////////////////////////////////////
+    function GlyphNames(post) {
+        switch (post.version) {
+        case 1:
+            this.names = standardNames.slice();
+            break;
+        case 2:
+            this.names = new Array(post.numberOfGlyphs);
+            for (var i = 0; i < post.numberOfGlyphs; i++) {
+                if (post.glyphNameIndex[i] < standardNames.length) {
+                    this.names[i] = standardNames[post.glyphNameIndex[i]];
+                } else {
+                    this.names[i] = post.names[post.glyphNameIndex[i] - standardNames.length];
+                }
+            }
+            break;
+        case 2.5:
+            this.names = new Array(post.numberOfGlyphs);
+            for (var i = 0; i < post.numberOfGlyphs; i++) {
+                this.names[i] = standardNames[i + post.glyphNameIndex[i]];
+            }
+            break;
+        }
+    }
+
+    GlyphNames.prototype.nameToGlyphIndex = function (name) {
+        return this.names.indexOf(name);
+    }
+
+    GlyphNames.prototype.glyphIndexToName = function (gid) {
+        return this.names[gid];
+    }
 
     // Glyph object /////////////////////////////////////////////////////////
 
@@ -663,6 +699,28 @@
         return glyphs;
     };
 
+    Font.prototype.nameToGlyphIndex = function (name) {
+        return this.glyphNames.nameToGlyphIndex(name);
+    };
+
+    Font.prototype.nameToGlyph = function (name) {
+        var glyphIndex, glyph;
+        glyphIndex = this.nametoGlyphIndex(name);
+        glyph = this.glyphs[glyphIndex];
+        if (!glyph) {
+            glyph = this.glyphs[0]; // .notdef
+        }
+        return glyph;
+    };
+
+    Font.prototype.glyphIndexToName = function (gid) {
+        if (font.glyphNames.names === undefined) {
+            return '';
+        }
+        return this.glyphNames.glyphIndexToName(gid);
+        
+    }
+
     // Retrieve the value of the kerning pair between the left glyph (or its index)
     // and the right glyph (or its index). If no kerning pair is found, return 0.
     // The kerning value gets added to the advance width when calculating the spacing
@@ -861,6 +919,33 @@
         'Icircumflexsmall', 'Idieresissmall', 'Ethsmall', 'Ntildesmall', 'Ogravesmall', 'Oacutesmall',
         'Ocircumflexsmall', 'Otildesmall', 'Odieresissmall', 'OEsmall', 'Oslashsmall', 'Ugravesmall', 'Uacutesmall',
         'Ucircumflexsmall', 'Udieresissmall', 'Yacutesmall', 'Thornsmall', 'Ydieresissmall'];
+
+    standardNames = [
+        '.notdef', '.null', 'nonmarkingreturn', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar', 'percent',
+        'ampersand', 'quotesingle', 'parenleft', 'parenright', 'asterisk', 'plus', 'comma', 'hyphen', 'period', 'slash',
+        'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'colon', 'semicolon', 'less',
+        'equal', 'greater', 'question', 'at', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+        'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'bracketleft', 'backslash', 'bracketright',
+        'asciicircum', 'underscore', 'grave', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+        'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'braceleft', 'bar', 'braceright', 'asciitilde',
+        'Adieresis', 'Aring', 'Ccedilla', 'Eacute', 'Ntilde', 'Odieresis', 'Udieresis', 'aacute', 'agrave',
+        'acircumflex', 'adieresis', 'atilde', 'aring', 'ccedilla', 'eacute', 'egrave', 'ecircumflex', 'edieresis',
+        'iacute', 'igrave', 'icircumflex', 'idieresis', 'ntilde', 'oacute', 'ograve', 'ocircumflex', 'odieresis',
+        'otilde', 'uacute', 'ugrave', 'ucircumflex', 'udieresis', 'dagger', 'degree', 'cent', 'sterling', 'section',
+        'bullet', 'paragraph', 'germandbls', 'registered', 'copyright', 'trademark', 'acute', 'dieresis', 'notequal',
+        'AE', 'Oslash', 'infinity', 'plusminus', 'lessequal', 'greaterequal', 'yen', 'mu', 'partialdiff', 'summation',
+        'product', 'pi', 'integral', 'ordfeminine', 'ordmasculine', 'Omega', 'ae', 'oslash', 'questiondown',
+        'exclamdown', 'logicalnot', 'radical', 'florin', 'approxequal', 'Delta', 'guillemotleft', 'guillemotright',
+        'ellipsis', 'nonbreakingspace', 'Agrave', 'Atilde', 'Otilde', 'OE', 'oe', 'endash', 'emdash', 'quotedblleft',
+        'quotedblright', 'quoteleft', 'quoteright', 'divide', 'lozenge', 'ydieresis', 'Ydieresis', 'fraction',
+        'currency', 'guilsinglleft', 'guilsinglright', 'fi', 'fl', 'daggerdbl', 'periodcentered', 'quotesinglbase',
+        'quotedblbase', 'perthousand', 'Acircumflex', 'Ecircumflex', 'Aacute', 'Edieresis', 'Egrave', 'Iacute',
+        'Icircumflex', 'Idieresis', 'Igrave', 'Oacute', 'Ocircumflex', 'apple', 'Ograve', 'Uacute', 'Ucircumflex',
+        'Ugrave', 'dotlessi', 'circumflex', 'tilde', 'macron', 'breve', 'dotaccent', 'ring', 'cedilla', 'hungarumlaut',
+        'ogonek', 'caron', 'Lslash', 'lslash', 'Scaron', 'scaron', 'Zcaron', 'zcaron', 'brokenbar', 'Eth', 'eth',
+        'Yacute', 'yacute', 'Thorn', 'thorn', 'minus', 'multiply', 'onesuperior', 'twosuperior', 'threesuperior',
+        'onehalf', 'onequarter', 'threequarters', 'franc', 'Gbreve', 'gbreve', 'Idotaccent', 'Scedilla', 'scedilla',
+        'Cacute', 'cacute', 'Ccaron', 'ccaron', 'dcroat'];
 
     // Parse the coordinate data for a glyph.
     function parseGlyphCoordinate(p, flag, previousValue, shortVectorBit, sameBit) {
@@ -1980,7 +2065,8 @@
     // https://www.microsoft.com/typography/OTSPEC/post.htm
     function parsePostTable(data, start) {
         var post = {},
-            p = new Parser(data, start);
+            p = new Parser(data, start),
+            i, nameLength;
         post.version = p.parseVersion();
         post.italicAngle = p.parseFixed();
         post.underlinePosition = p.parseShort();
@@ -1990,13 +2076,31 @@
         post.maxMemType42 = p.parseULong();
         post.minMemType1 = p.parseULong();
         post.maxMemType1 = p.parseULong();
-        if (post.version === 2) {
-            post.numberOfGlyphs = p.parseULong();
-            // TODO get names
-        }
-        else if (post.version === 2.5) {
-            post.numberOfGlyphs = p.parseULong();
-            // TODO get offsets
+        switch (post.version) {
+        case 1:
+            post.names = standardNames.slice();
+            break;
+        case 2:
+            post.numberOfGlyphs = p.parseUShort();
+            post.glyphNameIndex = new Array(post.numberOfGlyphs);
+            for (i = 0; i < post.numberOfGlyphs; i++) {
+                post.glyphNameIndex[i] = p.parseUShort();
+            };
+            post.names = [];
+            for (i = 0; i < post.numberOfGlyphs; i++) {
+                if (post.glyphNameIndex[i] >= standardNames.length) {
+                    nameLength = p.parseChar();
+                    post.names.push(p.parseString(nameLength));
+                }
+            }
+            break;
+        case 2.5:
+            post.numberOfGlyphs = p.parseUShort();
+            post.offset = new Array(post.numberOfGlyphs);
+            for (var i = 0; i < post.numberOfGlyphs; i++) {
+                post.offset = p.parseChar();
+            }
+            break;
         }
         return post;
     }
@@ -2380,6 +2484,7 @@
                 break;
             case 'post':
                 font.tables.post = parsePostTable(data, offset);
+                font.glyphNames = new GlyphNames(font.tables.post);
                 break;
             case 'glyf':
                 glyfOffset = offset;
