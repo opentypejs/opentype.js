@@ -222,7 +222,7 @@ function displayGlyph(glyphIndex) {
     ctx.fillRect(xmax, glyphBaseline, 1, markSize);
     ctx.textAlign = 'center';
     ctx.fillText('0', xmin, glyphBaseline+markSize+10);
-    ctx.fillText(glyph.advanceWidth.toFixed(1), xmax, glyphBaseline+markSize+10);
+    ctx.fillText(glyph.advanceWidth, xmax, glyphBaseline+markSize+10);
 
     ctx.fillStyle = '#000000';
     var path = glyph.getPath(x0, glyphBaseline, glyphSize);
