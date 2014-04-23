@@ -102,7 +102,7 @@ function displayGlyphData(glyphIndex) {
     }
     var glyph = font.glyphs[glyphIndex],
         html = '<dl><dt>index</dt><dd>'+glyph.index+'</dd>';
-    if (font.glyphNames.names != undefined) {
+    if (font.glyphIndexToName) {
         html += '<dt>name</dt><dd>'+font.glyphIndexToName(glyph.index)+'</dd>';
     }
     if (glyph.xMin !== 0 || glyph.xMax !== 0 || glyph.yMin !== 0 || glyph.yMax !== 0) {
@@ -132,6 +132,77 @@ function displayGlyphData(glyphIndex) {
     container.innerHTML = html;
 }
 
+var arrowLength = 10,
+    arrowAperture = 4;
+
+function drawArrow(ctx, x1, y1, x2, y2) {
+    var dx = x2 - x1,
+        dy = y2 - y1,
+        segmentLength = Math.sqrt(dx*dx + dy*dy),
+        unitx = dx / segmentLength,
+        unity = dy / segmentLength,
+        basex = x2 - arrowLength * unitx,
+        basey = y2 - arrowLength * unity,
+        normalx = arrowAperture * unity,
+        normaly = -arrowAperture * unitx;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(basex + normalx, basey + normaly);
+    ctx.lineTo(basex - normalx, basey - normaly);
+    ctx.lineTo(x2, y2);
+    ctx.closePath();
+    ctx.fill();
+}
+
+/**
+ * This function is Path.prototype.draw with an arrow
+ * at the end of each contour.
+ */
+function drawPathWithArrows(ctx, path) {
+    var i, cmd, x1, y1, x2, y2;
+    var arrows = [];
+    ctx.beginPath();
+    for (i = 0; i < path.commands.length; i += 1) {
+        cmd = path.commands[i];
+        if (cmd.type === 'M') {
+            if(x1 !== undefined) {
+                arrows.push([ctx, x1, y1, x2, y2]);
+            }
+            ctx.moveTo(cmd.x, cmd.y);
+        } else if (cmd.type === 'L') {
+            ctx.lineTo(cmd.x, cmd.y);
+            x1 = x2;
+            y1 = y2;
+        } else if (cmd.type === 'C') {
+            ctx.bezierCurveTo(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
+            x1 = cmd.x2;
+            y1 = cmd.y2;
+        } else if (cmd.type === 'Q') {
+            ctx.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
+            x1 = cmd.x1;
+            y1 = cmd.y1;
+        } else if (cmd.type === 'Z') {
+            arrows.push([ctx, x1, y1, x2, y2]);
+            ctx.closePath();
+        }
+        x2 = cmd.x;
+        y2 = cmd.y;
+    }
+    if (path.fill) {
+        ctx.fillStyle = path.fill;
+        ctx.fill();
+    }
+    if (path.stroke) {
+        ctx.strokeStyle = path.stroke;
+        ctx.lineWidth = path.strokeWidth;
+        ctx.stroke();
+    }
+    ctx.fillStyle = '#000000';
+    arrows.forEach(function(arrow) {
+        drawArrow.apply(null, arrow);
+    });
+}
+
 function displayGlyph(glyphIndex) {
     var canvas = document.getElementById('glyph'),
         ctx = canvas.getContext('2d');
@@ -157,8 +228,8 @@ function displayGlyph(glyphIndex) {
     var path = glyph.getPath(x0, glyphBaseline, glyphSize);
     path.fill = '#808080';
     path.stroke = '#000000';
-    path.strokeWidth = 2;
-    path.draw(ctx);
+    path.strokeWidth = 1.5;
+    drawPathWithArrows(ctx, path);
     glyph.drawPoints(ctx, x0, glyphBaseline, glyphSize);
 }
 
@@ -245,6 +316,7 @@ function onFontLoaded(font) {
 
     var pagination = document.getElementById("pagination");
     pagination.innerHTML = '';
+    var fragment = document.createDocumentFragment();
     var numPages = Math.ceil(font.numGlyphs / cellCount);
     for(var i = 0; i < numPages; i++) {
         var link = document.createElement('span');
@@ -252,8 +324,12 @@ function onFontLoaded(font) {
         link.textContent = i*cellCount + '-' + lastIndex;
         link.id = 'p' + i;
         link.addEventListener('click', pageSelect, false);
-        pagination.appendChild(link);
+        fragment.appendChild(link);
+        // A white space allows to break very long lines into multiple lines.
+        // This is needed for fonts with thousands of glyphs.
+        fragment.appendChild(document.createTextNode(' '));
     }
+    pagination.appendChild(fragment);
     
     initGlyphDisplay();
     displayGlyphPage(0);
