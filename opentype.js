@@ -109,11 +109,6 @@
 
     getCard8 = getByte;
 
-    // Retrieve a signed byte from the DataView.
-    function getChar(dataView, offset) {
-        return dataView.getInt8(offset);
-    }
-
     // Retrieve an unsigned 16-bit short from the DataView.
     // The value is stored in big endian.
     function getUShort(dataView, offset) {
@@ -195,38 +190,22 @@
         tag: 4
     };
 
-    // Return true if the value at the given bit index is set.
-    function isBitSet(b, bitIndex) {
-        return ((b >> bitIndex) & 1) === 1;
-    }
-
     // A stateful parser that changes the offset whenever a value is retrieved.
-    // The data can be either a DataView or an array of bytes.
+    // The data is a DataView.
     function Parser(data, offset) {
         this.data = data;
-        this.isDataView = data instanceof DataView;
         this.offset = offset;
         this.relativeOffset = 0;
     }
 
     Parser.prototype.parseByte = function () {
-        var v;
-        if (this.isDataView) {
-            v = getByte(this.data, this.offset + this.relativeOffset);
-        } else {
-            v = this.data[this.offset + this.relativeOffset];
-        }
+        var v = this.data.getUint8(this.offset + this.relativeOffset);
         this.relativeOffset += 1;
         return v;
     };
 
     Parser.prototype.parseChar = function () {
-        var v;
-        if (this.isDataView) {
-            v = getChar(this.data, this.offset + this.relativeOffset);
-        } else {
-            v = this.data[this.offset + this.relativeOFfset];
-        }
+        var v = this.data.getInt8(this.offset + this.relativeOffset);
         this.relativeOffset += 1;
         return v;
     };
@@ -234,7 +213,7 @@
     Parser.prototype.parseCard8 = Parser.prototype.parseByte;
 
     Parser.prototype.parseUShort = function () {
-        var v = getUShort(this.data, this.offset + this.relativeOffset);
+        var v = this.data.getUint16(this.offset + this.relativeOffset);
         this.relativeOffset += 2;
         return v;
     };
@@ -243,7 +222,7 @@
     Parser.prototype.parseOffset16 = Parser.prototype.parseUShort;
 
     Parser.prototype.parseShort = function () {
-        var v = getShort(this.data, this.offset + this.relativeOffset);
+        var v = this.data.getInt16(this.offset + this.relativeOffset);
         this.relativeOffset += 2;
         return v;
     };
@@ -948,20 +927,20 @@
         'Cacute', 'cacute', 'Ccaron', 'ccaron', 'dcroat'];
 
     // Parse the coordinate data for a glyph.
-    function parseGlyphCoordinate(p, flag, previousValue, shortVectorBit, sameBit) {
+    function parseGlyphCoordinate(p, flag, previousValue, shortVectorBitMask, sameBitMask) {
         var v;
-        if (isBitSet(flag, shortVectorBit)) {
+        if (flag & shortVectorBitMask) {
             // The coordinate is 1 byte long.
             v = p.parseByte();
             // The `same` bit is re-used for short values to signify the sign of the value.
-            if (!isBitSet(flag, sameBit)) {
+            if (!(flag & sameBitMask)) {
                 v = -v;
             }
             v = previousValue + v;
         } else {
             //  The coordinate is 2 bytes long.
             // If the `same` bit is set, the coordinate is the same as the previous coordinate.
-            if (isBitSet(flag, sameBit)) {
+            if (flag & sameBitMask) {
                 v = previousValue;
             } else {
                 // Parse the coordinate as a signed 16-bit delta value.
@@ -1003,7 +982,7 @@
                 flag = p.parseByte();
                 flags.push(flag);
                 // If bit 3 is set, we repeat this flag n times, where n is the next byte.
-                if (isBitSet(flag, 3)) {
+                if (flag & 8) {
                     repeatCount = p.parseByte();
                     for (j = 0; j < repeatCount; j += 1) {
                         flags.push(flag);
@@ -1020,7 +999,7 @@
                     for (i = 0; i < numberOfCoordinates; i += 1) {
                         flag = flags[i];
                         point = {};
-                        point.onCurve = isBitSet(flag, 0);
+                        point.onCurve = !!(flag & 1);
                         point.lastPointOfContour = endPointIndices.indexOf(i) >= 0;
                         points.push(point);
                     }
@@ -1028,7 +1007,7 @@
                     for (i = 0; i < numberOfCoordinates; i += 1) {
                         flag = flags[i];
                         point = points[i];
-                        point.x = parseGlyphCoordinate(p, flag, px, 1, 4);
+                        point.x = parseGlyphCoordinate(p, flag, px, 2, 16);
                         px = point.x;
                     }
 
@@ -1036,7 +1015,7 @@
                     for (i = 0; i < numberOfCoordinates; i += 1) {
                         flag = flags[i];
                         point = points[i];
-                        point.y = parseGlyphCoordinate(p, flag, py, 2, 5);
+                        point.y = parseGlyphCoordinate(p, flag, py, 4, 32);
                         py = point.y;
                     }
                 }
@@ -1055,7 +1034,7 @@
                 component = {};
                 flags = p.parseUShort();
                 component.glyphIndex = p.parseUShort();
-                if (isBitSet(flags, 0)) {
+                if (flags & 1) {
                     // The arguments are words
                     arg1 = p.parseShort();
                     arg2 = p.parseShort();
@@ -1068,15 +1047,15 @@
                     component.dx = arg1;
                     component.dy = arg2;
                 }
-                if (isBitSet(flags, 3)) {
+                if (flags & 8) {
                     // We have a scale
                     // TODO parse in 16-bit signed fixed number with the low 14 bits of fraction (2.14).
                     scale = p.parseShort();
-                } else if (isBitSet(flags, 6)) {
+                } else if (flags & 64) {
                     // We have an X / Y scale
                     xScale = p.parseShort();
                     yScale = p.parseShort();
-                } else if (isBitSet(flags, 7)) {
+                } else if (flags & 128) {
                     // We have a 2x2 transformation
                     xScale = p.parseShort();
                     scale01 = p.parseShort();
@@ -1085,7 +1064,7 @@
                 }
 
                 glyph.components.push(component);
-                moreComponents = isBitSet(flags, 5);
+                moreComponents = !!(flags & 32);
             }
         }
         return glyph;
@@ -1417,7 +1396,7 @@
 
     // Parse the CFF top dictionary. A CFF table can contain multiple fonts, each with their own top dictionary.
     // The top dictionary contains the essential metadata for the font, together with the private dictionary.
-    function parseCFFTopDict(data, start, strings) {
+    function parseCFFTopDict(data, strings) {
         var dict, meta;
         meta = [
             {name: 'version', op: 0, type: 'SID'},
@@ -1442,7 +1421,7 @@
             {name: 'charStrings', op: 17, type: 'number', value: 0},
             {name: 'private', op: 18, type: ['number', 'offset'], value: [0, 0]}
         ];
-        dict = parseCFFDict(data, start);
+        dict = parseCFFDict(data, 0, data.byteLength);
         return interpretDict(dict, meta, strings);
     }
 
@@ -1832,9 +1811,10 @@
         font.gsubrs = globalSubrIndex.objects;
         font.gsubrsBias = calcCFFSubroutineBias(font.gsubrs);
 
-        topDict = parseCFFTopDict(topDictIndex.objects[0], 0, stringIndex.objects);
+		var topDictData = new DataView(new Uint8Array(topDictIndex.objects[0]).buffer);
+		topDict = parseCFFTopDict(topDictData, stringIndex.objects);
 
-        privateDictOffset = start + topDict['private'][1];
+		privateDictOffset = start + topDict['private'][1];
         privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict['private'][0], stringIndex.objects);
         font.defaultWidthX = privateDict.defaultWidthX;
         font.nominalWidthX = privateDict.nominalWidthX;
