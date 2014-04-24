@@ -259,9 +259,9 @@
         this.relativeOffset += length;
         for (var i = 0; i < length; i++) {
             string += String.fromCharCode(dataView.getUint8(offset + i));
-        };
+        }
         return string;
-    }
+    };
 
     Parser.prototype.parseTag = function () {
         return this.parseString(4);
@@ -338,13 +338,14 @@
 
     // GlyphNames object //////////////////////////////////////////////////////////
     function GlyphNames(post) {
+        var i;
         switch (post.version) {
         case 1:
             this.names = standardNames.slice();
             break;
         case 2:
             this.names = new Array(post.numberOfGlyphs);
-            for (var i = 0; i < post.numberOfGlyphs; i++) {
+            for (i = 0; i < post.numberOfGlyphs; i++) {
                 if (post.glyphNameIndex[i] < standardNames.length) {
                     this.names[i] = standardNames[post.glyphNameIndex[i]];
                 } else {
@@ -354,7 +355,7 @@
             break;
         case 2.5:
             this.names = new Array(post.numberOfGlyphs);
-            for (var i = 0; i < post.numberOfGlyphs; i++) {
+            for (i = 0; i < post.numberOfGlyphs; i++) {
                 this.names[i] = standardNames[i + post.glyphNameIndex[i]];
             }
             break;
@@ -363,11 +364,11 @@
 
     GlyphNames.prototype.nameToGlyphIndex = function (name) {
         return this.names.indexOf(name);
-    }
+    };
 
     GlyphNames.prototype.glyphIndexToName = function (gid) {
         return this.names[gid];
-    }
+    };
 
     // Glyph object /////////////////////////////////////////////////////////
 
@@ -693,12 +694,11 @@
     };
 
     Font.prototype.glyphIndexToName = function (gid) {
-        if (font.glyphNames.names === undefined) {
+        if (this.glyphNames.glyphIndexToName) {
             return '';
         }
-        return this.glyphNames.glyphIndexToName(gid);
-        
-    }
+        return this.glyphNames.glyphIndexToName(gid);   
+    };
 
     // Retrieve the value of the kerning pair between the left glyph (or its index)
     // and the right glyph (or its index). If no kerning pair is found, return 0.
@@ -1811,10 +1811,10 @@
         font.gsubrs = globalSubrIndex.objects;
         font.gsubrsBias = calcCFFSubroutineBias(font.gsubrs);
 
-		var topDictData = new DataView(new Uint8Array(topDictIndex.objects[0]).buffer);
-		topDict = parseCFFTopDict(topDictData, stringIndex.objects);
+        var topDictData = new DataView(new Uint8Array(topDictIndex.objects[0]).buffer);
+        topDict = parseCFFTopDict(topDictData, stringIndex.objects);
 
-		privateDictOffset = start + topDict['private'][1];
+        privateDictOffset = start + topDict['private'][1];
         privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict['private'][0], stringIndex.objects);
         font.defaultWidthX = privateDict.defaultWidthX;
         font.nominalWidthX = privateDict.nominalWidthX;
@@ -2065,7 +2065,7 @@
             post.glyphNameIndex = new Array(post.numberOfGlyphs);
             for (i = 0; i < post.numberOfGlyphs; i++) {
                 post.glyphNameIndex[i] = p.parseUShort();
-            };
+            }
             post.names = [];
             for (i = 0; i < post.numberOfGlyphs; i++) {
                 if (post.glyphNameIndex[i] >= standardNames.length) {
@@ -2077,7 +2077,7 @@
         case 2.5:
             post.numberOfGlyphs = p.parseUShort();
             post.offset = new Array(post.numberOfGlyphs);
-            for (var i = 0; i < post.numberOfGlyphs; i++) {
+            for (i = 0; i < post.numberOfGlyphs; i++) {
                 post.offset = p.parseChar();
             }
             break;
