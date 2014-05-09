@@ -2490,6 +2490,13 @@
             loca = parseLocaTable(data, locaOffset, numGlyphs, shortVersion);
             font.glyphs = parseGlyfTable(data, glyfOffset, loca, font);
             parseHmtxTable(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
+        } else if (cffOffset) {
+            parseCFFTable(data, cffOffset, font);
+        } else {
+            font.supported = false;
+        }
+
+        if (font.supported) {
             if (kernOffset) {
                 font.kerningPairs = parseKernTable(data, kernOffset);
             } else {
@@ -2498,11 +2505,6 @@
             if (gposOffset) {
                 parseGposTable(data, gposOffset, font);
             }
-        } else if (cffOffset) {
-            parseCFFTable(data, cffOffset, font);
-            font.kerningPairs = {};
-        } else {
-            font.supported = false;
         }
 
         return font;
