@@ -64,8 +64,11 @@
     };
 
     // Draw the path to a 2D context.
-    Path.prototype.draw = function (ctx) {
+    Path.prototype.draw = function (ctx, opts) {
         var i, cmd;
+        if(typeof opts == 'undefined')
+            opts = {}
+
         ctx.beginPath();
         for (i = 0; i < this.commands.length; i += 1) {
             cmd = this.commands[i];
@@ -81,7 +84,11 @@
                 ctx.closePath();
             }
         }
-        if (this.fill) {
+        if(opts.fill) {
+            ctx.fillStyle = opts.fill;
+            ctx.fill();
+        }
+        else if (this.fill) {
             ctx.fillStyle = this.fill;
             ctx.fill();
         }
@@ -239,18 +246,18 @@
         return v;
     };
 
-    Parser.prototype.parseOffset16List = 
-    Parser.prototype.parseUShortList = function (count) {
-        var offsets = new Array(count),
-            dataView = this.data,
-            offset = this.offset + this.relativeOffset;
-        for (var i = 0; i < count; i++) {
-            offsets[i] = getUShort(dataView, offset);
-            offset += 2;
-        }
-        this.relativeOffset += count * 2;
-        return offsets;
-    };
+    Parser.prototype.parseOffset16List =
+        Parser.prototype.parseUShortList = function (count) {
+            var offsets = new Array(count),
+                dataView = this.data,
+                offset = this.offset + this.relativeOffset;
+            for (var i = 0; i < count; i++) {
+                offsets[i] = getUShort(dataView, offset);
+                offset += 2;
+            }
+            this.relativeOffset += count * 2;
+            return offsets;
+        };
 
     Parser.prototype.parseString = function (length) {
         var dataView = this.data,
@@ -340,25 +347,25 @@
     function GlyphNames(post) {
         var i;
         switch (post.version) {
-        case 1:
-            this.names = standardNames.slice();
-            break;
-        case 2:
-            this.names = new Array(post.numberOfGlyphs);
-            for (i = 0; i < post.numberOfGlyphs; i++) {
-                if (post.glyphNameIndex[i] < standardNames.length) {
-                    this.names[i] = standardNames[post.glyphNameIndex[i]];
-                } else {
-                    this.names[i] = post.names[post.glyphNameIndex[i] - standardNames.length];
+            case 1:
+                this.names = standardNames.slice();
+                break;
+            case 2:
+                this.names = new Array(post.numberOfGlyphs);
+                for (i = 0; i < post.numberOfGlyphs; i++) {
+                    if (post.glyphNameIndex[i] < standardNames.length) {
+                        this.names[i] = standardNames[post.glyphNameIndex[i]];
+                    } else {
+                        this.names[i] = post.names[post.glyphNameIndex[i] - standardNames.length];
+                    }
                 }
-            }
-            break;
-        case 2.5:
-            this.names = new Array(post.numberOfGlyphs);
-            for (i = 0; i < post.numberOfGlyphs; i++) {
-                this.names[i] = standardNames[i + post.glyphNameIndex[i]];
-            }
-            break;
+                break;
+            case 2.5:
+                this.names = new Array(post.numberOfGlyphs);
+                for (i = 0; i < post.numberOfGlyphs; i++) {
+                    this.names[i] = standardNames[i + post.glyphNameIndex[i]];
+                }
+                break;
         }
     }
 
@@ -697,7 +704,7 @@
         if (this.glyphNames.glyphIndexToName) {
             return '';
         }
-        return this.glyphNames.glyphIndexToName(gid);   
+        return this.glyphNames.glyphIndexToName(gid);
     };
 
     // Retrieve the value of the kerning pair between the left glyph (or its index)
@@ -768,7 +775,7 @@
     // Options is an optional object that contains:
     // - kerning - Whether to take kerning information into account. (default: true)
     Font.prototype.draw = function (ctx, text, x, y, fontSize, options) {
-        this.getPath(text, x, y, fontSize, options).draw(ctx);
+        this.getPath(text, x, y, fontSize, options).draw(ctx, options);
     };
 
     // Draw the points of all glyphs in the text.
@@ -1540,240 +1547,240 @@
                 v = code[i];
                 i += 1;
                 switch (v) {
-                case 1: // hstem
-                    parseStems();
-                    break;
-                case 3: // vstem
-                    parseStems();
-                    break;
-                case 4: // vmoveto
-                    if (stack.length > 1 && !haveWidth) {
-                        width = stack.shift() + font.nominalWidthX;
-                        haveWidth = true;
-                    }
-                    y += stack.pop();
-                    path.moveTo(x, -y);
-                    break;
-                case 5: // rlineto
-                    while (stack.length > 0) {
-                        x += stack.shift();
-                        y += stack.shift();
-                        path.lineTo(x, -y);
-                    }
-                    break;
-                case 6: // hlineto
-                    while (stack.length > 0) {
-                        x += stack.shift();
-                        path.lineTo(x, -y);
-                        if (stack.length === 0) {
-                            break;
+                    case 1: // hstem
+                        parseStems();
+                        break;
+                    case 3: // vstem
+                        parseStems();
+                        break;
+                    case 4: // vmoveto
+                        if (stack.length > 1 && !haveWidth) {
+                            width = stack.shift() + font.nominalWidthX;
+                            haveWidth = true;
                         }
-                        y += stack.shift();
-                        path.lineTo(x, -y);
-                    }
-                    break;
-                case 7: // vlineto
-                    while (stack.length > 0) {
-                        y += stack.shift();
-                        path.lineTo(x, -y);
-                        if (stack.length === 0) {
-                            break;
+                        y += stack.pop();
+                        path.moveTo(x, -y);
+                        break;
+                    case 5: // rlineto
+                        while (stack.length > 0) {
+                            x += stack.shift();
+                            y += stack.shift();
+                            path.lineTo(x, -y);
                         }
-                        x += stack.shift();
-                        path.lineTo(x, -y);
-                    }
-                    break;
-                case 8: // rrcurveto
-                    while (stack.length > 0) {
-                        c1x = x + stack.shift();
-                        c1y = y + stack.shift();
-                        c2x = c1x + stack.shift();
-                        c2y = c1y + stack.shift();
-                        x = c2x + stack.shift();
-                        y = c2y + stack.shift();
-                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
-                    }
-                    break;
-                case 10: // callsubr
-                    codeIndex = stack.pop() + font.subrsBias;
-                    subrCode = font.subrs[codeIndex];
-                    if (subrCode) {
-                        parse(subrCode);
-                    }
-                    break;
-                case 11: // return
-                    return;
-                case 12: // escape
-                    v = code[i];
-                    i += 1;
-                    break;
-                case 14: // endchar
-                    if (stack.length > 0 && !haveWidth) {
-                        width = stack.shift() + font.nominalWidthX;
-                        haveWidth = true;
-                    }
-                    path.closePath();
-                    break;
-                case 18: // hstemhm
-                    parseStems();
-                    break;
-                case 19: // hintmask
-                case 20: // cntrmask
-                    parseStems();
-                    i += (nStems + 7) >> 3;
-                    break;
-                case 21: // rmoveto
-                    if (stack.length > 2 && !haveWidth) {
-                        width = stack.shift() + font.nominalWidthX;
-                        haveWidth = true;
-                    }
-                    y += stack.pop();
-                    x += stack.pop();
-                    path.moveTo(x, -y);
-                    break;
-                case 22: // hmoveto
-                    if (stack.length > 1 && !haveWidth) {
-                        width = stack.shift() + font.nominalWidthX;
-                        haveWidth = true;
-                    }
-                    x += stack.pop();
-                    path.moveTo(x, -y);
-                    break;
-                case 23: // vstemhm
-                    parseStems();
-                    break;
-                case 24: // rcurveline
-                    while (stack.length > 2) {
-                        c1x = x + stack.shift();
-                        c1y = y + stack.shift();
-                        c2x = c1x + stack.shift();
-                        c2y = c1y + stack.shift();
-                        x = c2x + stack.shift();
-                        y = c2y + stack.shift();
-                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
-                    }
-                    x += stack.shift();
-                    y += stack.shift();
-                    path.lineTo(x, -y);
-                    break;
-                case 25: // rlinecurve
-                    while (stack.length > 6) {
-                        x += stack.shift();
-                        y += stack.shift();
-                        path.lineTo(x, -y);
-                    }
-                    c1x = x + stack.shift();
-                    c1y = y + stack.shift();
-                    c2x = c1x + stack.shift();
-                    c2y = c1y + stack.shift();
-                    x = c2x + stack.shift();
-                    y = c2y + stack.shift();
-                    path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
-                    break;
-                case 26: // vvcurveto
-                    if (stack.length % 2) {
-                        x += stack.shift();
-                    }
-                    while (stack.length > 0) {
-                        c1x = x;
-                        c1y = y + stack.shift();
-                        c2x = c1x + stack.shift();
-                        c2y = c1y + stack.shift();
-                        x = c2x;
-                        y = c2y + stack.shift();
-                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
-                    }
-                    break;
-                case 27: // hhcurveto
-                    if (stack.length % 2) {
-                        y += stack.shift();
-                    }
-                    while (stack.length > 0) {
-                        c1x = x + stack.shift();
-                        c1y = y;
-                        c2x = c1x + stack.shift();
-                        c2y = c1y + stack.shift();
-                        x = c2x + stack.shift();
-                        y = c2y;
-                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
-                    }
-                    break;
-                case 28: // shortint
-                    b1 = code[i];
-                    b2 = code[i + 1];
-                    stack.push(((b1 << 24) | (b2 << 16)) >> 16);
-                    i += 2;
-                    break;
-                case 29: // callgsubr
-                    codeIndex = stack.pop() + font.gsubrsBias;
-                    subrCode = font.gsubrs[codeIndex];
-                    if (subrCode) {
-                        parse(subrCode);
-                    }
-                    break;
-                case 30: // vhcurveto
-                    while (stack.length > 0) {
-                        c1x = x;
-                        c1y = y + stack.shift();
-                        c2x = c1x + stack.shift();
-                        c2y = c1y + stack.shift();
-                        x = c2x + stack.shift();
-                        y = c2y + (stack.length === 1 ? stack.shift() : 0);
-                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
-                        if (stack.length === 0) {
-                            break;
+                        break;
+                    case 6: // hlineto
+                        while (stack.length > 0) {
+                            x += stack.shift();
+                            path.lineTo(x, -y);
+                            if (stack.length === 0) {
+                                break;
+                            }
+                            y += stack.shift();
+                            path.lineTo(x, -y);
                         }
-                        c1x = x + stack.shift();
-                        c1y = y;
-                        c2x = c1x + stack.shift();
-                        c2y = c1y + stack.shift();
-                        y = c2y + stack.shift();
-                        x = c2x + (stack.length === 1 ? stack.shift() : 0);
-                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
-                    }
-                    break;
-                case 31: // hvcurveto
-                    while (stack.length > 0) {
-                        c1x = x + stack.shift();
-                        c1y = y;
-                        c2x = c1x + stack.shift();
-                        c2y = c1y + stack.shift();
-                        y = c2y + stack.shift();
-                        x = c2x + (stack.length === 1 ? stack.shift() : 0);
-                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
-                        if (stack.length === 0) {
-                            break;
+                        break;
+                    case 7: // vlineto
+                        while (stack.length > 0) {
+                            y += stack.shift();
+                            path.lineTo(x, -y);
+                            if (stack.length === 0) {
+                                break;
+                            }
+                            x += stack.shift();
+                            path.lineTo(x, -y);
                         }
-                        c1x = x;
-                        c1y = y + stack.shift();
-                        c2x = c1x + stack.shift();
-                        c2y = c1y + stack.shift();
-                        x = c2x + stack.shift();
-                        y = c2y + (stack.length === 1 ? stack.shift() : 0);
-                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
-                    }
-                    break;
-                default:
-                    if (v < 32) {
-                        throw new Error('Glyph ' + index + ': unknown operator ' + v);
-                    } else if (v < 247) {
-                        stack.push(v - 139);
-                    } else if (v < 251) {
-                        b1 = code[i];
+                        break;
+                    case 8: // rrcurveto
+                        while (stack.length > 0) {
+                            c1x = x + stack.shift();
+                            c1y = y + stack.shift();
+                            c2x = c1x + stack.shift();
+                            c2y = c1y + stack.shift();
+                            x = c2x + stack.shift();
+                            y = c2y + stack.shift();
+                            path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                        }
+                        break;
+                    case 10: // callsubr
+                        codeIndex = stack.pop() + font.subrsBias;
+                        subrCode = font.subrs[codeIndex];
+                        if (subrCode) {
+                            parse(subrCode);
+                        }
+                        break;
+                    case 11: // return
+                        return;
+                    case 12: // escape
+                        v = code[i];
                         i += 1;
-                        stack.push((v - 247) * 256 + b1 + 108);
-                    } else if (v < 255) {
-                        b1 = code[i];
-                        i += 1;
-                        stack.push(-(v - 251) * 256 - b1 - 108);
-                    } else {
+                        break;
+                    case 14: // endchar
+                        if (stack.length > 0 && !haveWidth) {
+                            width = stack.shift() + font.nominalWidthX;
+                            haveWidth = true;
+                        }
+                        path.closePath();
+                        break;
+                    case 18: // hstemhm
+                        parseStems();
+                        break;
+                    case 19: // hintmask
+                    case 20: // cntrmask
+                        parseStems();
+                        i += (nStems + 7) >> 3;
+                        break;
+                    case 21: // rmoveto
+                        if (stack.length > 2 && !haveWidth) {
+                            width = stack.shift() + font.nominalWidthX;
+                            haveWidth = true;
+                        }
+                        y += stack.pop();
+                        x += stack.pop();
+                        path.moveTo(x, -y);
+                        break;
+                    case 22: // hmoveto
+                        if (stack.length > 1 && !haveWidth) {
+                            width = stack.shift() + font.nominalWidthX;
+                            haveWidth = true;
+                        }
+                        x += stack.pop();
+                        path.moveTo(x, -y);
+                        break;
+                    case 23: // vstemhm
+                        parseStems();
+                        break;
+                    case 24: // rcurveline
+                        while (stack.length > 2) {
+                            c1x = x + stack.shift();
+                            c1y = y + stack.shift();
+                            c2x = c1x + stack.shift();
+                            c2y = c1y + stack.shift();
+                            x = c2x + stack.shift();
+                            y = c2y + stack.shift();
+                            path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                        }
+                        x += stack.shift();
+                        y += stack.shift();
+                        path.lineTo(x, -y);
+                        break;
+                    case 25: // rlinecurve
+                        while (stack.length > 6) {
+                            x += stack.shift();
+                            y += stack.shift();
+                            path.lineTo(x, -y);
+                        }
+                        c1x = x + stack.shift();
+                        c1y = y + stack.shift();
+                        c2x = c1x + stack.shift();
+                        c2y = c1y + stack.shift();
+                        x = c2x + stack.shift();
+                        y = c2y + stack.shift();
+                        path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                        break;
+                    case 26: // vvcurveto
+                        if (stack.length % 2) {
+                            x += stack.shift();
+                        }
+                        while (stack.length > 0) {
+                            c1x = x;
+                            c1y = y + stack.shift();
+                            c2x = c1x + stack.shift();
+                            c2y = c1y + stack.shift();
+                            x = c2x;
+                            y = c2y + stack.shift();
+                            path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                        }
+                        break;
+                    case 27: // hhcurveto
+                        if (stack.length % 2) {
+                            y += stack.shift();
+                        }
+                        while (stack.length > 0) {
+                            c1x = x + stack.shift();
+                            c1y = y;
+                            c2x = c1x + stack.shift();
+                            c2y = c1y + stack.shift();
+                            x = c2x + stack.shift();
+                            y = c2y;
+                            path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                        }
+                        break;
+                    case 28: // shortint
                         b1 = code[i];
                         b2 = code[i + 1];
-                        b3 = code[i + 2];
-                        b4 = code[i + 3];
-                        i += 4;
-                        stack.push(((b1 << 24) | (b2 << 16) | (b3 << 8) | b4) / 65536);
-                    }
+                        stack.push(((b1 << 24) | (b2 << 16)) >> 16);
+                        i += 2;
+                        break;
+                    case 29: // callgsubr
+                        codeIndex = stack.pop() + font.gsubrsBias;
+                        subrCode = font.gsubrs[codeIndex];
+                        if (subrCode) {
+                            parse(subrCode);
+                        }
+                        break;
+                    case 30: // vhcurveto
+                        while (stack.length > 0) {
+                            c1x = x;
+                            c1y = y + stack.shift();
+                            c2x = c1x + stack.shift();
+                            c2y = c1y + stack.shift();
+                            x = c2x + stack.shift();
+                            y = c2y + (stack.length === 1 ? stack.shift() : 0);
+                            path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                            if (stack.length === 0) {
+                                break;
+                            }
+                            c1x = x + stack.shift();
+                            c1y = y;
+                            c2x = c1x + stack.shift();
+                            c2y = c1y + stack.shift();
+                            y = c2y + stack.shift();
+                            x = c2x + (stack.length === 1 ? stack.shift() : 0);
+                            path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                        }
+                        break;
+                    case 31: // hvcurveto
+                        while (stack.length > 0) {
+                            c1x = x + stack.shift();
+                            c1y = y;
+                            c2x = c1x + stack.shift();
+                            c2y = c1y + stack.shift();
+                            y = c2y + stack.shift();
+                            x = c2x + (stack.length === 1 ? stack.shift() : 0);
+                            path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                            if (stack.length === 0) {
+                                break;
+                            }
+                            c1x = x;
+                            c1y = y + stack.shift();
+                            c2x = c1x + stack.shift();
+                            c2y = c1y + stack.shift();
+                            x = c2x + stack.shift();
+                            y = c2y + (stack.length === 1 ? stack.shift() : 0);
+                            path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                        }
+                        break;
+                    default:
+                        if (v < 32) {
+                            throw new Error('Glyph ' + index + ': unknown operator ' + v);
+                        } else if (v < 247) {
+                            stack.push(v - 139);
+                        } else if (v < 251) {
+                            b1 = code[i];
+                            i += 1;
+                            stack.push((v - 247) * 256 + b1 + 108);
+                        } else if (v < 255) {
+                            b1 = code[i];
+                            i += 1;
+                            stack.push(-(v - 251) * 256 - b1 - 108);
+                        } else {
+                            b1 = code[i];
+                            b2 = code[i + 1];
+                            b3 = code[i + 2];
+                            b4 = code[i + 3];
+                            i += 4;
+                            stack.push(((b1 << 24) | (b2 << 16) | (b3 << 8) | b4) / 65536);
+                        }
                 }
             }
         }
@@ -2057,30 +2064,30 @@
         post.minMemType1 = p.parseULong();
         post.maxMemType1 = p.parseULong();
         switch (post.version) {
-        case 1:
-            post.names = standardNames.slice();
-            break;
-        case 2:
-            post.numberOfGlyphs = p.parseUShort();
-            post.glyphNameIndex = new Array(post.numberOfGlyphs);
-            for (i = 0; i < post.numberOfGlyphs; i++) {
-                post.glyphNameIndex[i] = p.parseUShort();
-            }
-            post.names = [];
-            for (i = 0; i < post.numberOfGlyphs; i++) {
-                if (post.glyphNameIndex[i] >= standardNames.length) {
-                    nameLength = p.parseChar();
-                    post.names.push(p.parseString(nameLength));
+            case 1:
+                post.names = standardNames.slice();
+                break;
+            case 2:
+                post.numberOfGlyphs = p.parseUShort();
+                post.glyphNameIndex = new Array(post.numberOfGlyphs);
+                for (i = 0; i < post.numberOfGlyphs; i++) {
+                    post.glyphNameIndex[i] = p.parseUShort();
                 }
-            }
-            break;
-        case 2.5:
-            post.numberOfGlyphs = p.parseUShort();
-            post.offset = new Array(post.numberOfGlyphs);
-            for (i = 0; i < post.numberOfGlyphs; i++) {
-                post.offset = p.parseChar();
-            }
-            break;
+                post.names = [];
+                for (i = 0; i < post.numberOfGlyphs; i++) {
+                    if (post.glyphNameIndex[i] >= standardNames.length) {
+                        nameLength = p.parseChar();
+                        post.names.push(p.parseString(nameLength));
+                    }
+                }
+                break;
+            case 2.5:
+                post.numberOfGlyphs = p.parseUShort();
+                post.offset = new Array(post.numberOfGlyphs);
+                for (i = 0; i < post.numberOfGlyphs; i++) {
+                    post.offset = p.parseChar();
+                }
+                break;
         }
         return post;
     }
@@ -2334,7 +2341,7 @@
     function parseGposTable(data, start, font) {
         var p, tableVersion, lookupListOffset, scriptList, i, featureList, lookupCount,
             lookupTableOffsets, lookupListAbsoluteOffset, table;
-        
+
         p = new Parser(data, start);
         tableVersion = p.parseFixed();
         checkArgument(tableVersion === 1, 'Unsupported GPOS table version.');
@@ -2431,56 +2438,56 @@
             tag = getTag(data, p);
             offset = getULong(data, p + 8);
             switch (tag) {
-            case 'cmap':
-                font.tables.cmap = parseCmapTable(data, offset);
-                font.encoding = new CmapEncoding(font.tables.cmap.segments);
-                if (!font.encoding) {
-                    font.supported = false;
-                }
-                break;
-            case 'head':
-                font.tables.head = parseHeadTable(data, offset);
-                font.unitsPerEm = font.tables.head.unitsPerEm;
-                indexToLocFormat = font.tables.head.indexToLocFormat;
-                break;
-            case 'hhea':
-                font.tables.hhea = parseHheaTable(data, offset);
-                font.ascender = font.tables.hhea.ascender;
-                font.descender = font.tables.hhea.descender;
-                font.numberOfHMetrics = font.tables.hhea.numberOfHMetrics;
-                break;
-            case 'hmtx':
-                hmtxOffset = offset;
-                break;
-            case 'maxp':
-                font.tables.maxp = parseMaxpTable(data, offset);
-                font.numGlyphs = numGlyphs = font.tables.maxp.numGlyphs;
-                break;
-            case 'name':
-                 font.tables.name = parseNameTable(data, offset);
-                break;
-            case 'OS/2':
-                font.tables.os2 = parseOS2Table(data, offset);
-                break;
-            case 'post':
-                font.tables.post = parsePostTable(data, offset);
-                font.glyphNames = new GlyphNames(font.tables.post);
-                break;
-            case 'glyf':
-                glyfOffset = offset;
-                break;
-            case 'loca':
-                locaOffset = offset;
-                break;
-            case 'CFF ':
-                cffOffset = offset;
-                break;
-            case 'kern':
-                kernOffset = offset;
-                break;
-            case 'GPOS':
-                gposOffset = offset;
-                break;
+                case 'cmap':
+                    font.tables.cmap = parseCmapTable(data, offset);
+                    font.encoding = new CmapEncoding(font.tables.cmap.segments);
+                    if (!font.encoding) {
+                        font.supported = false;
+                    }
+                    break;
+                case 'head':
+                    font.tables.head = parseHeadTable(data, offset);
+                    font.unitsPerEm = font.tables.head.unitsPerEm;
+                    indexToLocFormat = font.tables.head.indexToLocFormat;
+                    break;
+                case 'hhea':
+                    font.tables.hhea = parseHheaTable(data, offset);
+                    font.ascender = font.tables.hhea.ascender;
+                    font.descender = font.tables.hhea.descender;
+                    font.numberOfHMetrics = font.tables.hhea.numberOfHMetrics;
+                    break;
+                case 'hmtx':
+                    hmtxOffset = offset;
+                    break;
+                case 'maxp':
+                    font.tables.maxp = parseMaxpTable(data, offset);
+                    font.numGlyphs = numGlyphs = font.tables.maxp.numGlyphs;
+                    break;
+                case 'name':
+                    font.tables.name = parseNameTable(data, offset);
+                    break;
+                case 'OS/2':
+                    font.tables.os2 = parseOS2Table(data, offset);
+                    break;
+                case 'post':
+                    font.tables.post = parsePostTable(data, offset);
+                    font.glyphNames = new GlyphNames(font.tables.post);
+                    break;
+                case 'glyf':
+                    glyfOffset = offset;
+                    break;
+                case 'loca':
+                    locaOffset = offset;
+                    break;
+                case 'CFF ':
+                    cffOffset = offset;
+                    break;
+                case 'kern':
+                    kernOffset = offset;
+                    break;
+                case 'GPOS':
+                    gposOffset = offset;
+                    break;
             }
             p += 16;
         }
