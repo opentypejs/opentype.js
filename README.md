@@ -130,7 +130,7 @@ Planned
 
 Thanks
 ======
-I would like to acknowledge the work of others withouth which opentype.js wouldn't be possible:
+I would like to acknowledge the work of others without which opentype.js wouldn't be possible:
 
 * [pdf.js](http://mozilla.github.io/pdf.js/): for an awesome implementation of font parsing in the browser.
 * [FreeType](http://www.freetype.org/): for the nitty-gritty details and filling in the gaps when the spec was incomplete.
