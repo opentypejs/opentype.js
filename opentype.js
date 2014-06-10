@@ -2031,13 +2031,17 @@
         os2.sTypoLineGap = p.parseShort();
         os2.usWinAscent = p.parseUShort();
         os2.usWinDescent = p.parseUShort();
-        os2.ulCodePageRange1 = p.parseULong();
-        os2.ulCodePageRange2 = p.parseULong();
-        os2.sxHeight = p.parseShort();
-        os2.sCapHeight = p.parseShort();
-        os2.usDefaultChar = p.parseUShort();
-        os2.usBreakChar = p.parseUShort();
-        os2.usMaxContent = p.parseUShort();
+        if (os2.version >= 1) {
+            os2.ulCodePageRange1 = p.parseULong();
+            os2.ulCodePageRange2 = p.parseULong();
+        }
+        if (os2.version >= 2) {
+            os2.sxHeight = p.parseShort();
+            os2.sCapHeight = p.parseShort();
+            os2.usDefaultChar = p.parseUShort();
+            os2.usBreakChar = p.parseUShort();
+            os2.usMaxContent = p.parseUShort();
+        }
         return os2;
     }
 
