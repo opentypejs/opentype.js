@@ -123,7 +123,6 @@ The arguments are the same as `Glyph.draw`.
 
 Planned
 =======
-* Kerning support for PostScript shapes.
 * Better support for composite glyphs (advanced scaling and transformations).
 * Support for ligatures and contextual alternates.
 * Support for SVG paths.
