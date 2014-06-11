@@ -1179,7 +1179,6 @@
         cmap.format = format = p.parseUShort();
         checkArgument(format === 4, 'Only format 4 cmap tables are supported.');
         // Length in bytes of the sub-tables.
-        // Skip length and language;
         cmap.length = p.parseUShort();
         cmap.language = p.parseUShort();
         // segCount is stored x 2.
