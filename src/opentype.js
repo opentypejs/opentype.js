@@ -7,6 +7,10 @@
 
 'use strict';
 
+var draw = require('./draw');
+var parse = require('./parse');
+var path = require('./path');
+
 // The exported object / namespace.
 var opentype = {};
 
@@ -18,282 +22,7 @@ function checkArgument(predicate, message) {
     }
 }
 
-// Path /////////////////////////////////////////////////////////////////
-
-// A bézier path containing a set of path commands similar to a SVG path.
-// Paths can be drawn on a context using `draw`.
-function Path() {
-    this.commands = [];
-    this.fill = 'black';
-    this.stroke = null;
-    this.strokeWidth = 1;
-}
-
-Path.prototype.moveTo = function (x, y) {
-    this.commands.push({type: 'M', x: x, y: y});
-};
-
-Path.prototype.lineTo = function (x, y) {
-    this.commands.push({type: 'L', x: x, y: y});
-};
-
-Path.prototype.curveTo = Path.prototype.bezierCurveTo = function (x1, y1, x2, y2, x, y) {
-    this.commands.push({type: 'C', x1: x1, y1: y1, x2: x2, y2: y2, x: x, y: y});
-};
-
-Path.prototype.quadTo = Path.prototype.quadraticCurveTo = function (x1, y1, x, y) {
-    this.commands.push({type: 'Q', x1: x1, y1: y1, x: x, y: y});
-};
-
-Path.prototype.close = Path.prototype.closePath = function () {
-    this.commands.push({type: 'Z'});
-};
-
-// Add the given path or list of commands to the commands of this path.
-Path.prototype.extend = function (pathOrCommands) {
-    if (pathOrCommands.commands) {
-        pathOrCommands = pathOrCommands.commands;
-    }
-    Array.prototype.push.apply(this.commands, pathOrCommands);
-};
-
-// Draw the path to a 2D context.
-Path.prototype.draw = function (ctx) {
-    var i, cmd;
-    ctx.beginPath();
-    for (i = 0; i < this.commands.length; i += 1) {
-        cmd = this.commands[i];
-        if (cmd.type === 'M') {
-            ctx.moveTo(cmd.x, cmd.y);
-        } else if (cmd.type === 'L') {
-            ctx.lineTo(cmd.x, cmd.y);
-        } else if (cmd.type === 'C') {
-            ctx.bezierCurveTo(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
-        } else if (cmd.type === 'Q') {
-            ctx.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
-        } else if (cmd.type === 'Z') {
-            ctx.closePath();
-        }
-    }
-    if (this.fill) {
-        ctx.fillStyle = this.fill;
-        ctx.fill();
-    }
-    if (this.stroke) {
-        ctx.strokeStyle = this.stroke;
-        ctx.lineWidth = this.strokeWidth;
-        ctx.stroke();
-    }
-};
-
-// Draw a line on the given context from point `x1,y1` to point `x2,y2`.
-function line(ctx, x1, y1, x2, y2) {
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-}
-
-// Parsing utility functions ////////////////////////////////////////////
-
-// Retrieve an unsigned byte from the DataView.
-function getByte(dataView, offset) {
-    return dataView.getUint8(offset);
-}
-
-var getCard8 = getByte;
-
-// Retrieve an unsigned 16-bit short from the DataView.
-// The value is stored in big endian.
-function getUShort(dataView, offset) {
-    return dataView.getUint16(offset, false);
-}
-
-var getCard16 = getUShort;
-
-// Retrieve a signed 16-bit short from the DataView.
-// The value is stored in big endian.
-function getShort(dataView, offset) {
-    return dataView.getInt16(offset, false);
-}
-
-// Retrieve an unsigned 32-bit long from the DataView.
-// The value is stored in big endian.
-function getULong(dataView, offset) {
-    return dataView.getUint32(offset, false);
-}
-
-// Retrieve a 32-bit signed fixed-point number (16.16) from the DataView.
-// The value is stored in big endian.
-function getFixed(dataView, offset) {
-    var decimal, fraction;
-    decimal = dataView.getInt16(offset, false);
-    fraction = dataView.getUint16(offset + 2, false);
-    return decimal + fraction / 65535;
-}
-
-// Retrieve a 4-character tag from the DataView.
-// Tags are used to identify tables.
-function getTag(dataView, offset) {
-    var tag = '', i;
-    for (i = offset; i < offset + 4; i += 1) {
-        tag += String.fromCharCode(dataView.getInt8(i));
-    }
-    return tag;
-}
-
-// Retrieve an offset from the DataView.
-// Offsets are 1 to 4 bytes in length, depending on the offSize argument.
-function getOffset(dataView, offset, offSize) {
-    var i, v;
-    v = 0;
-    for (i = 0; i < offSize; i += 1) {
-        v <<= 8;
-        v += dataView.getUint8(offset + i);
-    }
-    return v;
-}
-
-// Retrieve a number of bytes from start offset to the end offset from the DataView.
-function getBytes(dataView, startOffset, endOffset) {
-    var bytes, i;
-    bytes = [];
-    for (i = startOffset; i < endOffset; i += 1) {
-        bytes.push(dataView.getUint8(i));
-    }
-    return bytes;
-}
-
-// Convert the list of bytes to a string.
-function bytesToString(bytes) {
-    var s, i;
-    s = '';
-    for (i = 0; i < bytes.length; i += 1) {
-        s += String.fromCharCode(bytes[i]);
-    }
-    return s;
-}
-
-var typeOffsets = {
-    byte: 1,
-    uShort: 2,
-    short: 2,
-    uLong: 4,
-    fixed: 4,
-    longDateTime: 8,
-    tag: 4
-};
-
-// A stateful parser that changes the offset whenever a value is retrieved.
-// The data is a DataView.
-function Parser(data, offset) {
-    this.data = data;
-    this.offset = offset;
-    this.relativeOffset = 0;
-}
-
-Parser.prototype.parseByte = function () {
-    var v = this.data.getUint8(this.offset + this.relativeOffset);
-    this.relativeOffset += 1;
-    return v;
-};
-
-Parser.prototype.parseChar = function () {
-    var v = this.data.getInt8(this.offset + this.relativeOffset);
-    this.relativeOffset += 1;
-    return v;
-};
-
-Parser.prototype.parseCard8 = Parser.prototype.parseByte;
-
-Parser.prototype.parseUShort = function () {
-    var v = this.data.getUint16(this.offset + this.relativeOffset);
-    this.relativeOffset += 2;
-    return v;
-};
-Parser.prototype.parseCard16 = Parser.prototype.parseUShort;
-Parser.prototype.parseSID = Parser.prototype.parseUShort;
-Parser.prototype.parseOffset16 = Parser.prototype.parseUShort;
-
-Parser.prototype.parseShort = function () {
-    var v = this.data.getInt16(this.offset + this.relativeOffset);
-    this.relativeOffset += 2;
-    return v;
-};
-
-Parser.prototype.parseULong = function () {
-    var v = getULong(this.data, this.offset + this.relativeOffset);
-    this.relativeOffset += 4;
-    return v;
-};
-
-Parser.prototype.parseFixed = function () {
-    var v = getFixed(this.data, this.offset + this.relativeOffset);
-    this.relativeOffset += 4;
-    return v;
-};
-
-Parser.prototype.parseOffset16List =
-Parser.prototype.parseUShortList = function (count) {
-    var offsets = new Array(count),
-        dataView = this.data,
-        offset = this.offset + this.relativeOffset;
-    for (var i = 0; i < count; i++) {
-        offsets[i] = getUShort(dataView, offset);
-        offset += 2;
-    }
-    this.relativeOffset += count * 2;
-    return offsets;
-};
-
-Parser.prototype.parseString = function (length) {
-    var dataView = this.data,
-        offset = this.offset + this.relativeOffset,
-        string = '';
-    this.relativeOffset += length;
-    for (var i = 0; i < length; i++) {
-        string += String.fromCharCode(dataView.getUint8(offset + i));
-    }
-    return string;
-};
-
-Parser.prototype.parseTag = function () {
-    return this.parseString(4);
-};
-
-// LONGDATETIME is a 64-bit integer.
-// JavaScript and unix timestamps traditionally use 32 bits, so we
-// only take the last 32 bits.
-Parser.prototype.parseLongDateTime = function() {
-    var v = getULong(this.data, this.offset + this.relativeOffset + 4);
-    this.relativeOffset += 8;
-    return v;
-};
-
-Parser.prototype.parseFixed = function() {
-    var v = getULong(this.data, this.offset + this.relativeOffset);
-    this.relativeOffset += 4;
-    return v / 65536;
-};
-
-Parser.prototype.parseVersion = function() {
-    var major = getUShort(this.data, this.offset + this.relativeOffset);
-    // How to interpret the minor version is very vague in the spec. 0x5000 is 5, 0x1000 is 1
-    // This returns the correct number if minor = 0xN000 where N is 0-9
-    var minor = getUShort(this.data, this.offset + this.relativeOffset + 2);
-    this.relativeOffset += 4;
-    return major + minor / 0x1000 / 10;
-};
-
-Parser.prototype.skip = function (type, amount) {
-    if (amount === undefined) {
-        amount = 1;
-    }
-    this.relativeOffset += typeOffsets[type] * amount;
-};
-
 // Encoding objects /////////////////////////////////////////////////////
-
 
 var cffStandardStrings = [
     '.notdef', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar', 'percent', 'ampersand', 'quoteright',
@@ -583,17 +312,17 @@ Glyph.prototype.drawMetrics = function (ctx, x, y, fontSize) {
     ctx.lineWidth = 1;
     // Draw the origin
     ctx.strokeStyle = 'black';
-    line(ctx, x, -10000, x, 10000);
-    line(ctx, -10000, y, 10000, y);
+    draw.line(ctx, x, -10000, x, 10000);
+    draw.line(ctx, -10000, y, 10000, y);
     // Draw the glyph box
     ctx.strokeStyle = 'blue';
-    line(ctx, x + (this.xMin * scale), -10000, x + (this.xMin * scale), 10000);
-    line(ctx, x + (this.xMax * scale), -10000, x + (this.xMax * scale), 10000);
-    line(ctx, -10000, y + (-this.yMin * scale), 10000, y + (-this.yMin * scale));
-    line(ctx, -10000, y + (-this.yMax * scale), 10000, y + (-this.yMax * scale));
+    draw.line(ctx, x + (this.xMin * scale), -10000, x + (this.xMin * scale), 10000);
+    draw.line(ctx, x + (this.xMax * scale), -10000, x + (this.xMax * scale), 10000);
+    draw.line(ctx, -10000, y + (-this.yMin * scale), 10000, y + (-this.yMin * scale));
+    draw.line(ctx, -10000, y + (-this.yMax * scale), 10000, y + (-this.yMax * scale));
     // Draw the advance width
     ctx.strokeStyle = 'green';
-    line(ctx, x + (this.advanceWidth * scale), -10000, x + (this.advanceWidth * scale), 10000);
+    draw.line(ctx, x + (this.advanceWidth * scale), -10000, x + (this.advanceWidth * scale), 10000);
 };
 
 // A concrete implementation of glyph for TrueType outline data.
@@ -633,15 +362,15 @@ TrueTypeGlyph.prototype.getContours = function () {
 // y - Vertical position of the *baseline* of the glyph. (default: 0)
 // fontSize - Font size, in pixels (default: 72).
 TrueTypeGlyph.prototype.getPath = function (x, y, fontSize) {
-    var scale, path, contours, i, realFirstPoint, j, contour, pt, firstPt,
+    var scale, p, contours, i, realFirstPoint, j, contour, pt, firstPt,
         prevPt, midPt, curvePt, lastPt;
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
     scale = 1 / this.font.unitsPerEm * fontSize;
-    path = new Path();
+    p = new path.Path();
     if (!this.points) {
-        return path;
+        return p;
     }
     contours = this.getContours();
     for (i = 0; i < contours.length; i += 1) {
@@ -666,23 +395,23 @@ TrueTypeGlyph.prototype.getPath = function (x, y, fontSize) {
             // The first point is synthesized, so don't skip the real first point.
             realFirstPoint = false;
         }
-        path.moveTo(x + (firstPt.x * scale), y + (-firstPt.y * scale));
+        p.moveTo(x + (firstPt.x * scale), y + (-firstPt.y * scale));
 
         for (j = realFirstPoint ? 1 : 0; j < contour.length; j += 1) {
             pt = contour[j];
             prevPt = j === 0 ? firstPt : contour[j - 1];
             if (prevPt.onCurve && pt.onCurve) {
                 // This is a straight line.
-                path.lineTo(x + (pt.x * scale), y + (-pt.y * scale));
+                p.lineTo(x + (pt.x * scale), y + (-pt.y * scale));
             } else if (prevPt.onCurve && !pt.onCurve) {
                 curvePt = pt;
             } else if (!prevPt.onCurve && !pt.onCurve) {
                 midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                path.quadraticCurveTo(x + (prevPt.x * scale), y + (-prevPt.y * scale), x + (midPt.x * scale), y + (-midPt.y * scale));
+                p.quadraticCurveTo(x + (prevPt.x * scale), y + (-prevPt.y * scale), x + (midPt.x * scale), y + (-midPt.y * scale));
                 curvePt = pt;
             } else if (!prevPt.onCurve && pt.onCurve) {
                 // Previous point off-curve, this point on-curve.
-                path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (pt.x * scale), y + (-pt.y * scale));
+                p.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (pt.x * scale), y + (-pt.y * scale));
                 curvePt = null;
             } else {
                 throw new Error('Invalid state.');
@@ -691,14 +420,14 @@ TrueTypeGlyph.prototype.getPath = function (x, y, fontSize) {
         if (firstPt !== lastPt) {
             // Connect the last and first points
             if (curvePt) {
-                path.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (firstPt.x * scale), y + (-firstPt.y * scale));
+                p.quadraticCurveTo(x + (curvePt.x * scale), y + (-curvePt.y * scale), x + (firstPt.x * scale), y + (-firstPt.y * scale));
             } else {
-                path.lineTo(x + (firstPt.x * scale), y + (-firstPt.y * scale));
+                p.lineTo(x + (firstPt.x * scale), y + (-firstPt.y * scale));
             }
         }
     }
-    path.closePath();
-    return path;
+    p.closePath();
+    return p;
 };
 
 // A concrete implementation of glyph for TrueType outline data.
@@ -726,7 +455,7 @@ CffGlyph.prototype.getPath = function (x, y, fontSize) {
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
     scale = 1 / this.font.unitsPerEm * fontSize;
-    newPath = new Path();
+    newPath = new path.Path();
     for (i = 0; i < this.path.commands.length; i += 1) {
         cmd = this.path.commands[i];
         if (cmd.type === 'M') {
@@ -864,7 +593,7 @@ Font.prototype.forEachGlyph = function (text, x, y, fontSize, options, callback)
 //
 // Returns a Path object.
 Font.prototype.getPath = function (text, x, y, fontSize, options) {
-    var fullPath = new Path();
+    var fullPath = new path.Path();
     this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
         var path = glyph.getPath(x, y, fontSize);
         fullPath.extend(path);
@@ -951,7 +680,7 @@ function parseGlyph(data, start, index, font) {
     var p, glyph, flag, i, j, flags,
         endPointIndices, numberOfCoordinates, repeatCount, points, point, px, py,
         component, moreComponents, arg1, arg2, scale, xScale, yScale, scale01, scale10;
-    p = new Parser(data, start);
+    p = new parse.Parser(data, start);
     glyph = new TrueTypeGlyph(font, index);
     glyph.numberOfContours = p.parseShort();
     glyph.xMin = p.parseShort();
@@ -1124,7 +853,7 @@ function parseGlyfTable(data, start, loca, font) {
 // https://www.microsoft.com/typography/OTSPEC/loca.htm
 function parseLocaTable(data, start, numGlyphs, shortVersion) {
     var p, parseFn, glyphOffsets, glyphOffset, i;
-    p = new Parser(data, start);
+    p = new parse.Parser(data, start);
     parseFn = shortVersion ? p.parseUShort : p.parseULong;
     // There is an extra entry after the last index element to compute the length of the last glyph.
     // That's why we use numGlyphs + 1.
@@ -1149,18 +878,18 @@ function parseCmapTable(data, start) {
     var version, numTables, offset, platformId, encodingId, format, segCount,
         ranges, i, j, parserOffset, idRangeOffset, p;
     var cmap = {};
-    cmap.version = version = getUShort(data, start);
+    cmap.version = version = parse.getUShort(data, start);
     checkArgument(version === 0, 'cmap table version should be 0.');
 
     // The cmap table can contain many sub-tables, each with their own format.
     // We're only interested in a "platform 3" table. This is a Windows format.
-    cmap.numtables = numTables = getUShort(data, start + 2);
+    cmap.numtables = numTables = parse.getUShort(data, start + 2);
     offset = -1;
     for (i = 0; i < numTables; i += 1) {
-        platformId = getUShort(data, start + 4 + (i * 8));
-        encodingId = getUShort(data, start + 4 + (i * 8) + 2);
+        platformId = parse.getUShort(data, start + 4 + (i * 8));
+        encodingId = parse.getUShort(data, start + 4 + (i * 8) + 2);
         if (platformId === 3 && (encodingId === 1 || encodingId === 0)) {
-            offset = getULong(data, start + 4 + (i * 8) + 4);
+            offset = parse.getULong(data, start + 4 + (i * 8) + 4);
             break;
         }
     }
@@ -1170,7 +899,7 @@ function parseCmapTable(data, start) {
         return null;
     }
 
-    p = new Parser(data, start + offset);
+    p = new parse.Parser(data, start + offset);
     cmap.format = format = p.parseUShort();
     checkArgument(format === 4, 'Only format 4 cmap tables are supported.');
     // Length in bytes of the sub-tables.
@@ -1199,7 +928,7 @@ function parseCmapTable(data, start) {
         if (idRangeOffset > 0) {
             ranges[i].ids = [];
             for (j = 0; j < ranges[i].length; j += 1) {
-                ranges[i].ids[j] = getUShort(data, parserOffset + idRangeOffset);
+                ranges[i].ids[j] = parse.getUShort(data, parserOffset + idRangeOffset);
                 idRangeOffset += 2;
             }
         }
@@ -1214,13 +943,13 @@ function parseCFFIndex(data, start, conversionFn) {
     var offsets, objects, count, endOffset, offsetSize, objectOffset, pos, i, value;
     offsets = [];
     objects = [];
-    count = getCard16(data, start);
+    count = parse.getCard16(data, start);
     if (count !== 0) {
-        offsetSize = getByte(data, start + 2);
+        offsetSize = parse.getByte(data, start + 2);
         objectOffset = start + ((count + 1) * offsetSize) + 2;
         pos = start + 3;
         for (i = 0; i < count + 1; i += 1) {
-            offsets.push(getOffset(data, pos, offsetSize));
+            offsets.push(parse.getOffset(data, pos, offsetSize));
             pos += offsetSize;
         }
         // The total size of the index array is 4 header bytes + the value of the last offset.
@@ -1229,7 +958,7 @@ function parseCFFIndex(data, start, conversionFn) {
         endOffset = start + 2;
     }
     for (i = 0; i < offsets.length - 1; i += 1) {
-        value = getBytes(data, objectOffset + offsets[i], objectOffset + offsets[i + 1]);
+        value = parse.getBytes(data, objectOffset + offsets[i], objectOffset + offsets[i + 1]);
         if (conversionFn) {
             value = conversionFn(value);
         }
@@ -1320,7 +1049,7 @@ function entriesToObject(entries) {
 function parseCFFDict(data, start, size) {
     var parser, entries, operands, op;
     start = start !== undefined ? start : 0;
-    parser = new Parser(data, start);
+    parser = new parse.Parser(data, start);
     entries = [];
     operands = [];
     size = size !== undefined ? size : data.length;
@@ -1380,10 +1109,10 @@ function interpretDict(dict, meta, strings) {
 // Parse the CFF header.
 function parseCFFHeader(data, start) {
     var header = {};
-    header.formatMajor = getCard8(data, start);
-    header.formatMinor = getCard8(data, start + 1);
-    header.size = getCard8(data, start + 2);
-    header.offsetSize = getCard8(data, start + 3);
+    header.formatMajor = parse.getCard8(data, start);
+    header.formatMinor = parse.getCard8(data, start + 1);
+    header.size = parse.getCard8(data, start + 2);
+    header.offsetSize = parse.getCard8(data, start + 3);
     header.startOffset = start;
     header.endOffset = start + 4;
     return header;
@@ -1437,7 +1166,7 @@ function parseCFFPrivateDict(data, start, size, strings) {
 // See Adobe TN #5176 chapter 13, "Charsets".
 function parseCFFCharset(data, start, nGlyphs, strings) {
     var parser, format, charset, i, sid, count;
-    parser = new Parser(data, start);
+    parser = new parse.Parser(data, start);
     // The .notdef glyph is not included, so subtract 1.
     nGlyphs -= 1;
     charset = ['.notdef'];
@@ -1478,7 +1207,7 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
 function parseCFFEncoding(data, start, charset) {
     var encoding, parser, format, nCodes, i, code, nRanges, first, nLeft, j;
     encoding = {};
-    parser = new Parser(data, start);
+    parser = new parse.Parser(data, start);
     format = parser.parseCard8();
     if (format === 0) {
         nCodes = parser.parseCard8();
@@ -1507,8 +1236,8 @@ function parseCFFEncoding(data, start, charset) {
 // The encoding is described in the Type 2 Charstring Format
 // https://www.microsoft.com/typography/OTSPEC/charstr2.htm
 function parseCFFCharstring(code, font, index) {
-    var path, glyph, stack, nStems, haveWidth, width, x, y, c1x, c1y, c2x, c2y, v;
-    path = new Path();
+    var p, glyph, stack, nStems, haveWidth, width, x, y, c1x, c1y, c2x, c2y, v;
+    p = new path.Path();
     stack = [];
     nStems = 0;
     haveWidth = false;
@@ -1547,35 +1276,35 @@ function parseCFFCharstring(code, font, index) {
                     haveWidth = true;
                 }
                 y += stack.pop();
-                path.moveTo(x, -y);
+                p.moveTo(x, -y);
                 break;
             case 5: // rlineto
                 while (stack.length > 0) {
                     x += stack.shift();
                     y += stack.shift();
-                    path.lineTo(x, -y);
+                    p.lineTo(x, -y);
                 }
                 break;
             case 6: // hlineto
                 while (stack.length > 0) {
                     x += stack.shift();
-                    path.lineTo(x, -y);
+                    p.lineTo(x, -y);
                     if (stack.length === 0) {
                         break;
                     }
                     y += stack.shift();
-                    path.lineTo(x, -y);
+                    p.lineTo(x, -y);
                 }
                 break;
             case 7: // vlineto
                 while (stack.length > 0) {
                     y += stack.shift();
-                    path.lineTo(x, -y);
+                    p.lineTo(x, -y);
                     if (stack.length === 0) {
                         break;
                     }
                     x += stack.shift();
-                    path.lineTo(x, -y);
+                    p.lineTo(x, -y);
                 }
                 break;
             case 8: // rrcurveto
@@ -1586,7 +1315,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     x = c2x + stack.shift();
                     y = c2y + stack.shift();
-                    path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
                 }
                 break;
             case 10: // callsubr
@@ -1607,7 +1336,7 @@ function parseCFFCharstring(code, font, index) {
                     width = stack.shift() + font.nominalWidthX;
                     haveWidth = true;
                 }
-                path.closePath();
+                p.closePath();
                 break;
             case 18: // hstemhm
                 parseStems();
@@ -1624,7 +1353,7 @@ function parseCFFCharstring(code, font, index) {
                 }
                 y += stack.pop();
                 x += stack.pop();
-                path.moveTo(x, -y);
+                p.moveTo(x, -y);
                 break;
             case 22: // hmoveto
                 if (stack.length > 1 && !haveWidth) {
@@ -1632,7 +1361,7 @@ function parseCFFCharstring(code, font, index) {
                     haveWidth = true;
                 }
                 x += stack.pop();
-                path.moveTo(x, -y);
+                p.moveTo(x, -y);
                 break;
             case 23: // vstemhm
                 parseStems();
@@ -1645,17 +1374,17 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     x = c2x + stack.shift();
                     y = c2y + stack.shift();
-                    path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
                 }
                 x += stack.shift();
                 y += stack.shift();
-                path.lineTo(x, -y);
+                p.lineTo(x, -y);
                 break;
             case 25: // rlinecurve
                 while (stack.length > 6) {
                     x += stack.shift();
                     y += stack.shift();
-                    path.lineTo(x, -y);
+                    p.lineTo(x, -y);
                 }
                 c1x = x + stack.shift();
                 c1y = y + stack.shift();
@@ -1663,7 +1392,7 @@ function parseCFFCharstring(code, font, index) {
                 c2y = c1y + stack.shift();
                 x = c2x + stack.shift();
                 y = c2y + stack.shift();
-                path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
                 break;
             case 26: // vvcurveto
                 if (stack.length % 2) {
@@ -1676,7 +1405,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     x = c2x;
                     y = c2y + stack.shift();
-                    path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
                 }
                 break;
             case 27: // hhcurveto
@@ -1690,7 +1419,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     x = c2x + stack.shift();
                     y = c2y;
-                    path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
                 }
                 break;
             case 28: // shortint
@@ -1714,7 +1443,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     x = c2x + stack.shift();
                     y = c2y + (stack.length === 1 ? stack.shift() : 0);
-                    path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
                     if (stack.length === 0) {
                         break;
                     }
@@ -1724,7 +1453,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     y = c2y + stack.shift();
                     x = c2x + (stack.length === 1 ? stack.shift() : 0);
-                    path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
                 }
                 break;
             case 31: // hvcurveto
@@ -1735,7 +1464,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     y = c2y + stack.shift();
                     x = c2x + (stack.length === 1 ? stack.shift() : 0);
-                    path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
                     if (stack.length === 0) {
                         break;
                     }
@@ -1745,7 +1474,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     x = c2x + stack.shift();
                     y = c2y + (stack.length === 1 ? stack.shift() : 0);
-                    path.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
                 }
                 break;
             default:
@@ -1775,7 +1504,7 @@ function parseCFFCharstring(code, font, index) {
 
     parse(code);
     glyph = new CffGlyph(font, index);
-    glyph.path = path;
+    glyph.path = p;
     glyph.advanceWidth = width;
     return glyph;
 }
@@ -1799,9 +1528,9 @@ function parseCFFTable(data, start, font) {
     var header, nameIndex, topDictIndex, stringIndex, globalSubrIndex, topDict, privateDictOffset, privateDict,
         subrOffset, subrIndex, charString, charStringsIndex, charset, i;
     header = parseCFFHeader(data, start);
-    nameIndex = parseCFFIndex(data, header.endOffset, bytesToString);
+    nameIndex = parseCFFIndex(data, header.endOffset, parse.bytesToString);
     topDictIndex = parseCFFIndex(data, nameIndex.endOffset);
-    stringIndex = parseCFFIndex(data, topDictIndex.endOffset, bytesToString);
+    stringIndex = parseCFFIndex(data, topDictIndex.endOffset, parse.bytesToString);
     globalSubrIndex = parseCFFIndex(data, stringIndex.endOffset);
     font.gsubrs = globalSubrIndex.objects;
     font.gsubrsBias = calcCFFSubroutineBias(font.gsubrs);
@@ -1845,7 +1574,7 @@ function parseCFFTable(data, start, font) {
 // https://www.microsoft.com/typography/OTSPEC/head.htm
 function parseHeadTable(data, start) {
     var head = {},
-        p = new Parser(data, start);
+        p = new parse.Parser(data, start);
     head.version = p.parseVersion();
     head.fontRevision = Math.round(p.parseFixed() * 1000) / 1000;
     head.checkSumAdjustment = p.parseULong();
@@ -1871,7 +1600,7 @@ function parseHeadTable(data, start) {
 // https://www.microsoft.com/typography/OTSPEC/hhea.htm
 function parseHheaTable(data, start) {
     var hhea = {},
-        p = new Parser(data, start);
+        p = new parse.Parser(data, start);
     hhea.version = p.parseVersion();
     hhea.ascender = p.parseShort();
     hhea.descender = p.parseShort();
@@ -1893,7 +1622,7 @@ function parseHheaTable(data, start) {
 // https://www.microsoft.com/typography/OTSPEC/maxp.htm
 function parseMaxpTable(data, start) {
     var maxp = {},
-        p = new Parser(data, start);
+        p = new parse.Parser(data, start);
     maxp.version = p.parseVersion();
     maxp.numGlyphs = p.parseUShort();
     if (maxp.majorVersion === 1) {
@@ -1947,7 +1676,7 @@ var nameTableNames = [
 // Format 1 additional fields are not supported
 function parseNameTable(data, start) {
     var name = {},
-        p = new Parser(data, start);
+        p = new parse.Parser(data, start);
     name.format = p.parseUShort();
     var count = p.parseUShort(),
         stringOffset = p.offset + p.parseUShort();
@@ -1969,7 +1698,7 @@ function parseNameTable(data, start) {
             codePoints = [];
             var length = byteLength/2;
             for(j = 0; j < length; j++, offset += 2) {
-                codePoints[j] = getShort(data, stringOffset+offset);
+                codePoints[j] = parse.getShort(data, stringOffset+offset);
             }
             str = String.fromCharCode.apply(null, codePoints);
             if (property) {
@@ -1992,7 +1721,7 @@ function parseNameTable(data, start) {
 // https://www.microsoft.com/typography/OTSPEC/os2.htm
 function parseOS2Table(data, start) {
     var os2 = {},
-        p = new Parser(data, start);
+        p = new parse.Parser(data, start);
     os2.version = p.parseUShort();
     os2.xAvgCharWidth = p.parseShort();
     os2.usWeightClass = p.parseUShort();
@@ -2044,7 +1773,7 @@ function parseOS2Table(data, start) {
 // https://www.microsoft.com/typography/OTSPEC/post.htm
 function parsePostTable(data, start) {
     var post = {},
-        p = new Parser(data, start),
+        p = new parse.Parser(data, start),
         i, nameLength;
     post.version = p.parseVersion();
     post.italicAngle = p.parseFixed();
@@ -2089,7 +1818,7 @@ function parsePostTable(data, start) {
 // https://www.microsoft.com/typography/OTSPEC/hmtx.htm
 function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
     var p, i, glyph, advanceWidth, leftSideBearing;
-    p = new Parser(data, start);
+    p = new parse.Parser(data, start);
     for (i = 0; i < numGlyphs; i += 1) {
         // If the font is monospaced, only one entry is needed. This last entry applies to all subsequent glyphs.
         if (i < numMetrics) {
@@ -2109,7 +1838,7 @@ function parseKernTable(data, start) {
     var pairs, p, tableVersion, nTables, subTableVersion, nPairs,
         i, leftIndex, rightIndex, value;
     pairs = {};
-    p = new Parser(data, start);
+    p = new parse.Parser(data, start);
     tableVersion = p.parseUShort();
     checkArgument(tableVersion === 0, 'Unsupported kern table version.');
     nTables = p.parseUShort();
@@ -2132,7 +1861,7 @@ function parseKernTable(data, start) {
 // Parse ScriptList and FeatureList tables of GPOS, GSUB, GDEF, BASE, JSTF tables.
 // These lists are unused by now, this function is just the basis for a real parsing.
 function parseTaggedListTable(data, start) {
-    var p = new Parser(data, start),
+    var p = new parse.Parser(data, start),
         n = p.parseUShort(),
         list = [];
     for (var i = 0; i < n; i++) {
@@ -2145,7 +1874,7 @@ function parseTaggedListTable(data, start) {
 // Format 1 is a simple list of glyph ids,
 // Format 2 is a list of ranges. It is expanded in a list of glyphs, maybe not the best idea.
 function parseCoverageTable(data, start) {
-    var p = new Parser(data, start),
+    var p = new parse.Parser(data, start),
         format = p.parseUShort(),
         count =  p.parseUShort();
     if (format === 1) {
@@ -2168,7 +1897,7 @@ function parseCoverageTable(data, start) {
 // Parse a Class Definition Table in a GSUB, GPOS or GDEF table.
 // Returns a function that gets a class value from a glyph ID.
 function parseClassDefTable(data, start) {
-    var p = new Parser(data, start),
+    var p = new parse.Parser(data, start),
         format = p.parseUShort();
     if (format === 1) {
         // Format 1 specifies a range of consecutive glyph indices, one class per glyph ID.
@@ -2213,7 +1942,7 @@ function parseClassDefTable(data, start) {
 // Parse a pair adjustment positioning subtable, format 1 or format 2
 // The subtable is returned in the form of a lookup function.
 function parsePairPosSubTable(data, start) {
-    var p = new Parser(data, start);
+    var p = new parse.Parser(data, start);
     var format, coverageOffset, coverage, valueFormat1, valueFormat2,
         sharedPairSets, firstGlyph, secondGlyph, value1, value2;
     // This part is common to format 1 and format 2 subtables
@@ -2298,7 +2027,7 @@ function parsePairPosSubTable(data, start) {
 
 // Parse a LookupTable (present in of GPOS, GSUB, GDEF, BASE, JSTF tables).
 function parseLookupTable(data, start) {
-    var p = new Parser(data, start);
+    var p = new parse.Parser(data, start);
     var table, lookupType, lookupFlag, useMarkFilteringSet, subTableCount, subTableOffsets, subtables, i;
     lookupType = p.parseUShort();
     lookupFlag = p.parseUShort();
@@ -2334,7 +2063,7 @@ function parseGposTable(data, start, font) {
     var p, tableVersion, lookupListOffset, scriptList, i, featureList, lookupCount,
         lookupTableOffsets, lookupListAbsoluteOffset, table;
 
-    p = new Parser(data, start);
+    p = new parse.Parser(data, start);
     tableVersion = p.parseFixed();
     checkArgument(tableVersion === 1, 'Unsupported GPOS table version.');
 
@@ -2410,11 +2139,11 @@ opentype.parse = function (buffer) {
     font = new Font();
     data = new DataView(buffer, 0);
 
-    version = getFixed(data, 0);
+    version = parse.getFixed(data, 0);
     if (version === 1.0) {
         font.outlinesFormat = 'truetype';
     } else {
-        version = getTag(data, 0);
+        version = parse.getTag(data, 0);
         if (version === 'OTTO') {
             font.outlinesFormat = 'cff';
         } else {
@@ -2422,13 +2151,13 @@ opentype.parse = function (buffer) {
         }
     }
 
-    numTables = getUShort(data, 4);
+    numTables = parse.getUShort(data, 4);
 
     // Offset into the table records.
     p = 12;
     for (i = 0; i < numTables; i += 1) {
-        tag = getTag(data, p);
-        offset = getULong(data, p + 8);
+        tag = parse.getTag(data, p);
+        offset = parse.getULong(data, p + 8);
         switch (tag) {
         case 'cmap':
             font.tables.cmap = parseCmapTable(data, offset);

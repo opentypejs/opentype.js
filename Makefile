@@ -12,7 +12,7 @@ test:
 
 opentype.js: $(shell node_modules/.bin/browserify --list src/opentype.js) package.json
 	@rm -f $@
-	node_modules/.bin/browserify src/opentype.js > $@
+	node_modules/.bin/browserify src/opentype.js --standalone opentype > $@
 	@chmod a-w $@
 
 opentype.min.js: opentype.js
