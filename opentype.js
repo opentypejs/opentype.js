@@ -1084,6 +1084,12 @@ Parser.prototype.parseShort = function () {
     return v;
 };
 
+Parser.prototype.parseF2Dot14 = function () {
+    var v = this.data.getInt16(this.offset + this.relativeOffset) / 16384;
+    this.relativeOffset += 2;
+    return v;
+};
+
 Parser.prototype.parseULong = function () {
     var v = exports.getULong(this.data, this.offset + this.relativeOffset);
     this.relativeOffset += 4;
@@ -1993,7 +1999,7 @@ function parseGlyphCoordinate(p, flag, previousValue, shortVectorBitMask, sameBi
 function parseGlyph(data, start, index, font) {
     var p, glyph, flag, i, j, flags,
         endPointIndices, numberOfCoordinates, repeatCount, points, point, px, py,
-        component, moreComponents, arg1, arg2, scale, xScale, yScale, scale01, scale10;
+        component, moreComponents;
     p = new parse.Parser(data, start);
     glyph = new _glyph.TrueTypeGlyph(font, index);
     glyph.numberOfContours = p.parseShort();
@@ -2069,36 +2075,38 @@ function parseGlyph(data, start, index, font) {
         glyph.components = [];
         moreComponents = true;
         while (moreComponents) {
-            component = {};
             flags = p.parseUShort();
-            component.glyphIndex = p.parseUShort();
+            component = {
+                glyphIndex: p.parseUShort(),
+                 xScale: 1,
+                 scale01: 0,
+                 scale10: 0,
+                 yScale: 1,
+                 dx: 0,
+                 dy: 0
+             };
             if (flags & 1) {
                 // The arguments are words
-                arg1 = p.parseShort();
-                arg2 = p.parseShort();
-                component.dx = arg1;
-                component.dy = arg2;
+                component.dx = p.parseShort();
+                component.dy = p.parseShort();
             } else {
                 // The arguments are bytes
-                arg1 = p.parseChar();
-                arg2 = p.parseChar();
-                component.dx = arg1;
-                component.dy = arg2;
+                component.dx = p.parseChar();
+                component.dy = p.parseChar();
             }
             if (flags & 8) {
                 // We have a scale
-                // TODO parse in 16-bit signed fixed number with the low 14 bits of fraction (2.14).
-                scale = p.parseShort();
+                component.xScale = component.yScale = p.parseF2Dot14();
             } else if (flags & 64) {
                 // We have an X / Y scale
-                xScale = p.parseShort();
-                yScale = p.parseShort();
+                component.xScale = p.parseF2Dot14();
+                component.yScale = p.parseF2Dot14();
             } else if (flags & 128) {
                 // We have a 2x2 transformation
-                xScale = p.parseShort();
-                scale01 = p.parseShort();
-                scale10 = p.parseShort();
-                yScale = p.parseShort();
+                component.xScale = p.parseF2Dot14();
+                component.scale01 = p.parseF2Dot14();
+                component.scale10 = p.parseF2Dot14();
+                component.yScale = p.parseF2Dot14();
             }
 
             glyph.components.push(component);
@@ -2109,14 +2117,14 @@ function parseGlyph(data, start, index, font) {
 }
 
 // Transform an array of points and return a new array.
-function transformPoints(points, dx, dy) {
+function transformPoints(points, transform) {
     var newPoints, i, pt, newPt;
     newPoints = [];
     for (i = 0; i < points.length; i += 1) {
         pt = points[i];
         newPt = {
-            x: pt.x + dx,
-            y: pt.y + dy,
+            x: transform.xScale * pt.x + transform.scale01 * pt.y + transform.dx,
+            y: transform.scale10 * pt.x + transform.yScale * pt.y + transform.dy,
             onCurve: pt.onCurve,
             lastPointOfContour: pt.lastPointOfContour
         };
@@ -2148,8 +2156,8 @@ function parseGlyfTable(data, start, loca, font) {
                 component = glyph.components[j];
                 componentGlyph = glyphs[component.glyphIndex];
                 if (componentGlyph.points) {
-                    transformedPoints = transformPoints(componentGlyph.points, component.dx, component.dy);
-                    glyph.points.push.apply(glyph.points, transformedPoints);
+                    transformedPoints = transformPoints(componentGlyph.points, component);
+                    glyph.points = glyph.points.concat(transformedPoints);
                 }
             }
         }

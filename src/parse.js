@@ -127,6 +127,12 @@ Parser.prototype.parseShort = function () {
     return v;
 };
 
+Parser.prototype.parseF2Dot14 = function () {
+    var v = this.data.getInt16(this.offset + this.relativeOffset) / 16384;
+    this.relativeOffset += 2;
+    return v;
+};
+
 Parser.prototype.parseULong = function () {
     var v = exports.getULong(this.data, this.offset + this.relativeOffset);
     this.relativeOffset += 4;
