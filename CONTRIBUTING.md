@@ -1,5 +1,25 @@
 # Contributing
 
+## Workflow
+
+The source of opentype.js is divided into modules, located in the `src` directory. They are compiled into one file using [browserify](http://browserify.org/).
+
+My workflow, on a new machine:
+
+1. Clone the repository:
+
+    git clone git://github.com/nodebox/opentype.js.git
+
+2. Install the development dependencies (browserify, watchify uglify-js):
+
+    cd opentype.js
+    npm install
+
+3. Start the development server. This watches file changes and compiles and serves the page at http://localhost:8080/
+
+    npm start
+
+
 ## How to Submit a Pull Request
 
 1. Click the "Fork" button to create your personal fork of the opentype.js repository.

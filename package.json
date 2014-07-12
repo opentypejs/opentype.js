@@ -26,6 +26,7 @@
     "ot": "./bin/ot"
   },
   "scripts": {
+    "start": "bin/server.js",
     "test": "jshint src",
     "browserify": "browserify src/opentype.js --standalone opentype > opentype.js",
     "watchify": "watchify src/opentype.js --standalone opentype --debug -o opentype.js -v",
