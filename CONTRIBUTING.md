@@ -2,7 +2,7 @@
 
 ## Workflow
 
-The source of opentype.js is divided into modules, located in the `src` directory. They are compiled into one file using [browserify](http://browserify.org/).
+The source of opentype.js is divided into modules, located in the `src` directory. They are compiled into one file using [browserify](http://browserify.org/). The updated, compiled `opentype.js` and minified `opentype.min.js` are included with every commit. This makes it easy for library users to just grab the latest release. 
 
 My workflow, on a new machine:
 
@@ -10,7 +10,7 @@ My workflow, on a new machine:
 
     git clone git://github.com/nodebox/opentype.js.git
 
-2. Install the development dependencies (browserify, watchify uglify-js):
+2. Install the development dependencies (browserify, watchify and uglify-js):
 
     cd opentype.js
     npm install
@@ -18,6 +18,14 @@ My workflow, on a new machine:
 3. Start the development server. This watches file changes and compiles and serves the page at http://localhost:8080/
 
     npm start
+    
+4. Make some changes. When you're done, compile the production opentype.js and opentype.min.js using make:
+
+    make clean && make
+    
+5. Commit your changes
+
+    git add --all && git commit
 
 
 ## How to Submit a Pull Request
