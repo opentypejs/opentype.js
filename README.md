@@ -141,7 +141,6 @@ Draw the path on the given 2D context. This uses the `fill`, `stroke` and `strok
 
 Planned
 =======
-* Better support for composite glyphs (advanced scaling and transformations).
 * Support for ligatures and contextual alternates.
 * Support for SVG paths.
 
