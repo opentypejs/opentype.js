@@ -29,7 +29,7 @@ Features
 * Create a bézier path out of a piece of text.
 * Support for composite glyphs (accented letters).
 * Support for OpenType (glyf) and PostScript (cff) shapes.
-* Kerning support for OpenType shapes (configurable and on by default).
+* Support for kerning (Using GPOS or the kern table).
 * Very efficient.
 * Runs in the browser and node.js.
 
