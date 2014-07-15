@@ -1,3 +1,5 @@
+// Drawing utility functions.
+
 'use strict';
 
 // Draw a line on the given context from point `x1,y1` to point `x2,y2`.
