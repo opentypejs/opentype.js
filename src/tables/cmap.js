@@ -6,12 +6,13 @@
 var check = require('../check');
 var parse = require('../parse');
 
+
 // Parse the `cmap` table. This table stores the mappings from characters to glyphs.
 // There are many available formats, but we only support the Windows format 4.
 // This function returns a `CmapEncoding` object or null if no supported format could be found.
 function parseCmapTable(data, start) {
     var version, numTables, offset, platformId, encodingId, format, segCount,
-        ranges, i, j, parserOffset, idRangeOffset, p;
+        ranges, i, j, parserOffset, idRangeOffset, p, offsetBound;
     var cmap = {};
     cmap.version = version = parse.getUShort(data, start);
     check.argument(version === 0, 'cmap table version should be 0.');
@@ -38,7 +39,8 @@ function parseCmapTable(data, start) {
     cmap.format = format = p.parseUShort();
     check.argument(format === 4, 'Only format 4 cmap tables are supported.');
     // Length in bytes of the sub-tables.
-    p.skip('uShort', 2);
+    cmap.length = p.parseUShort();
+    cmap.language = p.parseUShort();
     // segCount is stored x 2.
     cmap.segCount = segCount = p.parseUShort() >> 1;
     // Skip searchRange, entrySelector, rangeShift.
@@ -56,14 +58,17 @@ function parseCmapTable(data, start) {
     for (i = 0; i < segCount; i += 1) {
         ranges[i].idDelta = p.parseShort();
     }
+    offsetBound = p.offset + cmap.length;
     for (i = 0; i < segCount; i += 1) {
         parserOffset = p.offset + p.relativeOffset;
         idRangeOffset = p.parseUShort();
+        parserOffset += idRangeOffset;
         if (idRangeOffset > 0) {
             ranges[i].ids = [];
+            if (parserOffset >= offsetBound) break;
             for (j = 0; j < ranges[i].length; j += 1) {
-                ranges[i].ids[j] = parse.getUShort(data, parserOffset + idRangeOffset);
-                idRangeOffset += 2;
+                ranges[i].ids[j] = parse.getUShort(data, parserOffset);
+                parserOffset += 2;
             }
         }
     }
