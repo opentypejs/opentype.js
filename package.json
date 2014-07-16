@@ -21,18 +21,25 @@
     "type": "git",
     "url": "git://github.com/nodebox/opentype.js.git"
   },
-  "dependencies": {},
   "main": "opentype.js",
   "bin": {
     "ot": "./bin/ot"
   },
   "scripts": {
-    "test": "jshint ."
+    "start": "bin/server.js",
+    "test": "jshint src",
+    "browserify": "browserify src/opentype.js --standalone opentype > opentype.js",
+    "watchify": "watchify src/opentype.js --standalone opentype --debug -o opentype.js -v",
+    "uglify": "uglifyjs opentype.js > opentype.min.js"
   },
+  "dependencies": {},
   "devDependencies": {
+    "browserify": "^4.2.0",
     "grunt": "~0.4.2",
     "grunt-contrib-uglify": "~0.4.0",
     "grunt-release": "~0.7.0",
-    "jshint": "~2.5.0"
+    "jshint": "~2.5.0",
+    "uglify-js": "^2.4.14",
+    "watchify": "^0.10.2"
   }
 }

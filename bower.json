@@ -1,8 +1,20 @@
 {
   "name": "opentype.js",
+  "repo": "nodebox/opentype.js",
   "description": "OpenType font parser",
   "version": "0.3.0",
+  "keywords": [
+    "graphics",
+    "fonts",
+    "type"
+  ],
   "main": "opentype.js",
+  "scripts": [
+    "opentype.js"
+  ],
+  "dependencies": {},
+  "development": {},
+  "license": "MIT",
   "ignore": [
     "**/.*",
     "fonts",

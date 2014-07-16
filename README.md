@@ -29,7 +29,7 @@ Features
 * Create a bézier path out of a piece of text.
 * Support for composite glyphs (accented letters).
 * Support for OpenType (glyf) and PostScript (cff) shapes.
-* Kerning support for OpenType shapes (configurable and on by default).
+* Support for kerning (Using GPOS or the kern table).
 * Very efficient.
 * Runs in the browser and node.js.
 
@@ -141,7 +141,6 @@ Draw the path on the given 2D context. This uses the `fill`, `stroke` and `strok
 
 Planned
 =======
-* Better support for composite glyphs (advanced scaling and transformations).
 * Support for ligatures and contextual alternates.
 * Support for SVG paths.
 
@@ -154,4 +153,4 @@ I would like to acknowledge the work of others without which opentype.js wouldn'
 * [ttf.js](http://ynakajima.github.io/ttf.js/demo/glyflist/): for hints about the TrueType parsing code.
 * [Microsoft Typography](https://www.microsoft.com/typography/OTSPEC/otff.htm): the go-to reference for all things OpenType.
 * [Adobe Compact Font Format spec](http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf) and the [Adobe Type 2 Charstring spec](http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/type2.pdf): explains the data structures and commands for the CFF glyph format.
-
+* All contributing authors mentioned in the [AUTHORS](https://github.com/nodebox/opentype.js/blob/master/AUTHORS) file.
