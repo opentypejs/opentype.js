@@ -314,7 +314,7 @@ function parseCFFCharstring(code, font, index) {
     stack = [];
     nStems = 0;
     haveWidth = false;
-    width = font.nominalWidthX;
+    width = font.defaultWidthX;
     x = y = 0;
 
     function parseStems() {
