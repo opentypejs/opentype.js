@@ -953,8 +953,8 @@ function load(url, callback) {
 exports.parse = parseBuffer;
 exports.load = load;
 
-}).call(this,_dereq_("Zbi7gb"))
-},{"./encoding":5,"./font":6,"./parse":9,"./tables/cff":11,"./tables/cmap":12,"./tables/glyf":13,"./tables/gpos":14,"./tables/head":15,"./tables/hhea":16,"./tables/hmtx":17,"./tables/kern":18,"./tables/loca":19,"./tables/maxp":20,"./tables/name":21,"./tables/os2":22,"./tables/post":23,"Zbi7gb":2,"fs":1}],9:[function(_dereq_,module,exports){
+}).call(this,_dereq_("FWaASH"))
+},{"./encoding":5,"./font":6,"./parse":9,"./tables/cff":11,"./tables/cmap":12,"./tables/glyf":13,"./tables/gpos":14,"./tables/head":15,"./tables/hhea":16,"./tables/hmtx":17,"./tables/kern":18,"./tables/loca":19,"./tables/maxp":20,"./tables/name":21,"./tables/os2":22,"./tables/post":23,"FWaASH":2,"fs":1}],9:[function(_dereq_,module,exports){
 // Parsing utility functions
 
 'use strict';
@@ -1839,6 +1839,7 @@ function calcCFFSubroutineBias(subrs) {
 function parseCFFTable(data, start, font) {
     var header, nameIndex, topDictIndex, stringIndex, globalSubrIndex, topDict, privateDictOffset, privateDict,
         subrOffset, subrIndex, charString, charStringsIndex, charset, i;
+    font.tables.cff = {};
     header = parseCFFHeader(data, start);
     nameIndex = parseCFFIndex(data, header.endOffset, parse.bytesToString);
     topDictIndex = parseCFFIndex(data, nameIndex.endOffset);
@@ -1849,6 +1850,7 @@ function parseCFFTable(data, start, font) {
 
     var topDictData = new DataView(new Uint8Array(topDictIndex.objects[0]).buffer);
     topDict = parseCFFTopDict(topDictData, stringIndex.objects);
+    font.tables.cff.topDict = topDict;
 
     privateDictOffset = start + topDict['private'][1];
     privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict['private'][0], stringIndex.objects);

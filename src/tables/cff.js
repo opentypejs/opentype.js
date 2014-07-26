@@ -600,6 +600,7 @@ function calcCFFSubroutineBias(subrs) {
 function parseCFFTable(data, start, font) {
     var header, nameIndex, topDictIndex, stringIndex, globalSubrIndex, topDict, privateDictOffset, privateDict,
         subrOffset, subrIndex, charString, charStringsIndex, charset, i;
+    font.tables.cff = {};
     header = parseCFFHeader(data, start);
     nameIndex = parseCFFIndex(data, header.endOffset, parse.bytesToString);
     topDictIndex = parseCFFIndex(data, nameIndex.endOffset);
@@ -610,6 +611,7 @@ function parseCFFTable(data, start, font) {
 
     var topDictData = new DataView(new Uint8Array(topDictIndex.objects[0]).buffer);
     topDict = parseCFFTopDict(topDictData, stringIndex.objects);
+    font.tables.cff.topDict = topDict;
 
     privateDictOffset = start + topDict['private'][1];
     privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict['private'][0], stringIndex.objects);
