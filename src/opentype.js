@@ -210,40 +210,35 @@ function save() {
     //var tag2 = encode.TAG('BART');
     //var bytes = encode.INDEX([tag1, tag2]);
 
-    var cmapTable = new cmap.Table();
     var headTable = new head.Table();
     var hheaTable = new hhea.Table();
-    var hmtxTable = new hmtx.Table();
     var maxpTable = new maxp.Table();
+    var os2Table = new os2.Table();
+    var hmtxTable = new hmtx.Table();
+    var cmapTable = new cmap.Table();
     var nameTable = new _name.Table();
      // FIXME We currently only have a glyph for the letter A.
     nameTable.sampleText = 'AAA';
-    var os2Table = new os2.Table();
     var postTable = new post.Table();
     var cffTable = new cff.Table();
 
     var sfntTable = new sfnt.Table();
-    sfntTable.addTable(cmapTable);
     sfntTable.addTable(headTable);
     sfntTable.addTable(hheaTable);
-    sfntTable.addTable(hmtxTable);
     sfntTable.addTable(maxpTable);
-    sfntTable.addTable(nameTable);
     sfntTable.addTable(os2Table);
+    sfntTable.addTable(hmtxTable);
+    sfntTable.addTable(cmapTable);
+    sfntTable.addTable(nameTable);
     sfntTable.addTable(postTable);
     sfntTable.addTable(cffTable);
 
-    console.log('cmap', cmapTable);
-    console.log('head', headTable);
-    console.log('hhea', hheaTable);
-    console.log('hmtx', hmtxTable);
-    console.log('maxp', maxpTable);
-    console.log('name', nameTable);
-    console.log('OS/2', os2Table);
-    console.log('post', postTable);
-    console.log('CFF ', cffTable);
-
+    for (var i = 0; i < sfntTable.tables.length; i += 1) {
+        var table = sfntTable.tables[i];
+        console.log(table.tableName, table);
+    }
     console.log(sfntTable);
+
     sfntTable.build();
     var bytes = sfntTable.encode();
     var checkSum = sfnt.computeCheckSum(bytes);
@@ -251,13 +246,13 @@ function save() {
 
     // Build the font again, now with the proper checkSum.
     sfntTable = new sfnt.Table();
-    sfntTable.addTable(cmapTable);
     sfntTable.addTable(headTable);
     sfntTable.addTable(hheaTable);
-    sfntTable.addTable(hmtxTable);
     sfntTable.addTable(maxpTable);
-    sfntTable.addTable(nameTable);
     sfntTable.addTable(os2Table);
+    sfntTable.addTable(hmtxTable);
+    sfntTable.addTable(cmapTable);
+    sfntTable.addTable(nameTable);
     sfntTable.addTable(postTable);
     sfntTable.addTable(cffTable);
 
