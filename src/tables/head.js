@@ -41,7 +41,7 @@ HeadTable.prototype = new table.Table('head', [
     {name: 'checkSumAdjustment', type: 'ULONG', value: 0},
     {name: 'magicNumber', type: 'ULONG', value: 0x5F0F3CF5},
     {name: 'flags', type: 'USHORT', value: 0},
-    {name: 'unitsPerEm', type: 'USHORT', value: 0},
+    {name: 'unitsPerEm', type: 'USHORT', value: 1000},
     {name: 'created', type: 'LONGDATETIME', value: 0},
     {name: 'modified', type: 'LONGDATETIME', value: 0},
     {name: 'xMin', type: 'SHORT', value: 0},
