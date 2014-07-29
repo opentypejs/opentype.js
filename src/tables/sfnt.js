@@ -11,8 +11,7 @@ function log2(v) {
     return Math.log(v) / Math.log(2) | 0;
 }
 
-function calcTableCheckSum(table) {
-    var bytes = table.encode();
+function computeCheckSum(bytes) {
     while (bytes.length % 4 !== 0) {
         bytes.push(0);
     }
@@ -74,7 +73,7 @@ SfntTable.prototype.build = function () {
         var tableRecord = new TableRecord();
         tableRecord.tag = table.tableName;
         check.argument(table.tableName.length === 4, 'Table name' + table.tableName + ' is invalid.');
-        tableRecord.checkSum = calcTableCheckSum(table);
+        tableRecord.checkSum = computeCheckSum(table.encode());
         tableRecord.offset = offset;
         tableRecord.length = tableLength;
         this.fields.push({name: tableRecord.tag + ' Table Record', type: 'TABLE', value: tableRecord});
@@ -90,3 +89,4 @@ SfntTable.prototype.build = function () {
 };
 
 exports.Table = SfntTable;
+exports.computeCheckSum = computeCheckSum;

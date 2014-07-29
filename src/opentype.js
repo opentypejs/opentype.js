@@ -245,6 +245,21 @@ function save() {
 
     console.log(sfntTable);
     sfntTable.build();
+    var bytes = sfntTable.encode();
+    var checkSum = sfnt.computeCheckSum(bytes);
+    headTable.checkSumAdjustment = 0xB1B0AFBA - checkSum;
+
+    // Build the font again, now with the proper checkSum.
+    sfntTable = new sfnt.Table();
+    sfntTable.addTable(cmapTable);
+    sfntTable.addTable(headTable);
+    sfntTable.addTable(hheaTable);
+    sfntTable.addTable(hmtxTable);
+    sfntTable.addTable(maxpTable);
+    sfntTable.addTable(nameTable);
+    sfntTable.addTable(os2Table);
+    sfntTable.addTable(postTable);
+    sfntTable.addTable(cffTable);
 
     sfntTable.download = function () {
         var bytes = sfntTable.encode();
