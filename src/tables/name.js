@@ -3,7 +3,9 @@
 
 'use strict';
 
+var encode = require('../types').encode;
 var parse = require('../parse');
+var table = require('../table');
 
 // NameIDs for the name table.
 var nameTableNames = [
@@ -78,4 +80,76 @@ function parseNameTable(data, start) {
     return name;
 }
 
+
+function NameRecord(platformID, encodingID, languageID, nameID, string) {
+    this.platformID = platformID;
+    this.encodingID = encodingID;
+    this.languageID = languageID;
+    this.nameID = nameID;
+    this.length = string.length;
+}
+
+NameRecord.prototype = new table.Table('NameRecord', [
+    {name: 'platformID', type: 'USHORT', value: 0},
+    {name: 'encodingID', type: 'USHORT', value: 0},
+    {name: 'languageID', type: 'USHORT', value: 0},
+    {name: 'nameID', type: 'USHORT', value: 0},
+    {name: 'length', type: 'USHORT', value: 0},
+    {name: 'offset', type: 'USHORT', value: 0},
+]);
+
+function NameTable() {
+    for (var i = 0; i < nameTableNames.length; i += 1) {
+        this[nameTableNames[i]] = '';
+    }
+    this.records = [];
+    this.strings = [];
+}
+
+NameTable.prototype = new table.Table('name', [
+    {name: 'format', type: 'USHORT', value: 0},
+    {name: 'count', type: 'USHORT', value: 0},
+    {name: 'stringOffset', type: 'USHORT', value: 0}
+]);
+
+NameTable.prototype.addRecord = function (recordID, s) {
+    // Macintosh, Roman, English
+    var stringBytes = encode.STRING(s);
+    this.records.push(new NameRecord(1, 0, 0, recordID, stringBytes));
+    this.strings.push(stringBytes);
+    // Windows, Unicode BMP (UCS-2), US English
+    var utf16Bytes = encode.UTF16(s);
+    this.records.push(new NameRecord(3, 1, 0x0409, recordID, utf16Bytes));
+    this.strings.push(utf16Bytes);
+};
+
+NameTable.prototype.build = function () {
+    for (var i = 0; i < nameTableNames.length; i += 1) {
+        var s = this[nameTableNames[i]];
+        if (s.length > 0) {
+            this.addRecord(i, s);
+        }
+    }
+};
+
+NameTable.prototype.encode = function () {
+    var i;
+    for (i = 0; i < this.records.length; i += 1) {
+        this.fields.push({name: 'record_' + i, type: 'NameRecord', value: this.records[i]});
+    }
+    for (i = 0; i < this.strings.length; i += 1) {
+        this.fields.push({name: 'string_' + i, type: 'LITERAL', value: this.strings[i]});
+    }
+    return this;
+};
+
+function encodeNameTable() {
+    var t = new NameTable();
+     // FIXME We currently only have a glyph for the letter A.
+    t.sampleText = 'AAA';
+    t.build();
+    return t.encode();
+}
+
 exports.parse = parseNameTable;
+exports.encode = encodeNameTable;

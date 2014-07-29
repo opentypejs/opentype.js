@@ -4,8 +4,9 @@
 'use strict';
 
 var check = require('../check');
+var encode = require('../types').encode;
 var parse = require('../parse');
-
+var table = require('../table');
 
 // Parse the `cmap` table. This table stores the mappings from characters to glyphs.
 // There are many available formats, but we only support the Windows format 4.
@@ -76,4 +77,82 @@ function parseCmapTable(data, start) {
     return cmap;
 }
 
+function CmapTable() {
+    this.segments = [];
+}
+
+CmapTable.prototype = new table.Table('cmap', [
+    {name: 'version', type: 'USHORT', value: 0},
+    {name: 'numTables', type: 'USHORT', value: 1},
+    {name: 'platformID', type: 'USHORT', value: 3},
+    {name: 'encodingID', type: 'USHORT', value: 1},
+    {name: 'offset', type: 'ULONG', value: 12},
+    {name: 'format', type: 'USHORT', value: 4},
+    {name: 'length', type: 'USHORT', value: 0},
+    {name: 'language', type: 'USHORT', value: 0},
+    {name: 'segCountX2', type: 'USHORT', value: 0},
+    {name: 'searchRange', type: 'USHORT', value: 0},
+    {name: 'entrySelector', type: 'USHORT', value: 0},
+    {name: 'rangeShift', type: 'USHORT', value: 0}]);
+
+CmapTable.prototype.addSegment = function (code) {
+    var index = this.segments.length + 1;
+    this.segments.push({
+        end: code,
+        start: code,
+        delta: -(code - index),
+        offset: 0,
+        glyphId: index
+    });
+};
+
+CmapTable.prototype.addTerminatorSegment = function () {
+    this.segments.push({
+        end: 0xFFFF,
+        start: 0xFFFF,
+        delta: 1,
+        offset: 0
+    });
+};
+
+CmapTable.prototype.encode = function () {
+    var segCount;
+    segCount = this.segments.length;
+    this.segCountX2 = segCount * 2;
+    this.searchRange = Math.pow(Math.floor(Math.log(segCount) / Math.log(2)), 2) * 2;
+    this.entrySelector = Math.log(this.searchRange / 2) / Math.log(2);
+    this.rangeShift = this.segCountX2 - this.searchRange;
+
+    // Set up parallel segment arrays.
+    var endCounts = [],
+        startCounts = [],
+        idDeltas = [],
+        idRangeOffsets = [],
+        glyphIds = [];
+
+    for (var i = 0; i < segCount; i += 1) {
+        var segment = this.segments[i];
+        endCounts = endCounts.concat(encode.USHORT(segment.end));
+        startCounts = startCounts.concat(encode.USHORT(segment.start));
+        idDeltas = idDeltas.concat(encode.SHORT(segment.delta));
+        idRangeOffsets = idRangeOffsets.concat(encode.USHORT(segment.offset));
+        if (segment.glyphId !== undefined) {
+            glyphIds = glyphIds.concat(encode.USHORT(segment.glyphId));
+        }
+    }
+    var d = encode.TABLE(this);
+    d = d.concat(endCounts);
+    d = d.concat(encode.USHORT(0)); // reservedPad field
+    d = d.concat(startCounts);
+    d = d.concat(idDeltas);
+    d = d.concat(idRangeOffsets);
+    d = d.concat(glyphIds);
+};
+
+function encodeCmapTable() {
+    var t = new CmapTable();
+    return t.encode();
+}
+
 exports.parse = parseCmapTable;
+exports.encode = encodeCmapTable;

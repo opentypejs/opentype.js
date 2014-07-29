@@ -58,6 +58,10 @@ encode.LONG = function (v) {
     return [(v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
+encode.FIXED = encode.ULONG;
+encode.FWORD = encode.SHORT;
+encode.UFWORD = encode.USHORT;
+
 // Convert a 4-char tag to a list of 4 bytes.
 encode.TAG = function (v) {
     check.argument(v.length === 4, 'Tag should be exactly 4 ASCII characters.');
@@ -119,6 +123,17 @@ encode.NAME = function (v) {
 };
 
 encode.STRING = encode.NAME;
+
+// Convert a ASCII string to a list of UTF16 bytes.
+encode.UTF16 = function (v) {
+    var ZERO_CHAR = String.fromCharCode(0);
+    var b = [];
+    for (var i = 0; i < v.length; i += 1) {
+        b.push(ZERO_CHAR);
+        b.push(v.charCodeAt(i));
+    }
+    return b;
+};
 
 // Convert a list of values to a CFF INDEX structure.
 // The values should already be encoded, that is, they should be arrays.
@@ -200,15 +215,20 @@ encode.OPERAND = function (v, type, strings) {
 
 // Utility functions ////////////////////////////////////////////////////////
 
-// Convert a list of fields to bytes.
-// Each field is an object containing name, type and value.
-encode.FIELDS = function (fields) {
+// Convert a table object to bytes.
+// A table contains a list of fields containing the metadata (name, type and default value).
+// The table itself has the field values set as attributes.
+encode.TABLE = function (table) {
     var d = [];
-    for (var i = 0; i < fields.length; i += 1) {
-        var field = fields[i];
+    for (var i = 0; i < table.fields.length; i += 1) {
+        var field = table.fields[i];
         var encodingFunction = encode[field.type];
         check.argument(encodingFunction !== undefined, 'No encoding function for field type ' + field.type);
-        var bytes = encodingFunction(field.value);
+        var value = table[field.name];
+        if (value === undefined) {
+            value = field.value;
+        }
+        var bytes = encodingFunction(value);
         d = d.concat(bytes);
     }
     return d;

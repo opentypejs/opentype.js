@@ -5,6 +5,15 @@
 'use strict';
 
 var parse = require('../parse');
+var table = require('../table');
+
+function MaxpTable() {
+}
+
+MaxpTable.prototype = new table.Table('maxp', [
+    {name: 'version', type: 'FIXED', value: 0x00005000},
+    {name: 'numGlyphs', type: 'USHORT', value: 0}
+]);
 
 // Parse the maximum profile `maxp` table.
 function parseMaxpTable(data, start) {
@@ -30,4 +39,12 @@ function parseMaxpTable(data, start) {
     return maxp;
 }
 
+function encodeMaxpTable() {
+    var t = new MaxpTable();
+    t.numGlyphs = 2;
+    console.log(t);
+    return t.encode();
+}
+
 exports.parse = parseMaxpTable;
+exports.encode = encodeMaxpTable;

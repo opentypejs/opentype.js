@@ -21,7 +21,7 @@ var hmtx = require('./tables/hmtx');
 var kern = require('./tables/kern');
 var loca = require('./tables/loca');
 var maxp = require('./tables/maxp');
-var nameTable = require('./tables/name');
+var _name = require('./tables/name');
 var os2 = require('./tables/os2');
 var post = require('./tables/post');
 
@@ -126,7 +126,7 @@ function parseBuffer(buffer) {
             font.numGlyphs = numGlyphs = font.tables.maxp.numGlyphs;
             break;
         case 'name':
-             font.tables.name = nameTable.parse(data, offset);
+             font.tables.name = _name.parse(data, offset);
             break;
         case 'OS/2':
             font.tables.os2 = os2.parse(data, offset);
@@ -199,5 +199,37 @@ function load(url, callback) {
     });
 }
 
+// Save the font and return a list of bytes.
+function save() {
+    // Write the version. OTTO indicates this is a CFF font.
+    //var bytes = types.encode.TAG('OTTO');
+    //var hexString = bytes.map(function (v) { return v.toString(16); });
+
+    //var tag1 = encode.TAG('HALO');
+    //var tag2 = encode.TAG('BART');
+    //var bytes = encode.INDEX([tag1, tag2]);
+
+    var cmapTable = cmap.encode();
+    var headTable = head.encode();
+    var hheaTable = hhea.encode();
+    var hmtxTable = hmtx.encode();
+    var maxpTable = maxp.encode();
+    var nameTable = _name.encode();
+    var os2Table = os2.encode();
+    var postTable = post.encode();
+    var cffTable = cff.encode();
+
+    console.log('cmap', cmapTable);
+    console.log('head', headTable);
+    console.log('hhea', hheaTable);
+    console.log('hmtx', hmtxTable);
+    console.log('maxp', maxpTable);
+    console.log('name', nameTable);
+    console.log('OS/2', os2Table);
+    console.log('post', postTable);
+    console.log('CFF ', cffTable);
+}
+
 exports.parse = parseBuffer;
 exports.load = load;
+exports.save = save;

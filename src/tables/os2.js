@@ -4,6 +4,7 @@
 'use strict';
 
 var parse = require('../parse');
+var table = require('../table');
 
 // Parse the OS/2 and Windows metrics `OS/2` table
 function parseOS2Table(data, start) {
@@ -56,4 +57,64 @@ function parseOS2Table(data, start) {
     return os2;
 }
 
+function OS2Table() {
+    this.version = 0x0003;
+    // FIXME: Add unicode stuff, metrics, break char and max context.
+}
+
+OS2Table.prototype = new table.Table('OS/2', [
+    {name: 'version', type: 'USHORT', value: 0},
+    {name: 'xAvgCharWidth', type: 'SHORT', value: 0},
+    {name: 'usWeightClass', type: 'USHORT', value: 0},
+    {name: 'usWidthClass', type: 'USHORT', value: 0},
+    {name: 'fsType', type: 'USHORT', value: 0},
+    {name: 'ySubscriptXSize', type: 'SHORT', value: 0},
+    {name: 'ySubscriptYSize', type: 'SHORT', value: 0},
+    {name: 'ySubscriptXOffset', type: 'SHORT', value: 0},
+    {name: 'ySubscriptYOffset', type: 'SHORT', value: 0},
+    {name: 'ySuperscriptXSize', type: 'SHORT', value: 0},
+    {name: 'ySuperscriptYSize', type: 'SHORT', value: 0},
+    {name: 'ySuperscriptXOffset', type: 'SHORT', value: 0},
+    {name: 'ySuperscriptYOffset', type: 'SHORT', value: 0},
+    {name: 'yStrikeoutSize', type: 'SHORT', value: 0},
+    {name: 'yStrikeoutPosition', type: 'SHORT', value: 0},
+    {name: 'sFamilyClass', type: 'SHORT', value: 0},
+    {name: 'bFamilyType', type: 'BYTE', value: 0},
+    {name: 'bSerifStyle', type: 'BYTE', value: 0},
+    {name: 'bWeight', type: 'BYTE', value: 0},
+    {name: 'bProportion', type: 'BYTE', value: 0},
+    {name: 'bContrast', type: 'BYTE', value: 0},
+    {name: 'bStrokeVariation', type: 'BYTE', value: 0},
+    {name: 'bArmStyle', type: 'BYTE', value: 0},
+    {name: 'bLetterform', type: 'BYTE', value: 0},
+    {name: 'bMidline', type: 'BYTE', value: 0},
+    {name: 'bXHeight', type: 'BYTE', value: 0},
+    {name: 'ulUnicodeRange1', type: 'ULONG', value: 0},
+    {name: 'ulUnicodeRange2', type: 'ULONG', value: 0},
+    {name: 'ulUnicodeRange3', type: 'ULONG', value: 0},
+    {name: 'ulUnicodeRange4', type: 'ULONG', value: 0},
+    {name: 'achVendID', type: 'CHARARRAY', value: 0},
+    {name: 'fsSelection', type: 'USHORT', value: 0},
+    {name: 'usFirstCharIndex', type: 'USHORT', value: 0},
+    {name: 'usLastCharIndex', type: 'USHORT', value: 0},
+    {name: 'sTypoAscender', type: 'SHORT', value: 0},
+    {name: 'sTypoDescender', type: 'SHORT', value: 0},
+    {name: 'sTypoLineGap', type: 'SHORT', value: 0},
+    {name: 'usWinAscent', type: 'USHORT', value: 0},
+    {name: 'usWinDescent', type: 'USHORT', value: 0},
+    {name: 'ulCodePageRange1', type: 'ULONG', value: 0},
+    {name: 'ulCodePageRange2', type: 'ULONG', value: 0},
+    {name: 'sxHeight', type: 'SHORT', value: 0},
+    {name: 'sCapHeight', type: 'SHORT', value: 0},
+    {name: 'usDefaultChar', type: 'USHORT', value: 0},
+    {name: 'usBreakChar', type: 'USHORT', value: 0},
+    {name: 'usMaxContext', type: 'USHORT', value: 0}
+]);
+
+function encodeOS2Table() {
+    var t = new OS2Table();
+    return t.encode();
+}
+
 exports.parse = parseOS2Table;
+exports.encode = encodeOS2Table;
