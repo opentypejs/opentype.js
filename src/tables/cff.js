@@ -10,6 +10,7 @@ var encoding = require('../encoding');
 var _glyph = require('../glyph');
 var parse = require('../parse');
 var path = require('../path');
+var table = require('../table');
 
 // Parse a `CFF` INDEX array.
 // An index array consists of a list of offsets, then a list of objects at those offsets.
@@ -810,7 +811,23 @@ function hexDump(bytes) {
     return hexString.join(' ').toUpperCase();
 }
 
-function encodeCFF() {
+
+function CFFTable() {
+}
+
+CFFTable.prototype = new table.Table('CFF ', [
+    {name: 'header', type: 'table'},
+    {name: 'nameIndex', type: 'table'},
+    {name: 'topDictIndex', type: 'table'},
+    {name: 'stringIndex', type: 'table'},
+    {name: 'globalSubrIndex', type: 'table'},
+    {name: 'encodings', type: 'table'},
+    {name: 'charsets', type: 'table'},
+    {name: 'charStringsIndex', type: 'table'},
+    {name: 'privateDictIndex', type: 'table'}
+]);
+
+CFFTable.prototype.build = function () {
     var d, strings, attrs, header, nameIndex, topDictIndex, stringIndex,
         globalSubrIndex, encodings, charsets, charStringsIndex,
         privateDictIndex;
@@ -862,7 +879,7 @@ function encodeCFF() {
                                        nameIndex,
                                        topDictIndex,
                                        stringIndex);
-}
+};
 
 exports.parse = parseCFFTable;
-exports.encode = encodeCFF;
+exports.Table = CFFTable;

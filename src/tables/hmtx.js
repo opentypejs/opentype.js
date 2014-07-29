@@ -6,22 +6,6 @@
 var parse = require('../parse');
 var table = require('../table');
 
-function HmtxTable() {
-}
-
-HmtxTable.prototype = new table.Table('hmtx', []);
-
-HmtxTable.prototype.encode = function() {
-    var metrics = [{advanceWidth: 600, leftSideBearing: 0}];
-    for (var i = 0; i < metrics.length; i += 1) {
-        var metric = metrics[i];
-        this.fields.push({name: 'advanceWidth_' + i, type: 'USHORT', value: metric.advanceWidth});
-        this.fields.push({name: 'leftSideBearing_' + i, type: 'SHORT', value: metric.leftSideBearing});
-    }
-    console.log('hmtx', this);
-    return this;
-};
-
 // Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
 // This function augments the glyph array, adding the advanceWidth and leftSideBearing to each glyph.
 function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
@@ -39,13 +23,22 @@ function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
     }
 }
 
-function encodeHmtxTable() {
-    var t = new HmtxTable();
-    return t.encode();
+function HmtxTable() {
 }
 
+HmtxTable.prototype = new table.Table('hmtx', []);
+
+HmtxTable.prototype.build = function() {
+    var metrics = [{advanceWidth: 600, leftSideBearing: 0}];
+    for (var i = 0; i < metrics.length; i += 1) {
+        var metric = metrics[i];
+        this.fields.push({name: 'advanceWidth_' + i, type: 'USHORT', value: metric.advanceWidth});
+        this.fields.push({name: 'leftSideBearing_' + i, type: 'SHORT', value: metric.leftSideBearing});
+    }
+};
+
 exports.parse = parseHmtxTable;
-exports.encode = encodeHmtxTable;
+exports.Table = HmtxTable;
 
 
 

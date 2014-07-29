@@ -11,6 +11,14 @@ var LIMIT32 = 2147483648; // The limit at which a 32-bit number switches signs =
 
 var decode = {};
 var encode = {};
+var sizeOf = {};
+
+// Return a function that always returns the same value.
+function constant(v) {
+    return function () {
+        return v;
+    };
+}
 
 // OpenType data types //////////////////////////////////////////////////////
 
@@ -20,15 +28,34 @@ encode.BYTE = function (v) {
     return [v];
 };
 
+sizeOf.BYTE = constant(1);
+
 // Convert a 8-bit signed integer to a list of 1 byte.
 encode.CHAR = function (v) {
     return [v.charCodeAt(0)];
+};
+
+sizeOf.BYTE = constant(1);
+
+// Convert an ASCII string to a list of bytes.
+encode.CHARARRAY = function (v) {
+    var b = [];
+    for (var i = 0; i < v.length; i += 1) {
+        b.push(v.charCodeAt(i));
+    }
+    return b;
+};
+
+sizeOf.CHARARRAY = function (v) {
+    return v.length;
 };
 
 // Convert a 16-bit unsigned integer to a list of 2 bytes.
 encode.USHORT = function (v) {
     return [(v >> 8) & 0xFF, v & 0xFF];
 };
+
+sizeOf.USHORT = constant(2);
 
 // Convert a 16-bit signed integer to a list of 2 bytes.
 encode.SHORT = function (v) {
@@ -39,15 +66,21 @@ encode.SHORT = function (v) {
     return [(v >> 8) & 0xFF, v & 0xFF];
 };
 
+sizeOf.SHORT = constant(2);
+
 // Convert a 24-bit unsigned integer to a list of 3 bytes.
 encode.UINT24 = function (v) {
     return [(v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
+sizeOf.UINT24 = constant(3);
+
 // Convert a 32-bit unsigned integer to a list of 4 bytes.
 encode.ULONG = function (v) {
     return [(v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
+
+sizeOf.ULONG = constant(4);
 
 // Convert a 32-bit unsigned integer to a list of 4 bytes.
 encode.LONG = function (v) {
@@ -58,9 +91,24 @@ encode.LONG = function (v) {
     return [(v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
+sizeOf.LONG = constant(4);
+
 encode.FIXED = encode.ULONG;
+sizeOf.FIXED = sizeOf.ULONG;
+
 encode.FWORD = encode.SHORT;
+sizeOf.FWORD = sizeOf.SHORT;
+
 encode.UFWORD = encode.USHORT;
+sizeOf.UFWORD = sizeOf.USHORT;
+
+
+// FIXME Implement LONGDATETIME
+encode.LONGDATETIME = function () {
+    return [0, 0, 0, 0, 0, 0, 0, 0];
+};
+
+sizeOf.LONGDATETIME = constant(4);
 
 // Convert a 4-char tag to a list of 4 bytes.
 encode.TAG = function (v) {
@@ -70,6 +118,8 @@ encode.TAG = function (v) {
             v.charCodeAt(2),
             v.charCodeAt(3)];
 };
+
+sizeOf.TAG = constant(4);
 
 // CFF data types ///////////////////////////////////////////////////////////
 
@@ -100,11 +150,17 @@ encode.NUMBER = function (v) {
     }
 };
 
+sizeOf.NUMBER = function (v) {
+    return encode.NUMBER(v).length;
+};
+
 // Convert a signed number between -32768 and +32767 to a two-byte value.
 // This ensures we always two bytes, but is not the most compact format.
 encode.NUMBER16 = function (v) {
     return [28, (v >> 8) & 0xFF, v & 0xFF];
 };
+
+sizeOf.NUMBER16 = constant(2);
 
 // Convert a signed number between -(2^31) and +(2^31-1) to a four-byte value.
 // This is useful if you want to be sure you always use four bytes,
@@ -113,16 +169,10 @@ encode.NUMBER32 = function (v) {
     return [29, (v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
-// Convert an ASCII string to a list of bytes.
-encode.NAME = function (v) {
-    var b = [];
-    for (var i = 0; i < v.length; i += 1) {
-        b.push(v.charCodeAt(i));
-    }
-    return b;
-};
+sizeOf.NUMBER32 = constant(4);
 
-encode.STRING = encode.NAME;
+encode.NAME = encode.CHARARRAY;
+encode.STRING = encode.CHARARRAY;
 
 // Convert a ASCII string to a list of UTF16 bytes.
 encode.UTF16 = function (v) {
@@ -236,3 +286,4 @@ encode.TABLE = function (table) {
 
 exports.decode = decode;
 exports.encode = encode;
+exports.sizeOf = sizeOf;

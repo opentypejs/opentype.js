@@ -2,10 +2,11 @@
 
 'use strict';
 
-// var encode = require('./types').encode;
+var check = require('./check');
+var encode = require('./types').encode;
+var sizeOf = require('./types').sizeOf;
 
 function Table(tableName, fields) {
-    console.log('init table ', tableName, ' with fields', this, fields);
     for (var i = 0; i < fields.length; i += 1) {
         var field = fields[i];
         this[field.name] = field.value;
@@ -14,9 +15,43 @@ function Table(tableName, fields) {
     this.fields = fields;
 }
 
+Table.prototype.sizeOf = function () {
+    var v = 0;
+    for (var i = 0; i < this.fields.length; i += 1) {
+        var field = this.fields[i];
+        var value = this[field.name];
+        if (value === undefined) {
+            value = field.value;
+        }
+        if (typeof value.sizeOf === 'function') {
+            v += value.sizeOf();
+        } else {
+            var sizeOfFunction = sizeOf[field.type];
+            check.argument(typeof sizeOfFunction === 'function', 'Could not find sizeOf function for field' + field.name);
+            v += sizeOfFunction(value);
+        }
+    }
+    return v;
+};
+
 Table.prototype.encode = function () {
-    console.log('Encode table', this);
-    return [1, 2, 3];
+    var d = [];
+    for (var i = 0; i < this.fields.length; i += 1) {
+        var field = this.fields[i];
+        var value = this[field.name];
+        if (value === undefined) {
+            value = field.value;
+        }
+        if (typeof value.encode === 'function') {
+            d = d.concat(value.encode());
+        } else {
+            var encodingFunction = encode[field.type];
+            check.argument(typeof encodingFunction === 'function', 'Could not find encoding function for field' + field.name);
+            var encodedValue = encodingFunction(value);
+            d = d.concat(encodedValue);
+        }
+    }
+    return d;
 };
 
 exports.Table = Table;

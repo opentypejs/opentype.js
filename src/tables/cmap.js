@@ -147,12 +147,8 @@ CmapTable.prototype.encode = function () {
     d = d.concat(idDeltas);
     d = d.concat(idRangeOffsets);
     d = d.concat(glyphIds);
+    return d;
 };
 
-function encodeCmapTable() {
-    var t = new CmapTable();
-    return t.encode();
-}
-
 exports.parse = parseCmapTable;
-exports.encode = encodeCmapTable;
+exports.Table = CmapTable;

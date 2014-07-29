@@ -24,6 +24,7 @@ var maxp = require('./tables/maxp');
 var _name = require('./tables/name');
 var os2 = require('./tables/os2');
 var post = require('./tables/post');
+var sfnt = require('./tables/sfnt');
 
 // File loaders /////////////////////////////////////////////////////////
 
@@ -209,15 +210,31 @@ function save() {
     //var tag2 = encode.TAG('BART');
     //var bytes = encode.INDEX([tag1, tag2]);
 
-    var cmapTable = cmap.encode();
-    var headTable = head.encode();
-    var hheaTable = hhea.encode();
-    var hmtxTable = hmtx.encode();
-    var maxpTable = maxp.encode();
-    var nameTable = _name.encode();
-    var os2Table = os2.encode();
-    var postTable = post.encode();
-    var cffTable = cff.encode();
+    var cmapTable = new cmap.Table();
+    var headTable = new head.Table();
+    var hheaTable = new hhea.Table();
+    var hmtxTable = new hmtx.Table();
+    var maxpTable = new maxp.Table();
+    var nameTable = new _name.Table();
+     // FIXME We currently only have a glyph for the letter A.
+    nameTable.sampleText = 'AAA';
+    var os2Table = new os2.Table();
+    var postTable = new post.Table();
+    var cffTable = new cff.Table();
+
+    var sfntTable = new sfnt.Table();
+    sfntTable.addTable(cmapTable);
+    sfntTable.addTable(headTable);
+    sfntTable.addTable(hheaTable);
+    sfntTable.addTable(hmtxTable);
+    sfntTable.addTable(maxpTable);
+    sfntTable.addTable(nameTable);
+    sfntTable.addTable(maxpTable);
+    sfntTable.addTable(maxpTable);
+    sfntTable.addTable(os2Table);
+    sfntTable.addTable(postTable);
+    sfntTable.addTable(cffTable);
+
 
     console.log('cmap', cmapTable);
     console.log('head', headTable);
@@ -228,6 +245,10 @@ function save() {
     console.log('OS/2', os2Table);
     console.log('post', postTable);
     console.log('CFF ', cffTable);
+
+    console.log(sfntTable);
+    sfntTable.build();
+    console.log(sfntTable.encode());
 }
 
 exports.parse = parseBuffer;

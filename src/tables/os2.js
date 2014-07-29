@@ -58,12 +58,11 @@ function parseOS2Table(data, start) {
 }
 
 function OS2Table() {
-    this.version = 0x0003;
     // FIXME: Add unicode stuff, metrics, break char and max context.
 }
 
 OS2Table.prototype = new table.Table('OS/2', [
-    {name: 'version', type: 'USHORT', value: 0},
+    {name: 'version', type: 'USHORT', value: 0x0003},
     {name: 'xAvgCharWidth', type: 'SHORT', value: 0},
     {name: 'usWeightClass', type: 'USHORT', value: 0},
     {name: 'usWidthClass', type: 'USHORT', value: 0},
@@ -93,7 +92,7 @@ OS2Table.prototype = new table.Table('OS/2', [
     {name: 'ulUnicodeRange2', type: 'ULONG', value: 0},
     {name: 'ulUnicodeRange3', type: 'ULONG', value: 0},
     {name: 'ulUnicodeRange4', type: 'ULONG', value: 0},
-    {name: 'achVendID', type: 'CHARARRAY', value: 0},
+    {name: 'achVendID', type: 'CHARARRAY', value: ''},
     {name: 'fsSelection', type: 'USHORT', value: 0},
     {name: 'usFirstCharIndex', type: 'USHORT', value: 0},
     {name: 'usLastCharIndex', type: 'USHORT', value: 0},
@@ -111,10 +110,5 @@ OS2Table.prototype = new table.Table('OS/2', [
     {name: 'usMaxContext', type: 'USHORT', value: 0}
 ]);
 
-function encodeOS2Table() {
-    var t = new OS2Table();
-    return t.encode();
-}
-
 exports.parse = parseOS2Table;
-exports.encode = encodeOS2Table;
+exports.Table = OS2Table;

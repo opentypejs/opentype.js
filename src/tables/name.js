@@ -124,16 +124,13 @@ NameTable.prototype.addRecord = function (recordID, s) {
 };
 
 NameTable.prototype.build = function () {
-    for (var i = 0; i < nameTableNames.length; i += 1) {
+    var i;
+    for (i = 0; i < nameTableNames.length; i += 1) {
         var s = this[nameTableNames[i]];
         if (s.length > 0) {
             this.addRecord(i, s);
         }
     }
-};
-
-NameTable.prototype.encode = function () {
-    var i;
     for (i = 0; i < this.records.length; i += 1) {
         this.fields.push({name: 'record_' + i, type: 'NameRecord', value: this.records[i]});
     }
@@ -143,13 +140,5 @@ NameTable.prototype.encode = function () {
     return this;
 };
 
-function encodeNameTable() {
-    var t = new NameTable();
-     // FIXME We currently only have a glyph for the letter A.
-    t.sampleText = 'AAA';
-    t.build();
-    return t.encode();
-}
-
 exports.parse = parseNameTable;
-exports.encode = encodeNameTable;
+exports.Table = NameTable;

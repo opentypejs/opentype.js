@@ -65,10 +65,5 @@ PostTable.prototype = new table.Table('post', [
     {name: 'maxMemType1', type: 'ULONG', value: 0}
 ]);
 
-function encodePostTable() {
-    var t = new PostTable();
-    return t.encode();
-}
-
 exports.parse = parsePostTable;
-exports.encode = encodePostTable;
+exports.Table = PostTable;
