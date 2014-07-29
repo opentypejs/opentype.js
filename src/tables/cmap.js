@@ -79,6 +79,18 @@ function parseCmapTable(data, start) {
 
 function CmapTable() {
     this.segments = [];
+    this.addSegment(0);
+    this.addSegment('A'.charCodeAt(0));
+    this.addTerminatorSegment();
+
+    var segCount;
+    segCount = this.segments.length;
+    this.segCountX2 = segCount * 2;
+    this.searchRange = Math.pow(Math.floor(Math.log(segCount) / Math.log(2)), 2) * 2;
+    this.entrySelector = Math.log(this.searchRange / 2) / Math.log(2);
+    this.rangeShift = this.segCountX2 - this.searchRange;
+
+
 }
 
 CmapTable.prototype = new table.Table('cmap', [
