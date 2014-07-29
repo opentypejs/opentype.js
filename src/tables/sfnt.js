@@ -18,10 +18,10 @@ function calcTableCheckSum(table) {
     }
     var sum = 0;
     for (var i = 0; i < bytes.length; i += 4) {
-        sum += (table[i] << 24) +
-               (table[i + 1] << 16) +
-               (table[i + 2] << 8) +
-               (table[i + 3]);
+        sum += (bytes[i] << 24) +
+               (bytes[i + 1] << 16) +
+               (bytes[i + 2] << 8) +
+               (bytes[i + 3]);
     }
     sum %= Math.pow(2, 32);
     return sum;
