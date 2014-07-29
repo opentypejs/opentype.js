@@ -5,12 +5,30 @@
 
 'use strict';
 
-var encode = require('../types').encode;
 var encoding = require('../encoding');
 var _glyph = require('../glyph');
 var parse = require('../parse');
 var path = require('../path');
 var table = require('../table');
+
+// Custom equals function that can also check lists.
+function equals(a, b) {
+    if (a === b) {
+        return true;
+    } else if (Array.isArray(a) && Array.isArray(b)) {
+        if (a.length !== b.length) {
+            return false;
+        }
+        for (var i = 0; i < a.length; i += 1) {
+            if (!equals(a[i], b[i])) {
+                return false;
+            }
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
 
 // Parse a `CFF` INDEX array.
 // An index array consists of a list of offsets, then a list of objects at those offsets.
@@ -647,87 +665,119 @@ function parseCFFTable(data, start, font) {
     }
 }
 
-// Encode the CFF header as a list of bytes.
-// This always returns the same value;
-function encodeHeader() {
-    return [
-        1, // Major version 1
-        0, // Minor version 0
-        4, // This is a 4-byte header
-        1  // 1-byte offsets
-    ];
-}
 
-// Encode the list of font names as a list of bytes.
-function encodeNameIndex(fontNames) {
-    var encodedNames = fontNames.map(function (v) { return encode.NAME(v); });
-    return encode.INDEX(encodedNames);
-}
-
-// Custom equals function that can also check lists.
-function equals(a, b) {
-    if (a === b) {
-        return true;
-    } else if (Array.isArray(a) && Array.isArray(b)) {
-        if (a.length !== b.length) {
-            return false;
-        }
-        for (var i = 0; i < a.length; i += 1) {
-            if (!equals(a[i], b[i])) {
-                return false;
-            }
-        }
-        return true;
+// Convert a string to a String ID (SID).
+// The list of strings is modified in place.
+function encodeString(s, strings) {
+    var i;
+    // Is the string in the CFF standard strings?
+    i = encoding.cffStandardStrings.indexOf(s);
+    if (i >= 0) {
+        return i;
+    }
+    // Is the string already in the string index?
+    i = strings.indexOf(s);
+    if (i >= 0) {
+        return i + encoding.cffStandardStrings.length;
     } else {
-        return false;
+        strings.push(s);
+        return encoding.cffStandardStrings.length + strings.length;
     }
 }
 
-// Encode the global font attributes as a list of bytes.
-function encodeTopDictIndex(m, strings) {
-    var d, i, entry, value;
-    d = [];
+function Header() {
+}
+
+Header.prototype = new table.Table('Header', [
+    {name: 'major', type: 'Card8', value: 1},
+    {name: 'minor', type: 'Card8', value: 0},
+    {name: 'hdrSize', type: 'Card8', value: 4},
+    {name: 'major', type: 'Card8', value: 1}
+]);
+
+function NameIndex(fontNames) {
+    this.names = [];
+    for (var i = 0; i < fontNames.length; i += 1) {
+        this.names.push({name: 'name_' + i, type: 'NAME', value: fontNames[i]});
+    }
+}
+
+NameIndex.prototype = new table.Table('Name INDEX', [
+    {name: 'names', type: 'INDEX', value: []}
+]);
+
+// The Top DICT houses the global font attributes.
+function TopDict(attrs, strings) {
+    var m = {}, i, entry, value;
     for (i = 0; i < TOP_DICT_META.length; i += 1) {
         entry = TOP_DICT_META[i];
-        value = m[entry.name];
+        value = attrs[entry.name];
         if (value !== undefined && !equals(value, entry.value)) {
-            // Operand comes before operator.
-            console.log(entry.op, encode.OPERATOR(entry.op), encode.OPERAND(value, entry.type, strings));
-            d = d.concat(encode.OPERAND(value, entry.type, strings));
-            d = d.concat(encode.OPERATOR(entry.op));
+            if (entry.type === 'SID') {
+                value = encodeString(value, strings);
+            }
+            m[entry.op] = {name: entry.name, type: entry.type, value: value};
         }
     }
-    return encode.INDEX([d]);
+    this.dict = m;
 }
 
-function encodeStringIndex(strings) {
-    var encodedStrings = strings.map(function (v) { return encode.STRING(v); });
-    return encode.INDEX(encodedStrings);
+TopDict.prototype = new table.Table('Top DICT', [
+    {name: 'dict', type: 'DICT', value: {}}
+]);
+
+function TopDictIndex(topDict) {
+    this.topDicts = [{name: 'topDict_0', type: 'TABLE', value: topDict}];
 }
 
-function encodeGlobalSubrIndex() {
+TopDictIndex.prototype = new table.Table('Top DICT INDEX', [
+    {name: 'topDicts', type: 'INDEX', value: []}
+]);
+
+function StringIndex(strings) {
+    this.strings = [];
+    for (var i = 0; i < strings.length; i += 1) {
+        this.strings.push({name: 'string_' + i, type: 'STRING', value: strings[i]});
+    }
+}
+
+StringIndex.prototype = new table.Table('String INDEX', [
+    {name: 'strings', type: 'INDEX', value: []}
+]);
+
+function GlobalSubrIndex() {
     // Currently we don't use subroutines.
-    return encode.INDEX([]);
 }
 
-function encodeEncodings() {
-    var d = [];
-    d.push(0); // Encoding format 0 (apart from .notdef).
-    d.push(1); // Encode 1 glyph.
-    d.push(1); // First charset element maps to first glyph.
-    return d;
+GlobalSubrIndex.prototype = new table.Table('Global Subr INDEX', [
+    {name: 'subrs', type: 'INDEX', value: []}
+]);
+
+function Encodings() {
+     // First charset element maps to first glyph.
+    this.fields.push({name: 'code_0', type: 'Card8', value: 1});
 }
 
-function encodeCharsets(strings) {
-    var d = [];
-    d.push(0); // Charset format 0
-    d.push(encode.SID('A', strings));
-    return d;
+Encodings.prototype = new table.Table('Encodings', [
+    {name: 'format', type: 'Card8', value: 0},
+    {name: 'nCodes', type: 'Card8', value: 1}
+]);
+
+function Charsets(glyphNames, strings) {
+    for (var i = 0; i < glyphNames.length; i += 1) {
+        var glyphName = glyphNames[i];
+        var glyphSID = encodeString(glyphName, strings);
+        this.fields.push({name: 'glyph_' + i, type: 'SID', value: glyphSID});
+    }
 }
+
+Charsets.prototype = new table.Table('Charsets', [
+    {name: 'format', type: 'Card8', value: 0}
+]);
 
 function pathToOps(path, width) {
     var ops = [], x, y, i, cmd, dx, dy;
-    ops.push(width);
+    ops.push({name: 'width', value: width});
     x = 0;
     y = 0;
     for (i = 0; i < path.commands.length; i += 1) {
@@ -735,56 +785,34 @@ function pathToOps(path, width) {
         if (cmd.type === 'M') {
             dx = x - cmd.x;
             dy = y - cmd.y;
-            ops.push(dx);
-            ops.push(dy);
-            ops.push('rmoveto');
+            ops.push({name: 'dx', value: dx});
+            ops.push({name: 'dy', value: dy});
+            ops.push({name: 'rmoveto', value: 21});
             x = cmd.x;
             y = cmd.y;
         } else if (cmd.type === 'L') {
             dx = x - cmd.x;
             dy = y - cmd.y;
-            ops.push(dx);
-            ops.push(dy);
-            ops.push('rlineto');
+            ops.push({name: 'dx', value: dx});
+            ops.push({name: 'dy', value: dy});
+            ops.push({name: 'rlineto', value: 5});
             x = cmd.x;
             y = cmd.y;
         }
     }
-    ops.push('endchar');
+    ops.push({name: 'endchar', value: 14});
     return ops;
 }
 
-var OPS = {
-    'rmoveto': 21,
-    'rlineto': 5,
-    'endchar': 14
-};
-
-function opsToBytes(ops) {
-    var d = [], i, op;
-    for (i = 0; i < ops.length; i += 1) {
-        op = ops[i];
-        if (typeof op === 'string') {
-            op = OPS[op];
-        }
-        d = d.concat(encode.NUMBER(op));
-    }
-    return d;
-}
-
-function encodeCharString(path, width) {
-    var ops = pathToOps(path, width);
-    console.log(ops);
-    return opsToBytes(ops);
-}
-
-function encodeCharStringsIndex() {
-    // Encode two glyphs: .notdef and A.
+function CharStringsIndex() {
+     // Encode two glyphs: .notdef and A.
     var notdefPath = new path.Path();
     notdefPath.moveTo(0, 0);
     notdefPath.lineTo(0, 500);
     notdefPath.lineTo(300, 500);
     notdefPath.lineTo(300, 0);
+    var notdefOps = pathToOps(notdefPath, 400);
+    this.charStrings.push({name: 'notdef', type: 'CHARSTRING', value: notdefOps});
 
     var aPath = new path.Path();
     aPath.moveTo(0, 0);
@@ -793,44 +821,31 @@ function encodeCharStringsIndex() {
     aPath.moveTo(250, 50);
     aPath.moveTo(150, 450);
     aPath.moveTo(50, 50);
-
-    var notdefBytes = encodeCharString(notdefPath, 400);
-    var aBytes = encodeCharString(aPath, 400);
-    return encode.INDEX([notdefBytes, aBytes]);
+    var aOps = pathToOps(aPath, 400);
+    this.charStrings.push({name: 'A', type: 'CHARSTRING', value: aOps});
 }
 
-function encodePrivateDictIndex() {
-    return encode.INDEX([]);
-}
-
-function hexDump(bytes) {
-    var hexString = bytes.map(function (v) {
-        var h =  v.toString(16);
-        return h.length === 1 ? '0' + h : h;
-    });
-    return hexString.join(' ').toUpperCase();
-}
-
-
-function CFFTable() {
-}
-
-CFFTable.prototype = new table.Table('CFF ', [
-    {name: 'header', type: 'table'},
-    {name: 'nameIndex', type: 'table'},
-    {name: 'topDictIndex', type: 'table'},
-    {name: 'stringIndex', type: 'table'},
-    {name: 'globalSubrIndex', type: 'table'},
-    {name: 'encodings', type: 'table'},
-    {name: 'charsets', type: 'table'},
-    {name: 'charStringsIndex', type: 'table'},
-    {name: 'privateDictIndex', type: 'table'}
+CharStringsIndex.prototype = new table.Table('CharStrings INDEX', [
+    {name: 'charStrings', type: 'INDEX', value: []}
 ]);
 
-CFFTable.prototype.build = function () {
-    var d, strings, attrs, header, nameIndex, topDictIndex, stringIndex,
-        globalSubrIndex, encodings, charsets, charStringsIndex,
-        privateDictIndex;
+function PrivateDictIndex() {
+}
+
+PrivateDictIndex.prototype = new table.Table('Private DICT INDEX', [
+    {name: 'privateDicts', type: 'INDEX', value: []}
+]);
+
+//function hexDump(bytes) {
+//    var hexString = bytes.map(function (v) {
+//        var h =  v.toString(16);
+//        return h.length === 1 ? '0' + h : h;
+//    });
+//    return hexString.join(' ').toUpperCase();
+//}
+
+function CFFTable() {
+    var strings, attrs;
     attrs = {
         version: 'Version 1.0',
         fullName: 'Custom Glyph Font',
@@ -843,43 +858,46 @@ CFFTable.prototype.build = function () {
     };
 
     strings = [];
-    d = [];
-    header = encodeHeader();
-    nameIndex = encodeNameIndex(['customfont']);
-    globalSubrIndex = encodeGlobalSubrIndex();
-    encodings = encodeEncodings();
-    charsets = encodeCharsets(strings);
-    charStringsIndex = encodeCharStringsIndex();
-    privateDictIndex = encodePrivateDictIndex();
-    topDictIndex = encodeTopDictIndex(attrs, strings);
+
+    this.header = new Header();
+    this.nameIndex = new NameIndex(['customfont']);
+    var topDict = new TopDict(attrs, strings);
+    this.topDictIndex = new TopDictIndex(topDict);
+    this.globalSubrIndex = new GlobalSubrIndex();
+    this.encodings = new Encodings();
+    this.charsets = new Charsets(['A'], strings);
+    this.charStringsIndex = new CharStringsIndex();
+    this.privateDictIndex = new PrivateDictIndex();
 
     // Needs to come at the end, to encode all custom strings used in the font.
-    stringIndex = encodeStringIndex(strings);
+    this.stringIndex = new StringIndex(strings);
 
-    var baseOffset = header.length + nameIndex.length + topDictIndex.length + stringIndex.length + globalSubrIndex.length;
+    var baseOffset = this.header.sizeOf() +
+        this.nameIndex.sizeOf() +
+        this.topDictIndex.sizeOf() +
+        this.stringIndex.sizeOf() +
+        this.globalSubrIndex.sizeOf();
     attrs.encoding = baseOffset;
-    attrs.charset = attrs.encoding + encodings.length;
-    attrs.charStrings = attrs.charset + charsets.length;
+    attrs.charset = attrs.encoding + this.encodings.sizeOf();
+    attrs.charStrings = attrs.charset + this.charsets.sizeOf();
     // attrs.private[1] = attrs.charStrings + charStringsIndex.length;
-    // Re-encode the Top DICT Index with the correct offsets.
-    topDictIndex = encodeTopDictIndex(attrs, strings);
 
-    console.log('Header            ', hexDump(header));
-    console.log('Name Index        ', hexDump(nameIndex));
-    console.log('Top DICT Index    ', hexDump(topDictIndex));
-    console.log('String Index      ', hexDump(stringIndex));
-    console.log('Global Subr Index ', hexDump(globalSubrIndex));
-    console.log('Encodings         ', hexDump(encodings));
-    console.log('Charsets          ', hexDump(charsets));
-    console.log('CharStrings Index ', hexDump(charStringsIndex));
-    console.log('Private DICT Index', hexDump(privateDictIndex));
+    // Recreate the Top DICT INDEX with the correct offsets.
+    topDict = new TopDict(attrs, strings);
+    this.topDictIndex = new TopDictIndex(topDict);
+}
 
-
-    return Array.prototype.concat.call(header,
-                                       nameIndex,
-                                       topDictIndex,
-                                       stringIndex);
-};
+CFFTable.prototype = new table.Table('CFF ', [
+    {name: 'header', type: 'TABLE'},
+    {name: 'nameIndex', type: 'TABLE'},
+    {name: 'topDictIndex', type: 'TABLE'},
+    {name: 'stringIndex', type: 'TABLE'},
+    {name: 'globalSubrIndex', type: 'TABLE'},
+    {name: 'encodings', type: 'TABLE'},
+    {name: 'charsets', type: 'TABLE'},
+    {name: 'charStringsIndex', type: 'TABLE'},
+    {name: 'privateDictIndex', type: 'TABLE'}
+]);
 
 exports.parse = parseCFFTable;
 exports.Table = CFFTable;

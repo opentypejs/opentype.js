@@ -4,7 +4,6 @@
 'use strict';
 
 var check = require('./check');
-var encoding = require('./encoding');
 
 var LIMIT16 = 32768; // The limit at which a 16-bit number switches signs == 2^15
 var LIMIT32 = 2147483648; // The limit at which a 32-bit number switches signs == 2 ^ 31
@@ -124,9 +123,16 @@ sizeOf.TAG = constant(4);
 // CFF data types ///////////////////////////////////////////////////////////
 
 encode.Card8 = encode.BYTE;
+sizeOf.Card8 = sizeOf.BYTE;
+
 encode.Card16 = encode.USHORT;
+sizeOf.Card16 = sizeOf.USHORT;
+
 encode.OffSize = encode.BYTE;
+sizeOf.OffSize = sizeOf.BYTE;
+
 encode.SID = encode.USHORT;
+sizeOf.SID = sizeOf.USHORT;
 
 // Convert a numeric operand or charstring number to a variable-size list of bytes.
 encode.NUMBER = function (v) {
@@ -172,7 +178,10 @@ encode.NUMBER32 = function (v) {
 sizeOf.NUMBER32 = constant(4);
 
 encode.NAME = encode.CHARARRAY;
+sizeOf.NAME = sizeOf.CHARARRAY;
+
 encode.STRING = encode.CHARARRAY;
+sizeOf.STRING = sizeOf.CHARARRAY;
 
 // Convert a ASCII string to a list of UTF16 bytes.
 encode.UTF16 = function (v) {
@@ -185,8 +194,12 @@ encode.UTF16 = function (v) {
     return b;
 };
 
+sizeOf.UTF16 = function (v) {
+    return v.length * 2;
+};
+
 // Convert a list of values to a CFF INDEX structure.
-// The values should already be encoded, that is, they should be arrays.
+// The values should be objects containing name / type / value.
 encode.INDEX = function (l) {
     var count, offSize, offset, offsets, offsetEncoder, encodedOffset, data, i, v;
     if (l.length === 0) {
@@ -200,7 +213,7 @@ encode.INDEX = function (l) {
     data = [];
     offsets.push(1); // First offset is always 1.
     for (i = 0; i < l.length; i += 1) {
-        v = l[i];
+        v = encode.OBJECT(l[i]);
         Array.prototype.push.apply(data, v);
         offset += v.length;
         encodedOffset = offsetEncoder(offset);
@@ -212,23 +225,27 @@ encode.INDEX = function (l) {
                            data);
 };
 
-// Convert a string to a String ID (SID).
-// The list of strings is modified in place.
-encode.SID = function (v, strings) {
-    var i;
-    // Is the string in the CFF standard strings?
-    i = encoding.cffStandardStrings.indexOf(v);
-    if (i >= 0) {
-        return i;
+sizeOf.INDEX = function (v) {
+    return encode.INDEX(v).length;
+};
+
+// Convert an object to a CFF DICT structure.
+// The keys should be numeric.
+// The values should be objects containing name / type / value.
+encode.DICT = function (m) {
+    var d = [];
+    var keys = Object.keys(m);
+    for (var i = 0; i < keys.length; i += 1) {
+        var k = keys[i];
+        var v = m[k];
+        // Value comes before the key.
+        d = d.concat(encode.OPERAND(v.value, v.type));
+        d = d.concat(encode.OPERATOR(k));
     }
-    // Is the string already in the string index?
-    i = strings.indexOf(v);
-    if (i >= 0) {
-        return i + encoding.cffStandardStrings.length;
-    } else {
-        strings.push(v);
-        return encoding.cffStandardStrings.length + strings.length;
-    }
+};
+
+sizeOf.DICT = function (m) {
+    return encode.DICT(m).length;
 };
 
 encode.OPERATOR = function (v) {
@@ -239,7 +256,7 @@ encode.OPERATOR = function (v) {
     }
 };
 
-encode.OPERAND = function (v, type, strings) {
+encode.OPERAND = function (v, type) {
     var d, i, sid;
     d = [];
     if (Array.isArray(type)) {
@@ -249,8 +266,7 @@ encode.OPERAND = function (v, type, strings) {
         }
     } else {
         if (type === 'SID') {
-            sid = encode.SID(v, strings);
-            d = d.concat(encode.NUMBER(sid));
+            d = d.concat(encode.SID(sid));
         } else if (type === 'offset') {
             // We make it easy for ourselves and always encode offsets as
             // 4 bytes. This makes offset calculation for the top dict easier.
@@ -263,7 +279,27 @@ encode.OPERAND = function (v, type, strings) {
     return d;
 };
 
+// Convert a list of CharString operations to bytes.
+encode.CHARSTRING = function (ops) {
+    var d = [], i;
+    for (i = 0; i < ops.length; i += 1) {
+        d = d.concat(encode.NUMBER(ops[i].value));
+    }
+    return d;
+};
+
+sizeOf.CHARSTRING = function (ops) {
+    return encode.CHARSTRING(ops).length;
+};
+
 // Utility functions ////////////////////////////////////////////////////////
+
+// Convert an object containing name / type / value to bytes.
+encode.OBJECT = function (v) {
+    var encodingFunction = encode[v.type];
+    check.argument(encodingFunction !== undefined, 'No encoding function for type ' + v.type);
+    return encodingFunction(v.value);
+};
 
 // Convert a table object to bytes.
 // A table contains a list of fields containing the metadata (name, type and default value).

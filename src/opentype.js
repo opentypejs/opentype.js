@@ -235,7 +235,6 @@ function save() {
     sfntTable.addTable(postTable);
     sfntTable.addTable(cffTable);
 
-
     console.log('cmap', cmapTable);
     console.log('head', headTable);
     console.log('hhea', hheaTable);

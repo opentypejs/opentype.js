@@ -27,7 +27,7 @@ Table.prototype.sizeOf = function () {
             v += value.sizeOf();
         } else {
             var sizeOfFunction = sizeOf[field.type];
-            check.argument(typeof sizeOfFunction === 'function', 'Could not find sizeOf function for field' + field.name);
+            check.assert(typeof sizeOfFunction === 'function', 'Could not find sizeOf function for field' + field.name);
             v += sizeOfFunction(value);
         }
     }
@@ -46,7 +46,7 @@ Table.prototype.encode = function () {
             d = d.concat(value.encode());
         } else {
             var encodingFunction = encode[field.type];
-            check.argument(typeof encodingFunction === 'function', 'Could not find encoding function for field' + field.name);
+            check.assert(typeof encodingFunction === 'function', 'Could not find encoding function for field' + field.name);
             var encodedValue = encodingFunction(value);
             d = d.concat(encodedValue);
         }
