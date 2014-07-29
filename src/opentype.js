@@ -229,8 +229,6 @@ function save() {
     sfntTable.addTable(hmtxTable);
     sfntTable.addTable(maxpTable);
     sfntTable.addTable(nameTable);
-    sfntTable.addTable(maxpTable);
-    sfntTable.addTable(maxpTable);
     sfntTable.addTable(os2Table);
     sfntTable.addTable(postTable);
     sfntTable.addTable(cffTable);
@@ -247,7 +245,36 @@ function save() {
 
     console.log(sfntTable);
     sfntTable.build();
-    console.log(sfntTable.encode());
+
+    sfntTable.download = function () {
+        var bytes = sfntTable.encode();
+        console.log(bytes);
+
+        window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+        window.requestFileSystem(window.TEMPORARY, bytes.length, function (fs) {
+            fs.root.getFile('tmp.otf', {create: true}, function (fileEntry) {
+                fileEntry.createWriter(function (writer) {
+                    var buffer = new ArrayBuffer(bytes.length);
+                    var intArray = new Uint8Array(buffer);
+                    for (var i = 0; i < bytes.length; i++) {
+                        intArray[i] = bytes[i];
+                    }
+                    var dataView = new DataView(buffer);
+                    var blob = new Blob([dataView], {type: 'font/opentype'});
+                    writer.write(blob);
+
+                     writer.addEventListener('writeend', function () {
+                        // Navigating to the file will download it.
+                        location.href = fileEntry.toURL();
+                     }, false);
+                });
+            });
+        }, function (err) {
+            console.log(err);
+        });
+    }
+
+    return sfntTable;
 }
 
 exports.parse = parseBuffer;
