@@ -234,11 +234,8 @@ function save() {
     var checkSum = sfnt.computeCheckSum(bytes);
     headTable.checkSumAdjustment = 0xB1B0AFBA - checkSum;
 
-    console.log(sfntTable.fields.length, sfntTable.fields);
-
     // Build the font again, now with the proper checkSum.
     sfntTable = sfnt.make(tables);
-    console.log(sfntTable.fields.length, sfntTable.fields);
 
     sfntTable.toBuffer = function () {
         var bytes = sfntTable.encode();
