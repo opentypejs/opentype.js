@@ -877,20 +877,22 @@ function makeCFFTable() {
         {name: 'localSubrIndex', type: 'TABLE'}
     ]);
 
+    // We use non-zero values for the offsets so that the DICT encodes them.
+    // This is important because the size of the Top DICT plays a role in offset calculation,
+    // and the size shouldn't change after we've written correct offsets.
     var attrs = {
         version: 'Version 1.0',
         fullName: 'Custom Glyph Font',
         familyName: 'Custom',
         weight: 'Roman',
-        charset: 0,
-        encoding: 0,
-        charstrings: 0,
-        private: [0, 0]
+        charset: 999,
+        encoding: 999,
+        charStrings: 999,
+        private: [0, 999]
     };
 
     var privateAttrs = {
-        defaultWidthX: 666,
-        subrs: 0
+        defaultWidthX: 666
     };
 
     var strings = [];
