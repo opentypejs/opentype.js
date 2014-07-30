@@ -52,6 +52,7 @@ SfntTable.prototype = new table.Table('sfnt', [
 
 SfntTable.prototype.addTable = function (table) {
     this.tables.push(table);
+    this.numTables += 1;
 };
 
 SfntTable.prototype.build = function () {
