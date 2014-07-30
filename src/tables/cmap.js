@@ -4,7 +4,6 @@
 'use strict';
 
 var check = require('../check');
-var encode = require('../types').encode;
 var parse = require('../parse');
 var table = require('../table');
 
@@ -77,65 +76,55 @@ function parseCmapTable(data, start) {
     return cmap;
 }
 
-function CmapTable() {
-    this.segments = [];
-    this.addSegment(0);
-    this.addSegment('A'.charCodeAt(0));
-    this.addTerminatorSegment();
-
-    var segCount;
-    segCount = this.segments.length;
-    this.segCountX2 = segCount * 2;
-    this.searchRange = Math.pow(Math.floor(Math.log(segCount) / Math.log(2)), 2) * 2;
-    this.entrySelector = Math.log(this.searchRange / 2) / Math.log(2);
-    this.rangeShift = this.segCountX2 - this.searchRange;
-
-
-}
-
-CmapTable.prototype = new table.Table('cmap', [
-    {name: 'version', type: 'USHORT', value: 0},
-    {name: 'numTables', type: 'USHORT', value: 1},
-    {name: 'platformID', type: 'USHORT', value: 3},
-    {name: 'encodingID', type: 'USHORT', value: 1},
-    {name: 'offset', type: 'ULONG', value: 12},
-    {name: 'format', type: 'USHORT', value: 4},
-    {name: 'length', type: 'USHORT', value: 0},
-    {name: 'language', type: 'USHORT', value: 0},
-    {name: 'segCountX2', type: 'USHORT', value: 0},
-    {name: 'searchRange', type: 'USHORT', value: 0},
-    {name: 'entrySelector', type: 'USHORT', value: 0},
-    {name: 'rangeShift', type: 'USHORT', value: 0}]);
-
-CmapTable.prototype.addSegment = function (code) {
-    var index = this.segments.length + 1;
-    this.segments.push({
+function addSegment(t, code) {
+    var index = t.segments.length + 1;
+    t.segments.push({
         end: code,
         start: code,
         delta: -(code - index),
         offset: 0,
         glyphId: index
     });
-};
+}
 
-CmapTable.prototype.addTerminatorSegment = function () {
-    this.segments.push({
+function addTerminatorSegment(t) {
+    t.segments.push({
         end: 0xFFFF,
         start: 0xFFFF,
         delta: 1,
         offset: 0
     });
-};
+}
 
-CmapTable.prototype.encode = function () {
+function makeCmapTable() {
+    var t = new table.Table('cmap', [
+        {name: 'version', type: 'USHORT', value: 0},
+        {name: 'numTables', type: 'USHORT', value: 1},
+        {name: 'platformID', type: 'USHORT', value: 3},
+        {name: 'encodingID', type: 'USHORT', value: 1},
+        {name: 'offset', type: 'ULONG', value: 12},
+        {name: 'format', type: 'USHORT', value: 4},
+        {name: 'length', type: 'USHORT', value: 0},
+        {name: 'language', type: 'USHORT', value: 0},
+        {name: 'segCountX2', type: 'USHORT', value: 0},
+        {name: 'searchRange', type: 'USHORT', value: 0},
+        {name: 'entrySelector', type: 'USHORT', value: 0},
+        {name: 'rangeShift', type: 'USHORT', value: 0}
+    ]);
+
+    t.segments = [];
+    addSegment(t, 0);
+    addSegment(t, 'A'.charCodeAt(0));
+    addTerminatorSegment(t);
+
     var segCount;
-    segCount = this.segments.length;
-    this.segCountX2 = segCount * 2;
-    this.searchRange = Math.pow(Math.floor(Math.log(segCount) / Math.log(2)), 2) * 2;
-    this.entrySelector = Math.log(this.searchRange / 2) / Math.log(2);
-    this.rangeShift = this.segCountX2 - this.searchRange;
+    segCount = t.segments.length;
+    t.segCountX2 = segCount * 2;
+    t.searchRange = Math.pow(Math.floor(Math.log(segCount) / Math.log(2)), 2) * 2;
+    t.entrySelector = Math.log(t.searchRange / 2) / Math.log(2);
+    t.rangeShift = t.segCountX2 - t.searchRange;
 
-    // Set up parallel segment arrays.
+     // Set up parallel segment arrays.
     var endCounts = [],
         startCounts = [],
         idDeltas = [],
@@ -143,24 +132,23 @@ CmapTable.prototype.encode = function () {
         glyphIds = [];
 
     for (var i = 0; i < segCount; i += 1) {
-        var segment = this.segments[i];
-        endCounts = endCounts.concat(encode.USHORT(segment.end));
-        startCounts = startCounts.concat(encode.USHORT(segment.start));
-        idDeltas = idDeltas.concat(encode.SHORT(segment.delta));
-        idRangeOffsets = idRangeOffsets.concat(encode.USHORT(segment.offset));
+        var segment = t.segments[i];
+        endCounts = endCounts.concat({name: 'end_' + i, type: 'USHORT', value: segment.end});
+        startCounts = startCounts.concat({name: 'start_' + i, type: 'USHORT', value: segment.start});
+        idDeltas = idDeltas.concat({name: 'idDelta_' + i, type: 'SHORT', value: segment.delta});
+        idRangeOffsets = idRangeOffsets.concat({name: 'idRangeOffset_' + i, type: 'USHORT', value: segment.offset});
         if (segment.glyphId !== undefined) {
-            glyphIds = glyphIds.concat(encode.USHORT(segment.glyphId));
+            glyphIds = glyphIds.concat({name: 'glyph_' + i, type: 'USHORT', value: segment.glyphId});
         }
     }
-    var d = encode.TABLE(this);
-    d = d.concat(endCounts);
-    d = d.concat(encode.USHORT(0)); // reservedPad field
-    d = d.concat(startCounts);
-    d = d.concat(idDeltas);
-    d = d.concat(idRangeOffsets);
-    d = d.concat(glyphIds);
-    return d;
-};
+    t.fields = t.fields.concat(endCounts);
+    t.fields.push({name: 'reservedPad', type: 'USHORT', value: 0});
+    t.fields = t.fields.concat(startCounts);
+    t.fields = t.fields.concat(idDeltas);
+    t.fields = t.fields.concat(idRangeOffsets);
+    t.fields = t.fields.concat(glyphIds);
+    return t;
+}
 
 exports.parse = parseCmapTable;
-exports.Table = CmapTable;
+exports.make = makeCmapTable;

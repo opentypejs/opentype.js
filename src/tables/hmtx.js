@@ -23,19 +23,19 @@ function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
     }
 }
 
-function HmtxTable() {
+function makeHmtxTable() {
+    var t = new table.Table('hmtx', []);
     var metrics = [{advanceWidth: 600, leftSideBearing: 0}];
     for (var i = 0; i < metrics.length; i += 1) {
         var metric = metrics[i];
-        this.fields.push({name: 'advanceWidth_' + i, type: 'USHORT', value: metric.advanceWidth});
-        this.fields.push({name: 'leftSideBearing_' + i, type: 'SHORT', value: metric.leftSideBearing});
+        t.fields.push({name: 'advanceWidth_' + i, type: 'USHORT', value: metric.advanceWidth});
+        t.fields.push({name: 'leftSideBearing_' + i, type: 'SHORT', value: metric.leftSideBearing});
     }
+    return t;
 }
 
-HmtxTable.prototype = new table.Table('hmtx', []);
-
 exports.parse = parseHmtxTable;
-exports.Table = HmtxTable;
+exports.make = makeHmtxTable;
 
 
 

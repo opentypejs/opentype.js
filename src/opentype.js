@@ -210,17 +210,16 @@ function save() {
     //var tag2 = encode.TAG('BART');
     //var bytes = encode.INDEX([tag1, tag2]);
 
-    var headTable = new head.Table();
-    var hheaTable = new hhea.Table();
-    var maxpTable = new maxp.Table();
-    var os2Table = new os2.Table();
-    var hmtxTable = new hmtx.Table();
-    var cmapTable = new cmap.Table();
-    var nameTable = new _name.Table();
+    var headTable = head.make();
+    var hheaTable = hhea.make();
+    var maxpTable = maxp.make(2);
+    var os2Table = os2.make();
+    var hmtxTable = hmtx.make();
+    var cmapTable = cmap.make();
      // FIXME We currently only have a glyph for the letter A.
-    nameTable.sampleText = 'AAA';
-    var postTable = new post.Table();
-    var cffTable = new cff.Table();
+    var nameTable = _name.make({sampleText: 'AAA'});
+    var postTable = post.make();
+    var cffTable = cff.make();
     var tables = [headTable, hheaTable, maxpTable, os2Table, hmtxTable, cmapTable, nameTable, postTable, cffTable];
 
     var sfntTable = sfnt.make(tables);

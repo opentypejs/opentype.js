@@ -80,65 +80,51 @@ function parseNameTable(data, start) {
     return name;
 }
 
-
-function NameRecord(platformID, encodingID, languageID, nameID, string) {
-    this.platformID = platformID;
-    this.encodingID = encodingID;
-    this.languageID = languageID;
-    this.nameID = nameID;
-    this.length = string.length;
+function makeNameRecord(platformID, encodingID, languageID, nameID, string) {
+    return new table.Table('NameRecord', [
+        {name: 'platformID', type: 'USHORT', value: platformID},
+        {name: 'encodingID', type: 'USHORT', value: encodingID},
+        {name: 'languageID', type: 'USHORT', value: languageID},
+        {name: 'nameID', type: 'USHORT', value: nameID},
+        {name: 'length', type: 'USHORT', value: string.length},
+        {name: 'offset', type: 'USHORT', value: 0},
+    ]);
 }
 
-NameRecord.prototype = new table.Table('NameRecord', [
-    {name: 'platformID', type: 'USHORT', value: 0},
-    {name: 'encodingID', type: 'USHORT', value: 0},
-    {name: 'languageID', type: 'USHORT', value: 0},
-    {name: 'nameID', type: 'USHORT', value: 0},
-    {name: 'length', type: 'USHORT', value: 0},
-    {name: 'offset', type: 'USHORT', value: 0},
-]);
-
-function NameTable() {
-    for (var i = 0; i < nameTableNames.length; i += 1) {
-        this[nameTableNames[i]] = '';
-    }
-    this.records = [];
-    this.strings = [];
-}
-
-NameTable.prototype = new table.Table('name', [
-    {name: 'format', type: 'USHORT', value: 0},
-    {name: 'count', type: 'USHORT', value: 0},
-    {name: 'stringOffset', type: 'USHORT', value: 0}
-]);
-
-NameTable.prototype.addRecord = function (recordID, s) {
+function addNameRecord(t, recordID, s) {
     // Macintosh, Roman, English
     var stringBytes = encode.STRING(s);
-    this.records.push(new NameRecord(1, 0, 0, recordID, stringBytes));
-    this.strings.push(stringBytes);
+    t.records.push(makeNameRecord(1, 0, 0, recordID, stringBytes));
+    t.strings.push(stringBytes);
     // Windows, Unicode BMP (UCS-2), US English
     var utf16Bytes = encode.UTF16(s);
-    this.records.push(new NameRecord(3, 1, 0x0409, recordID, utf16Bytes));
-    this.strings.push(utf16Bytes);
-};
+    t.records.push(makeNameRecord(3, 1, 0x0409, recordID, utf16Bytes));
+    t.strings.push(utf16Bytes);
+}
 
-NameTable.prototype.build = function () {
+function makeNameTable(options) {
     var i;
+    var t = new table.Table('name', [
+        {name: 'format', type: 'USHORT', value: 0},
+        {name: 'count', type: 'USHORT', value: 0},
+        {name: 'stringOffset', type: 'USHORT', value: 0}
+    ]);
+    t.records = [];
+    t.strings = [];
     for (i = 0; i < nameTableNames.length; i += 1) {
-        var s = this[nameTableNames[i]];
-        if (s.length > 0) {
-            this.addRecord(i, s);
+        if (options[nameTableNames[i]] !== undefined) {
+            var s = options[nameTableNames[i]];
+            addNameRecord(t, i, s);
         }
     }
-    for (i = 0; i < this.records.length; i += 1) {
-        this.fields.push({name: 'record_' + i, type: 'NameRecord', value: this.records[i]});
+    for (i = 0; i < t.records.length; i += 1) {
+        t.fields.push({name: 'record_' + i, type: 'NameRecord', value: t.records[i]});
     }
-    for (i = 0; i < this.strings.length; i += 1) {
-        this.fields.push({name: 'string_' + i, type: 'LITERAL', value: this.strings[i]});
+    for (i = 0; i < t.strings.length; i += 1) {
+        t.fields.push({name: 'string_' + i, type: 'CHARSTRING', value: t.strings[i]});
     }
-    return this;
-};
+    return t;
+}
 
 exports.parse = parseNameTable;
-exports.Table = NameTable;
+exports.make = makeNameTable;

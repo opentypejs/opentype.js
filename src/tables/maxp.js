@@ -31,13 +31,12 @@ function parseMaxpTable(data, start) {
     return maxp;
 }
 
-function MaxpTable() {
+function makeMaxpTable(numGlyphs) {
+    return new table.Table('maxp', [
+        {name: 'version', type: 'FIXED', value: 0x00005000},
+        {name: 'numGlyphs', type: 'USHORT', value: numGlyphs}
+    ]);
 }
 
-MaxpTable.prototype = new table.Table('maxp', [
-    {name: 'version', type: 'FIXED', value: 0x00005000},
-    {name: 'numGlyphs', type: 'USHORT', value: 0}
-]);
-
 exports.parse = parseMaxpTable;
-exports.Table = MaxpTable;
+exports.make = makeMaxpTable;
