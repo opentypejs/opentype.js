@@ -856,13 +856,6 @@ function makePrivateDictIndex(privateDict) {
     return t;
 }
 
-function makeLocalSubrIndex() {
-    // Currently we don't use subroutines.
-    return new table.Table('Local Subr INDEX', [
-        {name: 'subrs', type: 'INDEX', value: []}
-    ]);
-}
-
 function makeCFFTable() {
     var t = new table.Table('CFF ', [
         {name: 'header', type: 'TABLE'},
@@ -873,8 +866,7 @@ function makeCFFTable() {
         {name: 'encodings', type: 'TABLE'},
         {name: 'charsets', type: 'TABLE'},
         {name: 'charStringsIndex', type: 'TABLE'},
-        {name: 'privateDictIndex', type: 'TABLE'},
-        {name: 'localSubrIndex', type: 'TABLE'}
+        {name: 'privateDictIndex', type: 'TABLE'}
     ]);
 
     // We use non-zero values for the offsets so that the DICT encodes them.
@@ -907,7 +899,6 @@ function makeCFFTable() {
     t.charStringsIndex = makeCharStringsIndex();
     var privateDict = makePrivateDict(privateAttrs, strings);
     t.privateDictIndex = makePrivateDictIndex(privateDict);
-    t.localSubrIndex = makeLocalSubrIndex();
 
     // Needs to come at the end, to encode all custom strings used in the font.
     t.stringIndex = makeStringIndex(strings);
@@ -921,15 +912,10 @@ function makeCFFTable() {
     attrs.charset = attrs.encoding + t.encodings.sizeOf();
     attrs.charStrings = attrs.charset + t.charsets.sizeOf();
     attrs.private[1] = attrs.charStrings + t.charStringsIndex.sizeOf();
-    privateAttrs.subrs = attrs.private[1] + t.privateDictIndex.sizeOf();
 
     // Recreate the Top DICT INDEX with the correct offsets.
     topDict = makeTopDict(attrs, strings);
     t.topDictIndex = makeTopDictIndex(topDict);
-
-    // Recreate the Private DICT INDEX with the correct offsets.
-    privateDict = makePrivateDict(privateAttrs, strings);
-    t.privateDictIndex = makePrivateDictIndex(privateDict);
 
     return t;
 }
