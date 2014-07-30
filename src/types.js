@@ -107,7 +107,7 @@ encode.LONGDATETIME = function () {
     return [0, 0, 0, 0, 0, 0, 0, 0];
 };
 
-sizeOf.LONGDATETIME = constant(4);
+sizeOf.LONGDATETIME = constant(8);
 
 // Convert a 4-char tag to a list of 4 bytes.
 encode.TAG = function (v) {
