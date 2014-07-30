@@ -251,11 +251,10 @@ function save() {
     };
 
     sfntTable.download = function () {
-        var bytes = sfntTable.encode();
-        console.log(bytes);
+        var buffer = sfntTable.toBuffer();
 
         window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-        window.requestFileSystem(window.TEMPORARY, bytes.length, function (fs) {
+        window.requestFileSystem(window.TEMPORARY, buffer.byteLength, function (fs) {
             fs.root.getFile('tmp.otf', {create: true}, function (fileEntry) {
                 fileEntry.createWriter(function (writer) {
                     var buffer = sfntTable.toBuffer();
