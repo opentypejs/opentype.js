@@ -640,10 +640,15 @@ function parseCFFTable(data, start, font) {
     font.defaultWidthX = privateDict.defaultWidthX;
     font.nominalWidthX = privateDict.nominalWidthX;
 
-    subrOffset = privateDictOffset + privateDict.subrs;
-    subrIndex = parseCFFIndex(data, subrOffset);
-    font.subrs = subrIndex.objects;
-    font.subrsBias = calcCFFSubroutineBias(font.subrs);
+    if (privateDict.subrs !== 0) {
+        subrOffset = privateDictOffset + privateDict.subrs;
+        subrIndex = parseCFFIndex(data, subrOffset);
+        font.subrs = subrIndex.objects;
+        font.subrsBias = calcCFFSubroutineBias(font.subrs);
+    } else {
+        font.subrs = [];
+        font.subrsBias = 0;
+    }
 
     // Offsets in the top dict are relative to the beginning of the CFF data, so add the CFF start offset.
     charStringsIndex = parseCFFIndex(data, start + topDict.charStrings);
