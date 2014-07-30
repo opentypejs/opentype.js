@@ -300,15 +300,15 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
 // Parse the CFF encoding data. Only one encoding can be specified per font.
 // See Adobe TN #5176 chapter 12, "Encodings".
 function parseCFFEncoding(data, start, charset) {
-    var encoding, parser, format, nCodes, i, code, nRanges, first, nLeft, j;
-    encoding = {};
+    var enc, parser, format, nCodes, i, code, nRanges, first, nLeft, j;
+    enc = {};
     parser = new parse.Parser(data, start);
     format = parser.parseCard8();
     if (format === 0) {
         nCodes = parser.parseCard8();
         for (i = 0; i < nCodes; i += 1) {
             code = parser.parseCard8();
-            encoding[code] = i;
+            enc[code] = i;
         }
     } else if (format === 1) {
         nRanges = parser.parseCard8();
@@ -317,14 +317,14 @@ function parseCFFEncoding(data, start, charset) {
             first = parser.parseCard8();
             nLeft = parser.parseCard8();
             for (j = first; j <= first + nLeft; j += 1) {
-                encoding[j] = code;
+                enc[j] = code;
                 code += 1;
             }
         }
     } else {
         throw new Error('Unknown encoding format ' + format);
     }
-    return new encoding.CffEncoding(encoding, charset);
+    return new encoding.CffEncoding(enc, charset);
 }
 
 // Take in charstring code and return a Glyph object.
