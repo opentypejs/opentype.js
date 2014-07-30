@@ -118,10 +118,10 @@ function makeNameTable(options) {
         }
     }
     for (i = 0; i < t.records.length; i += 1) {
-        t.fields.push({name: 'record_' + i, type: 'NameRecord', value: t.records[i]});
+        t.fields.push({name: 'record_' + i, type: 'TABLE', value: t.records[i]});
     }
     for (i = 0; i < t.strings.length; i += 1) {
-        t.fields.push({name: 'string_' + i, type: 'CHARSTRING', value: t.strings[i]});
+        t.fields.push({name: 'string_' + i, type: 'LITERAL', value: t.strings[i]});
     }
     return t;
 }
