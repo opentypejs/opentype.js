@@ -221,17 +221,9 @@ function save() {
     nameTable.sampleText = 'AAA';
     var postTable = new post.Table();
     var cffTable = new cff.Table();
+    var tables = [headTable, hheaTable, maxpTable, os2Table, hmtxTable, cmapTable, nameTable, postTable, cffTable];
 
-    var sfntTable = new sfnt.Table();
-    sfntTable.addTable(headTable);
-    sfntTable.addTable(hheaTable);
-    sfntTable.addTable(maxpTable);
-    sfntTable.addTable(os2Table);
-    sfntTable.addTable(hmtxTable);
-    sfntTable.addTable(cmapTable);
-    sfntTable.addTable(nameTable);
-    sfntTable.addTable(postTable);
-    sfntTable.addTable(cffTable);
+    var sfntTable = sfnt.make(tables);
 
     for (var i = 0; i < sfntTable.tables.length; i += 1) {
         var table = sfntTable.tables[i];
@@ -239,22 +231,25 @@ function save() {
     }
     console.log(sfntTable);
 
-    sfntTable.build();
     var bytes = sfntTable.encode();
     var checkSum = sfnt.computeCheckSum(bytes);
     headTable.checkSumAdjustment = 0xB1B0AFBA - checkSum;
 
+    console.log(sfntTable.fields.length, sfntTable.fields);
+
     // Build the font again, now with the proper checkSum.
-    sfntTable = new sfnt.Table();
-    sfntTable.addTable(headTable);
-    sfntTable.addTable(hheaTable);
-    sfntTable.addTable(maxpTable);
-    sfntTable.addTable(os2Table);
-    sfntTable.addTable(hmtxTable);
-    sfntTable.addTable(cmapTable);
-    sfntTable.addTable(nameTable);
-    sfntTable.addTable(postTable);
-    sfntTable.addTable(cffTable);
+    sfntTable = sfnt.make(tables);
+    console.log(sfntTable.fields.length, sfntTable.fields);
+
+    sfntTable.toBuffer = function () {
+        var bytes = sfntTable.encode();
+        var buffer = new ArrayBuffer(bytes.length);
+        var intArray = new Uint8Array(buffer);
+        for (var i = 0; i < bytes.length; i++) {
+            intArray[i] = bytes[i];
+        }
+        return buffer;
+    };
 
     sfntTable.download = function () {
         var bytes = sfntTable.encode();
@@ -264,11 +259,7 @@ function save() {
         window.requestFileSystem(window.TEMPORARY, bytes.length, function (fs) {
             fs.root.getFile('tmp.otf', {create: true}, function (fileEntry) {
                 fileEntry.createWriter(function (writer) {
-                    var buffer = new ArrayBuffer(bytes.length);
-                    var intArray = new Uint8Array(buffer);
-                    for (var i = 0; i < bytes.length; i++) {
-                        intArray[i] = bytes[i];
-                    }
+                    var buffer = sfntTable.toBuffer();
                     var dataView = new DataView(buffer);
                     var blob = new Blob([dataView], {type: 'font/opentype'});
                     writer.write(blob);
@@ -282,7 +273,7 @@ function save() {
         }, function (err) {
             console.log(err);
         });
-    }
+    };
 
     return sfntTable;
 }

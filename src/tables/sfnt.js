@@ -28,58 +28,42 @@ function computeCheckSum(bytes) {
     return sum;
 }
 
-function TableRecord() {
+function makeTableRecord(tag, checkSum, offset, length) {
+    return new table.Table('Table Record', [
+        {name: 'tag', type: 'TAG', value: tag !== undefined ? tag : ''},
+        {name: 'checkSum', type: 'ULONG', value: checkSum !== undefined ? checkSum : 0},
+        {name: 'offset', type: 'ULONG', value: offset !== undefined ? offset : 0},
+        {name: 'length', type: 'ULONG', value: length !== undefined ? length : 0}]);
 }
 
-TableRecord.prototype = new table.Table('Table Record', [
-    {name: 'tag', type: 'TAG', value: ''},
-    {name: 'checkSum', type: 'ULONG', value: 0},
-    {name: 'offset', type: 'ULONG', value: 0},
-    {name: 'length', type: 'ULONG', value: 0}
-]);
-
-function SfntTable() {
-    this.tables = [];
-}
-
-SfntTable.prototype = new table.Table('sfnt', [
-    {name: 'version', type: 'TAG', value: 'OTTO'},
-    {name: 'numTables', type: 'USHORT', value: 0},
-    {name: 'searchRange', type: 'USHORT', value: 0},
-    {name: 'entrySelector', type: 'USHORT', value: 0},
-    {name: 'rangeShift', type: 'USHORT', value: 0}
-]);
-
-SfntTable.prototype.addTable = function (table) {
-    this.tables.push(table);
-    this.numTables += 1;
-};
-
-SfntTable.prototype.build = function () {
-    this.numTables = this.tables.length;
-    var highestPowerOf2 = Math.pow(2, log2(this.numTables));
-    this.searchRange = 16 * highestPowerOf2;
-    this.entrySelector = log2(highestPowerOf2);
-    this.rangeShift = this.numTables * 16 - this.searchRange;
+function makeSfntTable(tables) {
+    var sfnt =  new table.Table('sfnt', [
+        {name: 'version', type: 'TAG', value: 'OTTO'},
+        {name: 'numTables', type: 'USHORT', value: 0},
+        {name: 'searchRange', type: 'USHORT', value: 0},
+        {name: 'entrySelector', type: 'USHORT', value: 0},
+        {name: 'rangeShift', type: 'USHORT', value: 0}]);
+    sfnt.tables = tables;
+    sfnt.numTables = tables.length;
+    var highestPowerOf2 = Math.pow(2, log2(sfnt.numTables));
+    sfnt.searchRange = 16 * highestPowerOf2;
+    sfnt.entrySelector = log2(highestPowerOf2);
+    sfnt.rangeShift = sfnt.numTables * 16 - sfnt.searchRange;
 
     var tableFields = [];
-    var offset = this.sizeOf() + ((new TableRecord()).sizeOf() * this.numTables);
+    var offset = sfnt.sizeOf() + (makeTableRecord().sizeOf() * sfnt.numTables);
     while (offset % 4 !== 0) {
         offset += 1;
         tableFields.push({name: 'padding', type: 'BYTE', value: 0});
     }
 
-    for (var i = 0; i < this.tables.length; i += 1) {
-        var table = this.tables[i];
-        tableFields.push({name: table.tableName + ' table', type: 'TABLE', value: table});
-        var tableLength = table.sizeOf();
-        var tableRecord = new TableRecord();
-        tableRecord.tag = table.tableName;
-        check.argument(table.tableName.length === 4, 'Table name' + table.tableName + ' is invalid.');
-        tableRecord.checkSum = computeCheckSum(table.encode());
-        tableRecord.offset = offset;
-        tableRecord.length = tableLength;
-        this.fields.push({name: tableRecord.tag + ' Table Record', type: 'TABLE', value: tableRecord});
+    for (var i = 0; i < tables.length; i += 1) {
+        var t = tables[i];
+        check.argument(t.tableName.length === 4, 'Table name' + t.tableName + ' is invalid.');
+        var tableLength = t.sizeOf();
+        var tableRecord = makeTableRecord(t.tableName, computeCheckSum(t.encode()), offset, tableLength);
+        sfnt.fields.push({name: tableRecord.tag + ' Table Record', type: 'TABLE', value: tableRecord});
+        tableFields.push({name: t.tableName + ' table', type: 'TABLE', value: t});
         offset += tableLength;
         check.argument(!isNaN(offset), 'Something went wrong calculating the offset.');
         while (offset % 4 !== 0) {
@@ -88,8 +72,9 @@ SfntTable.prototype.build = function () {
         }
     }
 
-    this.fields = this.fields.concat(tableFields);
-};
+    sfnt.fields = sfnt.fields.concat(tableFields);
+    return sfnt;
+}
 
-exports.Table = SfntTable;
+exports.make = makeSfntTable;
 exports.computeCheckSum = computeCheckSum;
