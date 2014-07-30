@@ -236,12 +236,14 @@ encode.DICT = function (m) {
     var d = [];
     var keys = Object.keys(m);
     for (var i = 0; i < keys.length; i += 1) {
-        var k = keys[i];
+        // Object.keys() return string keys, but our keys are always numeric.
+        var k = parseInt(keys[i], 0);
         var v = m[k];
         // Value comes before the key.
         d = d.concat(encode.OPERAND(v.value, v.type));
         d = d.concat(encode.OPERATOR(k));
     }
+    return d;
 };
 
 sizeOf.DICT = function (m) {
@@ -257,7 +259,7 @@ encode.OPERATOR = function (v) {
 };
 
 encode.OPERAND = function (v, type) {
-    var d, i, sid;
+    var d, i;
     d = [];
     if (Array.isArray(type)) {
         for (i = 0; i < type.length; i += 1) {
@@ -266,7 +268,7 @@ encode.OPERAND = function (v, type) {
         }
     } else {
         if (type === 'SID') {
-            d = d.concat(encode.SID(sid));
+            d = d.concat(encode.NUMBER(v));
         } else if (type === 'offset') {
             // We make it easy for ourselves and always encode offsets as
             // 4 bytes. This makes offset calculation for the top dict easier.
