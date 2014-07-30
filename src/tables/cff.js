@@ -232,7 +232,14 @@ var TOP_DICT_META = [
     {name: 'charset', op: 15, type: 'offset', value: 0},
     {name: 'encoding', op: 16, type: 'offset', value: 0},
     {name: 'charStrings', op: 17, type: 'offset', value: 0},
-    {name: 'private', op: 18, type: ['number', 'offset'], value: [0, 0]}];
+    {name: 'private', op: 18, type: ['number', 'offset'], value: [0, 0]}
+];
+
+var PRIVATE_DICT_META = [
+    {name: 'subrs', op: 19, type: 'offset', value: 0},
+    {name: 'defaultWidthX', op: 20, type: 'number', value: 0},
+    {name: 'nominalWidthX', op: 21, type: 'number', value: 0}
+];
 
 // Parse the CFF top dictionary. A CFF table can contain multiple fonts, each with their own top dictionary.
 // The top dictionary contains the essential metadata for the font, together with the private dictionary.
@@ -244,14 +251,9 @@ function parseCFFTopDict(data, strings) {
 
 // Parse the CFF private dictionary. We don't fully parse out all the values, only the ones we need.
 function parseCFFPrivateDict(data, start, size, strings) {
-    var dict, meta;
-    meta = [
-        {name: 'subrs', op: 19, type: 'offset', value: 0},
-        {name: 'defaultWidthX', op: 20, type: 'number', value: 0},
-        {name: 'nominalWidthX', op: 21, type: 'number', value: 0}
-    ];
+    var dict;
     dict = parseCFFDict(data, start, size);
-    return interpretDict(dict, meta, strings);
+    return interpretDict(dict, PRIVATE_DICT_META, strings);
 }
 
 // Parse the CFF charset table, which contains internal names for all the glyphs.
@@ -705,14 +707,11 @@ function makeNameIndex(fontNames) {
     return t;
 }
 
-// The Top DICT houses the global font attributes.
-function makeTopDict(attrs, strings) {
-    var t = new table.Table('Top DICT', [
-        {name: 'dict', type: 'DICT', value: {}}
-    ]);
+// Given a dictionary's metadata, create a DICT structure.
+function makeDict(meta, attrs, strings) {
     var m = {}, i, entry, value;
-    for (i = 0; i < TOP_DICT_META.length; i += 1) {
-        entry = TOP_DICT_META[i];
+    for (i = 0; i < meta.length; i += 1) {
+        entry = meta[i];
         value = attrs[entry.name];
         if (value !== undefined && !equals(value, entry.value)) {
             if (entry.type === 'SID') {
@@ -721,7 +720,15 @@ function makeTopDict(attrs, strings) {
             m[entry.op] = {name: entry.name, type: entry.type, value: value};
         }
     }
-    t.dict = m;
+    return m;
+}
+
+// The Top DICT houses the global font attributes.
+function makeTopDict(attrs, strings) {
+    var t = new table.Table('Top DICT', [
+        {name: 'dict', type: 'DICT', value: {}}
+    ]);
+    t.dict = makeDict(TOP_DICT_META, attrs, strings);
     return t;
 }
 
@@ -828,19 +835,28 @@ function makeCharStringsIndex() {
     return t;
 }
 
-function makePrivateDictIndex() {
-    return new table.Table('Private DICT INDEX', [
-        {name: 'privateDicts', type: 'INDEX', value: []}
+function makePrivateDict(attrs, strings) {
+    var t = new table.Table('Private DICT', [
+        {name: 'dict', type: 'DICT', value: {}}
     ]);
+    t.dict = makeDict(PRIVATE_DICT_META, attrs, strings);
+    return t;
 }
 
-//function hexDump(bytes) {
-//    var hexString = bytes.map(function (v) {
-//        var h =  v.toString(16);
-//        return h.length === 1 ? '0' + h : h;
-//    });
-//    return hexString.join(' ').toUpperCase();
-//}
+function makePrivateDictIndex(privateDict) {
+    var t = new table.Table('Private DICT INDEX', [
+        {name: 'privateDicts', type: 'INDEX', value: []}
+    ]);
+    t.privateDicts = [{name: 'privateDict_0', type: 'TABLE', value: privateDict}];
+    return t;
+}
+
+function makeLocalSubrIndex() {
+    // Currently we don't use subroutines.
+    return new table.Table('Local Subr INDEX', [
+        {name: 'subrs', type: 'INDEX', value: []}
+    ]);
+}
 
 function makeCFFTable() {
     var t = new table.Table('CFF ', [
@@ -852,10 +868,11 @@ function makeCFFTable() {
         {name: 'encodings', type: 'TABLE'},
         {name: 'charsets', type: 'TABLE'},
         {name: 'charStringsIndex', type: 'TABLE'},
-        {name: 'privateDictIndex', type: 'TABLE'}
+        {name: 'privateDictIndex', type: 'TABLE'},
+        {name: 'localSubrIndex', type: 'TABLE'}
     ]);
-    var strings, attrs;
-    attrs = {
+
+    var attrs = {
         version: 'Version 1.0',
         fullName: 'Custom Glyph Font',
         familyName: 'Custom',
@@ -866,7 +883,12 @@ function makeCFFTable() {
         private: [0, 0]
     };
 
-    strings = [];
+    var privateAttrs = {
+        defaultWidthX: 666,
+        subrs: 0
+    };
+
+    var strings = [];
 
     t.header = makeHeader();
     t.nameIndex = makeNameIndex(['customfont']);
@@ -876,7 +898,9 @@ function makeCFFTable() {
     t.encodings = makeEncodings();
     t.charsets = makeCharsets(['A'], strings);
     t.charStringsIndex = makeCharStringsIndex();
-    t.privateDictIndex = makePrivateDictIndex();
+    var privateDict = makePrivateDict(privateAttrs, strings);
+    t.privateDictIndex = makePrivateDictIndex(privateDict);
+    t.localSubrIndex = makeLocalSubrIndex();
 
     // Needs to come at the end, to encode all custom strings used in the font.
     t.stringIndex = makeStringIndex(strings);
@@ -889,11 +913,17 @@ function makeCFFTable() {
     attrs.encoding = baseOffset;
     attrs.charset = attrs.encoding + t.encodings.sizeOf();
     attrs.charStrings = attrs.charset + t.charsets.sizeOf();
-    // attrs.private[1] = attrs.charStrings + charStringsIndex.length;
+    attrs.private[1] = attrs.charStrings + t.charStringsIndex.sizeOf();
+    privateAttrs.subrs = attrs.private[1] + t.privateDictIndex.sizeOf();
 
     // Recreate the Top DICT INDEX with the correct offsets.
     topDict = makeTopDict(attrs, strings);
     t.topDictIndex = makeTopDictIndex(topDict);
+
+    // Recreate the Private DICT INDEX with the correct offsets.
+    privateDict = makePrivateDict(privateAttrs, strings);
+    t.privateDictIndex = makePrivateDictIndex(privateDict);
+
     return t;
 }
 
