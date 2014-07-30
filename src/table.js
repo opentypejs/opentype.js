@@ -35,23 +35,7 @@ Table.prototype.sizeOf = function () {
 };
 
 Table.prototype.encode = function () {
-    var d = [];
-    for (var i = 0; i < this.fields.length; i += 1) {
-        var field = this.fields[i];
-        var value = this[field.name];
-        if (value === undefined) {
-            value = field.value;
-        }
-        if (typeof value.encode === 'function') {
-            d = d.concat(value.encode());
-        } else {
-            var encodingFunction = encode[field.type];
-            check.assert(typeof encodingFunction === 'function', 'Could not find encoding function for field' + field.name);
-            var encodedValue = encodingFunction(value);
-            d = d.concat(encodedValue);
-        }
-    }
-    return d;
+    return encode.TABLE(this);
 };
 
 exports.Table = Table;
