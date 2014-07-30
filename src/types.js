@@ -320,6 +320,16 @@ encode.TABLE = function (table) {
     return d;
 };
 
+// Merge in a list of bytes.
+encode.LITERAL = function (v) {
+    return v;
+};
+
+sizeOf.LITERAL = function (v) {
+    return v.length;
+};
+
+
 exports.decode = decode;
 exports.encode = encode;
 exports.sizeOf = sizeOf;
