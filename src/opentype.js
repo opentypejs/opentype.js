@@ -266,7 +266,28 @@ function save() {
         path: aPath
     };
 
-    var glyphs = [notdefGlyph, aGlyph];
+    var bPath = new path.Path();
+    bPath.moveTo(0, 0);
+    bPath.lineTo(0, 500);
+    bPath.lineTo(200, 500);
+    bPath.lineTo(200, 250);
+    bPath.lineTo(300, 250);
+    bPath.lineTo(300, 0);
+    bPath.moveTo(50, 450);
+    bPath.lineTo(50, 300);
+    bPath.lineTo(150, 300);
+    bPath.lineTo(150, 450);
+    bPath.moveTo(50, 200);
+    bPath.lineTo(50, 50);
+    bPath.lineTo(250, 50);
+    bPath.lineTo(250, 200);
+    var bGlyph = {
+        name: 'B',
+        advanceWidth: 400,
+        path: bPath
+    };
+
+    var glyphs = [notdefGlyph, aGlyph, bGlyph];
 
     var xMins = [];
     var yMins = [];
@@ -316,7 +337,7 @@ function save() {
     var maxpTable = maxp.make(glyphs.length);
     var os2Table = os2.make();
     var hmtxTable = hmtx.make(glyphs);
-    var cmapTable = cmap.make();
+    var cmapTable = cmap.make(glyphs);
      // FIXME We currently only have a glyph for the letter A.
     var nameTable = _name.make({sampleText: 'AAA'});
     var postTable = post.make();

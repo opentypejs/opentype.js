@@ -77,7 +77,7 @@ function parseCmapTable(data, start) {
 }
 
 function addSegment(t, code) {
-    var index = t.segments.length + 1;
+    var index = t.segments.length;
     t.segments.push({
         end: code,
         start: code,
@@ -96,7 +96,8 @@ function addTerminatorSegment(t) {
     });
 }
 
-function makeCmapTable() {
+function makeCmapTable(glyphs) {
+    var i;
     var t = new table.Table('cmap', [
         {name: 'version', type: 'USHORT', value: 0},
         {name: 'numTables', type: 'USHORT', value: 1},
@@ -114,7 +115,10 @@ function makeCmapTable() {
 
     t.segments = [];
     addSegment(t, 0);
-    addSegment(t, 'A'.charCodeAt(0));
+    for (i = 1; i < glyphs.length; i += 1) {
+        // FIXME glyph name !== Unicode codepoint.
+        addSegment(t, glyphs[i].name.charCodeAt(0));
+    }
     addTerminatorSegment(t);
 
     var segCount;
@@ -131,7 +135,7 @@ function makeCmapTable() {
         idRangeOffsets = [],
         glyphIds = [];
 
-    for (var i = 0; i < segCount; i += 1) {
+    for (i = 0; i < segCount; i += 1) {
         var segment = t.segments[i];
         endCounts = endCounts.concat({name: 'end_' + i, type: 'USHORT', value: segment.end});
         startCounts = startCounts.concat({name: 'start_' + i, type: 'USHORT', value: segment.start});
