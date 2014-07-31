@@ -869,9 +869,7 @@ function makeCFFTable(glyphs) {
         private: [0, 999]
     };
 
-    var privateAttrs = {
-        defaultWidthX: 666
-    };
+    var privateAttrs = {};
 
     var glyphNames = [];
     // Skip first glyph (.notdef)
