@@ -258,8 +258,8 @@ function save() {
     aPath.lineTo(150, 500);
     aPath.lineTo(300, 0);
     aPath.moveTo(250, 50);
-    aPath.moveTo(150, 450);
-    aPath.moveTo(50, 50);
+    aPath.lineTo(150, 400);
+    aPath.lineTo(50, 50);
     var aGlyph = {
         name: 'A',
         advanceWidth: 400,
