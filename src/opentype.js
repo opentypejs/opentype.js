@@ -10,6 +10,7 @@
 var encoding = require('./encoding');
 var _font = require('./font');
 var parse = require('./parse');
+var path = require('./path');
 
 var cmap = require('./tables/cmap');
 var cff = require('./tables/cff');
@@ -200,6 +201,34 @@ function load(url, callback) {
     });
 }
 
+function computeMetrics(glyph) {
+    var minX =
+    var commands = glyph.path.commands;
+    var xCoords = [];
+    var yCoords = [];
+    for (var i = 0; i < commands.length; i += 1) {
+        var cmd = commands[i];
+        if (cmd.type !== 'Z') {
+            xCoords.push(cmd.x);
+            yCoords.push(cmd.y);
+        }
+        if (cmd.type === 'Q' || cmd.type === 'C') {
+            xCoords.push(cmd.x1);
+            yCoords.push(cmd.y1);
+        }
+        if (cmd.type === 'C') {
+            xCoords.push(cmd.x2);
+            yCoords.push(cmd.y2);
+        }
+    }
+    return {
+        xMin: Math.min.apply(null, xCoords),
+        yMin: Math.min.apply(null, yCoords),
+        xMax: Math.max.apply(null, xCoords),
+        yMax: Math.min.apply(null, xCoords)
+    }
+}
+
 // Save the font and return a list of bytes.
 function save() {
     // Write the version. OTTO indicates this is a CFF font.
@@ -210,16 +239,61 @@ function save() {
     //var tag2 = encode.TAG('BART');
     //var bytes = encode.INDEX([tag1, tag2]);
 
-    var headTable = head.make({xMin: 0, xMax: 1000, yMin: -300, yMax: 1000});
+     // Encode two glyphs: .notdef and A.
+    var notdefPath = new path.Path();
+    notdefPath.moveTo(0, 0);
+    notdefPath.lineTo(0, 500);
+    notdefPath.lineTo(300, 500);
+    notdefPath.lineTo(300, 0);
+    var notdefGlyph = {
+        name: '.notdef',
+        advanceWidth: 400,
+        path: notdefPath
+    };
+
+    var aPath = new path.Path();
+    aPath.moveTo(0, 0);
+    aPath.lineTo(150, 500);
+    aPath.lineTo(300, 0);
+    aPath.moveTo(250, 50);
+    aPath.moveTo(150, 450);
+    aPath.moveTo(50, 50);
+    var aGlyph = {
+        name: 'A',
+        advanceWidth: 400,
+        path: aPath
+    };
+
+    var glyphs = [notdefGlyph, aGlyph];
+
+    var xMins = [];
+    var yMins = [];
+    var xMaxs = [];
+    var yMaxs = [];
+    for (var i = 0; i < glyphs.length; i += 1) {
+        var metrics = computeMetrics(glyphs[i]);
+        xMins.push(metrics.xMin);
+        yMins.push(metrics.yMin);
+        xMaxs.push(metrics.xMax);
+        yMaxs.push(metrics.yMax);
+    }
+    var globals = {
+        xMin: Math.min.apply(null, xMins),
+        yMin: Math.min.apply(null, yMins),
+        xMax: Math.max.apply(null, xMaxs),
+        yMax: Math.min.apply(null, yMaxs),
+    };
+
+    var headTable = head.make(globals);
     var hheaTable = hhea.make();
     var maxpTable = maxp.make(2);
     var os2Table = os2.make();
-    var hmtxTable = hmtx.make();
+    var hmtxTable = hmtx.make(glyphs);
     var cmapTable = cmap.make();
      // FIXME We currently only have a glyph for the letter A.
     var nameTable = _name.make({sampleText: 'AAA'});
     var postTable = post.make();
-    var cffTable = cff.make();
+    var cffTable = cff.make(glyphs);
     var tables = [headTable, hheaTable, maxpTable, os2Table, hmtxTable, cmapTable, nameTable, postTable, cffTable];
 
     var sfntTable = sfnt.make(tables);

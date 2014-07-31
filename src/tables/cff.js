@@ -785,9 +785,9 @@ function makeCharsets(glyphNames, strings) {
     return t;
 }
 
-function pathToOps(path, width) {
-    var ops = [], x, y, i, cmd, dx, dy;
-    ops.push({name: 'width', type: 'NUMBER', value: width});
+function glyphToOps(glyph) {
+    var ops = [], path = glyph.path, x, y, i, cmd, dx, dy;
+    ops.push({name: 'width', type: 'NUMBER', value: glyph.advanceWidth});
     x = 0;
     y = 0;
     for (i = 0; i < path.commands.length; i += 1) {
@@ -814,29 +814,15 @@ function pathToOps(path, width) {
     return ops;
 }
 
-function makeCharStringsIndex() {
+function makeCharStringsIndex(glyphs) {
     var t = new table.Table('CharStrings INDEX', [
         {name: 'charStrings', type: 'INDEX', value: []}
     ]);
-
-    // Encode two glyphs: .notdef and A.
-    var notdefPath = new path.Path();
-    notdefPath.moveTo(0, 0);
-    notdefPath.lineTo(0, 500);
-    notdefPath.lineTo(300, 500);
-    notdefPath.lineTo(300, 0);
-    var notdefOps = pathToOps(notdefPath, 400);
-    t.charStrings.push({name: 'notdef', type: 'CHARSTRING', value: notdefOps});
-
-    var aPath = new path.Path();
-    aPath.moveTo(0, 0);
-    aPath.lineTo(150, 500);
-    aPath.lineTo(300, 0);
-    aPath.moveTo(250, 50);
-    aPath.moveTo(150, 450);
-    aPath.moveTo(50, 50);
-    var aOps = pathToOps(aPath, 400);
-    t.charStrings.push({name: 'A', type: 'CHARSTRING', value: aOps});
+    for (var i = 0; i < glyphs.length; i += 1) {
+        var glyph = glyphs[i];
+        var ops = glyphToOps(glyph);
+        t.charStrings.push({name: glyph.name, type: 'CHARSTRING', value: ops});
+    }
     return t;
 }
 
@@ -856,7 +842,7 @@ function makePrivateDictIndex(privateDict) {
     return t;
 }
 
-function makeCFFTable() {
+function makeCFFTable(glyphs) {
     var t = new table.Table('CFF ', [
         {name: 'header', type: 'TABLE'},
         {name: 'nameIndex', type: 'TABLE'},
@@ -896,7 +882,7 @@ function makeCFFTable() {
     t.globalSubrIndex = makeGlobalSubrIndex();
     t.encodings = makeEncodings();
     t.charsets = makeCharsets(['A'], strings);
-    t.charStringsIndex = makeCharStringsIndex();
+    t.charStringsIndex = makeCharStringsIndex(glyphs);
     var privateDict = makePrivateDict(privateAttrs, strings);
     t.privateDictIndex = makePrivateDictIndex(privateDict);
 
