@@ -210,7 +210,7 @@ function save() {
     //var tag2 = encode.TAG('BART');
     //var bytes = encode.INDEX([tag1, tag2]);
 
-    var headTable = head.make();
+    var headTable = head.make({xMin: 0, xMax: 1000, yMin: -300, yMax: 1000});
     var hheaTable = hhea.make();
     var maxpTable = maxp.make(2);
     var os2Table = os2.make();

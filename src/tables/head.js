@@ -32,7 +32,7 @@ function parseHeadTable(data, start) {
     return head;
 }
 
-function makeHeadTable() {
+function makeHeadTable(options) {
     return new table.Table('head', [
         {name: 'version', type: 'FIXED', value: 0x00010000},
         {name: 'fontRevision', type: 'FIXED', value: 0x00010000},
@@ -51,7 +51,8 @@ function makeHeadTable() {
         {name: 'fontDirectionHint', type: 'SHORT', value: 2},
         {name: 'indexToLocFormat', type: 'SHORT', value: 0},
         {name: 'glyphDataFormat', type: 'SHORT', value: 0}
-    ]);
+    ], options);
+
 }
 
 exports.parse = parseHeadTable;
