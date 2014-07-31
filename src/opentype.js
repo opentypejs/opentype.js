@@ -353,7 +353,7 @@ function save() {
     var cmapTable = cmap.make(glyphs);
 
     var fullName = globals.familyName + ' ' + globals.weightName;
-    var postScriptName = fullName.replace(/\s/g, '');
+    var postScriptName = globals.familyName.replace(/\s/g, '') + '-' + globals.weightName;
     var nameTable = _name.make({
         copyright: globals.copyright,
         fontFamily: fullName,
@@ -406,7 +406,7 @@ function save() {
 
         window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
         window.requestFileSystem(window.TEMPORARY, buffer.byteLength, function (fs) {
-            fs.root.getFile('tmp.otf', {create: true}, function (fileEntry) {
+            fs.root.getFile(postScriptName + '.otf', {create: true}, function (fileEntry) {
                 fileEntry.createWriter(function (writer) {
                     var buffer = sfntTable.toBuffer();
                     var dataView = new DataView(buffer);
