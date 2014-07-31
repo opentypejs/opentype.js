@@ -27,7 +27,7 @@ function parseHheaTable(data, start) {
     return hhea;
 }
 
-function makeHheaTable() {
+function makeHheaTable(options) {
     return new table.Table('hhea', [
         {name: 'version', type: 'FIXED', value: 0x00010000},
         {name: 'ascender', type: 'FWORD', value: 0},
@@ -46,7 +46,7 @@ function makeHheaTable() {
         {name: 'reserved4', type: 'SHORT', value: 0},
         {name: 'metricDataFormat', type: 'SHORT', value: 0},
         {name: 'numberOfHMetrics', type: 'USHORT', value: 0}
-    ]);
+    ], options);
 }
 
 exports.parse = parseHheaTable;

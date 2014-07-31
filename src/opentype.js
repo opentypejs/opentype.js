@@ -202,7 +202,6 @@ function load(url, callback) {
 }
 
 function computeMetrics(glyph) {
-    var minX =
     var commands = glyph.path.commands;
     var xCoords = [];
     var yCoords = [];
@@ -221,12 +220,15 @@ function computeMetrics(glyph) {
             yCoords.push(cmd.y2);
         }
     }
-    return {
+    var metrics = {
         xMin: Math.min.apply(null, xCoords),
         yMin: Math.min.apply(null, yCoords),
         xMax: Math.max.apply(null, xCoords),
-        yMax: Math.min.apply(null, xCoords)
-    }
+        yMax: Math.max.apply(null, yCoords),
+        leftSideBearing: 0,
+    };
+    metrics.rightSideBearing = glyph.advanceWidth - metrics.leftSideBearing - (metrics.xMax - metrics.xMin);
+    return metrics;
 }
 
 // Save the font and return a list of bytes.
@@ -270,23 +272,48 @@ function save() {
     var yMins = [];
     var xMaxs = [];
     var yMaxs = [];
+    var advanceWidths = [];
+    var leftSideBearings = [];
+    var rightSideBearings = [];
     for (var i = 0; i < glyphs.length; i += 1) {
         var metrics = computeMetrics(glyphs[i]);
         xMins.push(metrics.xMin);
         yMins.push(metrics.yMin);
         xMaxs.push(metrics.xMax);
         yMaxs.push(metrics.yMax);
+        leftSideBearings.push(metrics.leftSideBearing);
+        rightSideBearings.push(metrics.rightSideBearing);
+        advanceWidths.push(glyphs[i].advanceWidth);
     }
     var globals = {
+        unitsPerEm: 1000,
         xMin: Math.min.apply(null, xMins),
         yMin: Math.min.apply(null, yMins),
         xMax: Math.max.apply(null, xMaxs),
         yMax: Math.min.apply(null, yMaxs),
+        advanceWidthMax: Math.max.apply(null, advanceWidths),
+        minLeftSideBearing: Math.min.apply(null, leftSideBearings),
+        maxLeftSideBearing: Math.max.apply(null, leftSideBearings),
+        minRightSideBearing: Math.min.apply(null, rightSideBearings)
     };
 
-    var headTable = head.make(globals);
-    var hheaTable = hhea.make();
-    var maxpTable = maxp.make(2);
+    var headTable = head.make({
+        unitsPerEm: globals.unitsPerEm,
+        xMin: globals.xMin,
+        yMin: globals.yMin,
+        xMax: globals.xMax,
+        yMax: globals.yMax
+    });
+    var hheaTable = hhea.make({
+        ascender:  984,
+        descender: -273,
+        advanceWidthMax: globals.advanceWidthMax,
+        minLeftSideBearing: globals.minLeftSideBearing,
+        minRightSideBearing: globals.minRightSideBearing,
+        xMaxExtent: globals.maxLeftSideBearing + (globals.xMax - globals.xMin),
+        numberOfHMetrics: glyphs.length
+    });
+    var maxpTable = maxp.make(glyphs.length);
     var os2Table = os2.make();
     var hmtxTable = hmtx.make(glyphs);
     var cmapTable = cmap.make();
@@ -298,7 +325,7 @@ function save() {
 
     var sfntTable = sfnt.make(tables);
 
-    for (var i = 0; i < sfntTable.tables.length; i += 1) {
+    for (i = 0; i < sfntTable.tables.length; i += 1) {
         var table = sfntTable.tables[i];
         console.log(table.tableName, table);
     }
