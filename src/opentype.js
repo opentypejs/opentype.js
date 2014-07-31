@@ -307,6 +307,10 @@ function save() {
         advanceWidths.push(glyphs[i].advanceWidth);
     }
     var globals = {
+        familyName: 'OpenType Sans',
+        weightName: 'Medium',
+        manufacturer: 'opentype.js',
+        version: 'Version 1.0',
         unitsPerEm: 1000,
         xMin: Math.min.apply(null, xMins),
         yMin: Math.min.apply(null, yMins),
@@ -338,10 +342,29 @@ function save() {
     var os2Table = os2.make();
     var hmtxTable = hmtx.make(glyphs);
     var cmapTable = cmap.make(glyphs);
-     // FIXME We currently only have a glyph for the letter A.
-    var nameTable = _name.make({sampleText: 'AAA'});
+
+    var fullName = globals.familyName + ' ' + globals.weightName;
+    var postScriptName = fullName.replace(/\s/g, '');
+    var nameTable = _name.make({
+        copyright: globals.copyright,
+        fontFamily: fullName,
+        fontSubfamily: 'Regular',
+        uniqueID: globals.manufacturer + ':' + fullName,
+        fullName: fullName,
+        version: globals.version,
+        postScriptName: postScriptName,
+        manufacturer: globals.manufacturer,
+        preferredFamily: globals.familyName,
+        preferredSubfamily: globals.weightName
+    });
     var postTable = post.make();
-    var cffTable = cff.make(glyphs);
+    var cffTable = cff.make(glyphs, {
+        version: globals.version,
+        fullName: fullName,
+        familyName: globals.familyName,
+        weightName: globals.weightName,
+        postScriptName: postScriptName
+    });
     var tables = [headTable, hheaTable, maxpTable, os2Table, hmtxTable, cmapTable, nameTable, postTable, cffTable];
 
     var sfntTable = sfnt.make(tables);

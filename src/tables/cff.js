@@ -842,7 +842,7 @@ function makePrivateDictIndex(privateDict) {
     return t;
 }
 
-function makeCFFTable(glyphs) {
+function makeCFFTable(glyphs, options) {
     var t = new table.Table('CFF ', [
         {name: 'header', type: 'TABLE'},
         {name: 'nameIndex', type: 'TABLE'},
@@ -859,10 +859,10 @@ function makeCFFTable(glyphs) {
     // This is important because the size of the Top DICT plays a role in offset calculation,
     // and the size shouldn't change after we've written correct offsets.
     var attrs = {
-        version: 'Version 1.0',
-        fullName: 'Custom Glyph Font',
-        familyName: 'Custom',
-        weight: 'Roman',
+        version: options.version,
+        fullName: options.fullName,
+        familyName: options.familyName,
+        weight: options.weightName,
         charset: 999,
         encoding: 999,
         charStrings: 999,
@@ -880,7 +880,7 @@ function makeCFFTable(glyphs) {
     var strings = [];
 
     t.header = makeHeader();
-    t.nameIndex = makeNameIndex(['customfont']);
+    t.nameIndex = makeNameIndex([options.postScriptName]);
     var topDict = makeTopDict(attrs, strings);
     t.topDictIndex = makeTopDictIndex(topDict);
     t.globalSubrIndex = makeGlobalSubrIndex();
