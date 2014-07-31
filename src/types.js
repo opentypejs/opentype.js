@@ -281,11 +281,16 @@ encode.OPERAND = function (v, type) {
     return d;
 };
 
+encode.OP = encode.BYTE;
+sizeOf.OP = sizeOf.BYTE;
+
 // Convert a list of CharString operations to bytes.
 encode.CHARSTRING = function (ops) {
     var d = [], i;
     for (i = 0; i < ops.length; i += 1) {
-        d = d.concat(encode.NUMBER(ops[i].value));
+        var op = ops[i];
+        var encodingFunction = encode[op.type];
+        d = d.concat(encodingFunction(op.value));
     }
     return d;
 };

@@ -787,7 +787,7 @@ function makeCharsets(glyphNames, strings) {
 
 function pathToOps(path, width) {
     var ops = [], x, y, i, cmd, dx, dy;
-    ops.push({name: 'width', value: width});
+    ops.push({name: 'width', type: 'NUMBER', value: width});
     x = 0;
     y = 0;
     for (i = 0; i < path.commands.length; i += 1) {
@@ -795,22 +795,22 @@ function pathToOps(path, width) {
         if (cmd.type === 'M') {
             dx = x - cmd.x;
             dy = y - cmd.y;
-            ops.push({name: 'dx', value: dx});
-            ops.push({name: 'dy', value: dy});
-            ops.push({name: 'rmoveto', value: 21});
+            ops.push({name: 'dx', type: 'NUMBER', value: dx});
+            ops.push({name: 'dy', type: 'NUMBER', value: dy});
+            ops.push({name: 'rmoveto', type: 'OP', value: 21});
             x = cmd.x;
             y = cmd.y;
         } else if (cmd.type === 'L') {
             dx = x - cmd.x;
             dy = y - cmd.y;
-            ops.push({name: 'dx', value: dx});
-            ops.push({name: 'dy', value: dy});
-            ops.push({name: 'rlineto', value: 5});
+            ops.push({name: 'dx', type: 'NUMBER', value: dx});
+            ops.push({name: 'dy', type: 'NUMBER', value: dy});
+            ops.push({name: 'rlineto', type: 'OP', value: 5});
             x = cmd.x;
             y = cmd.y;
         }
     }
-    ops.push({name: 'endchar', value: 14});
+    ops.push({name: 'endchar', type: 'OP', value: 14});
     return ops;
 }
 
