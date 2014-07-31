@@ -873,6 +873,12 @@ function makeCFFTable(glyphs) {
         defaultWidthX: 666
     };
 
+    var glyphNames = [];
+    // Skip first glyph (.notdef)
+    for (var i = 1; i < glyphs.length; i += 1) {
+        glyphNames.push(glyphs[i].name);
+    }
+
     var strings = [];
 
     t.header = makeHeader();
@@ -881,7 +887,7 @@ function makeCFFTable(glyphs) {
     t.topDictIndex = makeTopDictIndex(topDict);
     t.globalSubrIndex = makeGlobalSubrIndex();
     t.encodings = makeEncodings();
-    t.charsets = makeCharsets(['A'], strings);
+    t.charsets = makeCharsets(glyphNames, strings);
     t.charStringsIndex = makeCharStringsIndex(glyphs);
     var privateDict = makePrivateDict(privateAttrs, strings);
     t.privateDictIndex = makePrivateDictIndex(privateDict);
