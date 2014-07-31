@@ -185,10 +185,9 @@ sizeOf.STRING = sizeOf.CHARARRAY;
 
 // Convert a ASCII string to a list of UTF16 bytes.
 encode.UTF16 = function (v) {
-    var ZERO_CHAR = String.fromCharCode(0);
     var b = [];
     for (var i = 0; i < v.length; i += 1) {
-        b.push(ZERO_CHAR);
+        b.push(0);
         b.push(v.charCodeAt(i));
     }
     return b;
