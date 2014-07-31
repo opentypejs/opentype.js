@@ -80,26 +80,29 @@ function parseNameTable(data, start) {
     return name;
 }
 
-function makeNameRecord(platformID, encodingID, languageID, nameID, string) {
+function makeNameRecord(platformID, encodingID, languageID, nameID, length, offset) {
     return new table.Table('NameRecord', [
         {name: 'platformID', type: 'USHORT', value: platformID},
         {name: 'encodingID', type: 'USHORT', value: encodingID},
         {name: 'languageID', type: 'USHORT', value: languageID},
         {name: 'nameID', type: 'USHORT', value: nameID},
-        {name: 'length', type: 'USHORT', value: string.length},
-        {name: 'offset', type: 'USHORT', value: 0},
+        {name: 'length', type: 'USHORT', value: length},
+        {name: 'offset', type: 'USHORT', value: offset},
     ]);
 }
 
-function addNameRecord(t, recordID, s) {
+function addNameRecord(t, recordID, s, offset) {
     // Macintosh, Roman, English
     var stringBytes = encode.STRING(s);
-    t.records.push(makeNameRecord(1, 0, 0, recordID, stringBytes));
+    t.records.push(makeNameRecord(1, 0, 0, recordID, stringBytes.length, offset));
     t.strings.push(stringBytes);
+    offset += stringBytes.length;
     // Windows, Unicode BMP (UCS-2), US English
     var utf16Bytes = encode.UTF16(s);
-    t.records.push(makeNameRecord(3, 1, 0x0409, recordID, utf16Bytes));
+    t.records.push(makeNameRecord(3, 1, 0x0409, recordID, utf16Bytes.length, offset));
     t.strings.push(utf16Bytes);
+    offset += utf16Bytes.length;
+    return offset;
 }
 
 function makeNameTable(options) {
@@ -111,12 +114,15 @@ function makeNameTable(options) {
     ]);
     t.records = [];
     t.strings = [];
+    var offset = 0;
     for (i = 0; i < nameTableNames.length; i += 1) {
         if (options[nameTableNames[i]] !== undefined) {
             var s = options[nameTableNames[i]];
-            addNameRecord(t, i, s);
+            offset = addNameRecord(t, i, s, offset);
         }
     }
+    t.count = t.records.length;
+    t.stringOffset = 6 + t.count * 12;
     for (i = 0; i < t.records.length; i += 1) {
         t.fields.push({name: 'record_' + i, type: 'TABLE', value: t.records[i]});
     }
