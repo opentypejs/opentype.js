@@ -241,49 +241,58 @@ function save() {
     //var tag2 = encode.TAG('BART');
     //var bytes = encode.INDEX([tag1, tag2]);
 
-     // Encode two glyphs: .notdef and A.
     var notdefPath = new path.Path();
-    notdefPath.moveTo(0, 0);
-    notdefPath.lineTo(0, 500);
-    notdefPath.lineTo(300, 500);
-    notdefPath.lineTo(300, 0);
+    notdefPath.moveTo(100, -500);
+    notdefPath.lineTo(100, 1000);
+    notdefPath.lineTo(600, 1000);
+    notdefPath.lineTo(600, -500);
+    notdefPath.moveTo(200, -400);
+    notdefPath.lineTo(500, -400);
+    notdefPath.lineTo(500, 900);
+    notdefPath.lineTo(200, 900);
     var notdefGlyph = {
         name: '.notdef',
-        advanceWidth: 400,
+        advanceWidth: 650,
         path: notdefPath
     };
 
     var aPath = new path.Path();
-    aPath.moveTo(0, 0);
-    aPath.lineTo(150, 500);
-    aPath.lineTo(300, 0);
-    aPath.moveTo(250, 50);
-    aPath.lineTo(150, 400);
-    aPath.lineTo(50, 50);
+    aPath.moveTo(100, 0);
+    aPath.lineTo(100, 700);
+    aPath.lineTo(600, 700);
+    aPath.lineTo(600, 0);
+    aPath.lineTo(500, 0);
+    aPath.lineTo(500, 300);
+    aPath.lineTo(200, 300);
+    aPath.lineTo(200, 0);
+    aPath.moveTo(200, 400);
+    aPath.lineTo(500, 400);
+    aPath.lineTo(500, 600);
+    aPath.lineTo(200, 600);
     var aGlyph = {
         name: 'A',
-        advanceWidth: 400,
+        advanceWidth: 650,
         path: aPath
     };
 
     var bPath = new path.Path();
-    bPath.moveTo(0, 0);
-    bPath.lineTo(0, 500);
-    bPath.lineTo(200, 500);
-    bPath.lineTo(200, 250);
-    bPath.lineTo(300, 250);
-    bPath.lineTo(300, 0);
-    bPath.moveTo(50, 450);
-    bPath.lineTo(50, 300);
-    bPath.lineTo(150, 300);
-    bPath.lineTo(150, 450);
-    bPath.moveTo(50, 200);
-    bPath.lineTo(50, 50);
-    bPath.lineTo(250, 50);
-    bPath.lineTo(250, 200);
+    bPath.moveTo(100, 0);
+    bPath.lineTo(100, 700);
+    bPath.lineTo(500, 700);
+    bPath.lineTo(500, 400);
+    bPath.lineTo(600, 400);
+    bPath.lineTo(600, 0);
+    bPath.moveTo(200, 400);
+    bPath.lineTo(400, 400);
+    bPath.lineTo(400, 600);
+    bPath.lineTo(200, 600);
+    bPath.moveTo(200, 100);
+    bPath.lineTo(500, 100);
+    bPath.lineTo(500, 300);
+    bPath.lineTo(200, 300);
     var bGlyph = {
         name: 'B',
-        advanceWidth: 400,
+        advanceWidth: 650,
         path: bPath
     };
 
