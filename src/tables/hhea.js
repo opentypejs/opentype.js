@@ -35,7 +35,7 @@ function makeHheaTable() {
         {name: 'lineGap', type: 'FWORD', value: 0},
         {name: 'advanceWidthMax', type: 'UFWORD', value: 0},
         {name: 'minLeftSideBearing', type: 'FWORD', value: 0},
-        {name: 'minRightSideBearing ', type: 'FWORD', value: 0},
+        {name: 'minRightSideBearing', type: 'FWORD', value: 0},
         {name: 'xMaxExtent', type: 'FWORD', value: 0},
         {name: 'caretSlopeRise', type: 'SHORT', value: 0},
         {name: 'caretSlopeRun', type: 'SHORT', value: 0},
