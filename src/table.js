@@ -6,13 +6,23 @@ var check = require('./check');
 var encode = require('./types').encode;
 var sizeOf = require('./types').sizeOf;
 
-function Table(tableName, fields) {
+function Table(tableName, fields, options) {
     for (var i = 0; i < fields.length; i += 1) {
         var field = fields[i];
         this[field.name] = field.value;
     }
     this.tableName = tableName;
     this.fields = fields;
+    if (options) {
+        var optionKeys = Object.keys(options)
+        for (var i = 0; i < optionKeys.length; i += 1) {
+            var k = optionKeys[i];
+            var v = options[k];
+            if (this[k] !== undefined) {
+                this[k] = v;
+            }
+        }
+    }
 }
 
 Table.prototype.sizeOf = function () {
