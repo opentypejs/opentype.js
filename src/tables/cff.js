@@ -793,16 +793,16 @@ function glyphToOps(glyph) {
     for (i = 0; i < path.commands.length; i += 1) {
         cmd = path.commands[i];
         if (cmd.type === 'M') {
-            dx = x - cmd.x;
-            dy = y - cmd.y;
+            dx = cmd.x - x;
+            dy = cmd.y - y;
             ops.push({name: 'dx', type: 'NUMBER', value: dx});
             ops.push({name: 'dy', type: 'NUMBER', value: dy});
             ops.push({name: 'rmoveto', type: 'OP', value: 21});
             x = cmd.x;
             y = cmd.y;
         } else if (cmd.type === 'L') {
-            dx = x - cmd.x;
-            dy = y - cmd.y;
+            dx = cmd.x - x;
+            dy = cmd.y - y;
             ops.push({name: 'dx', type: 'NUMBER', value: dx});
             ops.push({name: 'dy', type: 'NUMBER', value: dy});
             ops.push({name: 'rlineto', type: 'OP', value: 5});
