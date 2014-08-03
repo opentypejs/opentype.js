@@ -221,7 +221,7 @@ TrueTypeGlyph.prototype.getPath = function (x, y, fontSize) {
     return p;
 };
 
-// A concrete implementation of glyph for TrueType outline data.
+// A concrete implementation of glyph for PostScript Type 2 (CFF) outline data.
 function CffGlyph(font, index) {
     Glyph.call(this);
     this.font = font;
