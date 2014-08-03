@@ -52,7 +52,6 @@ function makeHeadTable(options) {
         {name: 'indexToLocFormat', type: 'SHORT', value: 0},
         {name: 'glyphDataFormat', type: 'SHORT', value: 0}
     ], options);
-
 }
 
 exports.parse = parseHeadTable;
