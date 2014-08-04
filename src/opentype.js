@@ -128,7 +128,9 @@ function parseBuffer(buffer) {
             font.numGlyphs = numGlyphs = font.tables.maxp.numGlyphs;
             break;
         case 'name':
-             font.tables.name = _name.parse(data, offset);
+            font.tables.name = _name.parse(data, offset);
+            font.familyName = font.tables.name.fontFamily;
+            font.styleName = font.tables.name.fontSubfamily;
             break;
         case 'OS/2':
             font.tables.os2 = os2.parse(data, offset);

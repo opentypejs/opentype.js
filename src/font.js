@@ -7,7 +7,10 @@ var path = require('./path');
 // A Font represents a loaded OpenType font file.
 // It contains a set of glyphs and methods to draw text on a drawing context,
 // or to get a path representing the text.
-function Font() {
+function Font(options) {
+    options = options || {};
+    this.familyName = options.familyName || 'Generic Sans';
+    this.styleName = options.styleName || 'Regular';
     this.supported = true;
     this.glyphs = [];
     this.encoding = null;
