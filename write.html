@@ -124,7 +124,7 @@
     });
 
     var glyphs = [notdefGlyph, aGlyph, bGlyph];
-    var font = new opentype.Font({familyName: 'OpenTypeSans', styleName: 'Medium', unitsPerEm: 2000, glyphs: glyphs});
+    var font = new opentype.Font({familyName: 'OpenTypeSans', styleName: 'Medium', unitsPerEm: 1000, glyphs: glyphs});
     var buffer = font.toBuffer();
     var font2 = opentype.parse(buffer);
 
