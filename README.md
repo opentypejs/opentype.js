@@ -93,10 +93,10 @@ A Glyph is an individual mark that often corresponds to a character. Some glyphs
 * `font`: A reference to the `Font` object.
 * `index`: The index number of the glyph.
 * `xMin`, `yMin`, `xMax`, `yMax`: The bounding box of the glyph.
-* `points`: The list of points in the glyph. Note that it's more convenient to use `glyph.getPath`.
+* `path`: The raw, unscaled path of the glyph. 
 
 ##### `Glyph.getPath(x, y, fontSize)`
-Convert the glyph to a Path we can draw on a drawing context.
+Get a scaled glyph Path object we can draw on a drawing context.
 * `x`: Horizontal position of the glyph. (default: 0)
 * `y`: Vertical position of the *baseline* of the glyph. (default: 0)
 * `fontSize`: Font size in pixels (default: 72).

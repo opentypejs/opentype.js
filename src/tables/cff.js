@@ -336,7 +336,7 @@ function parseCFFCharstring(code, font, index) {
     stack = [];
     nStems = 0;
     haveWidth = false;
-    width = font.nominalWidthX;
+    width = font.defaultWidthX;
     x = y = 0;
 
     function parseStems() {
@@ -598,7 +598,7 @@ function parseCFFCharstring(code, font, index) {
     }
 
     parse(code);
-    glyph = new _glyph.CffGlyph(font, index);
+    glyph = new _glyph.Glyph({font: font, index: index});
     glyph.path = p;
     glyph.advanceWidth = width;
     return glyph;
