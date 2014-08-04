@@ -97,7 +97,7 @@ function addTerminatorSegment(t) {
 }
 
 function makeCmapTable(glyphs) {
-    var i;
+    var i, j, glyph;
     var t = new table.Table('cmap', [
         {name: 'version', type: 'USHORT', value: 0},
         {name: 'numTables', type: 'USHORT', value: 1},
@@ -116,8 +116,10 @@ function makeCmapTable(glyphs) {
     t.segments = [];
     addSegment(t, 0);
     for (i = 1; i < glyphs.length; i += 1) {
-        // FIXME glyph name !== Unicode codepoint.
-        addSegment(t, glyphs[i].name.charCodeAt(0));
+        glyph = glyphs[i];
+        for (j = 0; j < glyph.unicodes.length; j += 1) {
+            addSegment(t, glyph.unicodes[j]);
+        }
     }
     addTerminatorSegment(t);
 
