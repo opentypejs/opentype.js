@@ -14,6 +14,8 @@ var path = require('./path');
 function Glyph(options) {
     this.font = options.font || null;
     this.index = options.index || 0;
+    this.name = options.name || null;
+    this.unicode = options.unicode || null;
     this.xMin = options.xMin || 0;
     this.yMin = options.yMin || 0;
     this.xMax = options.xMax || 0;
@@ -75,6 +77,37 @@ Glyph.prototype.getContours = function () {
     }
     check.argument(currentContour.length === 0, 'There are still points left in the current contour.');
     return contours;
+};
+
+// Calculate the xMin/yMin/xMax/yMax/lsb/rsb for a Glyph.
+Glyph.prototype.getMetrics = function () {
+    var commands = this.path.commands;
+    var xCoords = [];
+    var yCoords = [];
+    for (var i = 0; i < commands.length; i += 1) {
+        var cmd = commands[i];
+        if (cmd.type !== 'Z') {
+            xCoords.push(cmd.x);
+            yCoords.push(cmd.y);
+        }
+        if (cmd.type === 'Q' || cmd.type === 'C') {
+            xCoords.push(cmd.x1);
+            yCoords.push(cmd.y1);
+        }
+        if (cmd.type === 'C') {
+            xCoords.push(cmd.x2);
+            yCoords.push(cmd.y2);
+        }
+    }
+    var metrics = {
+        xMin: Math.min.apply(null, xCoords),
+        yMin: Math.min.apply(null, yCoords),
+        xMax: Math.max.apply(null, xCoords),
+        yMax: Math.max.apply(null, yCoords),
+        leftSideBearing: 0,
+    };
+    metrics.rightSideBearing = this.advanceWidth - metrics.leftSideBearing - (metrics.xMax - metrics.xMin);
+    return metrics;
 };
 
 // Draw the glyph on the given context.

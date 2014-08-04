@@ -3,16 +3,21 @@
 'use strict';
 
 var path = require('./path');
+var sfnt = require('./tables/sfnt');
 
 // A Font represents a loaded OpenType font file.
 // It contains a set of glyphs and methods to draw text on a drawing context,
 // or to get a path representing the text.
 function Font(options) {
     options = options || {};
-    this.familyName = options.familyName || 'Generic Sans';
-    this.styleName = options.styleName || 'Regular';
+    this.familyName = options.familyName || '';
+    this.styleName = options.styleName || '';
+    this.manufacturer = options.manufacturer || '';
+    this.copyright = options.copyright || '';
+    this.version = options.version || '';
+    this.unitsPerEm = options.unitsPerEm || 1000;
     this.supported = true;
-    this.glyphs = [];
+    this.glyphs = options.glyphs || [];
     this.encoding = null;
     this.tables = {};
 }
@@ -174,6 +179,73 @@ Font.prototype.drawPoints = function (ctx, text, x, y, fontSize, options) {
 Font.prototype.drawMetrics = function (ctx, text, x, y, fontSize, options) {
     this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
         glyph.drawMetrics(ctx, x, y, fontSize);
+    });
+};
+
+// Validate
+Font.prototype.validate = function () {
+    var warnings = [];
+    var font = this;
+
+    function assert(predicate, message) {
+        if (!predicate) {
+            warnings.push(message);
+        }
+    }
+
+    function assertStringAttribute(attrName) {
+        assert(font[attrName] && font[attrName].trim().length > 0, 'No ' + attrName + ' specified.');
+    }
+
+    // Identification information
+    assertStringAttribute('familyName');
+    assertStringAttribute('weightName');
+    assertStringAttribute('manufacturer');
+    assertStringAttribute('copyright');
+    assertStringAttribute('version');
+
+    // Dimension information
+    assert(this.unitsPerEm > 0, 'No unitsPerEm specified.');
+};
+
+// Convert the font object to a SFNT data structure.
+// This structure contains all the necessary tables and metadata to create a binary OTF file.
+Font.prototype.toTables = function () {
+    return sfnt.fontToTable(this);
+};
+
+Font.prototype.toBuffer = function () {
+    var sfntTable = this.toTables();
+    var bytes = sfntTable.encode();
+    var buffer = new ArrayBuffer(bytes.length);
+    var intArray = new Uint8Array(buffer);
+    for (var i = 0; i < bytes.length; i++) {
+        intArray[i] = bytes[i];
+    }
+    return buffer;
+};
+
+// Initiate a download of the OpenType font.
+Font.prototype.download = function () {
+    var fileName = this.familyName.replace(/\s/g, '') + '-' + this.styleName + '.otf';
+    var buffer = this.toBuffer();
+
+    window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+    window.requestFileSystem(window.TEMPORARY, buffer.byteLength, function (fs) {
+        fs.root.getFile(fileName, {create: true}, function (fileEntry) {
+            fileEntry.createWriter(function (writer) {
+                var dataView = new DataView(buffer);
+                var blob = new Blob([dataView], {type: 'font/opentype'});
+                writer.write(blob);
+
+                 writer.addEventListener('writeend', function () {
+                    // Navigating to the file will download it.
+                    location.href = fileEntry.toURL();
+                 }, false);
+            });
+        });
+    }, function (err) {
+        throw err;
     });
 };
 

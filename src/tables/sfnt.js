@@ -9,6 +9,16 @@
 var check = require('../check');
 var table = require('../table');
 
+var cmap = require('./cmap');
+var cff = require('./cff');
+var head = require('./head');
+var hhea = require('./hhea');
+var hmtx = require('./hmtx');
+var maxp = require('./maxp');
+var _name = require('./name');
+var os2 = require('./os2');
+var post = require('./post');
+
 function log2(v) {
     return Math.log(v) / Math.log(2) | 0;
 }
@@ -76,5 +86,96 @@ function makeSfntTable(tables) {
     return sfnt;
 }
 
-exports.make = makeSfntTable;
+// Convert the font object to a SFNT data structure.
+// This structure contains all the necessary tables and metadata to create a binary OTF file.
+function fontToSfntTable(font) {
+    var xMins = [];
+    var yMins = [];
+    var xMaxs = [];
+    var yMaxs = [];
+    var advanceWidths = [];
+    var leftSideBearings = [];
+    var rightSideBearings = [];
+    for (var i = 0; i < font.glyphs.length; i += 1) {
+        var glyph = font.glyphs[i];
+        var metrics = glyph.getMetrics();
+        xMins.push(metrics.xMin);
+        yMins.push(metrics.yMin);
+        xMaxs.push(metrics.xMax);
+        yMaxs.push(metrics.yMax);
+        leftSideBearings.push(metrics.leftSideBearing);
+        rightSideBearings.push(metrics.rightSideBearing);
+        advanceWidths.push(glyph.advanceWidth);
+    }
+    var globals = {
+        xMin: Math.min.apply(null, xMins),
+        yMin: Math.min.apply(null, yMins),
+        xMax: Math.max.apply(null, xMaxs),
+        yMax: Math.min.apply(null, yMaxs),
+        advanceWidthMax: Math.max.apply(null, advanceWidths),
+        minLeftSideBearing: Math.min.apply(null, leftSideBearings),
+        maxLeftSideBearing: Math.max.apply(null, leftSideBearings),
+        minRightSideBearing: Math.min.apply(null, rightSideBearings)
+    };
+
+    var headTable = head.make({
+        unitsPerEm: font.unitsPerEm,
+        xMin: globals.xMin,
+        yMin: globals.yMin,
+        xMax: globals.xMax,
+        yMax: globals.yMax
+    });
+    // FIXME Make ascender/descender configurable.
+    var hheaTable = hhea.make({
+        ascender:  984,
+        descender: -273,
+        advanceWidthMax: globals.advanceWidthMax,
+        minLeftSideBearing: globals.minLeftSideBearing,
+        minRightSideBearing: globals.minRightSideBearing,
+        xMaxExtent: globals.maxLeftSideBearing + (globals.xMax - globals.xMin),
+        numberOfHMetrics: font.glyphs.length
+    });
+    var maxpTable = maxp.make(font.glyphs.length);
+    var os2Table = os2.make();
+    var hmtxTable = hmtx.make(font.glyphs);
+    var cmapTable = cmap.make(font.glyphs);
+
+    var fullName = font.familyName + ' ' + font.styleName;
+    var postScriptName = font.familyName.replace(/\s/g, '') + '-' + font.styleName;
+    var nameTable = _name.make({
+        copyright: font.copyright,
+        fontFamily: font.familyName,
+        fontSubfamily: font.styleName,
+        uniqueID: font.manufacturer + ':' + fullName,
+        fullName: fullName,
+        version: font.version,
+        postScriptName: postScriptName,
+        manufacturer: font.manufacturer,
+        preferredFamily: font.familyName,
+        preferredSubfamily: font.styleName
+    });
+    var postTable = post.make();
+    var cffTable = cff.make(font.glyphs, {
+        version: font.version,
+        fullName: fullName,
+        familyName: font.familyName,
+        weightName: font.styleName,
+        postScriptName: postScriptName
+    });
+    var tables = [headTable, hheaTable, maxpTable, os2Table, hmtxTable, cmapTable, nameTable, postTable, cffTable];
+
+    var sfntTable = makeSfntTable(tables);
+
+    var bytes = sfntTable.encode();
+    var checkSum = computeCheckSum(bytes);
+    headTable.checkSumAdjustment = 0xB1B0AFBA - checkSum;
+
+    // Build the font again, now with the proper checkSum.
+    sfntTable = makeSfntTable(tables);
+
+    return sfntTable;
+}
+
 exports.computeCheckSum = computeCheckSum;
+exports.make = makeSfntTable;
+exports.fontToTable = fontToSfntTable;
