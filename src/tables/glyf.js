@@ -6,6 +6,7 @@
 var check = require('../check');
 var _glyph = require('../glyph');
 var parse = require('../parse');
+var path = require('../path');
 
 // Parse the coordinate data for a glyph.
 function parseGlyphCoordinate(p, flag, previousValue, shortVectorBitMask, sameBitMask) {
@@ -37,7 +38,7 @@ function parseGlyph(data, start, index, font) {
         endPointIndices, numberOfCoordinates, repeatCount, points, point, px, py,
         component, moreComponents;
     p = new parse.Parser(data, start);
-    glyph = new _glyph.TrueTypeGlyph(font, index);
+    glyph = new _glyph.Glyph({font: font, index: index});
     glyph.numberOfContours = p.parseShort();
     glyph.xMin = p.parseShort();
     glyph.yMin = p.parseShort();
@@ -169,6 +170,89 @@ function transformPoints(points, transform) {
     return newPoints;
 }
 
+
+function getContours(points) {
+    var contours, currentContour, i, pt;
+    contours = [];
+    currentContour = [];
+    for (i = 0; i < points.length; i += 1) {
+        pt = points[i];
+        currentContour.push(pt);
+        if (pt.lastPointOfContour) {
+            contours.push(currentContour);
+            currentContour = [];
+        }
+    }
+    check.argument(currentContour.length === 0, 'There are still points left in the current contour.');
+    return contours;
+}
+
+// Convert the TrueType glyph outline to a Path.
+function getPath(points) {
+    var p, contours, i, realFirstPoint, j, contour, pt, firstPt,
+        prevPt, midPt, curvePt, lastPt;
+    p = new path.Path();
+    if (!points) {
+        return p;
+    }
+    contours = getContours(points);
+    for (i = 0; i < contours.length; i += 1) {
+        contour = contours[i];
+        firstPt = contour[0];
+        lastPt = contour[contour.length - 1];
+        if (firstPt.onCurve) {
+            curvePt = null;
+            // The first point will be consumed by the moveTo command,
+            // so skip it in the loop.
+            realFirstPoint = true;
+        } else {
+            if (lastPt.onCurve) {
+                // If the first point is off-curve and the last point is on-curve,
+                // start at the last point.
+                firstPt = lastPt;
+            } else {
+                // If both first and last points are off-curve, start at their middle.
+                firstPt = { x: (firstPt.x + lastPt.x) / 2, y: (firstPt.y + lastPt.y) / 2 };
+            }
+            curvePt = firstPt;
+            // The first point is synthesized, so don't skip the real first point.
+            realFirstPoint = false;
+        }
+        p.moveTo(firstPt.x, -firstPt.y);
+
+        for (j = realFirstPoint ? 1 : 0; j < contour.length; j += 1) {
+            pt = contour[j];
+            prevPt = j === 0 ? firstPt : contour[j - 1];
+            if (prevPt.onCurve && pt.onCurve) {
+                // This is a straight line.
+                p.lineTo(pt.x, -pt.y);
+            } else if (prevPt.onCurve && !pt.onCurve) {
+                curvePt = pt;
+            } else if (!prevPt.onCurve && !pt.onCurve) {
+                midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
+                p.quadraticCurveTo(prevPt.x, -prevPt.y, midPt.x, -midPt.y);
+                curvePt = pt;
+            } else if (!prevPt.onCurve && pt.onCurve) {
+                // Previous point off-curve, this point on-curve.
+                p.quadraticCurveTo(curvePt.x, -curvePt.y, pt.x, -pt.y);
+                curvePt = null;
+            } else {
+                throw new Error('Invalid state.');
+            }
+        }
+        if (firstPt !== lastPt) {
+            // Connect the last and first points
+            if (curvePt) {
+                p.quadraticCurveTo(curvePt.x, -curvePt.y, firstPt.x, -firstPt.y);
+            } else {
+                p.lineTo(firstPt.x, -firstPt.y);
+            }
+        }
+    }
+    p.closePath();
+    return p;
+}
+
 // Parse all the glyphs according to the offsets from the `loca` table.
 function parseGlyfTable(data, start, loca, font) {
     var glyphs, i, j, offset, nextOffset, glyph,
@@ -181,7 +265,7 @@ function parseGlyfTable(data, start, loca, font) {
         if (offset !== nextOffset) {
             glyphs.push(parseGlyph(data, start + offset, i, font));
         } else {
-            glyphs.push(new _glyph.TrueTypeGlyph(font, i));
+            glyphs.push(new _glyph.Glyph({font: font, index: i}));
         }
     }
     // Go over the glyphs again, resolving the composite glyphs.
@@ -197,8 +281,8 @@ function parseGlyfTable(data, start, loca, font) {
                 }
             }
         }
+        glyph.path = getPath(glyph.points);
     }
-
     return glyphs;
 }
 

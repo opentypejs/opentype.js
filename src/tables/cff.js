@@ -576,7 +576,7 @@ function parseCFFCharstring(code, font, index) {
     }
 
     parse(code);
-    glyph = new _glyph.CffGlyph(font, index);
+    glyph = new _glyph.Glyph({font: font, index: index});
     glyph.path = p;
     glyph.advanceWidth = width;
     return glyph;
