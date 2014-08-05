@@ -1,0 +1,340 @@
+<!-- A simple font editor in HTML -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Font Editor</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f6f6f6;
+            font: 14px Helvetica,Arial,sans-serif;
+            color: #333;
+        }
+        
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 40px;
+            width: 100%;
+            background: #333;
+            color: #f6f6f6;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            line-height: 40px;
+            margin: 0;
+            padding: 0 10px;
+            display: inline-block;
+        }
+        
+        .header .actions {
+            float: right;
+            margin-right: 10px;
+            line-height: 40px;
+        }
+        
+        .header .actions button {
+            background: #333;
+            color: #ccc;
+            border: 1px solid #666;
+            border-radius: 2px;
+            padding: 5px 5px;
+        }
+        
+        .header .actions button:hover {
+            background: #444;
+            color: #f6f6f6;
+        }
+        
+        .glyphs {
+            position: absolute;
+            top: 40px;
+            left: 0;
+            height: 40px;
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            border-bottom: 2px solid #f6f6f6;
+            background: #ddd;
+        }
+        
+        .glyphs span {
+            margin: 0;
+            padding: 0;
+            display: inline-block;
+            border-right: 1px solid #ccc;
+            font-size: 24px;
+            width: 40px;
+            text-align: center;
+            height: 40px;
+            line-height: 40px;
+            color: #666;
+        }
+        
+        .glyphs span.selected {
+            background: #f6f6f6;
+            color: #333;
+        }
+        
+        .glyphs span:hover {
+            background: #f6f6f6;
+        }
+        
+        .editor {
+            position: absolute;
+            top: 80px;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+        }
+        
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+    <script src="opentype.js"></script>
+</head>
+<body>
+<div class="wrap">
+ <div class="header">
+     <h1>Font Editor</h1>
+     <span class="actions">
+         <button onclick="downloadFont()">Download OTF</button>
+     </span>
+ </div>
+  <div id="glyphs" class="glyphs">
+  </div>
+  <div class="editor" id="editor">
+      <canvas id="c" width="800" height="600"></canvas>
+  </div>  
+</div>
+<script>
+var HEADER_HEIGHT = 80;
+var EDITOR_WIDTH = 800;
+var EDITOR_HEIGHT = 600;
+var GRID_SIZE = 30;
+var ORIGIN_X = 2;
+var ORIGIN_Y = 10;
+var DRAG_ON = 'on';
+var DRAG_OFF = 'off';
+    
+var gFont = null;
+var gCurrentGlyphName = null    ;
+var gCanvas = document.getElementById('c');
+var gCtx = gCanvas.getContext('2d');
+var gDragMode = null;
+    
+function drawGrid(ctx) {
+    ctx.strokeStyle = '#ccc';
+    ctx.beginPath();
+    for (var y = GRID_SIZE; y < EDITOR_HEIGHT; y += GRID_SIZE) {
+        ctx.moveTo(0, y + 0.5);
+        ctx.lineTo(EDITOR_WIDTH, y + 0.5);
+    }
+    for (var x = GRID_SIZE; x < EDITOR_WIDTH; x += GRID_SIZE) {
+        ctx.moveTo(x + 0.5, 0);
+        ctx.lineTo(x + 0.5, EDITOR_HEIGHT);
+    }
+    ctx.stroke();
+}
+    
+function drawBlocks(ctx, blocks) {
+    ctx.fillStyle = '#333';
+    var keys = Object.keys(blocks);
+    for (var i = 0; i < keys.length; i += 1) {
+        var coords = keys[i].split(',').map(parseFloat);
+        var x = coords[0];
+        var y = coords[1];
+        ctx.fillRect((ORIGIN_X + x) * GRID_SIZE, (ORIGIN_Y - y) * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+    }
+}
+    
+function drawAdvanceWidth(ctx, glyph) {
+    ctx.strokeStyle = 'gold';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    var x = (ORIGIN_X + glyph.advanceWidth) * GRID_SIZE;
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, EDITOR_HEIGHT); 
+    ctx.stroke();
+    ctx.lineWidth = 1;
+}
+    
+function drawBaseline(ctx) {
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    var y = ORIGIN_Y * GRID_SIZE;
+    var x = ORIGIN_X * GRID_SIZE;
+    ctx.moveTo(0, y);
+    ctx.lineTo(EDITOR_WIDTH, y);
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, EDITOR_HEIGHT);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+}
+
+function draw() {
+    var ctx = gCtx;
+    var glyph = gFont.glyphs[gCurrentGlyphName];
+    ctx.fillStyle = '#f6f6f6';
+    ctx.fillRect(0, 0, EDITOR_WIDTH, EDITOR_HEIGHT);
+    drawGrid(ctx);
+    drawBlocks(ctx, glyph.blocks);
+    drawAdvanceWidth(ctx, glyph);
+    drawBaseline(ctx);
+}
+    
+function canvasMouseDown(e) {
+    e.preventDefault();
+    var x = Math.floor(e.pageX / GRID_SIZE) - ORIGIN_X;
+    var y = ORIGIN_Y - Math.floor((e.pageY - HEADER_HEIGHT) / GRID_SIZE);
+    var glyph = gFont.glyphs[gCurrentGlyphName];
+    var k = '' + x + ',' + y;
+    if (glyph.blocks[k]) {
+        delete glyph.blocks[k];
+        gDragMode = DRAG_OFF;
+    } else {
+        glyph.blocks[k] = true;
+        gDragMode = DRAG_ON;
+    }
+    window.addEventListener('mousemove', canvasMouseDragged);
+    window.addEventListener('mouseup', canvasMouseUp);
+    saveFont();
+    draw();
+}
+    
+function canvasMouseDragged(e) {
+    e.preventDefault();
+    var x = Math.floor(e.pageX / GRID_SIZE) - ORIGIN_X;
+    var y = ORIGIN_Y - Math.floor((e.pageY - HEADER_HEIGHT) / GRID_SIZE);
+    var glyph = gFont.glyphs[gCurrentGlyphName];
+    var k = '' + x + ',' + y;
+    if (gDragMode === DRAG_ON) {
+        glyph.blocks[k] = true;
+    } else {
+        delete glyph.blocks[k];
+    }
+    draw();
+}
+    
+function canvasMouseUp(e) {
+    saveFont();
+    window.removeEventListener('mousemove', canvasMouseDragged);
+    window.removeEventListener('mouseup', canvasMouseUp);
+}
+    
+function onGlyphClicked(e) {
+    var glyphName = e.target.getAttribute('data-name');
+    selectGlyph(glyphName);
+}
+    
+function ensureGlyph(glyphName) {
+    if (!gFont.glyphs[glyphName]) {
+        var newGlyph = {
+            name: glyphName,
+            unicode: glyphName.charCodeAt(0),
+            advanceWidth: 7,
+            blocks: {}
+        };
+        gFont.glyphs[glyphName] = newGlyph;
+    }
+}
+
+function selectGlyph(glyphName) {
+    gCurrentGlyphName = glyphName;
+    ensureGlyph(glyphName);
+    var els = document.querySelectorAll('#glyphs span');
+    for (var i = 0; i < els.length; i += 1) {
+        els[i].className = '';
+    } 
+    document.querySelector('#glyphs span[data-name="' + glyphName + '"]').className = 'selected';
+    draw();
+}
+    
+function createGlyphDiv(parent, glyphName) {
+    var glyphSpan = document.createElement('span');
+    glyphSpan.textContent = glyphName;
+    glyphSpan.setAttribute('data-name', glyphName);
+    glyphSpan.addEventListener('click', onGlyphClicked);
+    parent.appendChild(glyphSpan);
+}
+    
+function loadFont() {
+    if (window.localStorage['font']) {
+        return JSON.parse(window.localStorage['font']);
+    } else {
+        return {
+            familyName: 'My Font',
+            styleName: 'Regular',
+            glyphs: {}
+        };
+    }
+}
+    
+function saveFont() {
+    window.localStorage['font'] = JSON.stringify(gFont);
+}
+    
+function blocksToPath(blocks) {
+    var path = new opentype.Path();
+    var keys = Object.keys(blocks);
+    for (var i = 0; i < keys.length; i += 1) {
+        var k = keys[i];
+        var coords = keys[i].split(',').map(parseFloat);
+        var x = (ORIGIN_X + coords[0]) * GRID_SIZE;
+        var y = (ORIGIN_Y - coords[1]) * GRID_SIZE;
+        path.moveTo(x, y);
+        path.lineTo(x + GRID_SIZE, y);
+        path.lineTo(x + GRID_SIZE, y + GRID_SIZE);
+        path.lineTo(x, y + GRID_SIZE);
+    }
+    return path;
+}
+
+function downloadFont() {
+    // Our glyphs are not opentype Glyph objects.
+    // We need to convert the blocks to paths.
+    var oGlyphs = [];
+    oGlyphs.push(new opentype.Glyph({
+        name: '.notdef',
+        unicode: 0,
+        path: new opentype.Path()
+    }));
+    var keys = Object.keys(gFont.glyphs);
+    for (var i = 0; i < keys.length; i += 1) {
+        var glyph = gFont.glyphs[keys[i]];
+        var newGlyph = new opentype.Glyph(glyph);
+        newGlyph.advanceWidth = newGlyph.advanceWidth * GRID_SIZE;
+        newGlyph.path = blocksToPath(glyph.blocks);
+        oGlyphs.push(newGlyph);
+    }
+    var oFont = new opentype.Font(gFont);
+    oFont.glyphs = oGlyphs;
+    console.log(oFont.toTables());
+    oFont.download();
+}
+    
+function init() {
+    gFont = loadFont();
+    var allLetters = 'ABC';
+    var glyphsDiv = document.getElementById('glyphs');
+    for (var i = 0; i < allLetters.length; i += 1) {
+        createGlyphDiv(glyphsDiv, allLetters[i]);
+    }
+    selectGlyph('A');
+    draw();
+    gCanvas.addEventListener('mousedown', canvasMouseDown);
+}
+    
+document.addEventListener('DOMContentLoaded', init);
+
+</script>
+</body>
+</html>
+
