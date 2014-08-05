@@ -786,7 +786,7 @@ function makeCharsets(glyphNames, strings) {
 }
 
 function glyphToOps(glyph) {
-    var ops = [], path = glyph.path, x, y, i, cmd, dx, dy;
+    var ops = [], path = glyph.path, x, y, i, cmd, dx, dy, dx1, dy1, dx2, dy2;
     ops.push({name: 'width', type: 'NUMBER', value: glyph.advanceWidth});
     x = 0;
     y = 0;
@@ -808,6 +808,27 @@ function glyphToOps(glyph) {
             ops.push({name: 'rlineto', type: 'OP', value: 5});
             x = cmd.x;
             y = cmd.y;
+        } else if (cmd.type === 'Q') {
+            // FIXME: Add support for quad curves
+            throw new Error('Writing quad curves is currently not supported.');
+        } else if (cmd.type === 'C') {
+            dx1 = cmd.x1 - x;
+            dy1 = cmd.y1 - y;
+            dx2 = cmd.x2 - x;
+            dy2 = cmd.y2 - y;
+            dx = cmd.x - x;
+            dy = cmd.y - y;
+            ops.push({name: 'dx1', type: 'NUMBER', value: dx1});
+            ops.push({name: 'dy1', type: 'NUMBER', value: dy1});
+            ops.push({name: 'dx2', type: 'NUMBER', value: dx2});
+            ops.push({name: 'dy2', type: 'NUMBER', value: dy2});
+            ops.push({name: 'dx', type: 'NUMBER', value: dx});
+            ops.push({name: 'dy', type: 'NUMBER', value: dy});
+            ops.push({name: 'rrcurveto', type: 'OP', value: 8});
+            x = cmd.x;
+            y = cmd.y;
+        } else if (cmd.type === 'Z') {
+            // Contours are closed automatically.
         }
     }
     ops.push({name: 'endchar', type: 'OP', value: 14});
