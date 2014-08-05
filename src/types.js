@@ -200,27 +200,37 @@ sizeOf.UTF16 = function (v) {
 // Convert a list of values to a CFF INDEX structure.
 // The values should be objects containing name / type / value.
 encode.INDEX = function (l) {
-    var count, offSize, offset, offsets, offsetEncoder, encodedOffset, data, i, v;
-    if (l.length === 0) {
-        return [0, 0];
-    }
-    count = encode.Card16(l.length);
-    offSize = (1 + Math.floor(Math.log(l.length)/Math.log(2)) / 8) | 0;
-    offset = 1;
-    offsets = [];
-    offsetEncoder = [undefined, encode.BYTE, encode.USHORT, encode.UINT24, encode.ULONG][offSize];
+    var offSize, offset, offsets, offsetEncoder, encodedOffsets, encodedOffset, data,
+        dataSize, i, v;
+    // Because we have to know which data type to use to encode the offsets,
+    // we have to go through the values twice: once to encode the data and
+    // calculate the offets, then again to encode the offsets using the fitting data type.
+    offset = 1; // First offset is always 1.
+    offsets = [offset];
     data = [];
-    offsets.push(1); // First offset is always 1.
+    dataSize = 0;
     for (i = 0; i < l.length; i += 1) {
         v = encode.OBJECT(l[i]);
         Array.prototype.push.apply(data, v);
+        dataSize += v.length;
         offset += v.length;
-        encodedOffset = offsetEncoder(offset);
-        Array.prototype.push.apply(offsets, encodedOffset);
+        offsets.push(offset);
     }
-    return Array.prototype.concat(count,
+
+    if (data.length === 0) {
+        return [0, 0];
+    }
+
+    encodedOffsets = [];
+    offSize = (1 + Math.floor(Math.log(dataSize)/Math.log(2)) / 8) | 0;
+    offsetEncoder = [undefined, encode.BYTE, encode.USHORT, encode.UINT24, encode.ULONG][offSize];
+    for (i = 0; i < offsets.length; i += 1) {
+        encodedOffset = offsetEncoder(offsets[i]);
+        Array.prototype.push.apply(encodedOffsets, encodedOffset);
+    }
+    return Array.prototype.concat(encode.Card16(l.length),
                            encode.OffSize(offSize),
-                           offsets,
+                           encodedOffsets,
                            data);
 };
 
