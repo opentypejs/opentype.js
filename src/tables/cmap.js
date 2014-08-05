@@ -114,8 +114,7 @@ function makeCmapTable(glyphs) {
     ]);
 
     t.segments = [];
-    addSegment(t, 0);
-    for (i = 1; i < glyphs.length; i += 1) {
+    for (i = 0; i < glyphs.length; i += 1) {
         glyph = glyphs[i];
         for (j = 0; j < glyph.unicodes.length; j += 1) {
             addSegment(t, glyph.unicodes[j]);
@@ -153,6 +152,14 @@ function makeCmapTable(glyphs) {
     t.fields = t.fields.concat(idDeltas);
     t.fields = t.fields.concat(idRangeOffsets);
     t.fields = t.fields.concat(glyphIds);
+
+    t.length = 14 + // Subtable header
+        endCounts.length * 2 +
+        2 + // reservedPad
+        startCounts.length * 2 +
+        idDeltas.length * 2 +
+        idRangeOffsets.length * 2 +
+        glyphIds.length * 2;
     return t;
 }
 
