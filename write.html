@@ -96,7 +96,7 @@
     aPath.lineTo(200, 600);
     var aGlyph = new opentype.Glyph({
         name: 'A',
-        unicode: 0,
+        unicode: 65,
         advanceWidth: 650,
         path: aPath
     });
@@ -125,6 +125,7 @@
 
     var glyphs = [notdefGlyph, aGlyph, bGlyph];
     var font = new opentype.Font({familyName: 'OpenTypeSans', styleName: 'Medium', unitsPerEm: 1000, glyphs: glyphs});
+    console.log(font.toTables());
     var buffer = font.toBuffer();
     var font2 = opentype.parse(buffer);
 
