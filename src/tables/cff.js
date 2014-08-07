@@ -170,7 +170,7 @@ function parseCFFDict(data, start, size) {
 // Given a String Index (SID), return the value of the string.
 // Strings below index 392 are standard CFF strings and are not encoded in the font.
 function getCFFString(strings, index) {
-    if (index <= 391) {
+    if (index <= 390) {
         index = encoding.cffStandardStrings[index];
     } else {
         index = strings[index - 391];
