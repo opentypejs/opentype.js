@@ -4,7 +4,7 @@
     <title>opentype.js glyph inspector</title>
     <meta description="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
     <meta charset="utf-8">
-    <link rel="stylesheet" href="site.css">    
+    <link rel="stylesheet" href="site.css">
     <script src="opentype.js"></script>
 </head>
 <body>
@@ -101,10 +101,11 @@ function displayGlyphData(glyphIndex) {
         return;
     }
     var glyph = font.glyphs[glyphIndex],
-        html = '<dl><dt>index</dt><dd>'+glyph.index+'</dd>';
-    if (font.glyphIndexToName) {
-        html += '<dt>name</dt><dd>'+font.glyphIndexToName(glyph.index)+'</dd>';
-    }
+        html;
+    html = '<dt>name</dt><dd>'+glyph.name+'</dd>';
+    html += '<dt>unicode</dt><dd>'+glyph.unicodes.join(', ')+'</dd>';
+    html += '<dl><dt>index</dt><dd>'+glyph.index+'</dd>';
+
     if (glyph.xMin !== 0 || glyph.xMax !== 0 || glyph.yMin !== 0 || glyph.yMax !== 0) {
         html += '<dt>xMin</dt><dd>'+glyph.xMin+'</dd>' +
             '<dt>xMax</dt><dd>'+glyph.xMax+'</dd>' +
@@ -283,7 +284,7 @@ function initGlyphDisplay() {
     glyphScale = Math.min(glyphW/(head.xMax - head.xMin), glyphH/maxHeight);
     glyphSize = glyphScale * font.unitsPerEm;
     glyphBaseline = glyphMargin + glyphH * head.yMax / maxHeight;
-    
+
     function hline(text, yunits) {
         ypx = glyphBaseline - yunits * glyphScale;
         ctx.fillText(text, 2, ypx+3);
@@ -303,7 +304,7 @@ function initGlyphDisplay() {
 
 function onFontLoaded(font) {
     window.font = font;
-    
+
     var w = cellWidth - cellMarginLeftRight * 2,
         h = cellHeight - cellMarginTop - cellMarginBottom,
         head = font.tables.head,
@@ -328,7 +329,7 @@ function onFontLoaded(font) {
         fragment.appendChild(document.createTextNode(' '));
     }
     pagination.appendChild(fragment);
-    
+
     initGlyphDisplay();
     displayGlyphPage(0);
     displayGlyph(-1);
@@ -366,7 +367,7 @@ function cellSelect(event) {
         displayGlyphData(glyphIndex);
     }
 }
-    
+
 function prepareGlyphList() {
     var marker = document.getElementById('glyph-list-end'),
         parent = marker.parentElement;
