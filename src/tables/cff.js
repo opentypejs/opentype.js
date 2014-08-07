@@ -814,10 +814,10 @@ function glyphToOps(glyph) {
         } else if (cmd.type === 'C') {
             dx1 = cmd.x1 - x;
             dy1 = cmd.y1 - y;
-            dx2 = cmd.x2 - x;
-            dy2 = cmd.y2 - y;
-            dx = cmd.x - x;
-            dy = cmd.y - y;
+            dx2 = cmd.x2 - cmd.x1;
+            dy2 = cmd.y2 - cmd.y1;
+            dx = cmd.x - cmd.x2;
+            dy = cmd.y - cmd.y2;
             ops.push({name: 'dx1', type: 'NUMBER', value: dx1});
             ops.push({name: 'dy1', type: 'NUMBER', value: dy1});
             ops.push({name: 'dx2', type: 'NUMBER', value: dx2});
