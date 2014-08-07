@@ -174,6 +174,26 @@ GlyphNames.prototype.glyphIndexToName = function (gid) {
     return this.names[gid];
 };
 
+function addGlyphNames(font) {
+    var glyphIndexMap, charCodes, i, c, glyphIndex, glyph;
+    glyphIndexMap = font.tables.cmap.glyphIndexMap;
+    charCodes = Object.keys(glyphIndexMap);
+    for (i = 0; i < charCodes.length; i += 1) {
+        c = charCodes[i];
+        glyphIndex = glyphIndexMap[c];
+        glyph = font.glyphs[glyphIndex];
+        glyph.addUnicode(parseFloat(c));
+    }
+    for (i = 0; i < font.glyphs.length; i += 1) {
+        glyph = font.glyphs[i];
+        if (font.cffEncoding) {
+            glyph.name = font.cffEncoding.charset[i];
+        } else {
+            glyph.name = font.glyphNames.glyphIndexToName(i);
+        }
+    }
+}
+
 exports.cffStandardStrings = cffStandardStrings;
 exports.cffStandardEncoding = cffStandardEncoding;
 exports.cffExpertEncoding = cffExpertEncoding;
@@ -181,3 +201,4 @@ exports.standardNames = standardNames;
 exports.CmapEncoding = CmapEncoding;
 exports.CffEncoding = CffEncoding;
 exports.GlyphNames = GlyphNames;
+exports.addGlyphNames = addGlyphNames;

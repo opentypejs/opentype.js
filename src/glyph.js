@@ -15,8 +15,8 @@ function Glyph(options) {
     this.font = options.font || null;
     this.index = options.index || 0;
     this.name = options.name || null;
-    this.unicode = options.unicode || 0;
-    this.unicodes = options.unicodes || [this.unicode];
+    this.unicode = options.unicode || undefined;
+    this.unicodes = options.unicodes || options.unicode !== undefined ? [this.unicode] : [];
     this.xMin = options.xMin || 0;
     this.yMin = options.yMin || 0;
     this.xMax = options.xMax || 0;
@@ -24,6 +24,13 @@ function Glyph(options) {
     this.advanceWidth = options.advanceWidth || 0;
     this.path = options.path || null;
 }
+
+Glyph.prototype.addUnicode = function (unicode) {
+    if (this.unicodes.length === 0) {
+        this.unicode = unicode;
+    }
+    this.unicodes.push(unicode);
+};
 
 // Convert the glyph to a Path we can draw on a drawing context.
 //

@@ -163,8 +163,10 @@ function parseBuffer(buffer) {
         locaTable = loca.parse(data, locaOffset, numGlyphs, shortVersion);
         font.glyphs = glyf.parse(data, glyfOffset, locaTable, font);
         hmtx.parse(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
+        encoding.addGlyphNames(font);
     } else if (cffOffset) {
         cff.parse(data, cffOffset, font);
+        encoding.addGlyphNames(font);
     } else {
         font.supported = false;
     }
