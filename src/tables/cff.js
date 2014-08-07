@@ -763,13 +763,13 @@ function makeGlobalSubrIndex() {
     ]);
 }
 
-function makeEncodings() {
+function makeEncodings(nGlyphs) {
     var t = new table.Table('Encodings', [
-        {name: 'format', type: 'Card8', value: 0},
-        {name: 'nCodes', type: 'Card8', value: 1}
+        {name: 'format', type: 'Card8', value: 1},
+        {name: 'nRanges', type: 'Card8', value: 1},
+        {name: 'first', type: 'Card8', value: 1},
+        {name: 'nLeft', type: 'Card8', value: nGlyphs - 1}
     ]);
-     // First charset element maps to first glyph.
-    t.fields.push({name: 'code_0', type: 'Card8', value: 1});
     return t;
 }
 
@@ -905,7 +905,7 @@ function makeCFFTable(glyphs, options) {
     var topDict = makeTopDict(attrs, strings);
     t.topDictIndex = makeTopDictIndex(topDict);
     t.globalSubrIndex = makeGlobalSubrIndex();
-    t.encodings = makeEncodings();
+    t.encodings = makeEncodings(glyphs.length);
     t.charsets = makeCharsets(glyphNames, strings);
     t.charStringsIndex = makeCharStringsIndex(glyphs);
     var privateDict = makePrivateDict(privateAttrs, strings);
