@@ -182,7 +182,7 @@ function addGlyphNames(font) {
         c = charCodes[i];
         glyphIndex = glyphIndexMap[c];
         glyph = font.glyphs[glyphIndex];
-        glyph.addUnicode(parseFloat(c));
+        glyph.addUnicode(parseInt(c));
     }
     for (i = 0; i < font.glyphs.length; i += 1) {
         glyph = font.glyphs[i];
