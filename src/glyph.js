@@ -16,7 +16,7 @@ function Glyph(options) {
     this.index = options.index || 0;
     this.name = options.name || null;
     this.unicode = options.unicode || undefined;
-    this.unicodes = options.unicodes || options.unicode !== undefined ? [this.unicode] : [];
+    this.unicodes = options.unicodes || options.unicode !== undefined ? [options.unicode] : [];
     this.xMin = options.xMin || 0;
     this.yMin = options.yMin || 0;
     this.xMax = options.xMax || 0;
