@@ -287,8 +287,8 @@ function blocksToPath(blocks) {
     for (var i = 0; i < keys.length; i += 1) {
         var k = keys[i];
         var coords = keys[i].split(',').map(parseFloat);
-        var x = (ORIGIN_X + coords[0]) * GRID_SIZE;
-        var y = (ORIGIN_Y - coords[1]) * GRID_SIZE;
+        var x = coords[0] * GRID_SIZE;
+        var y = coords[1] * GRID_SIZE;
         path.moveTo(x, y);
         path.lineTo(x + GRID_SIZE, y);
         path.lineTo(x + GRID_SIZE, y + GRID_SIZE);
