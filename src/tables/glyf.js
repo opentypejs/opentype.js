@@ -218,23 +218,23 @@ function getPath(points) {
             // The first point is synthesized, so don't skip the real first point.
             realFirstPoint = false;
         }
-        p.moveTo(firstPt.x, -firstPt.y);
+        p.moveTo(firstPt.x, firstPt.y);
 
         for (j = realFirstPoint ? 1 : 0; j < contour.length; j += 1) {
             pt = contour[j];
             prevPt = j === 0 ? firstPt : contour[j - 1];
             if (prevPt.onCurve && pt.onCurve) {
                 // This is a straight line.
-                p.lineTo(pt.x, -pt.y);
+                p.lineTo(pt.x, pt.y);
             } else if (prevPt.onCurve && !pt.onCurve) {
                 curvePt = pt;
             } else if (!prevPt.onCurve && !pt.onCurve) {
                 midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                p.quadraticCurveTo(prevPt.x, -prevPt.y, midPt.x, -midPt.y);
+                p.quadraticCurveTo(prevPt.x, prevPt.y, midPt.x, midPt.y);
                 curvePt = pt;
             } else if (!prevPt.onCurve && pt.onCurve) {
                 // Previous point off-curve, this point on-curve.
-                p.quadraticCurveTo(curvePt.x, -curvePt.y, pt.x, -pt.y);
+                p.quadraticCurveTo(curvePt.x, curvePt.y, pt.x, pt.y);
                 curvePt = null;
             } else {
                 throw new Error('Invalid state.');
@@ -243,9 +243,9 @@ function getPath(points) {
         if (firstPt !== lastPt) {
             // Connect the last and first points
             if (curvePt) {
-                p.quadraticCurveTo(curvePt.x, -curvePt.y, firstPt.x, -firstPt.y);
+                p.quadraticCurveTo(curvePt.x, curvePt.y, firstPt.x, firstPt.y);
             } else {
-                p.lineTo(firstPt.x, -firstPt.y);
+                p.lineTo(firstPt.x, firstPt.y);
             }
         }
     }

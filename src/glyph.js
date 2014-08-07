@@ -48,16 +48,16 @@ Glyph.prototype.getPath = function (x, y, fontSize) {
     for (var i = 0; i < commands.length; i += 1) {
         cmd = commands[i];
         if (cmd.type === 'M') {
-            p.moveTo(x + (cmd.x * scale), y + (cmd.y * scale));
+            p.moveTo(x + (cmd.x * scale), y + (-cmd.y * scale));
         } else if (cmd.type === 'L') {
-            p.lineTo(x + (cmd.x * scale), y + (cmd.y * scale));
+            p.lineTo(x + (cmd.x * scale), y + (-cmd.y * scale));
         } else if (cmd.type === 'Q') {
-            p.quadraticCurveTo(x + (cmd.x1 * scale), y + (cmd.y1 * scale),
-                               x + (cmd.x * scale), y + (cmd.y * scale));
+            p.quadraticCurveTo(x + (cmd.x1 * scale), y + (-cmd.y1 * scale),
+                               x + (cmd.x * scale), y + (-cmd.y * scale));
         } else if (cmd.type === 'C') {
-            p.curveTo(x + (cmd.x1 * scale), y + (cmd.y1 * scale),
-                      x + (cmd.x2 * scale), y + (cmd.y2 * scale),
-                      x + (cmd.x * scale), y + (cmd.y * scale));
+            p.curveTo(x + (cmd.x1 * scale), y + (-cmd.y1 * scale),
+                      x + (cmd.x2 * scale), y + (-cmd.y2 * scale),
+                      x + (cmd.x * scale), y + (-cmd.y * scale));
         } else if (cmd.type === 'Z') {
             p.closePath();
         }
@@ -141,8 +141,8 @@ Glyph.prototype.drawPoints = function (ctx, x, y, fontSize) {
         var j, PI_SQ = Math.PI * 2;
         ctx.beginPath();
         for (j = 0; j < l.length; j += 1) {
-            ctx.moveTo(x + (l[j].x * scale), y + (-l[j].y * scale));
-            ctx.arc(x + (l[j].x * scale), y + (-l[j].y * scale), 2, 0, PI_SQ, false);
+            ctx.moveTo(x + (l[j].x * scale), y + (l[j].y * scale));
+            ctx.arc(x + (l[j].x * scale), y + (l[j].y * scale), 2, 0, PI_SQ, false);
         }
         ctx.closePath();
         ctx.fill();

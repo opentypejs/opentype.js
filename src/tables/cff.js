@@ -371,35 +371,35 @@ function parseCFFCharstring(code, font, index) {
                     haveWidth = true;
                 }
                 y += stack.pop();
-                p.moveTo(x, -y);
+                p.moveTo(x, y);
                 break;
             case 5: // rlineto
                 while (stack.length > 0) {
                     x += stack.shift();
                     y += stack.shift();
-                    p.lineTo(x, -y);
+                    p.lineTo(x, y);
                 }
                 break;
             case 6: // hlineto
                 while (stack.length > 0) {
                     x += stack.shift();
-                    p.lineTo(x, -y);
+                    p.lineTo(x, y);
                     if (stack.length === 0) {
                         break;
                     }
                     y += stack.shift();
-                    p.lineTo(x, -y);
+                    p.lineTo(x, y);
                 }
                 break;
             case 7: // vlineto
                 while (stack.length > 0) {
                     y += stack.shift();
-                    p.lineTo(x, -y);
+                    p.lineTo(x, y);
                     if (stack.length === 0) {
                         break;
                     }
                     x += stack.shift();
-                    p.lineTo(x, -y);
+                    p.lineTo(x, y);
                 }
                 break;
             case 8: // rrcurveto
@@ -410,7 +410,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     x = c2x + stack.shift();
                     y = c2y + stack.shift();
-                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 }
                 break;
             case 10: // callsubr
@@ -448,7 +448,7 @@ function parseCFFCharstring(code, font, index) {
                 }
                 y += stack.pop();
                 x += stack.pop();
-                p.moveTo(x, -y);
+                p.moveTo(x, y);
                 break;
             case 22: // hmoveto
                 if (stack.length > 1 && !haveWidth) {
@@ -456,7 +456,7 @@ function parseCFFCharstring(code, font, index) {
                     haveWidth = true;
                 }
                 x += stack.pop();
-                p.moveTo(x, -y);
+                p.moveTo(x, y);
                 break;
             case 23: // vstemhm
                 parseStems();
@@ -469,17 +469,17 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     x = c2x + stack.shift();
                     y = c2y + stack.shift();
-                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 }
                 x += stack.shift();
                 y += stack.shift();
-                p.lineTo(x, -y);
+                p.lineTo(x, y);
                 break;
             case 25: // rlinecurve
                 while (stack.length > 6) {
                     x += stack.shift();
                     y += stack.shift();
-                    p.lineTo(x, -y);
+                    p.lineTo(x, y);
                 }
                 c1x = x + stack.shift();
                 c1y = y + stack.shift();
@@ -487,7 +487,7 @@ function parseCFFCharstring(code, font, index) {
                 c2y = c1y + stack.shift();
                 x = c2x + stack.shift();
                 y = c2y + stack.shift();
-                p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 break;
             case 26: // vvcurveto
                 if (stack.length % 2) {
@@ -500,7 +500,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     x = c2x;
                     y = c2y + stack.shift();
-                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 }
                 break;
             case 27: // hhcurveto
@@ -514,7 +514,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     x = c2x + stack.shift();
                     y = c2y;
-                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 }
                 break;
             case 28: // shortint
@@ -538,7 +538,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     x = c2x + stack.shift();
                     y = c2y + (stack.length === 1 ? stack.shift() : 0);
-                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, c1y, c2x, c2y, x, y);
                     if (stack.length === 0) {
                         break;
                     }
@@ -548,7 +548,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     y = c2y + stack.shift();
                     x = c2x + (stack.length === 1 ? stack.shift() : 0);
-                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 }
                 break;
             case 31: // hvcurveto
@@ -559,7 +559,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     y = c2y + stack.shift();
                     x = c2x + (stack.length === 1 ? stack.shift() : 0);
-                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, c1y, c2x, c2y, x, y);
                     if (stack.length === 0) {
                         break;
                     }
@@ -569,7 +569,7 @@ function parseCFFCharstring(code, font, index) {
                     c2y = c1y + stack.shift();
                     x = c2x + stack.shift();
                     y = c2y + (stack.length === 1 ? stack.shift() : 0);
-                    p.curveTo(c1x, -c1y, c2x, -c2y, x, -y);
+                    p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 }
                 break;
             default:
