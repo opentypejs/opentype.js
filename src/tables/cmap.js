@@ -83,14 +83,12 @@ function parseCmapTable(data, start) {
     return cmap;
 }
 
-function addSegment(t, code) {
-    var index = t.segments.length;
+function addSegment(t, code, glyphIndex) {
     t.segments.push({
         end: code,
         start: code,
-        delta: -(code - index),
-        offset: 0,
-        glyphId: index
+        delta: -(code - glyphIndex),
+        offset: 0
     });
 }
 
@@ -124,7 +122,7 @@ function makeCmapTable(glyphs) {
     for (i = 0; i < glyphs.length; i += 1) {
         glyph = glyphs[i];
         for (j = 0; j < glyph.unicodes.length; j += 1) {
-            addSegment(t, glyph.unicodes[j]);
+            addSegment(t, glyph.unicodes[j], i);
         }
     }
     addTerminatorSegment(t);
