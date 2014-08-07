@@ -13,7 +13,7 @@
             font: 14px Helvetica,Arial,sans-serif;
             color: #333;
         }
-        
+
         .header {
             position: absolute;
             top: 0;
@@ -23,7 +23,7 @@
             background: #333;
             color: #f6f6f6;
         }
-        
+
         .header h1 {
             font-size: 18px;
             line-height: 40px;
@@ -31,13 +31,13 @@
             padding: 0 10px;
             display: inline-block;
         }
-        
+
         .header .actions {
             float: right;
             margin-right: 10px;
             line-height: 40px;
         }
-        
+
         .header .actions button {
             background: #333;
             color: #ccc;
@@ -45,12 +45,12 @@
             border-radius: 2px;
             padding: 5px 5px;
         }
-        
+
         .header .actions button:hover {
             background: #444;
             color: #f6f6f6;
         }
-        
+
         .glyphs {
             position: absolute;
             top: 40px;
@@ -62,7 +62,7 @@
             border-bottom: 2px solid #f6f6f6;
             background: #ddd;
         }
-        
+
         .glyphs span {
             margin: 0;
             padding: 0;
@@ -75,16 +75,16 @@
             line-height: 40px;
             color: #666;
         }
-        
+
         .glyphs span.selected {
             background: #f6f6f6;
             color: #333;
         }
-        
+
         .glyphs span:hover {
             background: #f6f6f6;
         }
-        
+
         .editor {
             position: absolute;
             top: 80px;
@@ -92,7 +92,7 @@
             bottom: 0;
             width: 100%;
         }
-        
+
         canvas {
             border: 1px solid #ccc;
         }
@@ -111,7 +111,7 @@
   </div>
   <div class="editor" id="editor">
       <canvas id="c" width="800" height="600"></canvas>
-  </div>  
+  </div>
 </div>
 <script>
 var HEADER_HEIGHT = 80;
@@ -122,13 +122,13 @@ var ORIGIN_X = 2;
 var ORIGIN_Y = 10;
 var DRAG_ON = 'on';
 var DRAG_OFF = 'off';
-    
+
 var gFont = null;
 var gCurrentGlyphName = null    ;
 var gCanvas = document.getElementById('c');
 var gCtx = gCanvas.getContext('2d');
 var gDragMode = null;
-    
+
 function drawGrid(ctx) {
     ctx.strokeStyle = '#ccc';
     ctx.beginPath();
@@ -142,7 +142,7 @@ function drawGrid(ctx) {
     }
     ctx.stroke();
 }
-    
+
 function drawBlocks(ctx, blocks) {
     ctx.fillStyle = '#333';
     var keys = Object.keys(blocks);
@@ -153,18 +153,18 @@ function drawBlocks(ctx, blocks) {
         ctx.fillRect((ORIGIN_X + x) * GRID_SIZE, (ORIGIN_Y - y) * GRID_SIZE, GRID_SIZE, GRID_SIZE);
     }
 }
-    
+
 function drawAdvanceWidth(ctx, glyph) {
     ctx.strokeStyle = 'gold';
     ctx.lineWidth = 2;
     ctx.beginPath();
     var x = (ORIGIN_X + glyph.advanceWidth) * GRID_SIZE;
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, EDITOR_HEIGHT); 
+    ctx.lineTo(x, EDITOR_HEIGHT);
     ctx.stroke();
     ctx.lineWidth = 1;
 }
-    
+
 function drawBaseline(ctx) {
     ctx.strokeStyle = 'black';
     ctx.lineWidth = 2;
@@ -189,7 +189,7 @@ function draw() {
     drawAdvanceWidth(ctx, glyph);
     drawBaseline(ctx);
 }
-    
+
 function canvasMouseDown(e) {
     e.preventDefault();
     var x = Math.floor(e.pageX / GRID_SIZE) - ORIGIN_X;
@@ -208,7 +208,7 @@ function canvasMouseDown(e) {
     saveFont();
     draw();
 }
-    
+
 function canvasMouseDragged(e) {
     e.preventDefault();
     var x = Math.floor(e.pageX / GRID_SIZE) - ORIGIN_X;
@@ -222,18 +222,18 @@ function canvasMouseDragged(e) {
     }
     draw();
 }
-    
+
 function canvasMouseUp(e) {
     saveFont();
     window.removeEventListener('mousemove', canvasMouseDragged);
     window.removeEventListener('mouseup', canvasMouseUp);
 }
-    
+
 function onGlyphClicked(e) {
     var glyphName = e.target.getAttribute('data-name');
     selectGlyph(glyphName);
 }
-    
+
 function ensureGlyph(glyphName) {
     if (!gFont.glyphs[glyphName]) {
         var newGlyph = {
@@ -252,11 +252,11 @@ function selectGlyph(glyphName) {
     var els = document.querySelectorAll('#glyphs span');
     for (var i = 0; i < els.length; i += 1) {
         els[i].className = '';
-    } 
+    }
     document.querySelector('#glyphs span[data-name="' + glyphName + '"]').className = 'selected';
     draw();
 }
-    
+
 function createGlyphDiv(parent, glyphName) {
     var glyphSpan = document.createElement('span');
     glyphSpan.textContent = glyphName;
@@ -264,7 +264,7 @@ function createGlyphDiv(parent, glyphName) {
     glyphSpan.addEventListener('click', onGlyphClicked);
     parent.appendChild(glyphSpan);
 }
-    
+
 function loadFont() {
     if (window.localStorage['font']) {
         return JSON.parse(window.localStorage['font']);
@@ -277,11 +277,11 @@ function loadFont() {
         };
     }
 }
-    
+
 function saveFont() {
     window.localStorage['font'] = JSON.stringify(gFont);
 }
-    
+
 function blocksToPath(blocks) {
     var path = new opentype.Path();
     var keys = Object.keys(blocks);
@@ -320,7 +320,7 @@ function downloadFont() {
     console.log(oFont.toTables());
     oFont.download();
 }
-    
+
 function init() {
     gFont = loadFont();
     var allLetters = 'ABC';
@@ -332,7 +332,7 @@ function init() {
     draw();
     gCanvas.addEventListener('mousedown', canvasMouseDown);
 }
-    
+
 document.addEventListener('DOMContentLoaded', init);
 
 </script>
