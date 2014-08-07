@@ -104,7 +104,7 @@ function parseBuffer(buffer) {
         switch (tag) {
         case 'cmap':
             font.tables.cmap = cmap.parse(data, offset);
-            font.encoding = new encoding.CmapEncoding(font.tables.cmap.segments);
+            font.encoding = new encoding.CmapEncoding(font.tables.cmap);
             if (!font.encoding) {
                 font.supported = false;
             }

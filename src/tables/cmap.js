@@ -12,7 +12,8 @@ var table = require('../table');
 // This function returns a `CmapEncoding` object or null if no supported format could be found.
 function parseCmapTable(data, start) {
     var version, numTables, offset, platformId, encodingId, format, segCount,
-        ranges, i, j, parserOffset, idRangeOffset, p, offsetBound;
+        endCountParser, startCountParser, idDeltaParser, idRangeOffsetParser, glyphIndexOffset,
+        endCount, startCount, i, c, idDelta, idRangeOffset, p, glyphIndex;
     var cmap = {};
     cmap.version = version = parse.getUShort(data, start);
     check.argument(version === 0, 'cmap table version should be 0.');
@@ -45,34 +46,40 @@ function parseCmapTable(data, start) {
     cmap.segCount = segCount = p.parseUShort() >> 1;
     // Skip searchRange, entrySelector, rangeShift.
     p.skip('uShort', 3);
-    ranges = [];
+
+    // The "unrolled" mapping from character codes to glyph indices.
+    cmap.glyphIndexMap = {};
+
+    endCountParser = new parse.Parser(data, start + offset + 14);
+    startCountParser = new parse.Parser(data, start + offset + 16 + segCount * 2);
+    idDeltaParser = new parse.Parser(data, start + offset + 16 + segCount * 4);
+    idRangeOffsetParser = new parse.Parser(data, start + offset + 16 + segCount * 6);
+    glyphIndexOffset = start + offset + 16 + segCount * 8;
+
     for (i = 0; i < segCount; i += 1) {
-        ranges[i] = { end: p.parseUShort() };
-    }
-    // Skip a padding value.
-    p.skip('uShort');
-    for (i = 0; i < segCount; i += 1) {
-        ranges[i].start = p.parseUShort();
-        ranges[i].length = ranges[i].end - ranges[i].start + 1;
-    }
-    for (i = 0; i < segCount; i += 1) {
-        ranges[i].idDelta = p.parseShort();
-    }
-    offsetBound = p.offset + cmap.length;
-    for (i = 0; i < segCount; i += 1) {
-        parserOffset = p.offset + p.relativeOffset;
-        idRangeOffset = p.parseUShort();
-        parserOffset += idRangeOffset;
-        if (idRangeOffset > 0) {
-            ranges[i].ids = [];
-            if (parserOffset >= offsetBound) break;
-            for (j = 0; j < ranges[i].length; j += 1) {
-                ranges[i].ids[j] = parse.getUShort(data, parserOffset);
-                parserOffset += 2;
+        endCount = endCountParser.parseUShort();
+        startCount = startCountParser.parseUShort();
+        idDelta = idDeltaParser.parseShort();
+        idRangeOffset = idRangeOffsetParser.parseUShort();
+        for (c = startCount; c <= endCount; c += 1) {
+            if (idRangeOffset !== 0) {
+                // The idRangeOffset is relative to the current position in the idRangeOffset array.
+                // Take the current offset in the idRangeOffset array.
+                glyphIndexOffset = (idRangeOffsetParser.offset + idRangeOffsetParser.relativeOffset - 2);
+                // Add the value of the idRangeOffset, which will move us into the glyphIndex array.
+                glyphIndexOffset += idRangeOffset;
+                // Then add the character index of the current segment, multiplied by 2 for USHORTs.
+                glyphIndexOffset += (c - startCount) * 2;
+                glyphIndex = parse.getUShort(data, glyphIndexOffset);
+                if (glyphIndex !== 0) {
+                    glyphIndex = (glyphIndex + idDelta) & 0xFFFF;
+                }
+            } else {
+                glyphIndex = (c + idDelta) & 0xFFFF;
             }
+            cmap.glyphIndexMap[c] = glyphIndex;
         }
     }
-    cmap.segments = ranges;
     return cmap;
 }
 

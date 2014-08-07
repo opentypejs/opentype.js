@@ -125,24 +125,8 @@ function CmapEncoding(cmap) {
     this.cmap = cmap;
 }
 
-CmapEncoding.prototype.charToGlyphIndex = function (s) {
-    var ranges, code, l, c, r;
-    ranges = this.cmap;
-    code = s.charCodeAt(0);
-    l = 0;
-    r = ranges.length - 1;
-    while (l < r) {
-        c = (l + r + 1) >> 1;
-        if (code < ranges[c].start) {
-            r = c - 1;
-        } else {
-            l = c;
-        }
-    }
-    if (ranges[l].start <= code && code <= ranges[l].end) {
-        return (ranges[l].idDelta + (ranges[l].ids ? ranges[l].ids[code - ranges[l].start] : code)) & 0xFFFF;
-    }
-    return 0;
+CmapEncoding.prototype.charToGlyphIndex = function (c) {
+    return this.cmap.glyphIndexMap[c.charCodeAt(0)] || 0;
 };
 
 function CffEncoding(encoding, charset) {
