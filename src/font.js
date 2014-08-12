@@ -71,7 +71,7 @@ Font.prototype.nameToGlyph = function (name) {
 };
 
 Font.prototype.glyphIndexToName = function (gid) {
-    if (this.glyphNames.glyphIndexToName) {
+    if (!this.glyphNames.glyphIndexToName) {
         return '';
     }
     return this.glyphNames.glyphIndexToName(gid);

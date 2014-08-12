@@ -360,7 +360,7 @@ Font.prototype.nameToGlyph = function (name) {
 };
 
 Font.prototype.glyphIndexToName = function (gid) {
-    if (this.glyphNames.glyphIndexToName) {
+    if (!this.glyphNames.glyphIndexToName) {
         return '';
     }
     return this.glyphNames.glyphIndexToName(gid);
@@ -2322,11 +2322,11 @@ function parsePairPosSubTable(data, start) {
 
         // Get the kerning value for a specific glyph pair.
         return function(leftGlyph, rightGlyph) {
-            if (!covered[leftGlyph]) return 0;
+            if (!covered[leftGlyph]) return null;
             var class1 = getClass1(leftGlyph),
                 class2 = getClass2(rightGlyph),
                 kerningRow = kerningMatrix[class1];
-            return kerningRow ? kerningRow[class2] : 0;
+            return kerningRow ? kerningRow[class2] : null;
         };
     }
 }
@@ -2572,7 +2572,7 @@ function parseMaxpTable(data, start) {
         p = new parse.Parser(data, start);
     maxp.version = p.parseVersion();
     maxp.numGlyphs = p.parseUShort();
-    if (maxp.majorVersion === 1) {
+    if (maxp.version === 1.0) {
         maxp.maxPoints = p.parseUShort();
         maxp.maxContours = p.parseUShort();
         maxp.maxCompositePoints = p.parseUShort();
@@ -2781,7 +2781,7 @@ function parsePostTable(data, start) {
         post.numberOfGlyphs = p.parseUShort();
         post.offset = new Array(post.numberOfGlyphs);
         for (i = 0; i < post.numberOfGlyphs; i++) {
-            post.offset = p.parseChar();
+            post.offset[i] = p.parseChar();
         }
         break;
     }
