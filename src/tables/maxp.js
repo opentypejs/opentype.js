@@ -12,7 +12,7 @@ function parseMaxpTable(data, start) {
         p = new parse.Parser(data, start);
     maxp.version = p.parseVersion();
     maxp.numGlyphs = p.parseUShort();
-    if (maxp.majorVersion === 1) {
+    if (maxp.version === 1.0) {
         maxp.maxPoints = p.parseUShort();
         maxp.maxContours = p.parseUShort();
         maxp.maxCompositePoints = p.parseUShort();
