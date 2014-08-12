@@ -2781,7 +2781,7 @@ function parsePostTable(data, start) {
         post.numberOfGlyphs = p.parseUShort();
         post.offset = new Array(post.numberOfGlyphs);
         for (i = 0; i < post.numberOfGlyphs; i++) {
-            post.offset = p.parseChar();
+            post.offset[i] = p.parseChar();
         }
         break;
     }
