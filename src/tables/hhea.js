@@ -37,7 +37,7 @@ function makeHheaTable(options) {
         {name: 'minLeftSideBearing', type: 'FWORD', value: 0},
         {name: 'minRightSideBearing', type: 'FWORD', value: 0},
         {name: 'xMaxExtent', type: 'FWORD', value: 0},
-        {name: 'caretSlopeRise', type: 'SHORT', value: 0},
+        {name: 'caretSlopeRise', type: 'SHORT', value: 1},
         {name: 'caretSlopeRun', type: 'SHORT', value: 0},
         {name: 'caretOffset', type: 'SHORT', value: 0},
         {name: 'reserved1', type: 'SHORT', value: 0},
