@@ -197,7 +197,14 @@ function fontToSfntTable(font) {
         fullName: fullName,
         version: font.version,
         postScriptName: postScriptName,
+        trademark: font.trademark,
         manufacturer: font.manufacturer,
+        designer: font.designer,
+        description: font.description,
+        manufacturerURL: font.manufacturerURL,
+        designerURL: font.designerURL,
+        license: font.license,
+        licenseURL: font.licenseURL,
         preferredFamily: font.familyName,
         preferredSubfamily: font.styleName
     });

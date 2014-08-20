@@ -11,11 +11,19 @@ var encoding = require('./encoding');
 // or to get a path representing the text.
 function Font(options) {
     options = options || {};
-    this.familyName = options.familyName || '';
-    this.styleName = options.styleName || '';
-    this.manufacturer = options.manufacturer || '';
-    this.copyright = options.copyright || '';
-    this.version = options.version || '';
+    // OS X will complain if the names are empty, so we put a single space everywhere by default.
+    this.familyName = options.familyName || ' ';
+    this.styleName = options.styleName || ' ';
+    this.designer = options.designer || ' ';
+    this.designerURL = options.designerURL || ' ';
+    this.manufacturer = options.manufacturer || ' ';
+    this.manufacturerURL = options.manufacturerURL || ' ';
+    this.license = options.license || ' ';
+    this.licenseURL = options.licenseURL || ' ';
+    this.version = options.version || ' ';
+    this.description = options.description || ' ';
+    this.copyright = options.copyright || ' ';
+    this.trademark = options.trademark || ' ';
     this.unitsPerEm = options.unitsPerEm || 1000;
     this.supported = true;
     this.glyphs = options.glyphs || [];
