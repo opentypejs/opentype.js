@@ -168,6 +168,7 @@ function fontToSfntTable(font) {
         usLastCharIndex: Math.max.apply(null, font.glyphs.map(function (glyph) {
             return glyph.unicode;
         })),
+        ulUnicodeRange1: 0x00000001, // Basic Latin
         // See http://typophile.com/node/13081 for more info on vertical metrics.
         // We get metrics for typical characters (such as "x" for xHeight).
         // We provide some fallback characters if characters are unavailable: their
@@ -177,7 +178,7 @@ function fontToSfntTable(font) {
         sTypoLineGap: 0,
         usWinAscent: globals.ascender,
         usWinDescent: globals.descender,
-        ulUnicodeRange1: 0x00000001, // Basic Latin
+        ulCodePageRange1: 0x00000001, // Basic Latin
         sxHeight: metricsForChar(font, 'xyvw', {yMax: 0}).yMax,
         sCapHeight: metricsForChar(font, 'HIKLEFJMNTZBDPRAGOQSUVWXY', globals).yMax,
         usBreakChar: font.hasChar(' ') ? 20 : 0 // Use space as the break character, if available.
