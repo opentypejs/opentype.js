@@ -27,7 +27,7 @@ function parseOS2Table(data, start) {
     os2.yStrikeoutPosition = p.parseShort();
     os2.sFamilyClass = p.parseShort();
     os2.panose = [];
-    for(var i = 0; i < 10; i++) {
+    for (var i = 0; i < 10; i++) {
         os2.panose[i] = p.parseByte();
     }
     os2.ulUnicodeRange1 = p.parseULong();
@@ -57,8 +57,7 @@ function parseOS2Table(data, start) {
     return os2;
 }
 
-function makeOS2Table() {
-    // FIXME: Add unicode stuff, metrics, break char and max context.
+function makeOS2Table(options) {
     return new table.Table('OS/2', [
         {name: 'version', type: 'USHORT', value: 0x0003},
         {name: 'xAvgCharWidth', type: 'SHORT', value: 0},
@@ -90,7 +89,7 @@ function makeOS2Table() {
         {name: 'ulUnicodeRange2', type: 'ULONG', value: 0},
         {name: 'ulUnicodeRange3', type: 'ULONG', value: 0},
         {name: 'ulUnicodeRange4', type: 'ULONG', value: 0},
-        {name: 'achVendID', type: 'CHARARRAY', value: ''},
+        {name: 'achVendID', type: 'CHARARRAY', value: '    '},
         {name: 'fsSelection', type: 'USHORT', value: 0},
         {name: 'usFirstCharIndex', type: 'USHORT', value: 0},
         {name: 'usLastCharIndex', type: 'USHORT', value: 0},
@@ -106,7 +105,7 @@ function makeOS2Table() {
         {name: 'usDefaultChar', type: 'USHORT', value: 0},
         {name: 'usBreakChar', type: 'USHORT', value: 0},
         {name: 'usMaxContext', type: 'USHORT', value: 0}
-    ]);
+    ], options);
 }
 
 exports.parse = parseOS2Table;

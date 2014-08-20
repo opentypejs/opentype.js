@@ -30,9 +30,9 @@ function computeCheckSum(bytes) {
     var sum = 0;
     for (var i = 0; i < bytes.length; i += 4) {
         sum += (bytes[i] << 24) +
-               (bytes[i + 1] << 16) +
-               (bytes[i + 2] << 8) +
-               (bytes[i + 3]);
+            (bytes[i + 1] << 16) +
+            (bytes[i + 2] << 8) +
+            (bytes[i + 3]);
     }
     sum %= Math.pow(2, 32);
     return sum;
@@ -43,16 +43,18 @@ function makeTableRecord(tag, checkSum, offset, length) {
         {name: 'tag', type: 'TAG', value: tag !== undefined ? tag : ''},
         {name: 'checkSum', type: 'ULONG', value: checkSum !== undefined ? checkSum : 0},
         {name: 'offset', type: 'ULONG', value: offset !== undefined ? offset : 0},
-        {name: 'length', type: 'ULONG', value: length !== undefined ? length : 0}]);
+        {name: 'length', type: 'ULONG', value: length !== undefined ? length : 0}
+    ]);
 }
 
 function makeSfntTable(tables) {
-    var sfnt =  new table.Table('sfnt', [
+    var sfnt = new table.Table('sfnt', [
         {name: 'version', type: 'TAG', value: 'OTTO'},
         {name: 'numTables', type: 'USHORT', value: 0},
         {name: 'searchRange', type: 'USHORT', value: 0},
         {name: 'entrySelector', type: 'USHORT', value: 0},
-        {name: 'rangeShift', type: 'USHORT', value: 0}]);
+        {name: 'rangeShift', type: 'USHORT', value: 0}
+    ]);
     sfnt.tables = tables;
     sfnt.numTables = tables.length;
     var highestPowerOf2 = Math.pow(2, log2(sfnt.numTables));
@@ -86,6 +88,20 @@ function makeSfntTable(tables) {
     return sfnt;
 }
 
+// Get the metrics for a character. If the string has more than one character
+// this function returns metrics for the first available character.
+// You can provide optional fallback metrics if no characters are available.
+function metricsForChar(font, chars, notFoundMetrics) {
+    for (var i = 0; i < chars.length; i += 1) {
+        var glyphIndex = font.charToGlyphIndex(chars[i]);
+        if (glyphIndex > 0) {
+            var glyph = font.glyphs[glyphIndex];
+            return glyph.getMetrics();
+        }
+    }
+    return notFoundMetrics;
+}
+
 // Convert the font object to a SFNT data structure.
 // This structure contains all the necessary tables and metadata to create a binary OTF file.
 function fontToSfntTable(font) {
@@ -98,6 +114,8 @@ function fontToSfntTable(font) {
     var rightSideBearings = [];
     for (var i = 0; i < font.glyphs.length; i += 1) {
         var glyph = font.glyphs[i];
+        // Skip non-important characters.
+        if (glyph.name === '.notdef') continue;
         var metrics = glyph.getMetrics();
         xMins.push(metrics.xMin);
         yMins.push(metrics.yMin);
@@ -111,12 +129,14 @@ function fontToSfntTable(font) {
         xMin: Math.min.apply(null, xMins),
         yMin: Math.min.apply(null, yMins),
         xMax: Math.max.apply(null, xMaxs),
-        yMax: Math.min.apply(null, yMaxs),
+        yMax: Math.max.apply(null, yMaxs),
         advanceWidthMax: Math.max.apply(null, advanceWidths),
         minLeftSideBearing: Math.min.apply(null, leftSideBearings),
         maxLeftSideBearing: Math.max.apply(null, leftSideBearings),
         minRightSideBearing: Math.min.apply(null, rightSideBearings)
     };
+    globals.ascender = font.unitsPerEm + globals.yMin;
+    globals.descender = -(font.unitsPerEm - globals.yMax);
 
     var headTable = head.make({
         unitsPerEm: font.unitsPerEm,
@@ -125,18 +145,45 @@ function fontToSfntTable(font) {
         xMax: globals.xMax,
         yMax: globals.yMax
     });
-    // FIXME Make ascender/descender configurable.
+
     var hheaTable = hhea.make({
-        ascender:  984,
-        descender: -273,
+        // Adding a little here makes OS X Quick Look happy
+        ascender: globals.ascender,
+        descender: globals.descender,
         advanceWidthMax: globals.advanceWidthMax,
         minLeftSideBearing: globals.minLeftSideBearing,
         minRightSideBearing: globals.minRightSideBearing,
         xMaxExtent: globals.maxLeftSideBearing + (globals.xMax - globals.xMin),
         numberOfHMetrics: font.glyphs.length
     });
+
     var maxpTable = maxp.make(font.glyphs.length);
-    var os2Table = os2.make();
+
+    var os2Table = os2.make({
+        usWeightClass: 500, // Medium FIXME Make this configurable
+        usWidthClass: 5, // Medium (normal) FIXME Make this configurable
+        usFirstCharIndex: Math.min.apply(null, font.glyphs.map(function (glyph) {
+            return glyph.unicode;
+        })),
+        usLastCharIndex: Math.max.apply(null, font.glyphs.map(function (glyph) {
+            return glyph.unicode;
+        })),
+        // See http://typophile.com/node/13081 for more info on vertical metrics.
+        // We get metrics for typical characters (such as "x" for xHeight).
+        // We provide some fallback characters if characters are unavailable: their
+        // ordering was chosen experimentally.
+        sTypoAscender: metricsForChar(font, 'bd', globals).yMax,
+        sTypoDescender: metricsForChar(font, 'pg', globals).yMin,
+        sTypoLineGap: 0,
+        usWinAscent: globals.ascender,
+        usWinDescent: globals.descender,
+        ulUnicodeRange1: 0x00000001, // Basic Latin
+        sxHeight: metricsForChar(font, 'xyvw', {yMax: 0}).yMax,
+        sCapHeight: metricsForChar(font, 'HIKLEFJMNTZBDPRAGOQSUVWXY', globals).yMax,
+        usBreakChar: font.hasChar(' ') ? 20 : 0 // Use space as the break character, if available.
+    });
+
+
     var hmtxTable = hmtx.make(font.glyphs);
     var cmapTable = cmap.make(font.glyphs);
 
