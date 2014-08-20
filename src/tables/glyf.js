@@ -11,18 +11,18 @@ var path = require('../path');
 // Parse the coordinate data for a glyph.
 function parseGlyphCoordinate(p, flag, previousValue, shortVectorBitMask, sameBitMask) {
     var v;
-    if (flag & shortVectorBitMask) {
+    if ((flag & shortVectorBitMask) > 0) {
         // The coordinate is 1 byte long.
         v = p.parseByte();
         // The `same` bit is re-used for short values to signify the sign of the value.
-        if (!(flag & sameBitMask)) {
+        if ((flag & sameBitMask) === 0) {
             v = -v;
         }
         v = previousValue + v;
     } else {
         //  The coordinate is 2 bytes long.
         // If the `same` bit is set, the coordinate is the same as the previous coordinate.
-        if (flag & sameBitMask) {
+        if ((flag & sameBitMask) > 0) {
             v = previousValue;
         } else {
             // Parse the coordinate as a signed 16-bit delta value.
@@ -63,7 +63,7 @@ function parseGlyph(data, start, index, font) {
             flag = p.parseByte();
             flags.push(flag);
             // If bit 3 is set, we repeat this flag n times, where n is the next byte.
-            if (flag & 8) {
+            if ((flag & 8) > 0) {
                 repeatCount = p.parseByte();
                 for (j = 0; j < repeatCount; j += 1) {
                     flags.push(flag);
@@ -122,7 +122,7 @@ function parseGlyph(data, start, index, font) {
                  dx: 0,
                  dy: 0
              };
-            if (flags & 1) {
+            if ((flags & 1) > 0) {
                 // The arguments are words
                 component.dx = p.parseShort();
                 component.dy = p.parseShort();
@@ -131,14 +131,14 @@ function parseGlyph(data, start, index, font) {
                 component.dx = p.parseChar();
                 component.dy = p.parseChar();
             }
-            if (flags & 8) {
+            if ((flags & 8) > 0) {
                 // We have a scale
                 component.xScale = component.yScale = p.parseF2Dot14();
-            } else if (flags & 64) {
+            } else if ((flags & 64) > 0) {
                 // We have an X / Y scale
                 component.xScale = p.parseF2Dot14();
                 component.yScale = p.parseF2Dot14();
-            } else if (flags & 128) {
+            } else if ((flags & 128) > 0) {
                 // We have a 2x2 transformation
                 component.xScale = p.parseF2Dot14();
                 component.scale01 = p.parseF2Dot14();

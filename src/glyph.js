@@ -8,7 +8,7 @@ var path = require('./path');
 
 // A Glyph is an individual mark that often corresponds to a character.
 // Some glyphs, such as ligatures, are a combination of many characters.
-// Glyphs are the basic building blocks of a fonth.
+// Glyphs are the basic building blocks of a font.
 //
 // The `Glyph` class contains utility methods for drawing the path and its points.
 function Glyph(options) {
@@ -112,7 +112,7 @@ Glyph.prototype.getMetrics = function () {
         yMin: Math.min.apply(null, yCoords),
         xMax: Math.max.apply(null, xCoords),
         yMax: Math.max.apply(null, yCoords),
-        leftSideBearing: 0,
+        leftSideBearing: 0
     };
     metrics.rightSideBearing = this.advanceWidth - metrics.leftSideBearing - (metrics.xMax - metrics.xMin);
     return metrics;

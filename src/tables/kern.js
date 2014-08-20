@@ -9,13 +9,14 @@ var parse = require('../parse');
 
 // Parse the `kern` table which contains kerning pairs.
 function parseKernTable(data, start) {
-    var pairs, p, tableVersion, nTables, subTableVersion, nPairs,
+    var pairs, p, tableVersion, subTableVersion, nPairs,
         i, leftIndex, rightIndex, value;
     pairs = {};
     p = new parse.Parser(data, start);
     tableVersion = p.parseUShort();
     check.argument(tableVersion === 0, 'Unsupported kern table version.');
-    nTables = p.parseUShort();
+    // Skip nTables.
+    p.skip('uShort', 1);
     subTableVersion = p.parseUShort();
     check.argument(subTableVersion === 0, 'Unsupported kern sub-table version.');
     // Skip subTableLength, subTableCoverage

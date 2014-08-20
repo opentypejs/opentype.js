@@ -87,7 +87,7 @@ function makeNameRecord(platformID, encodingID, languageID, nameID, length, offs
         {name: 'languageID', type: 'USHORT', value: languageID},
         {name: 'nameID', type: 'USHORT', value: nameID},
         {name: 'length', type: 'USHORT', value: length},
-        {name: 'offset', type: 'USHORT', value: offset},
+        {name: 'offset', type: 'USHORT', value: offset}
     ]);
 }
 

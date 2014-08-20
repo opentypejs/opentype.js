@@ -764,13 +764,12 @@ function makeGlobalSubrIndex() {
 }
 
 function makeEncodings(nGlyphs) {
-    var t = new table.Table('Encodings', [
+    return new table.Table('Encodings', [
         {name: 'format', type: 'Card8', value: 1},
         {name: 'nRanges', type: 'Card8', value: 1},
         {name: 'first', type: 'Card8', value: 1},
         {name: 'nLeft', type: 'Card8', value: nGlyphs - 1}
     ]);
-    return t;
 }
 
 function makeCharsets(glyphNames, strings) {
@@ -914,12 +913,11 @@ function makeCFFTable(glyphs, options) {
     // Needs to come at the end, to encode all custom strings used in the font.
     t.stringIndex = makeStringIndex(strings);
 
-    var baseOffset = t.header.sizeOf() +
+    attrs.encoding = t.header.sizeOf() +
         t.nameIndex.sizeOf() +
         t.topDictIndex.sizeOf() +
         t.stringIndex.sizeOf() +
         t.globalSubrIndex.sizeOf();
-    attrs.encoding = baseOffset;
     attrs.charset = attrs.encoding + t.encodings.sizeOf();
     attrs.charStrings = attrs.charset + t.charsets.sizeOf();
     attrs.private[1] = attrs.charStrings + t.charStringsIndex.sizeOf();
