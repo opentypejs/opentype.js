@@ -12,19 +12,23 @@
             margin: 0 0 50px 0;
             padding: 0;
         }
+
         .container {
             width: 940px;
             margin-left: auto;
             margin-right: auto;
         }
+
         #glyphs {
             clear: both;
         }
+
         .wrapper {
             float: left;
             margin: 5px;
             border: 1px solid #ccc;
         }
+
         .wrapper span {
             text-align: center;
             background: #ddd;
@@ -35,6 +39,7 @@
 <body>
 <div class="container">
     <h1 id="fontFamilyName"></h1>
+
     <p>This font is generated dynamically in the browser.</p>
     <button onclick="font.download()">Download Font</button>
 
@@ -44,7 +49,7 @@
 <script>
     function hexDump(bytes) {
         var hexString = bytes.map(function (v) {
-            var h =  v.toString(16);
+            var h = v.toString(16);
             return h.length === 1 ? '0' + h : h;
         });
         return hexString.join(' ').toUpperCase();
@@ -131,7 +136,7 @@
 
     document.getElementById('fontFamilyName').innerHTML = font2.familyName;
 
-    for (i = 0; i < font2.glyphs.length; i++) {
+    for (var i = 0; i < font2.glyphs.length; i++) {
         var glyph = font2.glyphs[i];
         var ctx = createGlyphCanvas(glyph, 150);
         var x = 50;
