@@ -4,6 +4,7 @@
 
 var path = require('./path');
 var sfnt = require('./tables/sfnt');
+var encoding = require('./encoding');
 
 // A Font represents a loaded OpenType font file.
 // It contains a set of glyphs and methods to draw text on a drawing context,
@@ -18,9 +19,14 @@ function Font(options) {
     this.unitsPerEm = options.unitsPerEm || 1000;
     this.supported = true;
     this.glyphs = options.glyphs || [];
-    this.encoding = null;
+    this.encoding = new encoding.DefaultEncoding(this);
     this.tables = {};
 }
+
+// Check if the font has a glyph for the given character.
+Font.prototype.hasChar = function (c) {
+    return this.encoding.charToGlyphIndex(c) !== null;
+};
 
 // Convert the given character to a single glyph index.
 // Note that this function assumes that there is a one-to-one mapping between

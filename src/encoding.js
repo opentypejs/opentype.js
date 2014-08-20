@@ -121,6 +121,31 @@ var standardNames = [
     'onehalf', 'onequarter', 'threequarters', 'franc', 'Gbreve', 'gbreve', 'Idotaccent', 'Scedilla', 'scedilla',
     'Cacute', 'cacute', 'Ccaron', 'ccaron', 'dcroat'];
 
+// This is the encoding used for fonts created from scratch.
+// It loops through all glyphs and finds the appropriate unicode value.
+// Since it's linear time, other encodings will be faster.
+function DefaultEncoding(font) {
+    this.font = font;
+}
+
+DefaultEncoding.prototype.charToGlyphIndex = function (c) {
+    var code, glyphs, i, glyph, j;
+    code = c.charCodeAt(0);
+    glyphs = this.font.glyphs;
+    if (glyphs) {
+        for (i = 0; i < glyphs.length; i += 1) {
+            glyph = glyphs[i];
+            for (j = 0; j < glyph.unicodes.length; j += 1) {
+                if (glyph.unicodes[j] === code) {
+                    return i;
+                }
+            }
+        }
+    } else {
+        return null;
+    }
+};
+
 function CmapEncoding(cmap) {
     this.cmap = cmap;
 }
@@ -198,6 +223,7 @@ exports.cffStandardStrings = cffStandardStrings;
 exports.cffStandardEncoding = cffStandardEncoding;
 exports.cffExpertEncoding = cffExpertEncoding;
 exports.standardNames = standardNames;
+exports.DefaultEncoding = DefaultEncoding;
 exports.CmapEncoding = CmapEncoding;
 exports.CffEncoding = CffEncoding;
 exports.GlyphNames = GlyphNames;
