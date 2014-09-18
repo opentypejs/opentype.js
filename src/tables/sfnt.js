@@ -102,6 +102,28 @@ function metricsForChar(font, chars, notFoundMetrics) {
     return notFoundMetrics;
 }
 
+// Return the smallest and largest unicode values of the characters in this font.
+// For most fonts the smallest value would be 20 (space).
+function charCodeBounds(glyphs) {
+    var minCode, maxCode;
+    for (var i = 0; i < glyphs.length; i += 1) {
+        var glyph = glyphs[i];
+        if (glyph.unicode >= 20) {
+            if (minCode === undefined) {
+                minCode = glyph.unicode;
+            } else if (glyph.unicode < minCode) {
+                minCode = glyph.unicode;
+            }
+            if (maxCode === undefined) {
+                maxCode = glyph.unicode;
+            } else if (glyph.unicode > maxCode) {
+                maxCode = glyph.unicode;
+            }
+        }
+    }
+    return [minCode, maxCode];
+}
+
 function average(vs) {
     var sum = 0;
     for (var i = 0; i < vs.length; i += 1) {
@@ -168,16 +190,13 @@ function fontToSfntTable(font) {
 
     var maxpTable = maxp.make(font.glyphs.length);
 
+    var codeBounds = charCodeBounds(font.glyphs);
     var os2Table = os2.make({
         xAvgCharWidth: Math.round(globals.advanceWidthAvg),
         usWeightClass: 500, // Medium FIXME Make this configurable
         usWidthClass: 5, // Medium (normal) FIXME Make this configurable
-        usFirstCharIndex: Math.min.apply(null, font.glyphs.map(function (glyph) {
-            return glyph.unicode;
-        })),
-        usLastCharIndex: Math.max.apply(null, font.glyphs.map(function (glyph) {
-            return glyph.unicode;
-        })),
+        usFirstCharIndex: codeBounds[0],
+        usLastCharIndex: codeBounds[1],
         ulUnicodeRange1: 0x00000001, // Basic Latin
         // See http://typophile.com/node/13081 for more info on vertical metrics.
         // We get metrics for typical characters (such as "x" for xHeight).
