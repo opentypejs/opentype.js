@@ -89,7 +89,7 @@ function makeOS2Table(options) {
         {name: 'ulUnicodeRange2', type: 'ULONG', value: 0},
         {name: 'ulUnicodeRange3', type: 'ULONG', value: 0},
         {name: 'ulUnicodeRange4', type: 'ULONG', value: 0},
-        {name: 'achVendID', type: 'CHARARRAY', value: '    '},
+        {name: 'achVendID', type: 'CHARARRAY', value: 'XXXX'},
         {name: 'fsSelection', type: 'USHORT', value: 0},
         {name: 'usFirstCharIndex', type: 'USHORT', value: 0},
         {name: 'usLastCharIndex', type: 'USHORT', value: 0},
