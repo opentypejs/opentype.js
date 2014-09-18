@@ -181,7 +181,7 @@ function fontToSfntTable(font) {
         ulCodePageRange1: 0x00000001, // Basic Latin
         sxHeight: metricsForChar(font, 'xyvw', {yMax: 0}).yMax,
         sCapHeight: metricsForChar(font, 'HIKLEFJMNTZBDPRAGOQSUVWXY', globals).yMax,
-        usBreakChar: font.hasChar(' ') ? 20 : 0 // Use space as the break character, if available.
+        usBreakChar: font.hasChar(' ') ? 32 : 0 // Use space as the break character, if available.
     });
 
 
