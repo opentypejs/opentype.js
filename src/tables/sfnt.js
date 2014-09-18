@@ -102,6 +102,14 @@ function metricsForChar(font, chars, notFoundMetrics) {
     return notFoundMetrics;
 }
 
+function average(vs) {
+    var sum = 0;
+    for (var i = 0; i < vs.length; i += 1) {
+        sum += vs[i];
+    }
+    return sum / vs.length;
+}
+
 // Convert the font object to a SFNT data structure.
 // This structure contains all the necessary tables and metadata to create a binary OTF file.
 function fontToSfntTable(font) {
@@ -131,6 +139,7 @@ function fontToSfntTable(font) {
         xMax: Math.max.apply(null, xMaxs),
         yMax: Math.max.apply(null, yMaxs),
         advanceWidthMax: Math.max.apply(null, advanceWidths),
+        advanceWidthAvg: average(advanceWidths),
         minLeftSideBearing: Math.min.apply(null, leftSideBearings),
         maxLeftSideBearing: Math.max.apply(null, leftSideBearings),
         minRightSideBearing: Math.min.apply(null, rightSideBearings)
@@ -160,6 +169,7 @@ function fontToSfntTable(font) {
     var maxpTable = maxp.make(font.glyphs.length);
 
     var os2Table = os2.make({
+        xAvgCharWidth: Math.round(globals.advanceWidthAvg),
         usWeightClass: 500, // Medium FIXME Make this configurable
         usWidthClass: 5, // Medium (normal) FIXME Make this configurable
         usFirstCharIndex: Math.min.apply(null, font.glyphs.map(function (glyph) {
