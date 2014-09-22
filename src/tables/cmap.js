@@ -55,8 +55,7 @@ function parseCmapTable(data, start) {
     idDeltaParser = new parse.Parser(data, start + offset + 16 + segCount * 4);
     idRangeOffsetParser = new parse.Parser(data, start + offset + 16 + segCount * 6);
     glyphIndexOffset = start + offset + 16 + segCount * 8;
-
-    for (i = 0; i < segCount; i += 1) {
+    for (i = 0; i < segCount - 1; i += 1) {
         endCount = endCountParser.parseUShort();
         startCount = startCountParser.parseUShort();
         idDelta = idDeltaParser.parseShort();
