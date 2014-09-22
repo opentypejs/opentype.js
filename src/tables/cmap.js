@@ -129,7 +129,7 @@ function makeCmapTable(glyphs) {
     var segCount;
     segCount = t.segments.length;
     t.segCountX2 = segCount * 2;
-    t.searchRange = Math.pow(Math.floor(Math.log(segCount) / Math.log(2)), 2) * 2;
+    t.searchRange = Math.pow(2, Math.floor(Math.log(segCount) / Math.log(2))) * 2;
     t.entrySelector = Math.log(t.searchRange / 2) / Math.log(2);
     t.rangeShift = t.segCountX2 - t.searchRange;
 
