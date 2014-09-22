@@ -763,15 +763,6 @@ function makeGlobalSubrIndex() {
     ]);
 }
 
-function makeEncodings(nGlyphs) {
-    return new table.Table('Encodings', [
-        {name: 'format', type: 'Card8', value: 1},
-        {name: 'nRanges', type: 'Card8', value: 1},
-        {name: 'first', type: 'Card8', value: 1},
-        {name: 'nLeft', type: 'Card8', value: nGlyphs - 1}
-    ]);
-}
-
 function makeCharsets(glyphNames, strings) {
     var t = new table.Table('Charsets', [
         {name: 'format', type: 'Card8', value: 0}
@@ -869,7 +860,6 @@ function makeCFFTable(glyphs, options) {
         {name: 'topDictIndex', type: 'TABLE'},
         {name: 'stringIndex', type: 'TABLE'},
         {name: 'globalSubrIndex', type: 'TABLE'},
-        {name: 'encodings', type: 'TABLE'},
         {name: 'charsets', type: 'TABLE'},
         {name: 'charStringsIndex', type: 'TABLE'},
         {name: 'privateDictIndex', type: 'TABLE'}
@@ -884,7 +874,7 @@ function makeCFFTable(glyphs, options) {
         familyName: options.familyName,
         weight: options.weightName,
         charset: 999,
-        encoding: 999,
+        encoding: 0,
         charStrings: 999,
         private: [0, 999]
     };
@@ -904,7 +894,6 @@ function makeCFFTable(glyphs, options) {
     var topDict = makeTopDict(attrs, strings);
     t.topDictIndex = makeTopDictIndex(topDict);
     t.globalSubrIndex = makeGlobalSubrIndex();
-    t.encodings = makeEncodings(glyphs.length);
     t.charsets = makeCharsets(glyphNames, strings);
     t.charStringsIndex = makeCharStringsIndex(glyphs);
     var privateDict = makePrivateDict(privateAttrs, strings);
@@ -913,12 +902,13 @@ function makeCFFTable(glyphs, options) {
     // Needs to come at the end, to encode all custom strings used in the font.
     t.stringIndex = makeStringIndex(strings);
 
-    attrs.encoding = t.header.sizeOf() +
+    var startOffset = t.header.sizeOf() +
         t.nameIndex.sizeOf() +
         t.topDictIndex.sizeOf() +
         t.stringIndex.sizeOf() +
         t.globalSubrIndex.sizeOf();
-    attrs.charset = attrs.encoding + t.encodings.sizeOf();
+    attrs.charset = startOffset;
+    attrs.encoding = 0; // We use the CFF standard encoding; proper encoding will be handled in cmap.
     attrs.charStrings = attrs.charset + t.charsets.sizeOf();
     attrs.private[1] = attrs.charStrings + t.charStringsIndex.sizeOf();
 
