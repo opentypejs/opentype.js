@@ -36,21 +36,21 @@
 <div class="container">
     <h1 id="fontFamilyName"></h1>
     <p>This font is generated dynamically in the browser.</p>
-    <button onclick="gFont.download()">Download Font</button>
+    <button onclick="inFont.download()">Download Font</button>
 
     <div id="glyphs"></div>
 </div>
 
 <script>
 
-    var gFont;
+    var inFont, outFont;
 
     // Create a canvas and adds it to the document.
     // Returns the 2d drawing context.
     function createGlyphCanvas(glyph, size) {
         var canvasId, html, glyphsDiv, wrap, canvas, ctx;
         canvasId = 'c' + glyph.index;
-        html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyph.index + '</span><span>' + glyph.name + '</span></div>';
+        html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyph.index + '</span><span>' + glyph.name + '</span><span>U ' + glyph.unicode + '</span></div>';
         glyphsDiv = document.getElementById('glyphs');
         wrap = document.createElement('div');
         wrap.innerHTML = html;
@@ -64,15 +64,13 @@
         if (err) {
             console.log(err);
         }
-        gFont = font;
-        font.glyphs = font.glyphs.slice(0, 100);
-        var buffer = font.toBuffer();
-        var font2 = opentype.parse(buffer);
-        console.log(font2.familyName);
-        document.getElementById('fontFamilyName').innerHTML = font2.familyName;
+        inFont = font;
+        var buffer = inFont.toBuffer();
+        outFont = opentype.parse(buffer);
+        document.getElementById('fontFamilyName').innerHTML = outFont.familyName;
 
-        for (var i = 0; i < font2.glyphs.length; i++) {
-            var glyph = font2.glyphs[i];
+        for (var i = 0; i < outFont.glyphs.length; i++) {
+            var glyph = outFont.glyphs[i];
             var ctx = createGlyphCanvas(glyph, 150);
             var x = 50;
             var y = 120;
