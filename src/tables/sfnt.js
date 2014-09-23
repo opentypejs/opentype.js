@@ -246,7 +246,7 @@ function fontToSfntTable(font) {
         weightName: font.styleName,
         postScriptName: postScriptName
     });
-    var tables = [headTable, hheaTable, maxpTable, os2Table, hmtxTable, cmapTable, nameTable, postTable, cffTable];
+    var tables = [cffTable, os2Table, cmapTable, headTable, hheaTable, hmtxTable, maxpTable, nameTable, postTable];
 
     var sfntTable = makeSfntTable(tables);
 
