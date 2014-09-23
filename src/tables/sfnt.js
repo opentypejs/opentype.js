@@ -218,7 +218,7 @@ function fontToSfntTable(font) {
         sTypoDescender: metricsForChar(font, 'pg', globals).yMin,
         sTypoLineGap: 0,
         usWinAscent: globals.ascender,
-        usWinDescent: globals.descender,
+        usWinDescent: -globals.descender,
         ulCodePageRange1: 0x00000001, // Basic Latin
         sxHeight: metricsForChar(font, 'xyvw', {yMax: 0}).yMax,
         sCapHeight: metricsForChar(font, 'HIKLEFJMNTZBDPRAGOQSUVWXY', globals).yMax,
