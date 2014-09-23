@@ -685,10 +685,10 @@ function encodeString(s, strings) {
     // Is the string already in the string index?
     i = strings.indexOf(s);
     if (i >= 0) {
-        return i + encoding.cffStandardStrings.length;
+        return i + encoding.cffStandardStrings.length - 1;
     } else {
         strings.push(s);
-        return encoding.cffStandardStrings.length + strings.length;
+        return encoding.cffStandardStrings.length + strings.length - 1;
     }
 }
 
