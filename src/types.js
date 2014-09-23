@@ -136,19 +136,14 @@ sizeOf.SID = sizeOf.USHORT;
 
 // Convert a numeric operand or charstring number to a variable-size list of bytes.
 encode.NUMBER = function (v) {
-    var v2, b0, b1;
     if (v >= -107 && v <= 107) {
         return [v + 139];
     } else if (v >= 108 && v <= 1131 ) {
-        v2 = v - 108;
-        b0 = (v2 >> 8) & 0xFF;
-        b1 = v2 - (b0 << 8);
-        return [b0 + 247, b1];
+        v = v - 108;
+        return [(v >> 8) + 247, v & 0xFF];
     } else if (v >= -1131 && v <= -108) {
-        v2 = -v - 108;
-        b0 = (v2 >> 8) & 0xFF;
-        b1 = v2 - (b0 << 8);
-        return [b0 + 251, b1];
+        v = -v - 108;
+        return [(v >> 8) + 251, v & 0xFF];
     } else if (v >= -32768 && v <= 32767) {
         return encode.NUMBER16(v);
     } else {
