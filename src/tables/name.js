@@ -91,12 +91,16 @@ function makeNameRecord(platformID, encodingID, languageID, nameID, length, offs
     ]);
 }
 
-function addNameRecord(t, recordID, s, offset) {
+function addMacintoshNameRecord(t, recordID, s, offset) {
     // Macintosh, Roman, English
     var stringBytes = encode.STRING(s);
     t.records.push(makeNameRecord(1, 0, 0, recordID, stringBytes.length, offset));
     t.strings.push(stringBytes);
     offset += stringBytes.length;
+    return offset;
+}
+
+function addWindowsNameRecord(t, recordID, s, offset) {
     // Windows, Unicode BMP (UCS-2), US English
     var utf16Bytes = encode.UTF16(s);
     t.records.push(makeNameRecord(3, 1, 0x0409, recordID, utf16Bytes.length, offset));
@@ -106,7 +110,7 @@ function addNameRecord(t, recordID, s, offset) {
 }
 
 function makeNameTable(options) {
-    var i;
+    var i, s;
     var t = new table.Table('name', [
         {name: 'format', type: 'USHORT', value: 0},
         {name: 'count', type: 'USHORT', value: 0},
@@ -115,12 +119,21 @@ function makeNameTable(options) {
     t.records = [];
     t.strings = [];
     var offset = 0;
+    // Add Macintosh records first
     for (i = 0; i < nameTableNames.length; i += 1) {
         if (options[nameTableNames[i]] !== undefined) {
-            var s = options[nameTableNames[i]];
-            offset = addNameRecord(t, i, s, offset);
+            s = options[nameTableNames[i]];
+            offset = addMacintoshNameRecord(t, i, s, offset);
         }
     }
+    // Then add Windows records
+    for (i = 0; i < nameTableNames.length; i += 1) {
+        if (options[nameTableNames[i]] !== undefined) {
+            s = options[nameTableNames[i]];
+            offset = addWindowsNameRecord(t, i, s, offset);
+        }
+    }
+
     t.count = t.records.length;
     t.stringOffset = 6 + t.count * 12;
     for (i = 0; i < t.records.length; i += 1) {
