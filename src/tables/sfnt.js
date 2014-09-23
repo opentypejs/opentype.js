@@ -62,7 +62,9 @@ function makeSfntTable(tables) {
     sfnt.entrySelector = log2(highestPowerOf2);
     sfnt.rangeShift = sfnt.numTables * 16 - sfnt.searchRange;
 
+    var recordFields = [];
     var tableFields = [];
+
     var offset = sfnt.sizeOf() + (makeTableRecord().sizeOf() * sfnt.numTables);
     while (offset % 4 !== 0) {
         offset += 1;
@@ -74,7 +76,7 @@ function makeSfntTable(tables) {
         check.argument(t.tableName.length === 4, 'Table name' + t.tableName + ' is invalid.');
         var tableLength = t.sizeOf();
         var tableRecord = makeTableRecord(t.tableName, computeCheckSum(t.encode()), offset, tableLength);
-        sfnt.fields.push({name: tableRecord.tag + ' Table Record', type: 'TABLE', value: tableRecord});
+        recordFields.push({name: tableRecord.tag + ' Table Record', type: 'TABLE', value: tableRecord});
         tableFields.push({name: t.tableName + ' table', type: 'TABLE', value: t});
         offset += tableLength;
         check.argument(!isNaN(offset), 'Something went wrong calculating the offset.');
@@ -84,6 +86,16 @@ function makeSfntTable(tables) {
         }
     }
 
+    // Table records need to be sorted alphabetically.
+    recordFields.sort(function (r1, r2) {
+        if (r1.value.tag > r2.value.tag) {
+            return 1;
+        } else {
+            return -1;
+        }
+    });
+
+    sfnt.fields = sfnt.fields.concat(recordFields);
     sfnt.fields = sfnt.fields.concat(tableFields);
     return sfnt;
 }
@@ -246,7 +258,8 @@ function fontToSfntTable(font) {
         weightName: font.styleName,
         postScriptName: postScriptName
     });
-    var tables = [cffTable, os2Table, cmapTable, headTable, hheaTable, hmtxTable, maxpTable, nameTable, postTable];
+    // Order the tables according to the the OpenType specification 1.4.
+    var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable];
 
     var sfntTable = makeSfntTable(tables);
 
