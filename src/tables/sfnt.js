@@ -214,8 +214,8 @@ function fontToSfntTable(font) {
         // We get metrics for typical characters (such as "x" for xHeight).
         // We provide some fallback characters if characters are unavailable: their
         // ordering was chosen experimentally.
-        sTypoAscender: metricsForChar(font, 'bd', globals).yMax,
-        sTypoDescender: metricsForChar(font, 'pg', globals).yMin,
+        sTypoAscender: globals.ascender,
+        sTypoDescender: globals.descender,
         sTypoLineGap: 0,
         usWinAscent: globals.ascender,
         usWinDescent: -globals.descender,
