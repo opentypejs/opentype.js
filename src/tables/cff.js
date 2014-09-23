@@ -676,20 +676,21 @@ function parseCFFTable(data, start, font) {
 // Convert a string to a String ID (SID).
 // The list of strings is modified in place.
 function encodeString(s, strings) {
-    var i;
+    var i, sid;
     // Is the string in the CFF standard strings?
     i = encoding.cffStandardStrings.indexOf(s);
     if (i >= 0) {
-        return i;
+        sid = i;
     }
     // Is the string already in the string index?
     i = strings.indexOf(s);
     if (i >= 0) {
-        return i + encoding.cffStandardStrings.length - 1;
+        sid = i + encoding.cffStandardStrings.length;
     } else {
+        sid = encoding.cffStandardStrings.length + strings.length;
         strings.push(s);
-        return encoding.cffStandardStrings.length + strings.length - 1;
     }
+    return sid;
 }
 
 function makeHeader() {
