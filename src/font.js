@@ -20,7 +20,7 @@ function Font(options) {
     this.manufacturerURL = options.manufacturerURL || ' ';
     this.license = options.license || ' ';
     this.licenseURL = options.licenseURL || ' ';
-    this.version = options.version || ' ';
+    this.version = options.version || 'Version 0.1';
     this.description = options.description || ' ';
     this.copyright = options.copyright || ' ';
     this.trademark = options.trademark || ' ';
