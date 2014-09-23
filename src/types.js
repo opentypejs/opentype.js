@@ -160,8 +160,8 @@ sizeOf.NUMBER = function (v) {
     return encode.NUMBER(v).length;
 };
 
-// Convert a signed number between -32768 and +32767 to a two-byte value.
-// This ensures we always two bytes, but is not the most compact format.
+// Convert a signed number between -32768 and +32767 to a three-byte value.
+// This ensures we always use three bytes, but is not the most compact format.
 encode.NUMBER16 = function (v) {
     return [28, (v >> 8) & 0xFF, v & 0xFF];
 };
