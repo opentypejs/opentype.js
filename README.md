@@ -61,6 +61,9 @@ back out as a binary file.
 In the browser, you can use `Font.download()` to instruct the browser to download a binary .OTF file. The name is based
 on the font name.
 
+    // Create the bézier paths for each of the glyphs.
+    // Note that the .notdef glyph is required.
+
     var notdefPath = new opentype.Path();
     notdefPath.moveTo(100, 0);
     notdefPath.lineTo(100, 700);
@@ -83,7 +86,7 @@ on the font name.
         path: aPath
     });
 
-    var glyphs = [aGlyph, bGlyph];
+    var glyphs = [notdefGlyph, aGlyph];
     var font = new opentype.Font({familyName: 'OpenTypeSans', styleName: 'Medium', unitsPerEm: 1000, glyphs: glyphs});
     font.download();
 
