@@ -1,6 +1,6 @@
 opentype.js
 ===========
-opentype.js is a JavaScript parser for TrueType and OpenType fonts.
+opentype.js is a JavaScript parser and writer for TrueType and OpenType fonts.
 
 It gives you access to the <strong>letterforms</strong> of text from the browser or node.js.
 
@@ -35,19 +35,69 @@ Features
 
 API
 ===
-##### `opentype.load(url, callback)`
-Load the font from the url and execute the callback. The callback gets `(err, font)` where `font` is a Font object. Check if the `err` is null before using the font.
+### Loading a font
+Use `opentype.load(url, callback)` to load a font from a URL. Since this method goes out the network, it is asynchronous.
+The callback gets `(err, font)` where `font` is a `Font` object. Check if the `err` is null before using the font.
 
-##### `opentype.parse(buffer)`
-Parse an `ArrayBuffer` containing OpenType font data and return a `Font` object. This method always returns a Font, but check font.supported to see if the font is in a supported format. The most common cause for unsupported fonts are fonts with Postscript outlines, which we do not yet support.
+    opentype.load('fonts/Roboto-Black.ttf', function (err, font) {
+        if (err) {
+            alert('Could not load font: ' + err);
+        } else {
+            // Use your font here.
+        }
+    });
 
-#### The Font object
+If you already have an `ArrayBuffer`, you can use `opentype.parse(buffer)` to parse the buffer. This method always
+returns a Font, but check `font.supported` to see if the font is in a supported format. (Fonts can be marked unsupported
+if they have encoding tables we can't read).
+
+    var font = opentype.parse(myBuffer);
+
+
+### Writing a font
+Once you have a `Font` object (either by using `opentype.load` or by creating a new one from scratch) you can write it
+back out as a binary file.
+
+In the browser, you can use `Font.download()` to instruct the browser to download a binary .OTF file. The name is based
+on the font name.
+
+    var notdefPath = new opentype.Path();
+    notdefPath.moveTo(100, 0);
+    notdefPath.lineTo(100, 700);
+    // more drawing instructions.... 
+    var notdefGlyph = new opentype.Glyph({
+        name: '.notdef',
+        unicode: 0,
+        advanceWidth: 650,
+        path: notdefPath
+    });
+    
+    var aPath = new opentype.Path();
+    aPath.moveTo(100, 0);
+    aPath.lineTo(100, 700);
+    // more drawing instructions...
+    var aGlyph = new opentype.Glyph({
+        name: 'A',
+        unicode: 65,
+        advanceWidth: 650,
+        path: aPath
+    });
+
+    var glyphs = [aGlyph, bGlyph];
+    var font = new opentype.Font({familyName: 'OpenTypeSans', styleName: 'Medium', unitsPerEm: 1000, glyphs: glyphs});
+    font.download();
+
+If you want to inspect the font, use `font.toTables()` to generate an object showing the data structures that map
+directly to binary values. If you want to get an `ArrayBuffer`, use `font.toBuffer()`.
+
+
+### The Font object
 A Font represents a loaded OpenType font file. It contains a set of glyphs and methods to draw text on a drawing context, or to get a path representing the text.
 
 * `glyphs`: an indexed list of Glyph objects.
 * `unitsPerEm`: X/Y coordinates in fonts are stored as integers. This value determines the size of the grid. Common values are 2048 and 4096.
 
-##### `Font.getPath(text, x, y, fontSize, options)`
+#### `Font.getPath(text, x, y, fontSize, options)`
 Create a Path that represents the given text.
 * `x`: Horizontal position of the beginning of the text. (default: 0)
 * `y`: Vertical position of the *baseline* of the text. (default: 0)
@@ -56,8 +106,7 @@ Create a Path that represents the given text.
 Options is an optional object containing:
 * `kerning`: if true takes kerning information into account (default: true)
 
-
-##### `Font.draw(ctx, text, x, y, fontSize, options)`
+#### `Font.draw(ctx, text, x, y, fontSize, options)`
 Create a Path that represents the given text.
 * `ctx`: A 2D drawing context, like Canvas.
 * `x`: Horizontal position of the beginning of the text. (default: 0)
@@ -67,31 +116,35 @@ Create a Path that represents the given text.
 Options is an optional object containing:
 * `kerning`: if true takes kerning information into account (default: true)
 
-##### `Font.drawPoints(ctx, text, x, y, fontSize, options)`
+#### `Font.drawPoints(ctx, text, x, y, fontSize, options)`
 Draw the points of all glyphs in the text. On-curve points will be drawn in blue, off-curve points will be drawn in red. The arguments are the same as `Font.draw`.
 
-##### `Font.drawMetrics(ctx, text, x, y, fontSize, options)`
+#### `Font.drawMetrics(ctx, text, x, y, fontSize, options)`
 Draw lines indicating important font measurements for all glyphs in the text.
 Black lines indicate the origin of the coordinate system (point 0,0).
 Blue lines indicate the glyph bounding box.
 Green line indicates the advance width of the glyph.
 
-##### `Font.stringToGlyphs(string)`
+#### `Font.stringToGlyphs(string)`
 Convert the string to a list of glyph objects.
 Note that there is no strict 1-to-1 correspondence between the string and glyph list due to
 possible substitutions such as ligatures. The list of returned glyphs can be larger or smaller than the length of the given string.
 
-##### `Font.charToGlyph(char)`
+#### `Font.charToGlyph(char)`
 Convert the character to a `Glyph` object. Returns null if the glyph could not be found. Note that this function assumes that there is a one-to-one mapping between the given character and a glyph; for complex scripts this might not be the case.
 
-##### `Font.getKerningValue(leftGlyph, rightGlyph)`
+#### `Font.getKerningValue(leftGlyph, rightGlyph)`
 Retrieve the value of the [kerning pair](https://en.wikipedia.org/wiki/Kerning) between the left glyph (or its index) and the right glyph (or its index). If no kerning pair is found, return 0. The kerning value gets added to the advance width when calculating the spacing between glyphs.
 
 #### The Glyph object
 A Glyph is an individual mark that often corresponds to a character. Some glyphs, such as ligatures, are a combination of many characters. Glyphs are the basic building blocks of a font.
 
 * `font`: A reference to the `Font` object.
+* `name`: The glyph name (e.g. "Aring", "five")
+* `unicode`: The primary unicode value of this glyph (can be `undefined`).
+* `unicodes`: The list of unicode values for this glyph (most of the time this will be 1, can also be empty).
 * `index`: The index number of the glyph.
+* `advanceWidth`: The width to advance the pen when drawing this glyph.
 * `xMin`, `yMin`, `xMax`, `yMax`: The bounding box of the glyph.
 * `path`: The raw, unscaled path of the glyph. 
 
