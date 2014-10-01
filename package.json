@@ -28,7 +28,7 @@
   "scripts": {
     "start": "bin/server.js",
     "test": "jshint src",
-    "browserify": "browserify src/opentype.js --standalone opentype > opentype.js",
+    "browserify": "browserify src/opentype.js --dg false --standalone opentype > opentype.js",
     "watchify": "watchify src/opentype.js --standalone opentype --debug -o opentype.js -v",
     "uglify": "uglifyjs opentype.js > opentype.min.js"
   },
