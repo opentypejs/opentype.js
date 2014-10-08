@@ -188,15 +188,26 @@ function GlyphNames(post) {
             this.names[i] = exports.standardNames[i + post.glyphNameIndex[i]];
         }
         break;
+    case 3.0:
+        this.names = null;
+        break;
     }
 }
 
 GlyphNames.prototype.nameToGlyphIndex = function (name) {
-    return this.names.indexOf(name);
+    if (this.names) {
+        return this.names.indexOf(name);
+    } else {
+        return null;
+    }
 };
 
 GlyphNames.prototype.glyphIndexToName = function (gid) {
-    return this.names[gid];
+    if (this.names) {
+        return this.names[gid];
+    } else {
+        return null;
+    }
 };
 
 function addGlyphNames(font) {
