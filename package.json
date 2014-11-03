@@ -32,7 +32,9 @@
     "watchify": "watchify src/opentype.js --standalone opentype --debug -o opentype.js -v",
     "uglify": "uglifyjs opentype.js > opentype.min.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "es6-collections": "git://github.com/WebReflection/es6-collections.git"
+  },
   "devDependencies": {
     "browserify": "^4.2.0",
     "grunt": "~0.4.2",
