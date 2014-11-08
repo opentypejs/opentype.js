@@ -7,7 +7,7 @@ var http = require('http');
 var path = require('path');
 var spawn = require('child_process').spawn;
 
-var watchify = spawn('./node_modules/.bin/watchify', ['src/opentype.js', '--standalone', 'opentype', '--debug', '-o', 'opentype.js', '-v']);
+var watchify = spawn('./node_modules/.bin/watchify', ['src/opentype.js', '--standalone', 'opentype', '--debug', '-o', 'build/opentype.js', '-v']);
 
 watchify.stdout.on('data', function(d) {
     console.log('WATCH', d.toString());
@@ -31,6 +31,8 @@ http.createServer(function (req, res) {
     var url = req.url.substring(1);
     if (url.length === 0) {
         url = 'index.html';
+    } else if (url === 'dist/opentype.min.js') {
+        url = 'build/opentype.js';
     }
     var filePath = './' + url;
     fs.readFile(filePath, function (err, data) {

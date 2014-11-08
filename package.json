@@ -9,6 +9,9 @@
   "keywords": [
     "graphics",
     "fonts",
+    "opentype",
+    "otf",
+    "ttf",
     "type"
   ],
   "licenses": [
@@ -26,20 +29,20 @@
     "ot": "./bin/ot"
   },
   "scripts": {
-    "start": "bin/server.js",
+    "start": "mkdir -p build && bin/server.js",
     "test": "jshint src",
-    "browserify": "browserify src/opentype.js -u fs --dg false --standalone opentype > opentype.js",
-    "watchify": "watchify src/opentype.js --standalone opentype --debug -o opentype.js -v",
-    "uglify": "uglifyjs opentype.js > opentype.min.js"
+    "browserify": "browserify src/opentype.js -u fs --dg false --standalone opentype > dist/opentype.js",
+    "uglify": "browserify src/opentype.js -u fs --dg false --standalone opentype -g uglifyify > dist/opentype.min.js",
+    "dist": "npm run test && npm run browserify && npm run uglify"
   },
   "dependencies": {},
   "devDependencies": {
-    "browserify": "^4.2.0",
+    "browserify": "^6.2.0",
     "grunt": "~0.4.2",
     "grunt-contrib-uglify": "~0.4.0",
     "grunt-release": "~0.7.0",
     "jshint": "~2.5.0",
-    "uglify-js": "^2.4.14",
+    "uglifyify": "^2.6.0",
     "watchify": "^0.10.2"
   }
 }
