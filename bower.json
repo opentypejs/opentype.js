@@ -1,24 +1,20 @@
 {
   "name": "opentype.js",
-  "repo": "nodebox/opentype.js",
-  "description": "OpenType font parser",
   "version": "0.3.0",
+  "main": "dist/opentype.js",
   "keywords": [
+    "vector",
     "graphics",
-    "fonts",
-    "type"
+    "canvas",
+    "2d"
   ],
-  "main": "opentype.js",
-  "scripts": [
-    "opentype.js"
-  ],
-  "dependencies": {},
-  "development": {},
-  "license": "MIT",
   "ignore": [
-    "**/.*",
-    "fonts",
-    "bin",
-    "g"
-  ]
+    "build",
+    "g",
+    "src",
+    "test"
+  ],
+  "dependencies": {
+    "lodash": "^2.4.1"
+  }
 }
