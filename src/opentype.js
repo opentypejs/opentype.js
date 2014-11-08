@@ -192,8 +192,9 @@ function parseBuffer(buffer) {
 // We use the node.js callback convention so that
 // opentype.js can integrate with frameworks like async.js.
 function load(url, callback) {
-    var loader = typeof process === 'undefined' || !process.browser ? loadFromFile : loadFromUrl;
-    loader(url, function (err, arrayBuffer) {
+    var isNode = typeof window === 'undefined';
+    var loadFn = isNode ? loadFromFile : loadFromUrl;
+    loadFn(url, function (err, arrayBuffer) {
         if (err) {
             return callback(err);
         }
