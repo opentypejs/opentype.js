@@ -31,8 +31,8 @@
   "scripts": {
     "start": "mkdir -p build && bin/server.js",
     "test": "jshint src",
-    "browserify": "browserify src/opentype.js -u fs --dg false --standalone opentype > dist/opentype.js",
-    "uglify": "browserify src/opentype.js -u fs --dg false --standalone opentype -g uglifyify > dist/opentype.min.js",
+    "browserify": "browserify src/opentype.js --bare --standalone opentype > dist/opentype.js",
+    "uglify": "browserify src/opentype.js --bare --standalone opentype -g uglifyify > dist/opentype.min.js",
     "dist": "npm run test && npm run browserify && npm run uglify"
   },
   "dependencies": {},
