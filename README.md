@@ -33,6 +33,30 @@ Features
 * Very efficient.
 * Runs in the browser and node.js.
 
+Installation
+============
+
+### Directly
+
+[Download the latest ZIP](https://github.com/nodebox/opentype.js/archive/master.zip) and grab the files in the `dist`
+folder. These are compiled.
+
+### Using Bower
+
+To install using [Bower](http://bower.io/), enter the following command in your project directory:
+
+    bower install opentype.js
+
+You can then include them in your scripts using:
+
+    <script src="/bower_components/opentype.js/dist/opentype.js"></script>
+
+### Using Browserify
+
+To install using [Browserify](http://browserify.org/), enter the following command in your project directory:
+
+    npm install --save opentype.js
+
 API
 ===
 ### Loading a font
