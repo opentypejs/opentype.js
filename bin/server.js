@@ -27,13 +27,16 @@ var CONTENT_TYPES = {
 };
 
 http.createServer(function (req, res) {
-    console.log('HTTP', req.url);
+    var rewrite = '';
     var url = req.url.substring(1);
     if (url.length === 0) {
         url = 'index.html';
-    } else if (url === 'dist/opentype.min.js') {
+        rewrite = ' -> ' + url;
+    } else if (url === 'dist/opentype.js') {
         url = 'build/opentype.js';
+        rewrite = ' -> ' + url;
     }
+    console.log('HTTP', req.url, rewrite);
     var filePath = './' + url;
     fs.readFile(filePath, function (err, data) {
         if (err) {
