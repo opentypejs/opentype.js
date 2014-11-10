@@ -9,10 +9,13 @@
     "2d"
   ],
   "ignore": [
+    ".jshintignore",
+    ".jshintrc",
     "build",
     "g",
     "src",
-    "test"
+    "test",
+    "*.html"
   ],
   "dependencies": {
   }
