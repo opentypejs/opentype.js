@@ -188,6 +188,9 @@ function GlyphNames(post) {
             this.names[i] = exports.standardNames[i + post.glyphNameIndex[i]];
         }
         break;
+    case 3:
+        this.names = [];
+        break;
     }
 }
 
