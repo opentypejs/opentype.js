@@ -1,3 +1,7 @@
+0.4.0 (Nov 10, 2014)
+====================
+* Add support for font writing.
+
 0.3.0 (Jun 10, 2014)
 ====================
 * Support for GPOS kerning, which works in both PostScript and OpenType.
