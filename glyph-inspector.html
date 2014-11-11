@@ -94,6 +94,15 @@ function contourToString(contour) {
     }).join('\n') + '</pre>';
 }
 
+function formatUnicode(unicode) {
+    unicode = unicode.toString(16);
+    if (unicode.length > 4) {
+        return ("000000" + unicode.toUpperCase()).substr(-6)
+    } else {
+        return ("0000" + unicode.toUpperCase()).substr(-4)
+    }
+}
+
 function displayGlyphData(glyphIndex) {
     var container = document.getElementById('glyph-data');
     if (glyphIndex < 0) {
@@ -103,7 +112,10 @@ function displayGlyphData(glyphIndex) {
     var glyph = font.glyphs[glyphIndex],
         html;
     html = '<dt>name</dt><dd>'+glyph.name+'</dd>';
-    html += '<dt>unicode</dt><dd>'+glyph.unicodes.join(', ')+'</dd>';
+
+    if (glyph.unicodes.length > 0) {
+        html += '<dt>unicode</dt><dd>'+ glyph.unicodes.map(formatUnicode).join(', ') +'</dd>';
+    }
     html += '<dl><dt>index</dt><dd>'+glyph.index+'</dd>';
 
     if (glyph.xMin !== 0 || glyph.xMax !== 0 || glyph.yMin !== 0 || glyph.yMax !== 0) {
