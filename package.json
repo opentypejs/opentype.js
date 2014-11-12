@@ -43,6 +43,6 @@
     "grunt-release": "~0.7.0",
     "jshint": "~2.5.0",
     "uglifyify": "^2.6.0",
-    "watchify": "^0.10.2"
+    "watchify": "^2.1.1"
   }
 }
