@@ -91,14 +91,14 @@ on the font name.
     var notdefPath = new opentype.Path();
     notdefPath.moveTo(100, 0);
     notdefPath.lineTo(100, 700);
-    // more drawing instructions.... 
+    // more drawing instructions....
     var notdefGlyph = new opentype.Glyph({
         name: '.notdef',
         unicode: 0,
         advanceWidth: 650,
         path: notdefPath
     });
-    
+
     var aPath = new opentype.Path();
     aPath.moveTo(100, 0);
     aPath.lineTo(100, 700);
@@ -123,6 +123,8 @@ A Font represents a loaded OpenType font file. It contains a set of glyphs and m
 
 * `glyphs`: an indexed list of Glyph objects.
 * `unitsPerEm`: X/Y coordinates in fonts are stored as integers. This value determines the size of the grid. Common values are 2048 and 4096.
+* `ascender`: max distance from baseline to top of any glyph in the font. In font units, not pixels.
+* `descender`: max distance from baseline to bottom of any glyph in the font. In font units, not pixels.
 
 #### `Font.getPath(text, x, y, fontSize, options)`
 Create a Path that represents the given text.
@@ -173,7 +175,7 @@ A Glyph is an individual mark that often corresponds to a character. Some glyphs
 * `index`: The index number of the glyph.
 * `advanceWidth`: The width to advance the pen when drawing this glyph.
 * `xMin`, `yMin`, `xMax`, `yMax`: The bounding box of the glyph.
-* `path`: The raw, unscaled path of the glyph. 
+* `path`: The raw, unscaled path of the glyph.
 
 ##### `Glyph.getPath(x, y, fontSize)`
 Get a scaled glyph Path object we can draw on a drawing context.
