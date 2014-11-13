@@ -111,7 +111,7 @@ Path.prototype.toPathData = function (decimalPlaces) {
         var s = '';
         for (var i = 0; i < arguments.length; i += 1) {
             var v = arguments[i];
-            if (v > 0 && i > 0) {
+            if (v >= 0 && i > 0) {
                 s += ' ';
             }
             s += floatToString(v);
