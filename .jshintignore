@@ -1,5 +1,4 @@
 /bower_components
 /node_modules
-**/*.min.js
-/opentype.js
-/opentype.min.js
+/dist
+/build
