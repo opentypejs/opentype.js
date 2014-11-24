@@ -3,7 +3,6 @@
 
 'use strict';
 
-var polyfill = require('../node_modules/es6-collections');
 var check = require('./check');
 
 var LIMIT16 = 32768; // The limit at which a 16-bit number switches signs == 2^15
