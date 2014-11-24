@@ -292,7 +292,7 @@ encode.OP = encode.BYTE;
 sizeOf.OP = sizeOf.BYTE;
 
 // memoize charstring encoding using WeakMap if available
-var wmm = window.WeakMap && new WeakMap();
+var wmm = window.WeakMap && new window.WeakMap();
 // Convert a list of CharString operations to bytes.
 encode.CHARSTRING = function (ops) {
     if ( wmm && wmm.has( ops ) ) {
