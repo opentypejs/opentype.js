@@ -1,3 +1,11 @@
+0.4.2 (Nov 24, 2014)
+====================
+* 2x speedup when writing fonts, thanks @louisremi!
+
+0.4.1 (Nov 10, 2014)
+====================
+* Fix bug that prevented `npm install`.
+
 0.4.0 (Nov 10, 2014)
 ====================
 * Add support for font writing.

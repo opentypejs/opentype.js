@@ -1283,7 +1283,7 @@ Path.prototype.toPathData = function (decimalPlaces) {
         var s = '';
         for (var i = 0; i < arguments.length; i += 1) {
             var v = arguments[i];
-            if (v > 0 && i > 0) {
+            if (v >= 0 && i > 0) {
                 s += ' ';
             }
             s += floatToString(v);
@@ -4143,9 +4143,11 @@ sizeOf.INDEX = function (v) {
 // The keys should be numeric.
 // The values should be objects containing name / type / value.
 encode.DICT = function (m) {
-    var d = [];
-    var keys = Object.keys(m);
-    for (var i = 0; i < keys.length; i += 1) {
+    var d = [],
+        keys = Object.keys(m),
+        length = keys.length;
+
+    for (var i = 0; i < length; i += 1) {
         // Object.keys() return string keys, but our keys are always numeric.
         var k = parseInt(keys[i], 0);
         var v = m[k];
@@ -4153,6 +4155,7 @@ encode.DICT = function (m) {
         d = d.concat(encode.OPERAND(v.value, v.type));
         d = d.concat(encode.OPERATOR(k));
     }
+
     return d;
 };
 
@@ -4194,14 +4197,28 @@ encode.OPERAND = function (v, type) {
 encode.OP = encode.BYTE;
 sizeOf.OP = sizeOf.BYTE;
 
+// memoize charstring encoding using WeakMap if available
+var wmm = window.WeakMap && new window.WeakMap();
 // Convert a list of CharString operations to bytes.
 encode.CHARSTRING = function (ops) {
-    var d = [], i;
-    for (i = 0; i < ops.length; i += 1) {
-        var op = ops[i];
-        var encodingFunction = encode[op.type];
-        d = d.concat(encodingFunction(op.value));
+    if ( wmm && wmm.has( ops ) ) {
+        return wmm.get( ops );
     }
+
+    var d = [],
+        length = ops.length,
+        op,
+        i;
+
+    for (i = 0; i < length; i += 1) {
+        op = ops[i];
+        d = d.concat( encode[op.type](op.value) );
+    }
+
+    if ( wmm ) {
+        wmm.set( ops, d );
+    }
+
     return d;
 };
 
@@ -4222,8 +4239,11 @@ encode.OBJECT = function (v) {
 // A table contains a list of fields containing the metadata (name, type and default value).
 // The table itself has the field values set as attributes.
 encode.TABLE = function (table) {
-    var d = [];
-    for (var i = 0; i < table.fields.length; i += 1) {
+    var d = [],
+        length = table.fields.length,
+        i;
+
+    for (i = 0; i < length; i += 1) {
         var field = table.fields[i];
         var encodingFunction = encode[field.type];
         check.argument(encodingFunction !== undefined, 'No encoding function for field type ' + field.type);
