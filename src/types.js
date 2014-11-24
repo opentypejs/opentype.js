@@ -292,10 +292,11 @@ encode.OPERAND = function (v, type) {
 encode.OP = encode.BYTE;
 sizeOf.OP = sizeOf.BYTE;
 
-var wmm = new WeakMap();
+// memoize charstring encoding using WeakMap if available
+var wmm = window.WeakMap && new WeakMap();
 // Convert a list of CharString operations to bytes.
 encode.CHARSTRING = function (ops) {
-    if ( wmm.has( ops ) ) {
+    if ( wmm && wmm.has( ops ) ) {
         return wmm.get( ops );
     }
 
@@ -309,7 +310,9 @@ encode.CHARSTRING = function (ops) {
         d = d.concat( encode[op.type](op.value) );
     }
 
-    wmm.set( ops, d );
+    if ( wmm ) {
+        wmm.set( ops, d );
+    }
 
     return d;
 };
