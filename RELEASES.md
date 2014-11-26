@@ -1,3 +1,7 @@
+0.4.3 (Nov 26, 2014)
+====================
+* Un-break node.js support.
+
 0.4.2 (Nov 24, 2014)
 ====================
 * 2x speedup when writing fonts, thanks @louisremi!
