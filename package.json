@@ -24,7 +24,7 @@
     "type": "git",
     "url": "git://github.com/nodebox/opentype.js.git"
   },
-  "main": "dist/opentype.js",
+  "main": "src/opentype.js",
   "bin": {
     "ot": "./bin/ot"
   },
