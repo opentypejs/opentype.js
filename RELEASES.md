@@ -1,3 +1,7 @@
+0.4.4 (Dec 8, 2014)
+===================
+* Solve issues with Browserify.
+
 0.4.3 (Nov 26, 2014)
 ====================
 * Un-break node.js support.
