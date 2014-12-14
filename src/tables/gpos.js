@@ -164,11 +164,14 @@ function parsePairPosSubTable(data, start) {
 
         // Get the kerning value for a specific glyph pair.
         return function(leftGlyph, rightGlyph) {
-            if (!covered[leftGlyph]) return null;
+            if (!covered[leftGlyph]) return;
             var class1 = getClass1(leftGlyph),
                 class2 = getClass2(rightGlyph),
                 kerningRow = kerningMatrix[class1];
-            return kerningRow ? kerningRow[class2] : null;
+                
+            if (kerningRow) {
+                return kerningRow[class2];
+            }
         };
     }
 }
