@@ -776,6 +776,19 @@ function makeCharsets(glyphNames, strings) {
     return t;
 }
 
+// @see raphael.js
+// {"type":"Q","x1":792,"y1":466,"x":753.5,"y":507.5}
+function q2c(x1, y1, ax, ay, x2, y2) {
+    var _13 = 1 / 3;
+    var _23 = 2 / 3;
+    return [
+        _13 * x1 + _23 * ax,
+        _13 * y1 + _23 * ay,
+        _13 * x2 + _23 * ax,
+        _13 * y2 + _23 * ay
+    ];
+}
+
 function glyphToOps(glyph) {
     var ops = [], path = glyph.path, x, y, i, cmd, dx, dy, dx1, dy1, dx2, dy2;
     ops.push({name: 'width', type: 'NUMBER', value: glyph.advanceWidth});
@@ -783,6 +796,15 @@ function glyphToOps(glyph) {
     y = 0;
     for (i = 0; i < path.commands.length; i += 1) {
         cmd = path.commands[i];
+        if (cmd.type === 'Q') { // Q to C
+            cmd.type = 'C';
+            var c = q2c(x, y, cmd.x1, cmd.y1, cmd.x, cmd.y);
+            cmd.x1 = c[0];
+            cmd.y1 = c[1];
+            cmd.x2 = c[2];
+            cmd.y2 = c[3];
+        }
+
         if (cmd.type === 'M') {
             dx = cmd.x - x;
             dy = cmd.y - y;
@@ -799,9 +821,6 @@ function glyphToOps(glyph) {
             ops.push({name: 'rlineto', type: 'OP', value: 5});
             x = cmd.x;
             y = cmd.y;
-        } else if (cmd.type === 'Q') {
-            // FIXME: Add support for quad curves
-            throw new Error('Writing quad curves is currently not supported.');
         } else if (cmd.type === 'C') {
             dx1 = cmd.x1 - x;
             dy1 = cmd.y1 - y;
