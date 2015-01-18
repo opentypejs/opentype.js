@@ -20,7 +20,7 @@ Here's an example. We load a font, then display it on a canvas with id "canvas":
             // If you just want to draw the text you can also use font.draw(ctx, text, x, y, fontSize).
             path.draw(ctx);
         }
-    }
+    });
 
 See [the project website](http://nodebox.github.io/opentype.js/) for a live demo.
 
