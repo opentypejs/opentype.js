@@ -178,8 +178,8 @@ function fontToSfntTable(font) {
         maxLeftSideBearing: Math.max.apply(null, leftSideBearings),
         minRightSideBearing: Math.min.apply(null, rightSideBearings)
     };
-    globals.ascender = globals.yMax;
-    globals.descender = globals.yMin;
+    globals.ascender = font.ascender !== undefined ? font.ascender : globals.yMax;
+    globals.descender = font.descender !== undefined ? font.descender : globals.yMin;
 
     var headTable = head.make({
         unitsPerEm: font.unitsPerEm,
