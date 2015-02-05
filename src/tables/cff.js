@@ -422,12 +422,63 @@ function parseCFFCharstring(code, font, index) {
                 break;
             case 11: // return
                 return;
-            case 12: // escape
+            case 12: // flex operators
                 v = code[i];
                 i += 1;
                 switch (v) {
+                case 35: // flex
+                    // |- dx1 dy1 dx2 dy2 dx3 dy3 dx4 dy4 dx5 dy5 dx6 dy6 fd flex (12 35) |-
+                    c1x = x   + stack.shift();    // dx1
+                    c1y = y   + stack.shift();    // dy1
+                    c2x = c1x + stack.shift();    // dx2
+                    c2y = c1y + stack.shift();    // dy2
+                    jpx = c2x + stack.shift();    // dx3
+                    jpy = c2y + stack.shift();    // dy3
+                    c3x = jpx + stack.shift();    // dx4
+                    c3y = jpy + stack.shift();    // dy4
+                    c4x = c3x + stack.shift();    // dx5
+                    c4y = c3y + stack.shift();    // dy5
+                    x = c4x + stack.shift();      // dx6
+                    y = c4y + stack.shift();      // dy6
+                    fd = stack.shift();           // flex depth
+                    p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
+                    p.curveTo(c3x, c3y, c4x, c4y, x, y);
+                    break;
+                case 34: // hflex
+                    // |- dx1 dx2 dy2 dx3 dx4 dx5 dx6 hflex (12 34) |-
+                    c1x = x   + stack.shift();    // dx1
+                    c1y = y;                      // dy1
+                    c2x = c1x + stack.shift();    // dx2
+                    c2y = c1y + stack.shift();    // dy2
+                    jpx = c2x + stack.shift();    // dx3
+                    jpy = c2y;                    // dy3
+                    c3x = jpx + stack.shift();    // dx4
+                    c3y = c2y;                    // dy4
+                    c4x = c3x + stack.shift();    // dx5
+                    c4y = y;                      // dy5
+                    x = c4x + stack.shift();      // dx6
+                    // y = y;                     // dy6
+                    p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
+                    p.curveTo(c3x, c3y, c4x, c4y, x, y);
+                    break;
+                case 36: // hflex1
+                    // |- dx1 dy1 dx2 dy2 dx3 dx4 dx5 dy5 dx6 hflex1 (12 36) |-
+                    c1x = x   + stack.shift();    // dx1
+                    c1y = y   + stack.shift();    // dy1
+                    c2x = c1x + stack.shift();    // dx2
+                    c2y = c1y + stack.shift();    // dy2
+                    jpx = c2x + stack.shift();    // dx3
+                    jpy = c2y;                    // dy3
+                    c3x = jpx + stack.shift();    // dx4
+                    c3y = c2y;                    // dy4
+                    c4x = c3x + stack.shift();    // dx5
+                    c4y = c3y + stack.shift();    // dy5
+                    x = c4x + stack.shift();      // dx6
+                    // y = y;                     // dy6
+                    p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
+                    p.curveTo(c3x, c3y, c4x, c4y, x, y);
+                    break;
                 case 37: // flex1
-                    // 4.1 Path Construction Operators
                     // |- dx1 dy1 dx2 dy2 dx3 dy3 dx4 dy4 dx5 dy5 d6 flex1 (12 37) |-
                     var jpx, jpy, c3x, c3y, c4x, c4y;
                     c1x = x   + stack.shift();    // dx1
@@ -442,9 +493,9 @@ function parseCFFCharstring(code, font, index) {
                     c4y = c3y + stack.shift();    // dy5
 
                     if (Math.abs(c4x - x) > Math.abs(c4y - y)) {
-                        x = c4x + stack.shift();
+                        x = c4x + stack.shift();  // d6
                     } else {
-                        y = c4y + stack.shift();
+                        y = c4y + stack.shift();  // d6
                     }
                     p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
                     p.curveTo(c3x, c3y, c4x, c4y, x, y);
