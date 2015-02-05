@@ -162,8 +162,7 @@ function doSnap(path) {
 function renderText() {
     if (!font) return;
     textToRender = document.getElementById('textField').value;
-
-    var previewCtx = document.getElementById('preview').getContext("2d");
+    var previewCtx = document.getElementById('preview').getContext('2d');
     previewCtx.clearRect(0, 0, 940, 300);
     font.draw(previewCtx, textToRender, 0, 200, fontSize, {kerning: kerning});
     if (drawPoints) {
@@ -175,15 +174,30 @@ function renderText() {
 
     snapPath = font.getPath(textToRender, 0, 200, fontSize, {kerning: kerning});
     doSnap(snapPath);
-    var snapCtx = document.getElementById('snap').getContext("2d");
+    var snapCtx = document.getElementById('snap').getContext('2d');
     snapCtx.clearRect(0, 0, 940, 300);
     snapPath.draw(snapCtx);
+}
+
+function enableHighDPICanvas(canvas) {
+    if (typeof canvas === 'string') {
+        canvas = document.getElementById(canvas);
+    }
+    var pixelRatio = window.devicePixelRatio || 1;
+    if (pixelRatio === 1) return;
+    var oldWidth = canvas.width;
+    var oldHeight = canvas.height;
+    canvas.width = oldWidth * pixelRatio;
+    canvas.height = oldHeight * pixelRatio;
+    canvas.style.width = oldWidth + 'px';
+    canvas.style.height = oldHeight + 'px';
+    canvas.getContext('2d').scale(pixelRatio, pixelRatio);
 }
 
 // Create a canvas and adds it to the document.
 // Returns the 2d drawing context.
 function createGlyphCanvas(glyph, size) {
-    var canvasId, html, glyphsDiv, wrap, canvas, ctx;
+    var canvasId, html, glyphsDiv, wrap, canvas, ctx, pixelRatio;
     canvasId = 'c' + glyph.index;
     html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyph.index + '</span></div>';
     glyphsDiv = document.getElementById('glyphs');
@@ -192,6 +206,7 @@ function createGlyphCanvas(glyph, size) {
     glyphsDiv.appendChild(wrap);
     canvas = document.getElementById(canvasId);
     ctx = canvas.getContext('2d');
+    enableHighDPICanvas(canvas, ctx);
     return ctx;
 }
 
@@ -259,6 +274,9 @@ fileButton.addEventListener('change', onReadFile, false);
 // IE 11 doesn't fire the 'input' event at all, but che 'change' event continuously.
 fontSizeSlider.addEventListener('input', fontSizeChanged, false);
 fontSizeSlider.addEventListener('change', fontSizeChanged, false);
+
+enableHighDPICanvas('preview');
+enableHighDPICanvas('snap');
 
 opentype.load(fontFileName, function (err, font) {
     var amount, glyph, ctx, x, y, fontSize;

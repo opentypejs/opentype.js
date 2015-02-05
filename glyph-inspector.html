@@ -66,9 +66,25 @@ var cellCount = 100,
     cellMarginTop = 1,
     cellMarginBottom = 8,
     cellMarginLeftRight = 1,
-    glyphMargin = 5;
+    glyphMargin = 5,
+    pixelRatio = window.devicePixelRatio || 1;
 
 var pageSelected, font, fontScale, fontSize, fontBaseline, glyphScale, glyphSize, glyphBaseline;
+
+function enableHighDPICanvas(canvas) {
+    if (typeof canvas === 'string') {
+        canvas = document.getElementById(canvas);
+    }
+    var pixelRatio = window.devicePixelRatio || 1;
+    if (pixelRatio === 1) return;
+    var oldWidth = canvas.width;
+    var oldHeight = canvas.height;
+    canvas.width = oldWidth * pixelRatio;
+    canvas.height = oldHeight * pixelRatio;
+    canvas.style.width = oldWidth + 'px';
+    canvas.style.height = oldHeight + 'px';
+    canvas.getContext('2d').scale(pixelRatio, pixelRatio);
+}
 
 function showErrorMessage(message) {
     var el = document.getElementById('message');
@@ -216,13 +232,15 @@ function drawPathWithArrows(ctx, path) {
 
 function displayGlyph(glyphIndex) {
     var canvas = document.getElementById('glyph'),
-        ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx = canvas.getContext('2d'),
+        width = canvas.width / pixelRatio,
+        height = canvas.height / pixelRatio;
+    ctx.clearRect(0, 0, width, height);
     if(glyphIndex < 0) return;
     var glyph = font.glyphs[glyphIndex],
         glyphWidth = glyph.advanceWidth * glyphScale,
-        xmin = (canvas.width - glyphWidth)/2,
-        xmax = (canvas.width + glyphWidth)/2,
+        xmin = (width - glyphWidth)/2,
+        xmax = (width + glyphWidth)/2,
         x0 = xmin,
         markSize = 10;
 
@@ -285,8 +303,8 @@ function pageSelect(event) {
 
 function initGlyphDisplay() {
     var glyphBgCanvas = document.getElementById('glyph-bg'),
-        w = glyphBgCanvas.width,
-        h = glyphBgCanvas.height,
+        w = glyphBgCanvas.width / pixelRatio,
+        h = glyphBgCanvas.height / pixelRatio,
         glyphW = w - glyphMargin*2,
         glyphH = h - glyphMargin*2,
         head = font.tables.head,
@@ -390,6 +408,7 @@ function prepareGlyphList() {
         canvas.className = 'item';
         canvas.id = 'g'+i;
         canvas.addEventListener('click', cellSelect, false);
+        enableHighDPICanvas(canvas);
         parent.insertBefore(canvas, marker);
     }
 }
@@ -399,6 +418,9 @@ document.getElementById('font-name').innerHTML = fontFileName.split('/')[1];
 
 var fileButton = document.getElementById('file');
 fileButton.addEventListener('change', onReadFile, false);
+
+enableHighDPICanvas('glyph-bg');
+enableHighDPICanvas('glyph');
 
 prepareGlyphList();
 opentype.load(fontFileName, function (err, font) {
