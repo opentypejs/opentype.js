@@ -425,6 +425,7 @@ function parseCFFCharstring(code, font, index) {
             case 12: // flex operators
                 v = code[i];
                 i += 1;
+                var jpx, jpy, c3x, c3y, c4x, c4y, fd;
                 switch (v) {
                 case 35: // flex
                     // |- dx1 dy1 dx2 dy2 dx3 dy3 dx4 dy4 dx5 dy5 dx6 dy6 fd flex (12 35) |-
@@ -480,7 +481,6 @@ function parseCFFCharstring(code, font, index) {
                     break;
                 case 37: // flex1
                     // |- dx1 dy1 dx2 dy2 dx3 dy3 dx4 dy4 dx5 dy5 d6 flex1 (12 37) |-
-                    var jpx, jpy, c3x, c3y, c4x, c4y;
                     c1x = x   + stack.shift();    // dx1
                     c1y = y   + stack.shift();    // dy1
                     c2x = c1x + stack.shift();    // dx2
