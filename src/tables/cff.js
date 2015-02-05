@@ -425,38 +425,34 @@ function parseCFFCharstring(code, font, index) {
             case 12: // escape
                 v = code[i];
                 i += 1;
-		switch (v) {
-		// 4.1 Path Construction Operators
-		// |- dx1 dy1 dx2 dy2 dx3 dy3 dx4 dy4 dx5 dy5 d6         |-
-		case   37:  // 12 37  0c 25  flex1
-		    var jpx, jpy, c3x, c3y, c4x, c4y;
+                switch (v) {
+                case 37: // flex1
+                    // 4.1 Path Construction Operators
+                    // |- dx1 dy1 dx2 dy2 dx3 dy3 dx4 dy4 dx5 dy5 d6 flex1 (12 37) |-
+                    var jpx, jpy, c3x, c3y, c4x, c4y;
+                    c1x = x   + stack.shift();    // dx1
+                    c1y = y   + stack.shift();    // dy1
+                    c2x = c1x + stack.shift();    // dx2
+                    c2y = c1y + stack.shift();    // dy2
+                    jpx = c2x + stack.shift();    // dx3
+                    jpy = c2y + stack.shift();    // dy3
+                    c3x = jpx + stack.shift();    // dx4
+                    c3y = jpy + stack.shift();    // dy4
+                    c4x = c3x + stack.shift();    // dx5
+                    c4y = c3y + stack.shift();    // dy5
 
-		    c1x = x   + stack.shift();    // dx1
-		    c1y = y   + stack.shift();    // dy1
-		    c2x = c1x + stack.shift();    // dx2
-		    c2y = c1y + stack.shift();    // dy2
-		    jpx = c2x + stack.shift();    // dx3
-		    jpy = c2y + stack.shift();    // dy3
-		    c3x = jpx + stack.shift();    // dx4
-		    c3y = jpy + stack.shift();    // dy4
-		    c4x = c3x + stack.shift();    // dx5
-		    c4y = c3y + stack.shift();    // dy5
-
-		    if ( Math.abs(c4x - x) > Math.abs(c4y - y) ) {
-		      x   = c4x + stack.shift();
-		    } else {
-		      y   = c4y + stack.shift();
-		    }
-
-		    p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
-		    p.curveTo(c3x, c3y, c4x, c4y, x, y);
-                    //p.lineTo(x, y);
-		    break;
-
-		default:
-		    console.log('saw unsupported operator %d', 1200+v);
-		    stack.length = 0;
-		}
+                    if (Math.abs(c4x - x) > Math.abs(c4y - y)) {
+                        x = c4x + stack.shift();
+                    } else {
+                        y = c4y + stack.shift();
+                    }
+                    p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
+                    p.curveTo(c3x, c3y, c4x, c4y, x, y);
+                    break;
+                default:
+                    console.log('Glyph ' + index + ': unknown operator ' + 1200 + v);
+                    stack.length = 0;
+                }
                 break;
             case 14: // endchar
                 if (stack.length > 0 && !haveWidth) {
