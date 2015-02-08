@@ -142,6 +142,8 @@ function onReadFile(e) {
             showErrorMessage('');
         } catch (err) {
             showErrorMessage(err.toString());
+            if (err.stack) console.log(err.stack);
+	    throw(err);
         }
     }
     reader.onerror = function (err) {
