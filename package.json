@@ -41,5 +41,8 @@
     "jshint": "^2.5.10",
     "uglifyify": "^2.6.0",
     "watchify": "^2.1.1"
+  },
+    "browser" : {
+    "fs":      false
   }
 }
