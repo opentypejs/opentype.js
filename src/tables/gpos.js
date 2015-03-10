@@ -96,7 +96,7 @@ function parsePairPosSubTable(data, start) {
     // This part is common to format 1 and format 2 subtables
     format = p.parseUShort();
     coverageOffset = p.parseUShort();
-    coverage = parseCoverageTable(data, start+coverageOffset);
+    coverage = parseCoverageTable(data, start + coverageOffset);
     // valueFormat 4: XAdvance only, 1: XPlacement only, 0: no ValueRecord for second glyph
     // Only valueFormat1=4 and valueFormat2=0 is supported.
     valueFormat1 = p.parseUShort();
@@ -168,7 +168,7 @@ function parsePairPosSubTable(data, start) {
             var class1 = getClass1(leftGlyph),
                 class2 = getClass2(rightGlyph),
                 kerningRow = kerningMatrix[class1];
-                
+
             if (kerningRow) {
                 return kerningRow[class2];
             }
