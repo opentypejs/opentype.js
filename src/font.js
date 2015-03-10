@@ -142,9 +142,9 @@ Font.prototype.forEachGlyph = function (text, x, y, fontSize, options, callback)
 // Returns a Path object.
 Font.prototype.getPath = function (text, x, y, fontSize, options) {
     var fullPath = new path.Path();
-    this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
-        var path = glyph.getPath(x, y, fontSize);
-        fullPath.extend(path);
+    this.forEachGlyph(text, x, y, fontSize, options, function (glyph, gX, gY, gFontSize) {
+        var glyphPath = glyph.getPath(gX, gY, gFontSize);
+        fullPath.extend(glyphPath);
     });
     return fullPath;
 };
@@ -173,8 +173,8 @@ Font.prototype.draw = function (ctx, text, x, y, fontSize, options) {
 // Options is an optional object that contains:
 // - kerning - Whether to take kerning information into account. (default: true)
 Font.prototype.drawPoints = function (ctx, text, x, y, fontSize, options) {
-    this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
-        glyph.drawPoints(ctx, x, y, fontSize);
+    this.forEachGlyph(text, x, y, fontSize, options, function (glyph, gX, gY, gFontSize) {
+        glyph.drawPoints(ctx, gX, gY, gFontSize);
     });
 };
 
@@ -191,8 +191,8 @@ Font.prototype.drawPoints = function (ctx, text, x, y, fontSize, options) {
 // Options is an optional object that contains:
 // - kerning - Whether to take kerning information into account. (default: true)
 Font.prototype.drawMetrics = function (ctx, text, x, y, fontSize, options) {
-    this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
-        glyph.drawMetrics(ctx, x, y, fontSize);
+    this.forEachGlyph(text, x, y, fontSize, options, function (glyph, gX, gY, gFontSize) {
+        glyph.drawMetrics(ctx, gX, gY, gFontSize);
     });
 };
 
