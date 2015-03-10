@@ -1,3 +1,9 @@
+0.4.5 (March 10, 2015)
+======================
+* Add support for writing quad curves.
+* Add support for CFF flex operators.
+* Close CFF subpaths.
+
 0.4.4 (Dec 8, 2014)
 ===================
 * Solve issues with Browserify.
