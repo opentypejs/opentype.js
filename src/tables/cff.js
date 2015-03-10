@@ -331,13 +331,22 @@ function parseCFFEncoding(data, start, charset) {
 // The encoding is described in the Type 2 Charstring Format
 // https://www.microsoft.com/typography/OTSPEC/charstr2.htm
 function parseCFFCharstring(code, font, index) {
-    var p, glyph, stack, nStems, haveWidth, width, x, y, c1x, c1y, c2x, c2y, v;
+    var p, glyph, stack, nStems, haveWidth, width, open, x, y, c1x, c1y, c2x, c2y, v;
     p = new path.Path();
     stack = [];
     nStems = 0;
     haveWidth = false;
     width = font.defaultWidthX;
+    open = false;
     x = y = 0;
+
+    function newContour(x, y) {
+        if (open) {
+            p.closePath();
+        }
+        p.moveTo(x, y);
+        open = true;
+    }
 
     function parseStems() {
         var hasWidthArg;
@@ -371,7 +380,7 @@ function parseCFFCharstring(code, font, index) {
                     haveWidth = true;
                 }
                 y += stack.pop();
-                p.moveTo(x, y);
+                newContour(x, y);
                 break;
             case 5: // rlineto
                 while (stack.length > 0) {
@@ -511,6 +520,7 @@ function parseCFFCharstring(code, font, index) {
                     haveWidth = true;
                 }
                 p.closePath();
+                open = false;
                 break;
             case 18: // hstemhm
                 parseStems();
@@ -527,7 +537,7 @@ function parseCFFCharstring(code, font, index) {
                 }
                 y += stack.pop();
                 x += stack.pop();
-                p.moveTo(x, y);
+                newContour(x, y);
                 break;
             case 22: // hmoveto
                 if (stack.length > 1 && !haveWidth) {
@@ -535,7 +545,7 @@ function parseCFFCharstring(code, font, index) {
                     haveWidth = true;
                 }
                 x += stack.pop();
-                p.moveTo(x, y);
+                newContour(x, y);
                 break;
             case 23: // vstemhm
                 parseStems();
