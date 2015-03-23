@@ -293,6 +293,8 @@ function Font(options) {
     this.copyright = options.copyright || ' ';
     this.trademark = options.trademark || ' ';
     this.unitsPerEm = options.unitsPerEm || 1000;
+    this.ascender = options.ascender;
+    this.descender = options.descender;
     this.supported = true;
     this.glyphs = options.glyphs || [];
     this.encoding = new encoding.DefaultEncoding(this);
@@ -3909,8 +3911,8 @@ function fontToSfntTable(font) {
         maxLeftSideBearing: Math.max.apply(null, leftSideBearings),
         minRightSideBearing: Math.min.apply(null, rightSideBearings)
     };
-    globals.ascender = globals.yMax;
-    globals.descender = globals.yMin;
+    globals.ascender = font.ascender !== undefined ? font.ascender : globals.yMax;
+    globals.descender = font.descender !== undefined ? font.descender : globals.yMin;
 
     var headTable = head.make({
         unitsPerEm: font.unitsPerEm,
