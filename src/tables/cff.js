@@ -889,28 +889,28 @@ function glyphToOps(glyph) {
         }
 
         if (cmd.type === 'M') {
-            dx = cmd.x - x;
-            dy = cmd.y - y;
+            dx = Math.round(cmd.x - x);
+            dy = Math.round(cmd.y - y);
             ops.push({name: 'dx', type: 'NUMBER', value: dx});
             ops.push({name: 'dy', type: 'NUMBER', value: dy});
             ops.push({name: 'rmoveto', type: 'OP', value: 21});
-            x = cmd.x;
-            y = cmd.y;
+            x = Math.round(cmd.x);
+            y = Math.round(cmd.y);
         } else if (cmd.type === 'L') {
-            dx = cmd.x - x;
-            dy = cmd.y - y;
+            dx = Math.round(cmd.x - x);
+            dy = Math.round(cmd.y - y);
             ops.push({name: 'dx', type: 'NUMBER', value: dx});
             ops.push({name: 'dy', type: 'NUMBER', value: dy});
             ops.push({name: 'rlineto', type: 'OP', value: 5});
-            x = cmd.x;
-            y = cmd.y;
+            x = Math.round(cmd.x);
+            y = Math.round(cmd.y);
         } else if (cmd.type === 'C') {
-            dx1 = cmd.x1 - x;
-            dy1 = cmd.y1 - y;
-            dx2 = cmd.x2 - cmd.x1;
-            dy2 = cmd.y2 - cmd.y1;
-            dx = cmd.x - cmd.x2;
-            dy = cmd.y - cmd.y2;
+            dx1 = Math.round(cmd.x1 - x);
+            dy1 = Math.round(cmd.y1 - y);
+            dx2 = Math.round(cmd.x2 - cmd.x1);
+            dy2 = Math.round(cmd.y2 - cmd.y1);
+            dx = Math.round(cmd.x - cmd.x2);
+            dy = Math.round(cmd.y - cmd.y2);
             ops.push({name: 'dx1', type: 'NUMBER', value: dx1});
             ops.push({name: 'dy1', type: 'NUMBER', value: dy1});
             ops.push({name: 'dx2', type: 'NUMBER', value: dx2});
@@ -918,8 +918,8 @@ function glyphToOps(glyph) {
             ops.push({name: 'dx', type: 'NUMBER', value: dx});
             ops.push({name: 'dy', type: 'NUMBER', value: dy});
             ops.push({name: 'rrcurveto', type: 'OP', value: 8});
-            x = cmd.x;
-            y = cmd.y;
+            x = Math.round(cmd.x);
+            y = Math.round(cmd.y);
         } else if (cmd.type === 'Z') {
             // Contours are closed automatically.
         }
