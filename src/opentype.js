@@ -206,6 +206,7 @@ function load(url, callback) {
     });
 }
 
+exports._parse = parse;
 exports.Font = _font.Font;
 exports.Glyph = glyph.Glyph;
 exports.Path = path.Path;
