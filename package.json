@@ -37,10 +37,10 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "browserify": "^6.2.0",
-    "jshint": "^2.5.10",
-    "uglifyify": "^2.6.0",
-    "watchify": "^2.1.1"
+    "browserify": "^9.0.3",
+    "jshint": "^2.6.3",
+    "uglifyify": "^3.0.1",
+    "watchify": "^2.6.0"
   },
     "browser" : {
     "fs":      false
