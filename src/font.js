@@ -149,6 +149,24 @@ Font.prototype.getPath = function (text, x, y, fontSize, options) {
     return fullPath;
 };
 
+// Create a Path2D object that represents the given text.
+//
+// text - The text to create.
+// x - Horizontal position of the beginning of the text. (default: 0)
+// y - Vertical position of the *baseline* of the text. (default: 0)
+// fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
+// Options is an optional object that contains:
+// - kerning - Whether to take kerning information into account. (default: true)
+//
+// Returns a Path object.
+Font.prototype.getPath2D = function (text, x, y, fontSize, options) {
+    var fullPath = new Path2D();
+    this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize) {
+        glyph.appendToPath2D(fullPath, x, y, fontSize);
+    });
+    return fullPath;
+};
+
 // Draw the text on the given drawing context.
 //
 // ctx - A 2D drawing context, like Canvas.
@@ -158,8 +176,11 @@ Font.prototype.getPath = function (text, x, y, fontSize, options) {
 // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
 // Options is an optional object that contains:
 // - kerning - Whether to take kerning information into account. (default: true)
+// - fillStyle - The fill color you would like to apply
 Font.prototype.draw = function (ctx, text, x, y, fontSize, options) {
-    this.getPath(text, x, y, fontSize, options).draw(ctx);
+    var path = this.getPath2D(text, x, y, fontSize, options);
+    ctx.fillStyle = options.fillStyle || "black";
+    ctx.fill(path);
 };
 
 // Draw the points of all glyphs in the text.
