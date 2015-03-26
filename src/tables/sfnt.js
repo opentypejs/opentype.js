@@ -193,7 +193,6 @@ function fontToSfntTable(font) {
     });
 
     var hheaTable = hhea.make({
-        // Adding a little here makes OS X Quick Look happy
         ascender: globals.ascender,
         descender: globals.descender,
         advanceWidthMax: globals.advanceWidthMax,
