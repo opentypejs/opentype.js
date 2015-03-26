@@ -263,12 +263,21 @@ function fontToSfntTable(font) {
 
     var sfntTable = makeSfntTable(tables);
 
+    // Compute the font's checkSum and store it in head.checkSumAdjustment.
     var bytes = sfntTable.encode();
     var checkSum = computeCheckSum(bytes);
-    headTable.checkSumAdjustment = 0xB1B0AFBA - checkSum;
-
-    // Build the font again, now with the proper checkSum.
-    sfntTable = makeSfntTable(tables);
+    var tableFields = sfntTable.fields;
+    var checkSumAdjusted = false;
+    for (var i = 0; i < tableFields.length; i += 1) {
+        if (tableFields[i].name === 'head table') {
+            tableFields[i].value.checkSumAdjustment = 0xB1B0AFBA - checkSum;
+            checkSumAdjusted = true;
+            break;
+        }
+    }
+    if (!checkSumAdjusted) {
+        throw new Error('Could not find head table with checkSum to adjust.');
+    }
 
     return sfntTable;
 }
