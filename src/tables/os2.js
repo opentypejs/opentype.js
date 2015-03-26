@@ -139,13 +139,14 @@ function getUnicodeRange(unicode) {
             return i;
         }
     }
+
     return -1;
 }
 
 // Parse the OS/2 and Windows metrics `OS/2` table
 function parseOS2Table(data, start) {
-    var os2 = {},
-        p = new parse.Parser(data, start);
+    var os2 = {};
+    var p = new parse.Parser(data, start);
     os2.version = p.parseUShort();
     os2.xAvgCharWidth = p.parseShort();
     os2.usWeightClass = p.parseUShort();
@@ -166,6 +167,7 @@ function parseOS2Table(data, start) {
     for (var i = 0; i < 10; i++) {
         os2.panose[i] = p.parseByte();
     }
+
     os2.ulUnicodeRange1 = p.parseULong();
     os2.ulUnicodeRange2 = p.parseULong();
     os2.ulUnicodeRange3 = p.parseULong();
@@ -183,6 +185,7 @@ function parseOS2Table(data, start) {
         os2.ulCodePageRange1 = p.parseULong();
         os2.ulCodePageRange2 = p.parseULong();
     }
+
     if (os2.version >= 2) {
         os2.sxHeight = p.parseShort();
         os2.sCapHeight = p.parseShort();
@@ -190,6 +193,7 @@ function parseOS2Table(data, start) {
         os2.usBreakChar = p.parseUShort();
         os2.usMaxContent = p.parseUShort();
     }
+
     return os2;
 }
 

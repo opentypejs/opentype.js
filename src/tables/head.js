@@ -9,8 +9,8 @@ var table = require('../table');
 
 // Parse the header `head` table
 function parseHeadTable(data, start) {
-    var head = {},
-        p = new parse.Parser(data, start);
+    var head = {};
+    var p = new parse.Parser(data, start);
     head.version = p.parseVersion();
     head.fontRevision = Math.round(p.parseFixed() * 1000) / 1000;
     head.checkSumAdjustment = p.parseULong();

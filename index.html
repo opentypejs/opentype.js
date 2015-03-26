@@ -247,7 +247,7 @@ function onReadFile(e) {
     document.getElementById('font-name').innerHTML = '';
     var file = e.target.files[0];
     var reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = function(e) {
         try {
             font = opentype.parse(e.target.result);
             onFontLoaded(font);
@@ -256,7 +256,7 @@ function onReadFile(e) {
             showErrorMessage(err.toString());
         }
     }
-    reader.onerror = function (err) {
+    reader.onerror = function(err) {
         showErrorMessage(err.toString());
     }
 
@@ -278,7 +278,7 @@ fontSizeSlider.addEventListener('change', fontSizeChanged, false);
 enableHighDPICanvas('preview');
 enableHighDPICanvas('snap');
 
-opentype.load(fontFileName, function (err, font) {
+opentype.load(fontFileName, function(err, font) {
     var amount, glyph, ctx, x, y, fontSize;
     if (err) {
         showErrorMessage(err.toString());

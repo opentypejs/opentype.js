@@ -19,11 +19,13 @@ function equals(a, b) {
         if (a.length !== b.length) {
             return false;
         }
+
         for (var i = 0; i < a.length; i += 1) {
             if (!equals(a[i], b[i])) {
                 return false;
             }
         }
+
         return true;
     } else {
         return false;
@@ -33,65 +35,78 @@ function equals(a, b) {
 // Parse a `CFF` INDEX array.
 // An index array consists of a list of offsets, then a list of objects at those offsets.
 function parseCFFIndex(data, start, conversionFn) {
-    var offsets, objects, count, endOffset, offsetSize, objectOffset, pos, i, value;
-    offsets = [];
-    objects = [];
-    count = parse.getCard16(data, start);
+    //var i, objectOffset, endOffset;
+    var offsets = [];
+    var objects = [];
+    var count = parse.getCard16(data, start);
+    var i;
+    var objectOffset;
+    var endOffset;
     if (count !== 0) {
-        offsetSize = parse.getByte(data, start + 2);
+        var offsetSize = parse.getByte(data, start + 2);
         objectOffset = start + ((count + 1) * offsetSize) + 2;
-        pos = start + 3;
+        var pos = start + 3;
         for (i = 0; i < count + 1; i += 1) {
             offsets.push(parse.getOffset(data, pos, offsetSize));
             pos += offsetSize;
         }
+
         // The total size of the index array is 4 header bytes + the value of the last offset.
         endOffset = objectOffset + offsets[count];
     } else {
         endOffset = start + 2;
     }
+
     for (i = 0; i < offsets.length - 1; i += 1) {
-        value = parse.getBytes(data, objectOffset + offsets[i], objectOffset + offsets[i + 1]);
+        var value = parse.getBytes(data, objectOffset + offsets[i], objectOffset + offsets[i + 1]);
         if (conversionFn) {
             value = conversionFn(value);
         }
+
         objects.push(value);
     }
+
     return {objects: objects, startOffset: start, endOffset: endOffset};
 }
 
 // Parse a `CFF` DICT real value.
 function parseFloatOperand(parser) {
-    var s, eof, lookup, b, n1, n2;
-    s = '';
-    eof = 15;
-    lookup = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', 'E', 'E-', null, '-'];
+    var s = '';
+    var eof = 15;
+    var lookup = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', 'E', 'E-', null, '-'];
     while (true) {
-        b = parser.parseByte();
-        n1 = b >> 4;
-        n2 = b & 15;
+        var b = parser.parseByte();
+        var n1 = b >> 4;
+        var n2 = b & 15;
 
         if (n1 === eof) {
             break;
         }
+
         s += lookup[n1];
 
         if (n2 === eof) {
             break;
         }
+
         s += lookup[n2];
     }
+
     return parseFloat(s);
 }
 
 // Parse a `CFF` DICT operand.
 function parseOperand(parser, b0) {
-    var b1, b2, b3, b4;
+    var b1;
+    var b2;
+    var b3;
+    var b4;
     if (b0 === 28) {
         b1 = parser.parseByte();
         b2 = parser.parseByte();
         return b1 << 8 | b2;
     }
+
     if (b0 === 29) {
         b1 = parser.parseByte();
         b2 = parser.parseByte();
@@ -99,56 +114,64 @@ function parseOperand(parser, b0) {
         b4 = parser.parseByte();
         return b1 << 24 | b2 << 16 | b3 << 8 | b4;
     }
+
     if (b0 === 30) {
         return parseFloatOperand(parser);
     }
+
     if (b0 >= 32 && b0 <= 246) {
         return b0 - 139;
     }
+
     if (b0 >= 247 && b0 <= 250) {
         b1 = parser.parseByte();
         return (b0 - 247) * 256 + b1 + 108;
     }
+
     if (b0 >= 251 && b0 <= 254) {
         b1 = parser.parseByte();
         return -(b0 - 251) * 256 - b1 - 108;
     }
+
     throw new Error('Invalid b0 ' + b0);
 }
 
 // Convert the entries returned by `parseDict` to a proper dictionary.
 // If a value is a list of one, it is unpacked.
 function entriesToObject(entries) {
-    var o, key, values, i, value;
-    o = {};
-    for (i = 0; i < entries.length; i += 1) {
-        key = entries[i][0];
-        values = entries[i][1];
+    var o = {};
+    for (var i = 0; i < entries.length; i += 1) {
+        var key = entries[i][0];
+        var values = entries[i][1];
+        var value;
         if (values.length === 1) {
             value = values[0];
         } else {
             value = values;
         }
+
         if (o.hasOwnProperty(key)) {
             throw new Error('Object ' + o + ' already has key ' + key);
         }
+
         o[key] = value;
     }
+
     return o;
 }
 
 // Parse a `CFF` DICT object.
 // A dictionary contains key-value pairs in a compact tokenized format.
 function parseCFFDict(data, start, size) {
-    var parser, entries, operands, op;
     start = start !== undefined ? start : 0;
-    parser = new parse.Parser(data, start);
-    entries = [];
-    operands = [];
+    var parser = new parse.Parser(data, start);
+    var entries = [];
+    var operands = [];
     size = size !== undefined ? size : data.length;
 
     while (parser.relativeOffset < size) {
-        op = parser.parseByte();
+        var op = parser.parseByte();
+
         // The first byte for each dict item distinguishes between operator (key) and operand (value).
         // Values <= 21 are operators.
         if (op <= 21) {
@@ -156,6 +179,7 @@ function parseCFFDict(data, start, size) {
             if (op === 12) {
                 op = 1200 + parser.parseByte();
             }
+
             entries.push([op, operands]);
             operands = [];
         } else {
@@ -164,6 +188,7 @@ function parseCFFDict(data, start, size) {
             operands.push(parseOperand(parser, op));
         }
     }
+
     return entriesToObject(entries);
 }
 
@@ -175,27 +200,31 @@ function getCFFString(strings, index) {
     } else {
         index = strings[index - 391];
     }
+
     return index;
 }
 
 // Interpret a dictionary and return a new dictionary with readable keys and values for missing entries.
 // This function takes `meta` which is a list of objects containing `operand`, `name` and `default`.
 function interpretDict(dict, meta, strings) {
-    var i, m, value, newDict;
-    newDict = {};
+    var newDict = {};
+
     // Because we also want to include missing values, we start out from the meta list
     // and lookup values in the dict.
-    for (i = 0; i < meta.length; i += 1) {
-        m = meta[i];
-        value = dict[m.op];
+    for (var i = 0; i < meta.length; i += 1) {
+        var m = meta[i];
+        var value = dict[m.op];
         if (value === undefined) {
             value = m.value !== undefined ? m.value : null;
         }
+
         if (m.type === 'SID') {
             value = getCFFString(strings, value);
         }
+
         newDict[m.name] = value;
     }
+
     return newDict;
 }
 
@@ -244,15 +273,13 @@ var PRIVATE_DICT_META = [
 // Parse the CFF top dictionary. A CFF table can contain multiple fonts, each with their own top dictionary.
 // The top dictionary contains the essential metadata for the font, together with the private dictionary.
 function parseCFFTopDict(data, strings) {
-    var dict;
-    dict = parseCFFDict(data, 0, data.byteLength);
+    var dict = parseCFFDict(data, 0, data.byteLength);
     return interpretDict(dict, TOP_DICT_META, strings);
 }
 
 // Parse the CFF private dictionary. We don't fully parse out all the values, only the ones we need.
 function parseCFFPrivateDict(data, start, size, strings) {
-    var dict;
-    dict = parseCFFDict(data, start, size);
+    var dict = parseCFFDict(data, start, size);
     return interpretDict(dict, PRIVATE_DICT_META, strings);
 }
 
@@ -260,13 +287,16 @@ function parseCFFPrivateDict(data, start, size, strings) {
 // This function will return a list of glyph names.
 // See Adobe TN #5176 chapter 13, "Charsets".
 function parseCFFCharset(data, start, nGlyphs, strings) {
-    var parser, format, charset, i, sid, count;
-    parser = new parse.Parser(data, start);
+    var i;
+    var sid;
+    var count;
+    var parser = new parse.Parser(data, start);
+
     // The .notdef glyph is not included, so subtract 1.
     nGlyphs -= 1;
-    charset = ['.notdef'];
+    var charset = ['.notdef'];
 
-    format = parser.parseCard8();
+    var format = parser.parseCard8();
     if (format === 0) {
         for (i = 0; i < nGlyphs; i += 1) {
             sid = parser.parseSID();
@@ -300,23 +330,24 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
 // Parse the CFF encoding data. Only one encoding can be specified per font.
 // See Adobe TN #5176 chapter 12, "Encodings".
 function parseCFFEncoding(data, start, charset) {
-    var enc, parser, format, nCodes, i, code, nRanges, first, nLeft, j;
-    enc = {};
-    parser = new parse.Parser(data, start);
-    format = parser.parseCard8();
+    var i;
+    var code;
+    var enc = {};
+    var parser = new parse.Parser(data, start);
+    var format = parser.parseCard8();
     if (format === 0) {
-        nCodes = parser.parseCard8();
+        var nCodes = parser.parseCard8();
         for (i = 0; i < nCodes; i += 1) {
             code = parser.parseCard8();
             enc[code] = i;
         }
     } else if (format === 1) {
-        nRanges = parser.parseCard8();
+        var nRanges = parser.parseCard8();
         code = 1;
         for (i = 0; i < nRanges; i += 1) {
-            first = parser.parseCard8();
-            nLeft = parser.parseCard8();
-            for (j = first; j <= first + nLeft; j += 1) {
+            var first = parser.parseCard8();
+            var nLeft = parser.parseCard8();
+            for (var j = first; j <= first + nLeft; j += 1) {
                 enc[j] = code;
                 code += 1;
             }
@@ -324,6 +355,7 @@ function parseCFFEncoding(data, start, charset) {
     } else {
         throw new Error('Unknown encoding format ' + format);
     }
+
     return new encoding.CffEncoding(enc, charset);
 }
 
@@ -331,41 +363,60 @@ function parseCFFEncoding(data, start, charset) {
 // The encoding is described in the Type 2 Charstring Format
 // https://www.microsoft.com/typography/OTSPEC/charstr2.htm
 function parseCFFCharstring(code, font, index) {
-    var p, glyph, stack, nStems, haveWidth, width, open, x, y, c1x, c1y, c2x, c2y, v;
-    p = new path.Path();
-    stack = [];
-    nStems = 0;
-    haveWidth = false;
-    width = font.defaultWidthX;
-    open = false;
-    x = y = 0;
+    var c1x;
+    var c1y;
+    var c2x;
+    var c2y;
+    var p = new path.Path();
+    var stack = [];
+    var nStems = 0;
+    var haveWidth = false;
+    var width = font.defaultWidthX;
+    var open = false;
+    var x = 0;
+    var y = 0;
 
     function newContour(x, y) {
         if (open) {
             p.closePath();
         }
+
         p.moveTo(x, y);
         open = true;
     }
 
     function parseStems() {
         var hasWidthArg;
+
         // The number of stem operators on the stack is always even.
         // If the value is uneven, that means a width is specified.
         hasWidthArg = stack.length % 2 !== 0;
         if (hasWidthArg && !haveWidth) {
             width = stack.shift() + font.nominalWidthX;
         }
+
         nStems += stack.length >> 1;
         stack.length = 0;
         haveWidth = true;
     }
 
     function parse(code) {
-        var i, b1, b2, b3, b4, codeIndex, subrCode;
-        i = 0;
+        var b1;
+        var b2;
+        var b3;
+        var b4;
+        var codeIndex;
+        var subrCode;
+        var jpx;
+        var jpy;
+        var c3x;
+        var c3y;
+        var c4x;
+        var c4y;
+
+        var i = 0;
         while (i < code.length) {
-            v = code[i];
+            var v = code[i];
             i += 1;
             switch (v) {
             case 1: // hstem
@@ -379,6 +430,7 @@ function parseCFFCharstring(code, font, index) {
                     width = stack.shift() + font.nominalWidthX;
                     haveWidth = true;
                 }
+
                 y += stack.pop();
                 newContour(x, y);
                 break;
@@ -388,6 +440,7 @@ function parseCFFCharstring(code, font, index) {
                     y += stack.shift();
                     p.lineTo(x, y);
                 }
+
                 break;
             case 6: // hlineto
                 while (stack.length > 0) {
@@ -396,9 +449,11 @@ function parseCFFCharstring(code, font, index) {
                     if (stack.length === 0) {
                         break;
                     }
+
                     y += stack.shift();
                     p.lineTo(x, y);
                 }
+
                 break;
             case 7: // vlineto
                 while (stack.length > 0) {
@@ -407,9 +462,11 @@ function parseCFFCharstring(code, font, index) {
                     if (stack.length === 0) {
                         break;
                     }
+
                     x += stack.shift();
                     p.lineTo(x, y);
                 }
+
                 break;
             case 8: // rrcurveto
                 while (stack.length > 0) {
@@ -421,6 +478,7 @@ function parseCFFCharstring(code, font, index) {
                     y = c2y + stack.shift();
                     p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 }
+
                 break;
             case 10: // callsubr
                 codeIndex = stack.pop() + font.subrsBias;
@@ -428,13 +486,13 @@ function parseCFFCharstring(code, font, index) {
                 if (subrCode) {
                     parse(subrCode);
                 }
+
                 break;
             case 11: // return
                 return;
             case 12: // flex operators
                 v = code[i];
                 i += 1;
-                var jpx, jpy, c3x, c3y, c4x, c4y, fd;
                 switch (v) {
                 case 35: // flex
                     // |- dx1 dy1 dx2 dy2 dx3 dy3 dx4 dy4 dx5 dy5 dx6 dy6 fd flex (12 35) |-
@@ -450,7 +508,7 @@ function parseCFFCharstring(code, font, index) {
                     c4y = c3y + stack.shift();    // dy5
                     x = c4x + stack.shift();      // dx6
                     y = c4y + stack.shift();      // dy6
-                    fd = stack.shift();           // flex depth
+                    stack.shift();                // flex depth
                     p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
                     p.curveTo(c3x, c3y, c4x, c4y, x, y);
                     break;
@@ -467,7 +525,6 @@ function parseCFFCharstring(code, font, index) {
                     c4x = c3x + stack.shift();    // dx5
                     c4y = y;                      // dy5
                     x = c4x + stack.shift();      // dx6
-                    // y = y;                     // dy6
                     p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
                     p.curveTo(c3x, c3y, c4x, c4y, x, y);
                     break;
@@ -484,7 +541,6 @@ function parseCFFCharstring(code, font, index) {
                     c4x = c3x + stack.shift();    // dx5
                     c4y = c3y + stack.shift();    // dy5
                     x = c4x + stack.shift();      // dx6
-                    // y = y;                     // dy6
                     p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
                     p.curveTo(c3x, c3y, c4x, c4y, x, y);
                     break;
@@ -500,12 +556,12 @@ function parseCFFCharstring(code, font, index) {
                     c3y = jpy + stack.shift();    // dy4
                     c4x = c3x + stack.shift();    // dx5
                     c4y = c3y + stack.shift();    // dy5
-
                     if (Math.abs(c4x - x) > Math.abs(c4y - y)) {
-                        x = c4x + stack.shift();  // d6
+                        x = c4x + stack.shift();
                     } else {
-                        y = c4y + stack.shift();  // d6
+                        y = c4y + stack.shift();
                     }
+
                     p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
                     p.curveTo(c3x, c3y, c4x, c4y, x, y);
                     break;
@@ -519,10 +575,12 @@ function parseCFFCharstring(code, font, index) {
                     width = stack.shift() + font.nominalWidthX;
                     haveWidth = true;
                 }
+
                 if (open) {
                     p.closePath();
                     open = false;
                 }
+
                 break;
             case 18: // hstemhm
                 parseStems();
@@ -537,6 +595,7 @@ function parseCFFCharstring(code, font, index) {
                     width = stack.shift() + font.nominalWidthX;
                     haveWidth = true;
                 }
+
                 y += stack.pop();
                 x += stack.pop();
                 newContour(x, y);
@@ -546,6 +605,7 @@ function parseCFFCharstring(code, font, index) {
                     width = stack.shift() + font.nominalWidthX;
                     haveWidth = true;
                 }
+
                 x += stack.pop();
                 newContour(x, y);
                 break;
@@ -562,6 +622,7 @@ function parseCFFCharstring(code, font, index) {
                     y = c2y + stack.shift();
                     p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 }
+
                 x += stack.shift();
                 y += stack.shift();
                 p.lineTo(x, y);
@@ -572,6 +633,7 @@ function parseCFFCharstring(code, font, index) {
                     y += stack.shift();
                     p.lineTo(x, y);
                 }
+
                 c1x = x + stack.shift();
                 c1y = y + stack.shift();
                 c2x = c1x + stack.shift();
@@ -584,6 +646,7 @@ function parseCFFCharstring(code, font, index) {
                 if (stack.length % 2) {
                     x += stack.shift();
                 }
+
                 while (stack.length > 0) {
                     c1x = x;
                     c1y = y + stack.shift();
@@ -593,11 +656,13 @@ function parseCFFCharstring(code, font, index) {
                     y = c2y + stack.shift();
                     p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 }
+
                 break;
             case 27: // hhcurveto
                 if (stack.length % 2) {
                     y += stack.shift();
                 }
+
                 while (stack.length > 0) {
                     c1x = x + stack.shift();
                     c1y = y;
@@ -607,6 +672,7 @@ function parseCFFCharstring(code, font, index) {
                     y = c2y;
                     p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 }
+
                 break;
             case 28: // shortint
                 b1 = code[i];
@@ -620,6 +686,7 @@ function parseCFFCharstring(code, font, index) {
                 if (subrCode) {
                     parse(subrCode);
                 }
+
                 break;
             case 30: // vhcurveto
                 while (stack.length > 0) {
@@ -633,6 +700,7 @@ function parseCFFCharstring(code, font, index) {
                     if (stack.length === 0) {
                         break;
                     }
+
                     c1x = x + stack.shift();
                     c1y = y;
                     c2x = c1x + stack.shift();
@@ -641,6 +709,7 @@ function parseCFFCharstring(code, font, index) {
                     x = c2x + (stack.length === 1 ? stack.shift() : 0);
                     p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 }
+
                 break;
             case 31: // hvcurveto
                 while (stack.length > 0) {
@@ -654,6 +723,7 @@ function parseCFFCharstring(code, font, index) {
                     if (stack.length === 0) {
                         break;
                     }
+
                     c1x = x;
                     c1y = y + stack.shift();
                     c2x = c1x + stack.shift();
@@ -662,6 +732,7 @@ function parseCFFCharstring(code, font, index) {
                     y = c2y + (stack.length === 1 ? stack.shift() : 0);
                     p.curveTo(c1x, c1y, c2x, c2y, x, y);
                 }
+
                 break;
             default:
                 if (v < 32) {
@@ -689,7 +760,7 @@ function parseCFFCharstring(code, font, index) {
     }
 
     parse(code);
-    glyph = new _glyph.Glyph({font: font, index: index});
+    var glyph = new _glyph.Glyph({font: font, index: index});
     glyph.path = p;
     glyph.advanceWidth = width;
     return glyph;
@@ -706,34 +777,33 @@ function calcCFFSubroutineBias(subrs) {
     } else {
         bias = 32768;
     }
+
     return bias;
 }
 
 // Parse the `CFF` table, which contains the glyph outlines in PostScript format.
 function parseCFFTable(data, start, font) {
-    var header, nameIndex, topDictIndex, stringIndex, globalSubrIndex, topDict, privateDictOffset, privateDict,
-        subrOffset, subrIndex, charString, charStringsIndex, charset, i;
     font.tables.cff = {};
-    header = parseCFFHeader(data, start);
-    nameIndex = parseCFFIndex(data, header.endOffset, parse.bytesToString);
-    topDictIndex = parseCFFIndex(data, nameIndex.endOffset);
-    stringIndex = parseCFFIndex(data, topDictIndex.endOffset, parse.bytesToString);
-    globalSubrIndex = parseCFFIndex(data, stringIndex.endOffset);
+    var header = parseCFFHeader(data, start);
+    var nameIndex = parseCFFIndex(data, header.endOffset, parse.bytesToString);
+    var topDictIndex = parseCFFIndex(data, nameIndex.endOffset);
+    var stringIndex = parseCFFIndex(data, topDictIndex.endOffset, parse.bytesToString);
+    var globalSubrIndex = parseCFFIndex(data, stringIndex.endOffset);
     font.gsubrs = globalSubrIndex.objects;
     font.gsubrsBias = calcCFFSubroutineBias(font.gsubrs);
 
     var topDictData = new DataView(new Uint8Array(topDictIndex.objects[0]).buffer);
-    topDict = parseCFFTopDict(topDictData, stringIndex.objects);
+    var topDict = parseCFFTopDict(topDictData, stringIndex.objects);
     font.tables.cff.topDict = topDict;
 
-    privateDictOffset = start + topDict['private'][1];
-    privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict['private'][0], stringIndex.objects);
+    var privateDictOffset = start + topDict['private'][1];
+    var privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict['private'][0], stringIndex.objects);
     font.defaultWidthX = privateDict.defaultWidthX;
     font.nominalWidthX = privateDict.nominalWidthX;
 
     if (privateDict.subrs !== 0) {
-        subrOffset = privateDictOffset + privateDict.subrs;
-        subrIndex = parseCFFIndex(data, subrOffset);
+        var subrOffset = privateDictOffset + privateDict.subrs;
+        var subrIndex = parseCFFIndex(data, subrOffset);
         font.subrs = subrIndex.objects;
         font.subrsBias = calcCFFSubroutineBias(font.subrs);
     } else {
@@ -742,10 +812,10 @@ function parseCFFTable(data, start, font) {
     }
 
     // Offsets in the top dict are relative to the beginning of the CFF data, so add the CFF start offset.
-    charStringsIndex = parseCFFIndex(data, start + topDict.charStrings);
+    var charStringsIndex = parseCFFIndex(data, start + topDict.charStrings);
     font.nGlyphs = charStringsIndex.objects.length;
 
-    charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
+    var charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
     if (topDict.encoding === 0) { // Standard encoding
         font.cffEncoding = new encoding.CffEncoding(encoding.cffStandardEncoding, charset);
     } else if (topDict.encoding === 1) { // Expert encoding
@@ -753,26 +823,28 @@ function parseCFFTable(data, start, font) {
     } else {
         font.cffEncoding = parseCFFEncoding(data, start + topDict.encoding, charset);
     }
+
     // Prefer the CMAP encoding to the CFF encoding.
     font.encoding = font.encoding || font.cffEncoding;
 
     font.glyphs = [];
-    for (i = 0; i < font.nGlyphs; i += 1) {
-        charString = charStringsIndex.objects[i];
+    for (var i = 0; i < font.nGlyphs; i += 1) {
+        var charString = charStringsIndex.objects[i];
         font.glyphs.push(parseCFFCharstring(charString, font, i));
     }
 }
 
-
 // Convert a string to a String ID (SID).
 // The list of strings is modified in place.
 function encodeString(s, strings) {
-    var i, sid;
+    var sid;
+
     // Is the string in the CFF standard strings?
-    i = encoding.cffStandardStrings.indexOf(s);
+    var i = encoding.cffStandardStrings.indexOf(s);
     if (i >= 0) {
         sid = i;
     }
+
     // Is the string already in the string index?
     i = strings.indexOf(s);
     if (i >= 0) {
@@ -781,6 +853,7 @@ function encodeString(s, strings) {
         sid = encoding.cffStandardStrings.length + strings.length;
         strings.push(s);
     }
+
     return sid;
 }
 
@@ -801,22 +874,25 @@ function makeNameIndex(fontNames) {
     for (var i = 0; i < fontNames.length; i += 1) {
         t.names.push({name: 'name_' + i, type: 'NAME', value: fontNames[i]});
     }
+
     return t;
 }
 
 // Given a dictionary's metadata, create a DICT structure.
 function makeDict(meta, attrs, strings) {
-    var m = {}, i, entry, value;
-    for (i = 0; i < meta.length; i += 1) {
-        entry = meta[i];
-        value = attrs[entry.name];
+    var m = {};
+    for (var i = 0; i < meta.length; i += 1) {
+        var entry = meta[i];
+        var value = attrs[entry.name];
         if (value !== undefined && !equals(value, entry.value)) {
             if (entry.type === 'SID') {
                 value = encodeString(value, strings);
             }
+
             m[entry.op] = {name: entry.name, type: entry.type, value: value};
         }
     }
+
     return m;
 }
 
@@ -845,6 +921,7 @@ function makeStringIndex(strings) {
     for (var i = 0; i < strings.length; i += 1) {
         t.strings.push({name: 'string_' + i, type: 'STRING', value: strings[i]});
     }
+
     return t;
 }
 
@@ -864,20 +941,25 @@ function makeCharsets(glyphNames, strings) {
         var glyphSID = encodeString(glyphName, strings);
         t.fields.push({name: 'glyph_' + i, type: 'SID', value: glyphSID});
     }
+
     return t;
 }
 
 function glyphToOps(glyph) {
-    var ops = [], path = glyph.path, x, y, i, cmd, dx, dy, dx1, dy1, dx2, dy2;
+    var ops = [];
+    var path = glyph.path;
     ops.push({name: 'width', type: 'NUMBER', value: glyph.advanceWidth});
-    x = 0;
-    y = 0;
-    for (i = 0; i < path.commands.length; i += 1) {
-        cmd = path.commands[i];
+    var x = 0;
+    var y = 0;
+    for (var i = 0; i < path.commands.length; i += 1) {
+        var dx;
+        var dy;
+        var cmd = path.commands[i];
         if (cmd.type === 'Q') {
             // CFF only supports bézier curves, so convert the quad to a bézier.
             var _13 = 1 / 3;
             var _23 = 2 / 3;
+
             // We're going to create a new command so we don't change the original path.
             cmd = {
                 type: 'C',
@@ -907,10 +989,10 @@ function glyphToOps(glyph) {
             x = Math.round(cmd.x);
             y = Math.round(cmd.y);
         } else if (cmd.type === 'C') {
-            dx1 = Math.round(cmd.x1 - x);
-            dy1 = Math.round(cmd.y1 - y);
-            dx2 = Math.round(cmd.x2 - cmd.x1);
-            dy2 = Math.round(cmd.y2 - cmd.y1);
+            var dx1 = Math.round(cmd.x1 - x);
+            var dy1 = Math.round(cmd.y1 - y);
+            var dx2 = Math.round(cmd.x2 - cmd.x1);
+            var dy2 = Math.round(cmd.y2 - cmd.y1);
             dx = Math.round(cmd.x - cmd.x2);
             dy = Math.round(cmd.y - cmd.y2);
             ops.push({name: 'dx1', type: 'NUMBER', value: dx1});
@@ -922,10 +1004,12 @@ function glyphToOps(glyph) {
             ops.push({name: 'rrcurveto', type: 'OP', value: 8});
             x = Math.round(cmd.x);
             y = Math.round(cmd.y);
-        } else if (cmd.type === 'Z') {
-            // Contours are closed automatically.
         }
+
+        // Contours are closed automatically.
+
     }
+
     ops.push({name: 'endchar', type: 'OP', value: 14});
     return ops;
 }
@@ -939,6 +1023,7 @@ function makeCharStringsIndex(glyphs) {
         var ops = glyphToOps(glyph);
         t.charStrings.push({name: glyph.name, type: 'CHARSTRING', value: ops});
     }
+
     return t;
 }
 
@@ -987,6 +1072,7 @@ function makeCFFTable(glyphs, options) {
     var privateAttrs = {};
 
     var glyphNames = [];
+
     // Skip first glyph (.notdef)
     for (var i = 1; i < glyphs.length; i += 1) {
         glyphNames.push(glyphs[i].name);
@@ -1013,7 +1099,9 @@ function makeCFFTable(glyphs, options) {
         t.stringIndex.sizeOf() +
         t.globalSubrIndex.sizeOf();
     attrs.charset = startOffset;
-    attrs.encoding = 0; // We use the CFF standard encoding; proper encoding will be handled in cmap.
+
+    // We use the CFF standard encoding; proper encoding will be handled in cmap.
+    attrs.encoding = 0;
     attrs.charStrings = attrs.charset + t.charsets.sizeOf();
     attrs.private[1] = attrs.charStrings + t.charStringsIndex.sizeOf();
 

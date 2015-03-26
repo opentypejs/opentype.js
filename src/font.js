@@ -11,6 +11,7 @@ var encoding = require('./encoding');
 // or to get a path representing the text.
 function Font(options) {
     options = options || {};
+
     // OS X will complain if the names are empty, so we put a single space everywhere by default.
     this.familyName = options.familyName || ' ';
     this.styleName = options.styleName || ' ';
@@ -32,27 +33,28 @@ function Font(options) {
 }
 
 // Check if the font has a glyph for the given character.
-Font.prototype.hasChar = function (c) {
+Font.prototype.hasChar = function(c) {
     return this.encoding.charToGlyphIndex(c) !== null;
 };
 
 // Convert the given character to a single glyph index.
 // Note that this function assumes that there is a one-to-one mapping between
 // the given character and a glyph; for complex scripts this might not be the case.
-Font.prototype.charToGlyphIndex = function (s) {
+Font.prototype.charToGlyphIndex = function(s) {
     return this.encoding.charToGlyphIndex(s);
 };
 
 // Convert the given character to a single Glyph object.
 // Note that this function assumes that there is a one-to-one mapping between
 // the given character and a glyph; for complex scripts this might not be the case.
-Font.prototype.charToGlyph = function (c) {
-    var glyphIndex, glyph;
-    glyphIndex = this.charToGlyphIndex(c);
-    glyph = this.glyphs[glyphIndex];
+Font.prototype.charToGlyph = function(c) {
+    var glyphIndex = this.charToGlyphIndex(c);
+    var glyph = this.glyphs[glyphIndex];
     if (!glyph) {
-        glyph = this.glyphs[0]; // .notdef
+        // .notdef
+        glyph = this.glyphs[0];
     }
+
     return glyph;
 };
 
@@ -60,34 +62,36 @@ Font.prototype.charToGlyph = function (c) {
 // Note that there is no strict one-to-one mapping between characters and
 // glyphs, so the list of returned glyphs can be larger or smaller than the
 // length of the given string.
-Font.prototype.stringToGlyphs = function (s) {
-    var i, c, glyphs;
-    glyphs = [];
-    for (i = 0; i < s.length; i += 1) {
-        c = s[i];
+Font.prototype.stringToGlyphs = function(s) {
+    var glyphs = [];
+    for (var i = 0; i < s.length; i += 1) {
+        var c = s[i];
         glyphs.push(this.charToGlyph(c));
     }
+
     return glyphs;
 };
 
-Font.prototype.nameToGlyphIndex = function (name) {
+Font.prototype.nameToGlyphIndex = function(name) {
     return this.glyphNames.nameToGlyphIndex(name);
 };
 
-Font.prototype.nameToGlyph = function (name) {
-    var glyphIndex, glyph;
-    glyphIndex = this.nametoGlyphIndex(name);
-    glyph = this.glyphs[glyphIndex];
+Font.prototype.nameToGlyph = function(name) {
+    var glyphIndex = this.nametoGlyphIndex(name);
+    var glyph = this.glyphs[glyphIndex];
     if (!glyph) {
-        glyph = this.glyphs[0]; // .notdef
+        // .notdef
+        glyph = this.glyphs[0];
     }
+
     return glyph;
 };
 
-Font.prototype.glyphIndexToName = function (gid) {
+Font.prototype.glyphIndexToName = function(gid) {
     if (!this.glyphNames.glyphIndexToName) {
         return '';
     }
+
     return this.glyphNames.glyphIndexToName(gid);
 };
 
@@ -95,7 +99,7 @@ Font.prototype.glyphIndexToName = function (gid) {
 // and the right glyph (or its index). If no kerning pair is found, return 0.
 // The kerning value gets added to the advance width when calculating the spacing
 // between glyphs.
-Font.prototype.getKerningValue = function (leftGlyph, rightGlyph) {
+Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
     leftGlyph = leftGlyph.index || leftGlyph;
     rightGlyph = rightGlyph.index || rightGlyph;
     var gposKerning = this.getGposKerningValue;
@@ -105,26 +109,27 @@ Font.prototype.getKerningValue = function (leftGlyph, rightGlyph) {
 
 // Helper function that invokes the given callback for each glyph in the given text.
 // The callback gets `(glyph, x, y, fontSize, options)`.
-Font.prototype.forEachGlyph = function (text, x, y, fontSize, options, callback) {
-    var kerning, fontScale, glyphs, i, glyph, kerningValue;
+Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) {
     if (!this.supported) {
         return;
     }
+
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
     options = options || {};
-    kerning = options.kerning === undefined ? true : options.kerning;
-    fontScale = 1 / this.unitsPerEm * fontSize;
-    glyphs = this.stringToGlyphs(text);
-    for (i = 0; i < glyphs.length; i += 1) {
-        glyph = glyphs[i];
+    var kerning = options.kerning === undefined ? true : options.kerning;
+    var fontScale = 1 / this.unitsPerEm * fontSize;
+    var glyphs = this.stringToGlyphs(text);
+    for (var i = 0; i < glyphs.length; i += 1) {
+        var glyph = glyphs[i];
         callback(glyph, x, y, fontSize, options);
         if (glyph.advanceWidth) {
             x += glyph.advanceWidth * fontScale;
         }
+
         if (kerning && i < glyphs.length - 1) {
-            kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
+            var kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
             x += kerningValue * fontScale;
         }
     }
@@ -140,12 +145,13 @@ Font.prototype.forEachGlyph = function (text, x, y, fontSize, options, callback)
 // - kerning - Whether to take kerning information into account. (default: true)
 //
 // Returns a Path object.
-Font.prototype.getPath = function (text, x, y, fontSize, options) {
+Font.prototype.getPath = function(text, x, y, fontSize, options) {
     var fullPath = new path.Path();
-    this.forEachGlyph(text, x, y, fontSize, options, function (glyph, gX, gY, gFontSize) {
+    this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         var glyphPath = glyph.getPath(gX, gY, gFontSize);
         fullPath.extend(glyphPath);
     });
+
     return fullPath;
 };
 
@@ -158,7 +164,7 @@ Font.prototype.getPath = function (text, x, y, fontSize, options) {
 // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
 // Options is an optional object that contains:
 // - kerning - Whether to take kerning information into account. (default: true)
-Font.prototype.draw = function (ctx, text, x, y, fontSize, options) {
+Font.prototype.draw = function(ctx, text, x, y, fontSize, options) {
     this.getPath(text, x, y, fontSize, options).draw(ctx);
 };
 
@@ -172,8 +178,8 @@ Font.prototype.draw = function (ctx, text, x, y, fontSize, options) {
 // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
 // Options is an optional object that contains:
 // - kerning - Whether to take kerning information into account. (default: true)
-Font.prototype.drawPoints = function (ctx, text, x, y, fontSize, options) {
-    this.forEachGlyph(text, x, y, fontSize, options, function (glyph, gX, gY, gFontSize) {
+Font.prototype.drawPoints = function(ctx, text, x, y, fontSize, options) {
+    this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         glyph.drawPoints(ctx, gX, gY, gFontSize);
     });
 };
@@ -190,16 +196,16 @@ Font.prototype.drawPoints = function (ctx, text, x, y, fontSize, options) {
 // fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
 // Options is an optional object that contains:
 // - kerning - Whether to take kerning information into account. (default: true)
-Font.prototype.drawMetrics = function (ctx, text, x, y, fontSize, options) {
-    this.forEachGlyph(text, x, y, fontSize, options, function (glyph, gX, gY, gFontSize) {
+Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
+    this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         glyph.drawMetrics(ctx, gX, gY, gFontSize);
     });
 };
 
 // Validate
-Font.prototype.validate = function () {
+Font.prototype.validate = function() {
     var warnings = [];
-    var font = this;
+    var _this = this;
 
     function assert(predicate, message) {
         if (!predicate) {
@@ -208,7 +214,7 @@ Font.prototype.validate = function () {
     }
 
     function assertStringAttribute(attrName) {
-        assert(font[attrName] && font[attrName].trim().length > 0, 'No ' + attrName + ' specified.');
+        assert(_this[attrName] && _this[attrName].trim().length > 0, 'No ' + attrName + ' specified.');
     }
 
     // Identification information
@@ -224,11 +230,11 @@ Font.prototype.validate = function () {
 
 // Convert the font object to a SFNT data structure.
 // This structure contains all the necessary tables and metadata to create a binary OTF file.
-Font.prototype.toTables = function () {
+Font.prototype.toTables = function() {
     return sfnt.fontToTable(this);
 };
 
-Font.prototype.toBuffer = function () {
+Font.prototype.toBuffer = function() {
     var sfntTable = this.toTables();
     var bytes = sfntTable.encode();
     var buffer = new ArrayBuffer(bytes.length);
@@ -236,29 +242,32 @@ Font.prototype.toBuffer = function () {
     for (var i = 0; i < bytes.length; i++) {
         intArray[i] = bytes[i];
     }
+
     return buffer;
 };
 
 // Initiate a download of the OpenType font.
-Font.prototype.download = function () {
+Font.prototype.download = function() {
     var fileName = this.familyName.replace(/\s/g, '') + '-' + this.styleName + '.otf';
     var buffer = this.toBuffer();
 
     window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-    window.requestFileSystem(window.TEMPORARY, buffer.byteLength, function (fs) {
-        fs.root.getFile(fileName, {create: true}, function (fileEntry) {
-            fileEntry.createWriter(function (writer) {
+    window.requestFileSystem(window.TEMPORARY, buffer.byteLength, function(fs) {
+        fs.root.getFile(fileName, {create: true}, function(fileEntry) {
+            fileEntry.createWriter(function(writer) {
                 var dataView = new DataView(buffer);
                 var blob = new Blob([dataView], {type: 'font/opentype'});
                 writer.write(blob);
 
-                 writer.addEventListener('writeend', function () {
+                writer.addEventListener('writeend', function() {
                     // Navigating to the file will download it.
                     location.href = fileEntry.toURL();
-                 }, false);
+                }, false);
             });
         });
-    }, function (err) {
+    },
+
+    function(err) {
         throw err;
     });
 };

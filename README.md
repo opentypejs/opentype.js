@@ -8,7 +8,7 @@ It gives you access to the <strong>letterforms</strong> of text from the browser
 
 Here's an example. We load a font, then display it on a canvas with id "canvas":
 
-    opentype.load('fonts/Roboto-Black.ttf', function (err, font) {
+    opentype.load('fonts/Roboto-Black.ttf', function(err, font) {
         if (err) {
              alert('Font could not be loaded: ' + err);
         } else {
@@ -63,7 +63,7 @@ API
 Use `opentype.load(url, callback)` to load a font from a URL. Since this method goes out the network, it is asynchronous.
 The callback gets `(err, font)` where `font` is a `Font` object. Check if the `err` is null before using the font.
 
-    opentype.load('fonts/Roboto-Black.ttf', function (err, font) {
+    opentype.load('fonts/Roboto-Black.ttf', function(err, font) {
         if (err) {
             alert('Could not load font: ' + err);
         } else {

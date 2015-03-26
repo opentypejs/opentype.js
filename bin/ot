@@ -40,7 +40,7 @@ function printUsage() {
 }
 
 function fileInfo(file) {
-	opentype.load(file, function (err, font) {
+	opentype.load(file, function(err, font) {
 		console.log(path.basename(file));
 		if (err) {
 			console.log('  (Error: ' + err + ')');
@@ -53,7 +53,7 @@ function fileInfo(file) {
 }
 
 function recursiveInfo(fontDirectory) {
-    walk(fontDirectory, function (file) {
+    walk(fontDirectory, function(file) {
         var ext = path.extname(file).toLowerCase();
         if (ext === '.ttf' || ext === '.otf') {
 			fileInfo(file);

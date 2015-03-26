@@ -9,9 +9,9 @@ var table = require('../table');
 
 // Parse the PostScript `post` table
 function parsePostTable(data, start) {
-    var post = {},
-        p = new parse.Parser(data, start),
-        i, nameLength;
+    var post = {};
+    var p = new parse.Parser(data, start);
+    var i;
     post.version = p.parseVersion();
     post.italicAngle = p.parseFixed();
     post.underlinePosition = p.parseShort();
@@ -31,13 +31,15 @@ function parsePostTable(data, start) {
         for (i = 0; i < post.numberOfGlyphs; i++) {
             post.glyphNameIndex[i] = p.parseUShort();
         }
+
         post.names = [];
         for (i = 0; i < post.numberOfGlyphs; i++) {
             if (post.glyphNameIndex[i] >= encoding.standardNames.length) {
-                nameLength = p.parseChar();
+                var nameLength = p.parseChar();
                 post.names.push(p.parseString(nameLength));
             }
         }
+
         break;
     case 2.5:
         post.numberOfGlyphs = p.parseUShort();
@@ -45,6 +47,7 @@ function parsePostTable(data, start) {
         for (i = 0; i < post.numberOfGlyphs; i++) {
             post.offset[i] = p.parseChar();
         }
+
         break;
     }
     return post;

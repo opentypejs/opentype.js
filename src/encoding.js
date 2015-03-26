@@ -128,14 +128,13 @@ function DefaultEncoding(font) {
     this.font = font;
 }
 
-DefaultEncoding.prototype.charToGlyphIndex = function (c) {
-    var code, glyphs, i, glyph, j;
-    code = c.charCodeAt(0);
-    glyphs = this.font.glyphs;
+DefaultEncoding.prototype.charToGlyphIndex = function(c) {
+    var code = c.charCodeAt(0);
+    var glyphs = this.font.glyphs;
     if (glyphs) {
-        for (i = 0; i < glyphs.length; i += 1) {
-            glyph = glyphs[i];
-            for (j = 0; j < glyph.unicodes.length; j += 1) {
+        for (var i = 0; i < glyphs.length; i += 1) {
+            var glyph = glyphs[i];
+            for (var j = 0; j < glyph.unicodes.length; j += 1) {
                 if (glyph.unicodes[j] === code) {
                     return i;
                 }
@@ -150,7 +149,7 @@ function CmapEncoding(cmap) {
     this.cmap = cmap;
 }
 
-CmapEncoding.prototype.charToGlyphIndex = function (c) {
+CmapEncoding.prototype.charToGlyphIndex = function(c) {
     return this.cmap.glyphIndexMap[c.charCodeAt(0)] || 0;
 };
 
@@ -159,10 +158,9 @@ function CffEncoding(encoding, charset) {
     this.charset = charset;
 }
 
-CffEncoding.prototype.charToGlyphIndex = function (s) {
-    var code, charName;
-    code = s.charCodeAt(0);
-    charName = this.encoding[code];
+CffEncoding.prototype.charToGlyphIndex = function(s) {
+    var code = s.charCodeAt(0);
+    var charName = this.encoding[code];
     return this.charset.indexOf(charName);
 };
 
@@ -181,12 +179,14 @@ function GlyphNames(post) {
                 this.names[i] = post.names[post.glyphNameIndex[i] - exports.standardNames.length];
             }
         }
+
         break;
     case 2.5:
         this.names = new Array(post.numberOfGlyphs);
         for (i = 0; i < post.numberOfGlyphs; i++) {
             this.names[i] = exports.standardNames[i + post.glyphNameIndex[i]];
         }
+
         break;
     case 3:
         this.names = [];
@@ -194,24 +194,25 @@ function GlyphNames(post) {
     }
 }
 
-GlyphNames.prototype.nameToGlyphIndex = function (name) {
+GlyphNames.prototype.nameToGlyphIndex = function(name) {
     return this.names.indexOf(name);
 };
 
-GlyphNames.prototype.glyphIndexToName = function (gid) {
+GlyphNames.prototype.glyphIndexToName = function(gid) {
     return this.names[gid];
 };
 
 function addGlyphNames(font) {
-    var glyphIndexMap, charCodes, i, c, glyphIndex, glyph;
-    glyphIndexMap = font.tables.cmap.glyphIndexMap;
-    charCodes = Object.keys(glyphIndexMap);
-    for (i = 0; i < charCodes.length; i += 1) {
-        c = charCodes[i];
-        glyphIndex = glyphIndexMap[c];
+    var glyph;
+    var glyphIndexMap = font.tables.cmap.glyphIndexMap;
+    var charCodes = Object.keys(glyphIndexMap);
+    for (var i = 0; i < charCodes.length; i += 1) {
+        var c = charCodes[i];
+        var glyphIndex = glyphIndexMap[c];
         glyph = font.glyphs[glyphIndex];
         glyph.addUnicode(parseInt(c));
     }
+
     for (i = 0; i < font.glyphs.length; i += 1) {
         glyph = font.glyphs[i];
         if (font.cffEncoding) {

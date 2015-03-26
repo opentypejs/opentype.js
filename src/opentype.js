@@ -31,11 +31,9 @@ var post = require('./tables/post');
 
 // Convert a Node.js Buffer to an ArrayBuffer
 function toArrayBuffer(buffer) {
-    var i,
-        arrayBuffer = new ArrayBuffer(buffer.length),
-        data = new Uint8Array(arrayBuffer);
-
-    for (i = 0; i < buffer.length; i += 1) {
+    var arrayBuffer = new ArrayBuffer(buffer.length);
+    var data = new Uint8Array(arrayBuffer);
+    for (var i = 0; i < buffer.length; i += 1) {
         data[i] = buffer[i];
     }
 
@@ -44,7 +42,7 @@ function toArrayBuffer(buffer) {
 
 function loadFromFile(path, callback) {
     var fs = require('fs');
-    fs.readFile(path, function (err, buffer) {
+    fs.readFile(path, function(err, buffer) {
         if (err) {
             return callback(err.message);
         }
@@ -57,12 +55,14 @@ function loadFromUrl(url, callback) {
     var request = new XMLHttpRequest();
     request.open('get', url, true);
     request.responseType = 'arraybuffer';
-    request.onload = function () {
+    request.onload = function() {
         if (request.status !== 200) {
             return callback('Font could not be loaded: ' + request.statusText);
         }
+
         return callback(null, request.response);
     };
+
     request.send();
 }
 
@@ -72,17 +72,22 @@ function loadFromUrl(url, callback) {
 // If the file could not be parsed (most likely because it contains Postscript outlines)
 // we return an empty Font object with the `supported` flag set to `false`.
 function parseBuffer(buffer) {
-    var font, data, version, numTables, i, p, tag, offset, hmtxOffset, glyfOffset, locaOffset,
-        cffOffset, kernOffset, gposOffset, indexToLocFormat, numGlyphs, locaTable,
-        shortVersion;
+    var indexToLocFormat;
+    var hmtxOffset;
+    var glyfOffset;
+    var locaOffset;
+    var cffOffset;
+    var kernOffset;
+    var gposOffset;
+
     // OpenType fonts use big endian byte ordering.
     // We can't rely on typed array view types, because they operate with the endianness of the host computer.
     // Instead we use DataViews where we can specify endianness.
 
-    font = new _font.Font();
-    data = new DataView(buffer, 0);
+    var font = new _font.Font();
+    var data = new DataView(buffer, 0);
 
-    version = parse.getFixed(data, 0);
+    var version = parse.getFixed(data, 0);
     if (version === 1.0) {
         font.outlinesFormat = 'truetype';
     } else {
@@ -94,13 +99,13 @@ function parseBuffer(buffer) {
         }
     }
 
-    numTables = parse.getUShort(data, 4);
+    var numTables = parse.getUShort(data, 4);
 
     // Offset into the table records.
-    p = 12;
-    for (i = 0; i < numTables; i += 1) {
-        tag = parse.getTag(data, p);
-        offset = parse.getULong(data, p + 8);
+    var p = 12;
+    for (var i = 0; i < numTables; i += 1) {
+        var tag = parse.getTag(data, p);
+        var offset = parse.getULong(data, p + 8);
         switch (tag) {
         case 'cmap':
             font.tables.cmap = cmap.parse(data, offset);
@@ -108,6 +113,7 @@ function parseBuffer(buffer) {
             if (!font.encoding) {
                 font.supported = false;
             }
+
             break;
         case 'head':
             font.tables.head = head.parse(data, offset);
@@ -125,7 +131,7 @@ function parseBuffer(buffer) {
             break;
         case 'maxp':
             font.tables.maxp = maxp.parse(data, offset);
-            font.numGlyphs = numGlyphs = font.tables.maxp.numGlyphs;
+            font.numGlyphs = font.tables.maxp.numGlyphs;
             break;
         case 'name':
             font.tables.name = _name.parse(data, offset);
@@ -159,8 +165,8 @@ function parseBuffer(buffer) {
     }
 
     if (glyfOffset && locaOffset) {
-        shortVersion = indexToLocFormat === 0;
-        locaTable = loca.parse(data, locaOffset, numGlyphs, shortVersion);
+        var shortVersion = indexToLocFormat === 0;
+        var locaTable = loca.parse(data, locaOffset, font.numGlyphs, shortVersion);
         font.glyphs = glyf.parse(data, glyfOffset, locaTable, font);
         hmtx.parse(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
         encoding.addGlyphNames(font);
@@ -177,6 +183,7 @@ function parseBuffer(buffer) {
         } else {
             font.kerningPairs = {};
         }
+
         if (gposOffset) {
             gpos.parse(data, gposOffset, font);
         }
@@ -194,14 +201,16 @@ function parseBuffer(buffer) {
 function load(url, callback) {
     var isNode = typeof window === 'undefined';
     var loadFn = isNode ? loadFromFile : loadFromUrl;
-    loadFn(url, function (err, arrayBuffer) {
+    loadFn(url, function(err, arrayBuffer) {
         if (err) {
             return callback(err);
         }
+
         var font = parseBuffer(arrayBuffer);
         if (!font.supported) {
             return callback('Font is not supported (is this a Postscript font?)');
         }
+
         return callback(null, font);
     });
 }

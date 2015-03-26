@@ -27,6 +27,7 @@ function computeCheckSum(bytes) {
     while (bytes.length % 4 !== 0) {
         bytes.push(0);
     }
+
     var sum = 0;
     for (var i = 0; i < bytes.length; i += 4) {
         sum += (bytes[i] << 24) +
@@ -34,6 +35,7 @@ function computeCheckSum(bytes) {
             (bytes[i + 2] << 8) +
             (bytes[i + 3]);
     }
+
     sum %= Math.pow(2, 32);
     return sum;
 }
@@ -87,7 +89,7 @@ function makeSfntTable(tables) {
     }
 
     // Table records need to be sorted alphabetically.
-    recordFields.sort(function (r1, r2) {
+    recordFields.sort(function(r1, r2) {
         if (r1.value.tag > r2.value.tag) {
             return 1;
         } else {
@@ -111,6 +113,7 @@ function metricsForChar(font, chars, notFoundMetrics) {
             return glyph.getMetrics();
         }
     }
+
     return notFoundMetrics;
 }
 
@@ -119,6 +122,7 @@ function average(vs) {
     for (var i = 0; i < vs.length; i += 1) {
         sum += vs[i];
     }
+
     return sum / vs.length;
 }
 
@@ -144,9 +148,11 @@ function fontToSfntTable(font) {
         if (firstCharIndex > unicode || firstCharIndex === null) {
             firstCharIndex = unicode;
         }
+
         if (lastCharIndex < unicode) {
             lastCharIndex = unicode;
         }
+
         var position = os2.getUnicodeRange(unicode);
         if (position < 32) {
             ulUnicodeRange1 |= 1 << position;
@@ -170,6 +176,7 @@ function fontToSfntTable(font) {
         rightSideBearings.push(metrics.rightSideBearing);
         advanceWidths.push(glyph.advanceWidth);
     }
+
     var globals = {
         xMin: Math.min.apply(null, xMins),
         yMin: Math.min.apply(null, yMins),
@@ -228,7 +235,6 @@ function fontToSfntTable(font) {
         usBreakChar: font.hasChar(' ') ? 32 : 0 // Use space as the break character, if available.
     });
 
-
     var hmtxTable = hmtx.make(font.glyphs);
     var cmapTable = cmap.make(font.glyphs);
 
@@ -278,6 +284,7 @@ function fontToSfntTable(font) {
             break;
         }
     }
+
     if (!checkSumAdjusted) {
         throw new Error('Could not find head table with checkSum to adjust.');
     }

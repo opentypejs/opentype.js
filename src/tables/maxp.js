@@ -9,8 +9,8 @@ var table = require('../table');
 
 // Parse the maximum profile `maxp` table.
 function parseMaxpTable(data, start) {
-    var maxp = {},
-        p = new parse.Parser(data, start);
+    var maxp = {};
+    var p = new parse.Parser(data, start);
     maxp.version = p.parseVersion();
     maxp.numGlyphs = p.parseUShort();
     if (maxp.version === 1.0) {
@@ -28,6 +28,7 @@ function parseMaxpTable(data, start) {
         maxp.maxComponentElements = p.parseUShort();
         maxp.maxComponentDepth = p.parseUShort();
     }
+
     return maxp;
 }
 

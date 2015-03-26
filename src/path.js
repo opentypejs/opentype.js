@@ -11,7 +11,7 @@ function Path() {
     this.strokeWidth = 1;
 }
 
-Path.prototype.moveTo = function (x, y) {
+Path.prototype.moveTo = function(x, y) {
     this.commands.push({
         type: 'M',
         x: x,
@@ -19,7 +19,7 @@ Path.prototype.moveTo = function (x, y) {
     });
 };
 
-Path.prototype.lineTo = function (x, y) {
+Path.prototype.lineTo = function(x, y) {
     this.commands.push({
         type: 'L',
         x: x,
@@ -27,7 +27,7 @@ Path.prototype.lineTo = function (x, y) {
     });
 };
 
-Path.prototype.curveTo = Path.prototype.bezierCurveTo = function (x1, y1, x2, y2, x, y) {
+Path.prototype.curveTo = Path.prototype.bezierCurveTo = function(x1, y1, x2, y2, x, y) {
     this.commands.push({
         type: 'C',
         x1: x1,
@@ -39,7 +39,7 @@ Path.prototype.curveTo = Path.prototype.bezierCurveTo = function (x1, y1, x2, y2
     });
 };
 
-Path.prototype.quadTo = Path.prototype.quadraticCurveTo = function (x1, y1, x, y) {
+Path.prototype.quadTo = Path.prototype.quadraticCurveTo = function(x1, y1, x, y) {
     this.commands.push({
         type: 'Q',
         x1: x1,
@@ -49,26 +49,26 @@ Path.prototype.quadTo = Path.prototype.quadraticCurveTo = function (x1, y1, x, y
     });
 };
 
-Path.prototype.close = Path.prototype.closePath = function () {
+Path.prototype.close = Path.prototype.closePath = function() {
     this.commands.push({
         type: 'Z'
     });
 };
 
 // Add the given path or list of commands to the commands of this path.
-Path.prototype.extend = function (pathOrCommands) {
+Path.prototype.extend = function(pathOrCommands) {
     if (pathOrCommands.commands) {
         pathOrCommands = pathOrCommands.commands;
     }
+
     Array.prototype.push.apply(this.commands, pathOrCommands);
 };
 
 // Draw the path to a 2D context.
-Path.prototype.draw = function (ctx) {
-    var i, cmd;
+Path.prototype.draw = function(ctx) {
     ctx.beginPath();
-    for (i = 0; i < this.commands.length; i += 1) {
-        cmd = this.commands[i];
+    for (var i = 0; i < this.commands.length; i += 1) {
+        var cmd = this.commands[i];
         if (cmd.type === 'M') {
             ctx.moveTo(cmd.x, cmd.y);
         } else if (cmd.type === 'L') {
@@ -81,10 +81,12 @@ Path.prototype.draw = function (ctx) {
             ctx.closePath();
         }
     }
+
     if (this.fill) {
         ctx.fillStyle = this.fill;
         ctx.fill();
     }
+
     if (this.stroke) {
         ctx.strokeStyle = this.stroke;
         ctx.lineWidth = this.strokeWidth;
@@ -96,7 +98,7 @@ Path.prototype.draw = function (ctx) {
 // See http://www.w3.org/TR/SVG/paths.html#PathData
 // Parameters:
 // - decimalPlaces: The amount of decimal places for floating-point values (default: 2)
-Path.prototype.toPathData = function (decimalPlaces) {
+Path.prototype.toPathData = function(decimalPlaces) {
     decimalPlaces = decimalPlaces !== undefined ? decimalPlaces : 2;
 
     function floatToString(v) {
@@ -114,8 +116,10 @@ Path.prototype.toPathData = function (decimalPlaces) {
             if (v >= 0 && i > 0) {
                 s += ' ';
             }
+
             s += floatToString(v);
         }
+
         return s;
     }
 
@@ -134,13 +138,14 @@ Path.prototype.toPathData = function (decimalPlaces) {
             d += 'Z';
         }
     }
+
     return d;
 };
 
 // Convert the path to a SVG <path> element, as a string.
 // Parameters:
 // - decimalPlaces: The amount of decimal places for floating-point values (default: 2)
-Path.prototype.toSVG = function (decimalPlaces) {
+Path.prototype.toSVG = function(decimalPlaces) {
     var svg = '<path d="';
     svg += this.toPathData(decimalPlaces);
     svg += '"';
@@ -151,9 +156,11 @@ Path.prototype.toSVG = function (decimalPlaces) {
             svg += ' fill="' + this.fill + '"';
         }
     }
+
     if (this.stroke) {
         svg += ' stroke="' + this.stroke + '" stroke-width="' + this.strokeWidth + '"';
     }
+
     svg += '/>';
     return svg;
 };

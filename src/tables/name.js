@@ -38,45 +38,46 @@ var nameTableNames = [
 // Only Windows Unicode English names are supported.
 // Format 1 additional fields are not supported
 function parseNameTable(data, start) {
-    var name = {},
-        p = new parse.Parser(data, start);
+    var name = {};
+    var p = new parse.Parser(data, start);
     name.format = p.parseUShort();
-    var count = p.parseUShort(),
-        stringOffset = p.offset + p.parseUShort();
-    var platformID, encodingID, languageID, nameID, property, byteLength,
-        offset, str, i, j, codePoints;
+    var count = p.parseUShort();
+    var stringOffset = p.offset + p.parseUShort();
     var unknownCount = 0;
-    for(i = 0; i < count; i++) {
-        platformID = p.parseUShort();
-        encodingID = p.parseUShort();
-        languageID = p.parseUShort();
-        nameID = p.parseUShort();
-        property = nameTableNames[nameID];
-        byteLength = p.parseUShort();
-        offset = p.parseUShort();
+    for (var i = 0; i < count; i++) {
+        var platformID = p.parseUShort();
+        var encodingID = p.parseUShort();
+        var languageID = p.parseUShort();
+        var nameID = p.parseUShort();
+        var property = nameTableNames[nameID];
+        var byteLength = p.parseUShort();
+        var offset = p.parseUShort();
         // platformID - encodingID - languageID standard combinations :
         // 1 - 0 - 0 : Macintosh, Roman, English
         // 3 - 1 - 0x409 : Windows, Unicode BMP (UCS-2), en-US
         if (platformID === 3 && encodingID === 1 && languageID === 0x409) {
-            codePoints = [];
-            var length = byteLength/2;
-            for(j = 0; j < length; j++, offset += 2) {
-                codePoints[j] = parse.getShort(data, stringOffset+offset);
+            var codePoints = [];
+            var length = byteLength / 2;
+            for (var j = 0; j < length; j++, offset += 2) {
+                codePoints[j] = parse.getShort(data, stringOffset + offset);
             }
-            str = String.fromCharCode.apply(null, codePoints);
+
+            var str = String.fromCharCode.apply(null, codePoints);
             if (property) {
                 name[property] = str;
             }
             else {
                 unknownCount++;
-                name['unknown'+unknownCount] = str;
+                name['unknown' + unknownCount] = str;
             }
         }
 
     }
+
     if (name.format === 1) {
         name.langTagCount = p.parseUShort();
     }
+
     return name;
 }
 
@@ -110,7 +111,6 @@ function addWindowsNameRecord(t, recordID, s, offset) {
 }
 
 function makeNameTable(options) {
-    var i, s;
     var t = new table.Table('name', [
         {name: 'format', type: 'USHORT', value: 0},
         {name: 'count', type: 'USHORT', value: 0},
@@ -119,6 +119,8 @@ function makeNameTable(options) {
     t.records = [];
     t.strings = [];
     var offset = 0;
+    var i;
+    var s;
     // Add Macintosh records first
     for (i = 0; i < nameTableNames.length; i += 1) {
         if (options[nameTableNames[i]] !== undefined) {
@@ -139,9 +141,11 @@ function makeNameTable(options) {
     for (i = 0; i < t.records.length; i += 1) {
         t.fields.push({name: 'record_' + i, type: 'TABLE', value: t.records[i]});
     }
+
     for (i = 0; i < t.strings.length; i += 1) {
         t.fields.push({name: 'string_' + i, type: 'LITERAL', value: t.strings[i]});
     }
+
     return t;
 }
 

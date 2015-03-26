@@ -12,6 +12,7 @@ function Table(tableName, fields, options) {
         var field = fields[i];
         this[field.name] = field.value;
     }
+
     this.tableName = tableName;
     this.fields = fields;
     if (options) {
@@ -26,7 +27,7 @@ function Table(tableName, fields, options) {
     }
 }
 
-Table.prototype.sizeOf = function () {
+Table.prototype.sizeOf = function() {
     var v = 0;
     for (var i = 0; i < this.fields.length; i += 1) {
         var field = this.fields[i];
@@ -34,6 +35,7 @@ Table.prototype.sizeOf = function () {
         if (value === undefined) {
             value = field.value;
         }
+
         if (typeof value.sizeOf === 'function') {
             v += value.sizeOf();
         } else {
@@ -42,10 +44,11 @@ Table.prototype.sizeOf = function () {
             v += sizeOfFunction(value);
         }
     }
+
     return v;
 };
 
-Table.prototype.encode = function () {
+Table.prototype.encode = function() {
     return encode.TABLE(this);
 };
 
