@@ -271,7 +271,7 @@ function fontToSfntTable(font) {
     var checkSum = computeCheckSum(bytes);
     var tableFields = sfntTable.fields;
     var checkSumAdjusted = false;
-    for (var i = 0; i < tableFields.length; i += 1) {
+    for (i = 0; i < tableFields.length; i += 1) {
         if (tableFields[i].name === 'head table') {
             tableFields[i].value.checkSumAdjustment = 0xB1B0AFBA - checkSum;
             checkSumAdjusted = true;
