@@ -120,17 +120,15 @@ function charCodeBounds(glyphs) {
     var minCode, maxCode;
     for (var i = 0; i < glyphs.length; i += 1) {
         var glyph = glyphs[i];
-        if (glyph.unicode >= 20) {
-            if (minCode === undefined) {
-                minCode = glyph.unicode;
-            } else if (glyph.unicode < minCode) {
-                minCode = glyph.unicode;
-            }
-            if (maxCode === undefined) {
-                maxCode = glyph.unicode;
-            } else if (glyph.unicode > maxCode) {
-                maxCode = glyph.unicode;
-            }
+        if (minCode === undefined) {
+            minCode = glyph.unicode;
+        } else if (glyph.unicode < minCode) {
+            minCode = glyph.unicode;
+        }
+        if (maxCode === undefined) {
+            maxCode = glyph.unicode;
+        } else if (glyph.unicode > maxCode) {
+            maxCode = glyph.unicode;
         }
     }
     return [minCode, maxCode];
