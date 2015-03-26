@@ -1,3 +1,11 @@
+0.4.6 (March 26, 2015)
+======================
+* Fix issues with exporting/subsetting TrueType fonts.
+* Improve validness of exported fonts.
+* Empty paths (think: space) no longer contain a single closePath command.
+* Fix issues with exporting fonts with TrueType half-point values.
+* Expose the internal byte parsing algorithms as opentype._parse.
+
 0.4.5 (March 10, 2015)
 ======================
 * Add support for writing quad curves.

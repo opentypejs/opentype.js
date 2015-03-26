@@ -1,4 +1,4 @@
-!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.opentype=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.opentype = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 // Run-time checking of preconditions.
 
 'use strict';
@@ -954,6 +954,7 @@ function load(url, callback) {
     });
 }
 
+exports._parse = parse;
 exports.Font = _font.Font;
 exports.Glyph = glyph.Glyph;
 exports.Path = path.Path;
@@ -1908,8 +1909,10 @@ function parseCFFCharstring(code, font, index) {
                     width = stack.shift() + font.nominalWidthX;
                     haveWidth = true;
                 }
-                p.closePath();
-                open = false;
+                if (open) {
+                    p.closePath();
+                    open = false;
+                }
                 break;
             case 18: // hstemhm
                 parseStems();
@@ -2278,28 +2281,28 @@ function glyphToOps(glyph) {
         }
 
         if (cmd.type === 'M') {
-            dx = cmd.x - x;
-            dy = cmd.y - y;
+            dx = Math.round(cmd.x - x);
+            dy = Math.round(cmd.y - y);
             ops.push({name: 'dx', type: 'NUMBER', value: dx});
             ops.push({name: 'dy', type: 'NUMBER', value: dy});
             ops.push({name: 'rmoveto', type: 'OP', value: 21});
-            x = cmd.x;
-            y = cmd.y;
+            x = Math.round(cmd.x);
+            y = Math.round(cmd.y);
         } else if (cmd.type === 'L') {
-            dx = cmd.x - x;
-            dy = cmd.y - y;
+            dx = Math.round(cmd.x - x);
+            dy = Math.round(cmd.y - y);
             ops.push({name: 'dx', type: 'NUMBER', value: dx});
             ops.push({name: 'dy', type: 'NUMBER', value: dy});
             ops.push({name: 'rlineto', type: 'OP', value: 5});
-            x = cmd.x;
-            y = cmd.y;
+            x = Math.round(cmd.x);
+            y = Math.round(cmd.y);
         } else if (cmd.type === 'C') {
-            dx1 = cmd.x1 - x;
-            dy1 = cmd.y1 - y;
-            dx2 = cmd.x2 - cmd.x1;
-            dy2 = cmd.y2 - cmd.y1;
-            dx = cmd.x - cmd.x2;
-            dy = cmd.y - cmd.y2;
+            dx1 = Math.round(cmd.x1 - x);
+            dy1 = Math.round(cmd.y1 - y);
+            dx2 = Math.round(cmd.x2 - cmd.x1);
+            dy2 = Math.round(cmd.y2 - cmd.y1);
+            dx = Math.round(cmd.x - cmd.x2);
+            dy = Math.round(cmd.y - cmd.y2);
             ops.push({name: 'dx1', type: 'NUMBER', value: dx1});
             ops.push({name: 'dy1', type: 'NUMBER', value: dy1});
             ops.push({name: 'dx2', type: 'NUMBER', value: dx2});
@@ -2307,8 +2310,8 @@ function glyphToOps(glyph) {
             ops.push({name: 'dx', type: 'NUMBER', value: dx});
             ops.push({name: 'dy', type: 'NUMBER', value: dy});
             ops.push({name: 'rrcurveto', type: 'OP', value: 8});
-            x = cmd.x;
-            y = cmd.y;
+            x = Math.round(cmd.x);
+            y = Math.round(cmd.y);
         } else if (cmd.type === 'Z') {
             // Contours are closed automatically.
         }
@@ -2540,6 +2543,9 @@ function makeCmapTable(glyphs) {
         for (j = 0; j < glyph.unicodes.length; j += 1) {
             addSegment(t, glyph.unicodes[j], i);
         }
+        t.segments = t.segments.sort(function (a, b) {
+            return a.start - b.start;
+        });
     }
     addTerminatorSegment(t);
 
@@ -3553,6 +3559,142 @@ exports.make = makeNameTable;
 var parse = require('../parse');
 var table = require('../table');
 
+var unicodeRanges = [
+    {begin: 0x0000, end: 0x007F}, // Basic Latin
+    {begin: 0x0080, end: 0x00FF}, // Latin-1 Supplement
+    {begin: 0x0100, end: 0x017F}, // Latin Extended-A
+    {begin: 0x0180, end: 0x024F}, // Latin Extended-B
+    {begin: 0x0250, end: 0x02AF}, // IPA Extensions
+    {begin: 0x02B0, end: 0x02FF}, // Spacing Modifier Letters
+    {begin: 0x0300, end: 0x036F}, // Combining Diacritical Marks
+    {begin: 0x0370, end: 0x03FF}, // Greek and Coptic
+    {begin: 0x2C80, end: 0x2CFF}, // Coptic
+    {begin: 0x0400, end: 0x04FF}, // Cyrillic
+    {begin: 0x0530, end: 0x058F}, // Armenian
+    {begin: 0x0590, end: 0x05FF}, // Hebrew
+    {begin: 0xA500, end: 0xA63F}, // Vai
+    {begin: 0x0600, end: 0x06FF}, // Arabic
+    {begin: 0x07C0, end: 0x07FF}, // NKo
+    {begin: 0x0900, end: 0x097F}, // Devanagari
+    {begin: 0x0980, end: 0x09FF}, // Bengali
+    {begin: 0x0A00, end: 0x0A7F}, // Gurmukhi
+    {begin: 0x0A80, end: 0x0AFF}, // Gujarati
+    {begin: 0x0B00, end: 0x0B7F}, // Oriya
+    {begin: 0x0B80, end: 0x0BFF}, // Tamil
+    {begin: 0x0C00, end: 0x0C7F}, // Telugu
+    {begin: 0x0C80, end: 0x0CFF}, // Kannada
+    {begin: 0x0D00, end: 0x0D7F}, // Malayalam
+    {begin: 0x0E00, end: 0x0E7F}, // Thai
+    {begin: 0x0E80, end: 0x0EFF}, // Lao
+    {begin: 0x10A0, end: 0x10FF}, // Georgian
+    {begin: 0x1B00, end: 0x1B7F}, // Balinese
+    {begin: 0x1100, end: 0x11FF}, // Hangul Jamo
+    {begin: 0x1E00, end: 0x1EFF}, // Latin Extended Additional
+    {begin: 0x1F00, end: 0x1FFF}, // Greek Extended
+    {begin: 0x2000, end: 0x206F}, // General Punctuation
+    {begin: 0x2070, end: 0x209F}, // Superscripts And Subscripts
+    {begin: 0x20A0, end: 0x20CF}, // Currency Symbol
+    {begin: 0x20D0, end: 0x20FF}, // Combining Diacritical Marks For Symbols
+    {begin: 0x2100, end: 0x214F}, // Letterlike Symbols
+    {begin: 0x2150, end: 0x218F}, // Number Forms
+    {begin: 0x2190, end: 0x21FF}, // Arrows
+    {begin: 0x2200, end: 0x22FF}, // Mathematical Operators
+    {begin: 0x2300, end: 0x23FF}, // Miscellaneous Technical
+    {begin: 0x2400, end: 0x243F}, // Control Pictures
+    {begin: 0x2440, end: 0x245F}, // Optical Character Recognition
+    {begin: 0x2460, end: 0x24FF}, // Enclosed Alphanumerics
+    {begin: 0x2500, end: 0x257F}, // Box Drawing
+    {begin: 0x2580, end: 0x259F}, // Block Elements
+    {begin: 0x25A0, end: 0x25FF}, // Geometric Shapes
+    {begin: 0x2600, end: 0x26FF}, // Miscellaneous Symbols
+    {begin: 0x2700, end: 0x27BF}, // Dingbats
+    {begin: 0x3000, end: 0x303F}, // CJK Symbols And Punctuation
+    {begin: 0x3040, end: 0x309F}, // Hiragana
+    {begin: 0x30A0, end: 0x30FF}, // Katakana
+    {begin: 0x3100, end: 0x312F}, // Bopomofo
+    {begin: 0x3130, end: 0x318F}, // Hangul Compatibility Jamo
+    {begin: 0xA840, end: 0xA87F}, // Phags-pa
+    {begin: 0x3200, end: 0x32FF}, // Enclosed CJK Letters And Months
+    {begin: 0x3300, end: 0x33FF}, // CJK Compatibility
+    {begin: 0xAC00, end: 0xD7AF}, // Hangul Syllables
+    {begin: 0xD800, end: 0xDFFF}, // Non-Plane 0 *
+    {begin: 0x10900, end: 0x1091F}, // Phoenicia
+    {begin: 0x4E00, end: 0x9FFF}, // CJK Unified Ideographs
+    {begin: 0xE000, end: 0xF8FF}, // Private Use Area (plane 0)
+    {begin: 0x31C0, end: 0x31EF}, // CJK Strokes
+    {begin: 0xFB00, end: 0xFB4F}, // Alphabetic Presentation Forms
+    {begin: 0xFB50, end: 0xFDFF}, // Arabic Presentation Forms-A
+    {begin: 0xFE20, end: 0xFE2F}, // Combining Half Marks
+    {begin: 0xFE10, end: 0xFE1F}, // Vertical Forms
+    {begin: 0xFE50, end: 0xFE6F}, // Small Form Variants
+    {begin: 0xFE70, end: 0xFEFF}, // Arabic Presentation Forms-B
+    {begin: 0xFF00, end: 0xFFEF}, // Halfwidth And Fullwidth Forms
+    {begin: 0xFFF0, end: 0xFFFF}, // Specials
+    {begin: 0x0F00, end: 0x0FFF}, // Tibetan
+    {begin: 0x0700, end: 0x074F}, // Syriac
+    {begin: 0x0780, end: 0x07BF}, // Thaana
+    {begin: 0x0D80, end: 0x0DFF}, // Sinhala
+    {begin: 0x1000, end: 0x109F}, // Myanmar
+    {begin: 0x1200, end: 0x137F}, // Ethiopic
+    {begin: 0x13A0, end: 0x13FF}, // Cherokee
+    {begin: 0x1400, end: 0x167F}, // Unified Canadian Aboriginal Syllabics
+    {begin: 0x1680, end: 0x169F}, // Ogham
+    {begin: 0x16A0, end: 0x16FF}, // Runic
+    {begin: 0x1780, end: 0x17FF}, // Khmer
+    {begin: 0x1800, end: 0x18AF}, // Mongolian
+    {begin: 0x2800, end: 0x28FF}, // Braille Patterns
+    {begin: 0xA000, end: 0xA48F}, // Yi Syllables
+    {begin: 0x1700, end: 0x171F}, // Tagalog
+    {begin: 0x10300, end: 0x1032F}, // Old Italic
+    {begin: 0x10330, end: 0x1034F}, // Gothic
+    {begin: 0x10400, end: 0x1044F}, // Deseret
+    {begin: 0x1D000, end: 0x1D0FF}, // Byzantine Musical Symbols
+    {begin: 0x1D400, end: 0x1D7FF}, // Mathematical Alphanumeric Symbols
+    {begin: 0xFF000, end: 0xFFFFD}, // Private Use (plane 15)
+    {begin: 0xFE00, end: 0xFE0F}, // Variation Selectors
+    {begin: 0xE0000, end: 0xE007F}, // Tags
+    {begin: 0x1900, end: 0x194F}, // Limbu
+    {begin: 0x1950, end: 0x197F}, // Tai Le
+    {begin: 0x1980, end: 0x19DF}, // New Tai Lue
+    {begin: 0x1A00, end: 0x1A1F}, // Buginese
+    {begin: 0x2C00, end: 0x2C5F}, // Glagolitic
+    {begin: 0x2D30, end: 0x2D7F}, // Tifinagh
+    {begin: 0x4DC0, end: 0x4DFF}, // Yijing Hexagram Symbols
+    {begin: 0xA800, end: 0xA82F}, // Syloti Nagri
+    {begin: 0x10000, end: 0x1007F}, // Linear B Syllabary
+    {begin: 0x10140, end: 0x1018F}, // Ancient Greek Numbers
+    {begin: 0x10380, end: 0x1039F}, // Ugaritic
+    {begin: 0x103A0, end: 0x103DF}, // Old Persian
+    {begin: 0x10450, end: 0x1047F}, // Shavian
+    {begin: 0x10480, end: 0x104AF}, // Osmanya
+    {begin: 0x10800, end: 0x1083F}, // Cypriot Syllabary
+    {begin: 0x10A00, end: 0x10A5F}, // Kharoshthi
+    {begin: 0x1D300, end: 0x1D35F}, // Tai Xuan Jing Symbols
+    {begin: 0x12000, end: 0x123FF}, // Cuneiform
+    {begin: 0x1D360, end: 0x1D37F}, // Counting Rod Numerals
+    {begin: 0x1B80, end: 0x1BBF}, // Sundanese
+    {begin: 0x1C00, end: 0x1C4F}, // Lepcha
+    {begin: 0x1C50, end: 0x1C7F}, // Ol Chiki
+    {begin: 0xA880, end: 0xA8DF}, // Saurashtra
+    {begin: 0xA900, end: 0xA92F}, // Kayah Li
+    {begin: 0xA930, end: 0xA95F}, // Rejang
+    {begin: 0xAA00, end: 0xAA5F}, // Cham
+    {begin: 0x10190, end: 0x101CF}, // Ancient Symbols
+    {begin: 0x101D0, end: 0x101FF}, // Phaistos Disc
+    {begin: 0x102A0, end: 0x102DF}, // Carian
+    {begin: 0x1F030, end: 0x1F09F}  // Domino Tiles
+];
+
+function getUnicodeRange(unicode) {
+    for (var i = 0; i < unicodeRanges.length; i += 1) {
+        var range = unicodeRanges[i];
+        if (unicode >= range.begin && unicode < range.end) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 // Parse the OS/2 and Windows metrics `OS/2` table
 function parseOS2Table(data, start) {
     var os2 = {},
@@ -3611,16 +3753,16 @@ function makeOS2Table(options) {
         {name: 'usWeightClass', type: 'USHORT', value: 0},
         {name: 'usWidthClass', type: 'USHORT', value: 0},
         {name: 'fsType', type: 'USHORT', value: 0},
-        {name: 'ySubscriptXSize', type: 'SHORT', value: 0},
-        {name: 'ySubscriptYSize', type: 'SHORT', value: 0},
+        {name: 'ySubscriptXSize', type: 'SHORT', value: 650},
+        {name: 'ySubscriptYSize', type: 'SHORT', value: 699},
         {name: 'ySubscriptXOffset', type: 'SHORT', value: 0},
-        {name: 'ySubscriptYOffset', type: 'SHORT', value: 0},
-        {name: 'ySuperscriptXSize', type: 'SHORT', value: 0},
-        {name: 'ySuperscriptYSize', type: 'SHORT', value: 0},
+        {name: 'ySubscriptYOffset', type: 'SHORT', value: 140},
+        {name: 'ySuperscriptXSize', type: 'SHORT', value: 650},
+        {name: 'ySuperscriptYSize', type: 'SHORT', value: 699},
         {name: 'ySuperscriptXOffset', type: 'SHORT', value: 0},
-        {name: 'ySuperscriptYOffset', type: 'SHORT', value: 0},
-        {name: 'yStrikeoutSize', type: 'SHORT', value: 0},
-        {name: 'yStrikeoutPosition', type: 'SHORT', value: 0},
+        {name: 'ySuperscriptYOffset', type: 'SHORT', value: 479},
+        {name: 'yStrikeoutSize', type: 'SHORT', value: 49},
+        {name: 'yStrikeoutPosition', type: 'SHORT', value: 258},
         {name: 'sFamilyClass', type: 'SHORT', value: 0},
         {name: 'bFamilyType', type: 'BYTE', value: 0},
         {name: 'bSerifStyle', type: 'BYTE', value: 0},
@@ -3655,6 +3797,8 @@ function makeOS2Table(options) {
     ], options);
 }
 
+exports.unicodeRanges = unicodeRanges;
+exports.getUnicodeRange = getUnicodeRange;
 exports.parse = parseOS2Table;
 exports.make = makeOS2Table;
 
@@ -3845,28 +3989,6 @@ function metricsForChar(font, chars, notFoundMetrics) {
     return notFoundMetrics;
 }
 
-// Return the smallest and largest unicode values of the characters in this font.
-// For most fonts the smallest value would be 20 (space).
-function charCodeBounds(glyphs) {
-    var minCode, maxCode;
-    for (var i = 0; i < glyphs.length; i += 1) {
-        var glyph = glyphs[i];
-        if (glyph.unicode >= 20) {
-            if (minCode === undefined) {
-                minCode = glyph.unicode;
-            } else if (glyph.unicode < minCode) {
-                minCode = glyph.unicode;
-            }
-            if (maxCode === undefined) {
-                maxCode = glyph.unicode;
-            } else if (glyph.unicode > maxCode) {
-                maxCode = glyph.unicode;
-            }
-        }
-    }
-    return [minCode, maxCode];
-}
-
 function average(vs) {
     var sum = 0;
     for (var i = 0; i < vs.length; i += 1) {
@@ -3885,8 +4007,33 @@ function fontToSfntTable(font) {
     var advanceWidths = [];
     var leftSideBearings = [];
     var rightSideBearings = [];
+    var firstCharIndex = null;
+    var lastCharIndex = 0;
+    var ulUnicodeRange1 = 0;
+    var ulUnicodeRange2 = 0;
+    var ulUnicodeRange3 = 0;
+    var ulUnicodeRange4 = 0;
     for (var i = 0; i < font.glyphs.length; i += 1) {
         var glyph = font.glyphs[i];
+        var unicode = glyph.unicode | 0;
+        if (firstCharIndex > unicode || firstCharIndex === null) {
+            firstCharIndex = unicode;
+        }
+        if (lastCharIndex < unicode) {
+            lastCharIndex = unicode;
+        }
+        var position = os2.getUnicodeRange(unicode);
+        if (position < 32) {
+            ulUnicodeRange1 |= 1 << position;
+        } else if (position < 64) {
+            ulUnicodeRange2 |= 1 << position - 32;
+        } else if (position < 96) {
+            ulUnicodeRange3 |= 1 << position - 64;
+        } else if (position < 123) {
+            ulUnicodeRange4 |= 1 << position - 96;
+        } else {
+            throw new Error('Unicode ranges bits > 123 are reserved for internal usage');
+        }
         // Skip non-important characters.
         if (glyph.name === '.notdef') continue;
         var metrics = glyph.getMetrics();
@@ -3921,7 +4068,6 @@ function fontToSfntTable(font) {
     });
 
     var hheaTable = hhea.make({
-        // Adding a little here makes OS X Quick Look happy
         ascender: globals.ascender,
         descender: globals.descender,
         advanceWidthMax: globals.advanceWidthMax,
@@ -3933,14 +4079,16 @@ function fontToSfntTable(font) {
 
     var maxpTable = maxp.make(font.glyphs.length);
 
-    var codeBounds = charCodeBounds(font.glyphs);
     var os2Table = os2.make({
         xAvgCharWidth: Math.round(globals.advanceWidthAvg),
         usWeightClass: 500, // Medium FIXME Make this configurable
         usWidthClass: 5, // Medium (normal) FIXME Make this configurable
-        usFirstCharIndex: codeBounds[0],
-        usLastCharIndex: codeBounds[1],
-        ulUnicodeRange1: 0x00000001, // Basic Latin
+        usFirstCharIndex: firstCharIndex,
+        usLastCharIndex: lastCharIndex,
+        ulUnicodeRange1: ulUnicodeRange1,
+        ulUnicodeRange2: ulUnicodeRange2,
+        ulUnicodeRange3: ulUnicodeRange3,
+        ulUnicodeRange4: ulUnicodeRange4,
         // See http://typophile.com/node/13081 for more info on vertical metrics.
         // We get metrics for typical characters (such as "x" for xHeight).
         // We provide some fallback characters if characters are unavailable: their
@@ -3950,7 +4098,6 @@ function fontToSfntTable(font) {
         sTypoLineGap: 0,
         usWinAscent: globals.ascender,
         usWinDescent: -globals.descender,
-        ulCodePageRange1: 0x00000001, // Basic Latin
         sxHeight: metricsForChar(font, 'xyvw', {yMax: 0}).yMax,
         sCapHeight: metricsForChar(font, 'HIKLEFJMNTZBDPRAGOQSUVWXY', globals).yMax,
         usBreakChar: font.hasChar(' ') ? 32 : 0 // Use space as the break character, if available.
@@ -3994,12 +4141,21 @@ function fontToSfntTable(font) {
 
     var sfntTable = makeSfntTable(tables);
 
+    // Compute the font's checkSum and store it in head.checkSumAdjustment.
     var bytes = sfntTable.encode();
     var checkSum = computeCheckSum(bytes);
-    headTable.checkSumAdjustment = 0xB1B0AFBA - checkSum;
-
-    // Build the font again, now with the proper checkSum.
-    sfntTable = makeSfntTable(tables);
+    var tableFields = sfntTable.fields;
+    var checkSumAdjusted = false;
+    for (i = 0; i < tableFields.length; i += 1) {
+        if (tableFields[i].name === 'head table') {
+            tableFields[i].value.checkSumAdjustment = 0xB1B0AFBA - checkSum;
+            checkSumAdjusted = true;
+            break;
+        }
+    }
+    if (!checkSumAdjusted) {
+        throw new Error('Could not find head table with checkSum to adjust.');
+    }
 
     return sfntTable;
 }
