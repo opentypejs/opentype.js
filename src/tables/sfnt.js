@@ -114,26 +114,6 @@ function metricsForChar(font, chars, notFoundMetrics) {
     return notFoundMetrics;
 }
 
-// Return the smallest and largest unicode values of the characters in this font.
-// For most fonts the smallest value would be 20 (space).
-function charCodeBounds(glyphs) {
-    var minCode, maxCode;
-    for (var i = 0; i < glyphs.length; i += 1) {
-        var glyph = glyphs[i];
-        if (minCode === undefined) {
-            minCode = glyph.unicode;
-        } else if (glyph.unicode < minCode) {
-            minCode = glyph.unicode;
-        }
-        if (maxCode === undefined) {
-            maxCode = glyph.unicode;
-        } else if (glyph.unicode > maxCode) {
-            maxCode = glyph.unicode;
-        }
-    }
-    return [minCode, maxCode];
-}
-
 function average(vs) {
     var sum = 0;
     for (var i = 0; i < vs.length; i += 1) {
@@ -152,8 +132,33 @@ function fontToSfntTable(font) {
     var advanceWidths = [];
     var leftSideBearings = [];
     var rightSideBearings = [];
+    var firstCharIndex = null;
+    var lastCharIndex = 0;
+    var ulUnicodeRange1 = 0;
+    var ulUnicodeRange2 = 0;
+    var ulUnicodeRange3 = 0;
+    var ulUnicodeRange4 = 0;
     for (var i = 0; i < font.glyphs.length; i += 1) {
         var glyph = font.glyphs[i];
+        var unicode = glyph.unicode | 0;
+        if (firstCharIndex > unicode || firstCharIndex === null) {
+            firstCharIndex = unicode;
+        }
+        if (lastCharIndex < unicode) {
+            lastCharIndex = unicode;
+        }
+        var position = os2.getUnicodeRange(unicode);
+        if (position < 32) {
+            ulUnicodeRange1 |= 1 << position;
+        } else if (position < 64) {
+            ulUnicodeRange2 |= 1 << position - 32;
+        } else if (position < 96) {
+            ulUnicodeRange3 |= 1 << position - 64;
+        } else if (position < 123) {
+            ulUnicodeRange4 |= 1 << position - 96;
+        } else {
+            throw new Error('Unicode ranges bits > 123 are reserved for internal usage');
+        }
         // Skip non-important characters.
         if (glyph.name === '.notdef') continue;
         var metrics = glyph.getMetrics();
@@ -200,14 +205,16 @@ function fontToSfntTable(font) {
 
     var maxpTable = maxp.make(font.glyphs.length);
 
-    var codeBounds = charCodeBounds(font.glyphs);
     var os2Table = os2.make({
         xAvgCharWidth: Math.round(globals.advanceWidthAvg),
         usWeightClass: 500, // Medium FIXME Make this configurable
         usWidthClass: 5, // Medium (normal) FIXME Make this configurable
-        usFirstCharIndex: codeBounds[0],
-        usLastCharIndex: codeBounds[1],
-        ulUnicodeRange1: 0x00000001, // Basic Latin
+        usFirstCharIndex: firstCharIndex,
+        usLastCharIndex: lastCharIndex,
+        ulUnicodeRange1: ulUnicodeRange1,
+        ulUnicodeRange2: ulUnicodeRange2,
+        ulUnicodeRange3: ulUnicodeRange3,
+        ulUnicodeRange4: ulUnicodeRange4,
         // See http://typophile.com/node/13081 for more info on vertical metrics.
         // We get metrics for typical characters (such as "x" for xHeight).
         // We provide some fallback characters if characters are unavailable: their
@@ -217,7 +224,6 @@ function fontToSfntTable(font) {
         sTypoLineGap: 0,
         usWinAscent: globals.ascender,
         usWinDescent: -globals.descender,
-        ulCodePageRange1: 0x00000001, // Basic Latin
         sxHeight: metricsForChar(font, 'xyvw', {yMax: 0}).yMax,
         sCapHeight: metricsForChar(font, 'HIKLEFJMNTZBDPRAGOQSUVWXY', globals).yMax,
         usBreakChar: font.hasChar(' ') ? 32 : 0 // Use space as the break character, if available.
