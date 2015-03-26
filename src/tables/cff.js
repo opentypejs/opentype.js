@@ -519,8 +519,10 @@ function parseCFFCharstring(code, font, index) {
                     width = stack.shift() + font.nominalWidthX;
                     haveWidth = true;
                 }
-                p.closePath();
-                open = false;
+                if (open) {
+                    p.closePath();
+                    open = false;
+                }
                 break;
             case 18: // hstemhm
                 parseStems();
