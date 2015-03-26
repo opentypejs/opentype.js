@@ -123,6 +123,9 @@ function makeCmapTable(glyphs) {
         for (j = 0; j < glyph.unicodes.length; j += 1) {
             addSegment(t, glyph.unicodes[j], i);
         }
+        t.segments = t.segments.sort(function (a, b) {
+            return a.start - b.start;
+        });
     }
     addTerminatorSegment(t);
 
