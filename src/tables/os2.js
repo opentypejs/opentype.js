@@ -139,7 +139,6 @@ function getUnicodeRange(unicode) {
             return i;
         }
     }
-    console.log('Could not find range for ' + unicode);
     return -1;
 }
 
