@@ -26,6 +26,8 @@ function Font(options) {
     this.copyright = options.copyright || ' ';
     this.trademark = options.trademark || ' ';
     this.unitsPerEm = options.unitsPerEm || 1000;
+    this.ascender = options.ascender;
+    this.descender = options.descender;
     this.supported = true;
     this.glyphs = options.glyphs || [];
     this.encoding = new encoding.DefaultEncoding(this);
