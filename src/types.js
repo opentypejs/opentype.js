@@ -188,7 +188,8 @@ encode.REAL = function(v) {
     }
 
     var nibbles = '';
-    var i, ii;
+    var i;
+    var ii;
     for (i = 0, ii = value.length; i < ii; i += 1) {
         var c = value[i];
         if (c === 'e') {
@@ -201,11 +202,13 @@ encode.REAL = function(v) {
             nibbles += c;
         }
     }
+
     nibbles += (nibbles.length & 1) ? 'f' : 'ff';
     var out = [30];
     for (i = 0, ii = nibbles.length; i < ii; i += 2) {
         out.push(parseInt(nibbles.substr(i, 2), 16));
     }
+
     return out;
 };
 
