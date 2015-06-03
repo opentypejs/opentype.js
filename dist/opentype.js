@@ -2491,6 +2491,7 @@ function makeCFFTable(glyphs, options) {
         {name: 'privateDictIndex', type: 'TABLE'}
     ]);
 
+    var fontScale = 1 / options.unitsPerEm;
     // We use non-zero values for the offsets so that the DICT encodes them.
     // This is important because the size of the Top DICT plays a role in offset calculation,
     // and the size shouldn't change after we've written correct offsets.
@@ -2499,6 +2500,7 @@ function makeCFFTable(glyphs, options) {
         fullName: options.fullName,
         familyName: options.familyName,
         weight: options.weightName,
+        fontMatrix: [fontScale, 0, 0, fontScale, 0, 0],
         charset: 999,
         encoding: 0,
         charStrings: 999,
@@ -4315,7 +4317,8 @@ function fontToSfntTable(font) {
         fullName: fullName,
         familyName: font.familyName,
         weightName: font.styleName,
-        postScriptName: postScriptName
+        postScriptName: postScriptName,
+        unitsPerEm: font.unitsPerEm
     });
     // Order the tables according to the the OpenType specification 1.4.
     var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable];
@@ -4525,6 +4528,46 @@ encode.NUMBER32 = function(v) {
 
 sizeOf.NUMBER32 = constant(4);
 
+encode.REAL = function(v) {
+    var value = v.toString();
+
+    // Some numbers use an epsilon to encode the value. (e.g. JavaScript will store 0.0000001 as 1e-7)
+    // This code converts it back to a number without the epsilon.
+    var m = /\.(\d*?)(?:9{5,20}|0{5,20})\d{0,2}(?:e(.+)|$)/.exec(value);
+    if (m) {
+        var epsilon = parseFloat('1e' + ((m[2] ? +m[2] : 0) + m[1].length));
+        value = (Math.round(v * epsilon) / epsilon).toString();
+    }
+
+    var nibbles = '';
+    var i;
+    var ii;
+    for (i = 0, ii = value.length; i < ii; i += 1) {
+        var c = value[i];
+        if (c === 'e') {
+            nibbles += value[++i] === '-' ? 'c' : 'b';
+        } else if (c === '.') {
+            nibbles += 'a';
+        } else if (c === '-') {
+            nibbles += 'e';
+        } else {
+            nibbles += c;
+        }
+    }
+
+    nibbles += (nibbles.length & 1) ? 'f' : 'ff';
+    var out = [30];
+    for (i = 0, ii = nibbles.length; i < ii; i += 2) {
+        out.push(parseInt(nibbles.substr(i, 2), 16));
+    }
+
+    return out;
+};
+
+sizeOf.REAL = function(v) {
+    return encode.REAL(v).length;
+};
+
 encode.NAME = encode.CHARARRAY;
 sizeOf.NAME = sizeOf.CHARARRAY;
 
@@ -4635,9 +4678,13 @@ encode.OPERAND = function(v, type) {
             // We make it easy for ourselves and always encode offsets as
             // 4 bytes. This makes offset calculation for the top dict easier.
             d = d.concat(encode.NUMBER32(v));
-        } else {
-            // FIXME Add support for booleans
+        } else if (type === 'number') {
             d = d.concat(encode.NUMBER(v));
+        } else if (type === 'real') {
+            d = d.concat(encode.REAL(v));
+        } else {
+            throw new Error('Unknown operand type ' + type);
+            // FIXME Add support for booleans
         }
     }
 

@@ -1,3 +1,7 @@
+0.4.8 (June 3, 2015)
+====================
+* Fix an issue with writing out fonts that have an UPM != 1000.
+
 0.4.6 (March 26, 2015)
 ======================
 * Fix issues with exporting/subsetting TrueType fonts.
