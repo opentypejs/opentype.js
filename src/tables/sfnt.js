@@ -265,7 +265,8 @@ function fontToSfntTable(font) {
         fullName: fullName,
         familyName: font.familyName,
         weightName: font.styleName,
-        postScriptName: postScriptName
+        postScriptName: postScriptName,
+        unitsPerEm: font.unitsPerEm
     });
     // Order the tables according to the the OpenType specification 1.4.
     var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable];

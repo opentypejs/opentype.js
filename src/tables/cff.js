@@ -1055,6 +1055,7 @@ function makeCFFTable(glyphs, options) {
         {name: 'privateDictIndex', type: 'TABLE'}
     ]);
 
+    var fontScale = 1 / options.unitsPerEm;
     // We use non-zero values for the offsets so that the DICT encodes them.
     // This is important because the size of the Top DICT plays a role in offset calculation,
     // and the size shouldn't change after we've written correct offsets.
@@ -1063,6 +1064,7 @@ function makeCFFTable(glyphs, options) {
         fullName: options.fullName,
         familyName: options.familyName,
         weight: options.weightName,
+        fontMatrix: [fontScale, 0, 0, fontScale, 0, 0],
         charset: 999,
         encoding: 0,
         charStrings: 999,
