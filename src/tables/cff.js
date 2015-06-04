@@ -919,7 +919,8 @@ function makeStringIndex(strings) {
     ]);
     t.strings = [];
     for (var i = 0; i < strings.length; i += 1) {
-        t.strings.push({name: 'string_' + i, type: 'STRING', value: strings[i]});
+        if (strings[i])
+            t.strings.push({name: 'string_' + i, type: 'STRING', value: strings[i]});
     }
 
     return t;
