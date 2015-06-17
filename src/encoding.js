@@ -210,15 +210,20 @@ function addGlyphNames(font) {
         var c = charCodes[i];
         var glyphIndex = glyphIndexMap[c];
         glyph = font.glyphs[glyphIndex];
-        glyph.addUnicode(parseInt(c));
+        if (glyph) {
+            glyph.addUnicode(parseInt(c));
+        }
+
     }
 
     for (i = 0; i < font.glyphs.length; i += 1) {
         glyph = font.glyphs[i];
-        if (font.cffEncoding) {
-            glyph.name = font.cffEncoding.charset[i];
-        } else {
-            glyph.name = font.glyphNames.glyphIndexToName(i);
+        if (glyph) {
+            if (font.cffEncoding) {
+                glyph.name = font.cffEncoding.charset[i];
+            } else {
+                glyph.name = font.glyphNames.glyphIndexToName(i);
+            }
         }
     }
 }

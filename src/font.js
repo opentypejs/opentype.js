@@ -3,6 +3,7 @@
 'use strict';
 
 var path = require('./path');
+var glyf = require('./tables/glyf');
 var sfnt = require('./tables/sfnt');
 var encoding = require('./encoding');
 
@@ -53,8 +54,31 @@ Font.prototype.charToGlyph = function(c) {
     var glyphIndex = this.charToGlyphIndex(c);
     var glyph = this.glyphs[glyphIndex];
     if (!glyph) {
-        // .notdef
-        glyph = this.glyphs[0];
+        if (this.lazyParsing) {
+            this.glyphs[glyphIndex] = this.getGlyph(c);
+            glyph = this.glyphs[glyphIndex];
+        } else {
+            // .notdef
+            glyph = this.glyphs[0];
+        }
+    }
+
+    return glyph;
+};
+
+Font.prototype.getGlyph = function(c) {
+    var glyphIndex = this.charToGlyphIndex(c);
+    var glyph;
+    var offset = this.glyfOffset + this.locaTable[glyphIndex];
+    glyph = glyf.parseGlyph(this.rawdata, offset, glyphIndex, this);
+    glyph.path = glyf.getPath(glyph.points);
+    glyph.advanceWidth = this.hmtx[glyphIndex].advanceWidth;
+    glyph.leftSideBearing = this.hmtx[glyphIndex].leftSideBearing;
+    glyph.addUnicode(parseInt(c.charCodeAt(0)));
+    if (glyph.cffEncoding) {
+        glyph.name = this.cffEncoding.charset[glyphIndex];
+    } else {
+        glyph.name = this.glyphNames.glyphIndexToName(glyphIndex);
     }
 
     return glyph;
