@@ -127,7 +127,7 @@ function makeCmapTable(glyphs) {
 
     t.segments = [];
     for (i = 0; i < glyphs.length; i += 1) {
-        var glyph = glyphs[i];
+        var glyph = glyphs.get(i);
         for (var j = 0; j < glyph.unicodes.length; j += 1) {
             addSegment(t, glyph.unicodes[j], i);
         }

@@ -19,7 +19,7 @@ function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
             leftSideBearing = p.parseShort();
         }
 
-        var glyph = glyphs[i];
+        var glyph = glyphs.get(i);
         glyph.advanceWidth = advanceWidth;
         glyph.leftSideBearing = leftSideBearing;
     }
@@ -28,7 +28,7 @@ function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
 function makeHmtxTable(glyphs) {
     var t = new table.Table('hmtx', []);
     for (var i = 0; i < glyphs.length; i += 1) {
-        var glyph = glyphs[i];
+        var glyph = glyphs.get(i);
         var advanceWidth = glyph.advanceWidth || 0;
         var leftSideBearing = glyph.leftSideBearing || 0;
         t.fields.push({name: 'advanceWidth_' + i, type: 'USHORT', value: advanceWidth});

@@ -6,7 +6,7 @@
 'use strict';
 
 var encoding = require('../encoding');
-var _glyph = require('../glyph');
+var _glyphset = require('../glyphset');
 var parse = require('../parse');
 var path = require('../path');
 var table = require('../table');
@@ -362,7 +362,7 @@ function parseCFFEncoding(data, start, charset) {
 // Take in charstring code and return a Glyph object.
 // The encoding is described in the Type 2 Charstring Format
 // https://www.microsoft.com/typography/OTSPEC/charstr2.htm
-function parseCFFCharstring(code, font, index) {
+function parseCFFCharstring(font, glyph, code) {
     var c1x;
     var c1y;
     var c2x;
@@ -566,7 +566,7 @@ function parseCFFCharstring(code, font, index) {
                     p.curveTo(c3x, c3y, c4x, c4y, x, y);
                     break;
                 default:
-                    console.log('Glyph ' + index + ': unknown operator ' + 1200 + v);
+                    console.log('Glyph ' + glyph.index + ': unknown operator ' + 1200 + v);
                     stack.length = 0;
                 }
                 break;
@@ -736,7 +736,7 @@ function parseCFFCharstring(code, font, index) {
                 break;
             default:
                 if (v < 32) {
-                    console.log('Glyph ' + index + ': unknown operator ' + v);
+                    console.log('Glyph ' + glyph.index + ': unknown operator ' + v);
                 } else if (v < 247) {
                     stack.push(v - 139);
                 } else if (v < 251) {
@@ -760,10 +760,9 @@ function parseCFFCharstring(code, font, index) {
     }
 
     parse(code);
-    var glyph = new _glyph.Glyph({font: font, index: index});
-    glyph.path = p;
+
     glyph.advanceWidth = width;
-    return glyph;
+    return p;
 }
 
 // Subroutines are encoded using the negative half of the number space.
@@ -827,10 +826,10 @@ function parseCFFTable(data, start, font) {
     // Prefer the CMAP encoding to the CFF encoding.
     font.encoding = font.encoding || font.cffEncoding;
 
-    font.glyphs = [];
+    font.glyphs = new _glyphset(font);
     for (var i = 0; i < font.nGlyphs; i += 1) {
         var charString = charStringsIndex.objects[i];
-        font.glyphs.push(parseCFFCharstring(charString, font, i));
+        font.glyphs.push(i, _glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
     }
 }
 
@@ -1018,8 +1017,9 @@ function makeCharStringsIndex(glyphs) {
     var t = new table.Table('CharStrings INDEX', [
         {name: 'charStrings', type: 'INDEX', value: []}
     ]);
+
     for (var i = 0; i < glyphs.length; i += 1) {
-        var glyph = glyphs[i];
+        var glyph = glyphs.get(i);
         var ops = glyphToOps(glyph);
         t.charStrings.push({name: glyph.name, type: 'CHARSTRING', value: ops});
     }
@@ -1074,10 +1074,12 @@ function makeCFFTable(glyphs, options) {
     var privateAttrs = {};
 
     var glyphNames = [];
+    var glyph;
 
     // Skip first glyph (.notdef)
     for (var i = 1; i < glyphs.length; i += 1) {
-        glyphNames.push(glyphs[i].name);
+        glyph = glyphs.get(i);
+        glyphNames.push(glyph.name);
     }
 
     var strings = [];

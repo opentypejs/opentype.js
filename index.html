@@ -233,7 +233,7 @@ function onFontLoaded(font) {
     y = 120;
     fontSize = 72;
     for (i = 0; i < amount; i++) {
-        glyph = font.glyphs[i];
+        glyph = font.glyphs.get(i);
         ctx = createGlyphCanvas(glyph, 150);
         glyph.draw(ctx, x, y, fontSize);
         glyph.drawPoints(ctx, x, y, fontSize);

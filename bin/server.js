@@ -5,17 +5,6 @@
 var fs = require('fs');
 var http = require('http');
 var path = require('path');
-var spawn = require('child_process').spawn;
-
-var watchify = spawn('./node_modules/.bin/watchify', ['src/opentype.js', '--standalone', 'opentype', '--debug', '-o', 'build/opentype.js', '-v']);
-
-watchify.stdout.on('data', function(d) {
-    console.log('WATCH', d.toString());
-});
-
-watchify.stderr.on('data', function(d) {
-    console.log('WATCH', d.toString());
-});
 
 var CONTENT_TYPES = {
     '.html': 'text/html',

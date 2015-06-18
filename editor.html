@@ -181,7 +181,7 @@ function drawBaseline(ctx) {
 
 function draw() {
     var ctx = gCtx;
-    var glyph = gFont.glyphs[gCurrentGlyphName];
+    var glyph = gFont.glyphs.get(gCurrentGlyphName);
     ctx.fillStyle = '#f6f6f6';
     ctx.fillRect(0, 0, EDITOR_WIDTH, EDITOR_HEIGHT);
     drawGrid(ctx);
@@ -194,7 +194,7 @@ function canvasMouseDown(e) {
     e.preventDefault();
     var x = Math.floor(e.pageX / GRID_SIZE) - ORIGIN_X;
     var y = ORIGIN_Y - Math.floor((e.pageY - HEADER_HEIGHT) / GRID_SIZE);
-    var glyph = gFont.glyphs[gCurrentGlyphName];
+    var glyph = gFont.glyphs.get(gCurrentGlyphName);
     var k = '' + x + ',' + y;
     if (glyph.blocks[k]) {
         delete glyph.blocks[k];
@@ -213,7 +213,7 @@ function canvasMouseDragged(e) {
     e.preventDefault();
     var x = Math.floor(e.pageX / GRID_SIZE) - ORIGIN_X;
     var y = ORIGIN_Y - Math.floor((e.pageY - HEADER_HEIGHT) / GRID_SIZE);
-    var glyph = gFont.glyphs[gCurrentGlyphName];
+    var glyph = gFont.glyphs.get(gCurrentGlyphName);
     var k = '' + x + ',' + y;
     if (gDragMode === DRAG_ON) {
         glyph.blocks[k] = true;
@@ -235,14 +235,14 @@ function onGlyphClicked(e) {
 }
 
 function ensureGlyph(glyphName) {
-    if (!gFont.glyphs[glyphName]) {
+    if (!gFont.glyphs.get(glyphName)) {
         var newGlyph = {
             name: glyphName,
             unicode: glyphName.charCodeAt(0),
             advanceWidth: 7,
             blocks: {}
         };
-        gFont.glyphs[glyphName] = newGlyph;
+        gFont.glyphs.get(glyphName) = newGlyph;
     }
 }
 
@@ -309,7 +309,7 @@ function downloadFont() {
     }));
     var keys = Object.keys(gFont.glyphs);
     for (var i = 0; i < keys.length; i += 1) {
-        var glyph = gFont.glyphs[keys[i]];
+        var glyph = gFont.glyphs.get(keys[i]);
         var newGlyph = new opentype.Glyph(glyph);
         newGlyph.advanceWidth = newGlyph.advanceWidth * GRID_SIZE;
         newGlyph.path = blocksToPath(glyph.blocks);

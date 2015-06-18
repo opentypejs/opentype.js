@@ -6,6 +6,25 @@ var check = require('./check');
 var draw = require('./draw');
 var path = require('./path');
 
+function getPathDefinition(path) {
+    var _path = path || { commands: [] };
+    return {
+        configurable: true,
+
+        get: function() {
+            if (typeof _path === 'function') {
+                _path = _path();
+            }
+
+            return _path;
+        },
+
+        set: function(p) {
+            _path = p;
+        }
+    };
+}
+
 // A Glyph is an individual mark that often corresponds to a character.
 // Some glyphs, such as ligatures, are a combination of many characters.
 // Glyphs are the basic building blocks of a font.
@@ -22,7 +41,8 @@ function Glyph(options) {
     this.xMax = options.xMax || 0;
     this.yMax = options.yMax || 0;
     this.advanceWidth = options.advanceWidth || 0;
-    this.path = options.path || null;
+    // the path for a glyph is pretty special and must be lazy-loaded
+    Object.defineProperty(this, 'path', getPathDefinition(options.path));
 }
 
 Glyph.prototype.addUnicode = function(unicode) {
