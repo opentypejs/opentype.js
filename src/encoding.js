@@ -145,12 +145,22 @@ DefaultEncoding.prototype.charToGlyphIndex = function(c) {
     }
 };
 
+DefaultEncoding.prototype.glyphIndexToChar = function(index) {
+    var glyph = this.font.glyphs[index];
+    var charCode = (glyph && glyph.unicode) ? glyph.unicode : 0;
+    return String.fromCharCode(charCode);
+};
+
 function CmapEncoding(cmap) {
     this.cmap = cmap;
 }
 
 CmapEncoding.prototype.charToGlyphIndex = function(c) {
     return this.cmap.glyphIndexMap[c.charCodeAt(0)] || 0;
+};
+
+CmapEncoding.prototype.glyphIndexToChar = function(index) {
+    return String.fromCharCode(this.cmap.unicodeIndexMap[index]);
 };
 
 function CffEncoding(encoding, charset) {

@@ -178,12 +178,22 @@ DefaultEncoding.prototype.charToGlyphIndex = function(c) {
     }
 };
 
+DefaultEncoding.prototype.glyphIndexToChar = function(index) {
+    var glyph = this.font.glyphs[index];
+    var charCode = (glyph && glyph.unicode) ? glyph.unicode : 0;
+    return String.fromCharCode(charCode);
+};
+
 function CmapEncoding(cmap) {
     this.cmap = cmap;
 }
 
 CmapEncoding.prototype.charToGlyphIndex = function(c) {
     return this.cmap.glyphIndexMap[c.charCodeAt(0)] || 0;
+};
+
+CmapEncoding.prototype.glyphIndexToChar = function(index) {
+    return String.fromCharCode(this.cmap.unicodeIndexMap[index]);
 };
 
 function CffEncoding(encoding, charset) {
@@ -329,7 +339,7 @@ Font.prototype.charToGlyph = function(c) {
     var glyph = this.glyphs[glyphIndex];
     if (!glyph) {
         if (this.lazyParsing) {
-            this.glyphs[glyphIndex] = this.getGlyph(c);
+            this.glyphs[glyphIndex] = this.getGlyph(glyphIndex);
             glyph = this.glyphs[glyphIndex];
         } else {
             // .notdef
@@ -340,15 +350,33 @@ Font.prototype.charToGlyph = function(c) {
     return glyph;
 };
 
-Font.prototype.getGlyph = function(c) {
-    var glyphIndex = this.charToGlyphIndex(c);
+Font.prototype.getGlyph = function(glyphIndex) {
+    var c = this.encoding.glyphIndexToChar(glyphIndex);
     var glyph;
     var offset = this.glyfOffset + this.locaTable[glyphIndex];
     glyph = glyf.parseGlyph(this.rawdata, offset, glyphIndex, this);
+    if (glyph.isComposite) {
+        for (var j = 0; j < glyph.components.length; j += 1) {
+            var component = glyph.components[j];
+            var componentGlyph = this.glyphs[component.glyphIndex];
+            if (!componentGlyph) {
+                componentGlyph = this.getGlyph(component.glyphIndex);
+            }
+
+            if (componentGlyph.points) {
+                var transformedPoints = glyf.transformPoints(componentGlyph.points, component);
+                glyph.points = glyph.points.concat(transformedPoints);
+            }
+        }
+    }
+
     glyph.path = glyf.getPath(glyph.points);
     glyph.advanceWidth = this.hmtx[glyphIndex].advanceWidth;
     glyph.leftSideBearing = this.hmtx[glyphIndex].leftSideBearing;
-    glyph.addUnicode(parseInt(c.charCodeAt(0)));
+    if (c !== '') {
+        glyph.addUnicode(parseInt(c.charCodeAt(0)));
+    }
+
     if (glyph.cffEncoding) {
         glyph.name = this.cffEncoding.charset[glyphIndex];
     } else {
@@ -2644,6 +2672,7 @@ function parseCmapTable(data, start) {
 
     // The "unrolled" mapping from character codes to glyph indices.
     cmap.glyphIndexMap = {};
+    cmap.unicodeIndexMap = {};
 
     var endCountParser = new parse.Parser(data, start + offset + 14);
     var startCountParser = new parse.Parser(data, start + offset + 16 + segCount * 2);
@@ -2676,6 +2705,7 @@ function parseCmapTable(data, start) {
             }
 
             cmap.glyphIndexMap[c] = glyphIndex;
+            cmap.unicodeIndexMap[glyphIndex] = c;
         }
     }
 
@@ -3085,6 +3115,7 @@ function parseGlyfTable(data, start, loca, font) {
 exports.parse = parseGlyfTable;
 exports.parseGlyph = parseGlyph;
 exports.getPath = getPath;
+exports.transformPoints = transformPoints;
 
 },{"../check":1,"../glyph":5,"../parse":7,"../path":8}],13:[function(require,module,exports){
 // The `GPOS` table contains kerning pairs, among other things.

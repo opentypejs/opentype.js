@@ -52,6 +52,7 @@ function parseCmapTable(data, start) {
 
     // The "unrolled" mapping from character codes to glyph indices.
     cmap.glyphIndexMap = {};
+    cmap.unicodeIndexMap = {};
 
     var endCountParser = new parse.Parser(data, start + offset + 14);
     var startCountParser = new parse.Parser(data, start + offset + 16 + segCount * 2);
@@ -84,6 +85,7 @@ function parseCmapTable(data, start) {
             }
 
             cmap.glyphIndexMap[c] = glyphIndex;
+            cmap.unicodeIndexMap[glyphIndex] = c;
         }
     }
 
