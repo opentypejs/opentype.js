@@ -71,7 +71,7 @@ function loadFromUrl(url, callback) {
 // Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
 // If the file could not be parsed (most likely because it contains Postscript outlines)
 // we return an empty Font object with the `supported` flag set to `false`.
-function parseBuffer(buffer) {
+function parseBuffer(buffer, lazy) {
     var indexToLocFormat;
     var hmtxOffset;
     var glyfOffset;
@@ -166,9 +166,13 @@ function parseBuffer(buffer) {
 
     if (glyfOffset && locaOffset) {
         var shortVersion = indexToLocFormat === 0;
-        var locaTable = loca.parse(data, locaOffset, font.numGlyphs, shortVersion);
-        font.glyphs = glyf.parse(data, glyfOffset, locaTable, font);
-        hmtx.parse(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
+        font.locaTable = loca.parse(data, locaOffset, font.numGlyphs, shortVersion);
+        font.glyfOffset = glyfOffset;
+        font.locaOffset = locaOffset;
+        font.hmtxOffset = hmtxOffset;
+        font.rawdata = data;
+        font.glyphs = lazy ? [] : glyf.parse(data, glyfOffset, font.locaTable, font);
+        font.hmtx = hmtx.parse(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
         encoding.addGlyphNames(font);
     } else if (cffOffset) {
         cff.parse(data, cffOffset, font);
@@ -198,15 +202,18 @@ function parseBuffer(buffer) {
 //
 // We use the node.js callback convention so that
 // opentype.js can integrate with frameworks like async.js.
-function load(url, callback) {
+function load(url, lazy, callback) {
     var isNode = typeof window === 'undefined';
     var loadFn = isNode ? loadFromFile : loadFromUrl;
+    callback = typeof callback === 'undefined' ? lazy : callback;
+    lazy = typeof lazy === 'boolean' ? lazy : false;
     loadFn(url, function(err, arrayBuffer) {
         if (err) {
             return callback(err);
         }
 
-        var font = parseBuffer(arrayBuffer);
+        var font = parseBuffer(arrayBuffer, lazy);
+        font.lazyParsing = lazy;
         if (!font.supported) {
             return callback('Font is not supported (is this a Postscript font?)');
         }

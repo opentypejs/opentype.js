@@ -178,12 +178,22 @@ DefaultEncoding.prototype.charToGlyphIndex = function(c) {
     }
 };
 
+DefaultEncoding.prototype.glyphIndexToChar = function(index) {
+    var glyph = this.font.glyphs[index];
+    var charCode = (glyph && glyph.unicode) ? glyph.unicode : 0;
+    return String.fromCharCode(charCode);
+};
+
 function CmapEncoding(cmap) {
     this.cmap = cmap;
 }
 
 CmapEncoding.prototype.charToGlyphIndex = function(c) {
     return this.cmap.glyphIndexMap[c.charCodeAt(0)] || 0;
+};
+
+CmapEncoding.prototype.glyphIndexToChar = function(index) {
+    return String.fromCharCode(this.cmap.unicodeIndexMap[index]);
 };
 
 function CffEncoding(encoding, charset) {
@@ -243,15 +253,20 @@ function addGlyphNames(font) {
         var c = charCodes[i];
         var glyphIndex = glyphIndexMap[c];
         glyph = font.glyphs[glyphIndex];
-        glyph.addUnicode(parseInt(c));
+        if (glyph) {
+            glyph.addUnicode(parseInt(c));
+        }
+
     }
 
     for (i = 0; i < font.glyphs.length; i += 1) {
         glyph = font.glyphs[i];
-        if (font.cffEncoding) {
-            glyph.name = font.cffEncoding.charset[i];
-        } else {
-            glyph.name = font.glyphNames.glyphIndexToName(i);
+        if (glyph) {
+            if (font.cffEncoding) {
+                glyph.name = font.cffEncoding.charset[i];
+            } else {
+                glyph.name = font.glyphNames.glyphIndexToName(i);
+            }
         }
     }
 }
@@ -272,6 +287,7 @@ exports.addGlyphNames = addGlyphNames;
 'use strict';
 
 var path = require('./path');
+var glyf = require('./tables/glyf');
 var sfnt = require('./tables/sfnt');
 var encoding = require('./encoding');
 
@@ -322,8 +338,49 @@ Font.prototype.charToGlyph = function(c) {
     var glyphIndex = this.charToGlyphIndex(c);
     var glyph = this.glyphs[glyphIndex];
     if (!glyph) {
-        // .notdef
-        glyph = this.glyphs[0];
+        if (this.lazyParsing) {
+            this.glyphs[glyphIndex] = this.getGlyph(glyphIndex);
+            glyph = this.glyphs[glyphIndex];
+        } else {
+            // .notdef
+            glyph = this.glyphs[0];
+        }
+    }
+
+    return glyph;
+};
+
+Font.prototype.getGlyph = function(glyphIndex) {
+    var c = this.encoding.glyphIndexToChar(glyphIndex);
+    var glyph;
+    var offset = this.glyfOffset + this.locaTable[glyphIndex];
+    glyph = glyf.parseGlyph(this.rawdata, offset, glyphIndex, this);
+    if (glyph.isComposite) {
+        for (var j = 0; j < glyph.components.length; j += 1) {
+            var component = glyph.components[j];
+            var componentGlyph = this.glyphs[component.glyphIndex];
+            if (!componentGlyph) {
+                componentGlyph = this.getGlyph(component.glyphIndex);
+            }
+
+            if (componentGlyph.points) {
+                var transformedPoints = glyf.transformPoints(componentGlyph.points, component);
+                glyph.points = glyph.points.concat(transformedPoints);
+            }
+        }
+    }
+
+    glyph.path = glyf.getPath(glyph.points);
+    glyph.advanceWidth = this.hmtx[glyphIndex].advanceWidth;
+    glyph.leftSideBearing = this.hmtx[glyphIndex].leftSideBearing;
+    if (c !== '') {
+        glyph.addUnicode(parseInt(c.charCodeAt(0)));
+    }
+
+    if (glyph.cffEncoding) {
+        glyph.name = this.cffEncoding.charset[glyphIndex];
+    } else {
+        glyph.name = this.glyphNames.glyphIndexToName(glyphIndex);
     }
 
     return glyph;
@@ -545,7 +602,7 @@ Font.prototype.download = function() {
 
 exports.Font = Font;
 
-},{"./encoding":3,"./path":8,"./tables/sfnt":23}],5:[function(require,module,exports){
+},{"./encoding":3,"./path":8,"./tables/glyf":12,"./tables/sfnt":23}],5:[function(require,module,exports){
 // The Glyph object
 
 'use strict';
@@ -841,7 +898,7 @@ function loadFromUrl(url, callback) {
 // Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
 // If the file could not be parsed (most likely because it contains Postscript outlines)
 // we return an empty Font object with the `supported` flag set to `false`.
-function parseBuffer(buffer) {
+function parseBuffer(buffer, lazy) {
     var indexToLocFormat;
     var hmtxOffset;
     var glyfOffset;
@@ -936,9 +993,13 @@ function parseBuffer(buffer) {
 
     if (glyfOffset && locaOffset) {
         var shortVersion = indexToLocFormat === 0;
-        var locaTable = loca.parse(data, locaOffset, font.numGlyphs, shortVersion);
-        font.glyphs = glyf.parse(data, glyfOffset, locaTable, font);
-        hmtx.parse(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
+        font.locaTable = loca.parse(data, locaOffset, font.numGlyphs, shortVersion);
+        font.glyfOffset = glyfOffset;
+        font.locaOffset = locaOffset;
+        font.hmtxOffset = hmtxOffset;
+        font.rawdata = data;
+        font.glyphs = lazy ? [] : glyf.parse(data, glyfOffset, font.locaTable, font);
+        font.hmtx = hmtx.parse(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
         encoding.addGlyphNames(font);
     } else if (cffOffset) {
         cff.parse(data, cffOffset, font);
@@ -968,15 +1029,18 @@ function parseBuffer(buffer) {
 //
 // We use the node.js callback convention so that
 // opentype.js can integrate with frameworks like async.js.
-function load(url, callback) {
+function load(url, lazy, callback) {
     var isNode = typeof window === 'undefined';
     var loadFn = isNode ? loadFromFile : loadFromUrl;
+    callback = typeof callback === 'undefined' ? lazy : callback;
+    lazy = typeof lazy === 'boolean' ? lazy : false;
     loadFn(url, function(err, arrayBuffer) {
         if (err) {
             return callback(err);
         }
 
-        var font = parseBuffer(arrayBuffer);
+        var font = parseBuffer(arrayBuffer, lazy);
+        font.lazyParsing = lazy;
         if (!font.supported) {
             return callback('Font is not supported (is this a Postscript font?)');
         }
@@ -2608,6 +2672,7 @@ function parseCmapTable(data, start) {
 
     // The "unrolled" mapping from character codes to glyph indices.
     cmap.glyphIndexMap = {};
+    cmap.unicodeIndexMap = {};
 
     var endCountParser = new parse.Parser(data, start + offset + 14);
     var startCountParser = new parse.Parser(data, start + offset + 16 + segCount * 2);
@@ -2640,6 +2705,7 @@ function parseCmapTable(data, start) {
             }
 
             cmap.glyphIndexMap[c] = glyphIndex;
+            cmap.unicodeIndexMap[glyphIndex] = c;
         }
     }
 
@@ -3047,6 +3113,9 @@ function parseGlyfTable(data, start, loca, font) {
 }
 
 exports.parse = parseGlyfTable;
+exports.parseGlyph = parseGlyph;
+exports.getPath = getPath;
+exports.transformPoints = transformPoints;
 
 },{"../check":1,"../glyph":5,"../parse":7,"../path":8}],13:[function(require,module,exports){
 // The `GPOS` table contains kerning pairs, among other things.
@@ -3416,6 +3485,7 @@ var table = require('../table');
 // Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
 // This function augments the glyph array, adding the advanceWidth and leftSideBearing to each glyph.
 function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
+    var table = glyphs.length === 0 ? [] : glyphs;
     var advanceWidth;
     var leftSideBearing;
     var p = new parse.Parser(data, start);
@@ -3426,10 +3496,12 @@ function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
             leftSideBearing = p.parseShort();
         }
 
-        var glyph = glyphs[i];
-        glyph.advanceWidth = advanceWidth;
-        glyph.leftSideBearing = leftSideBearing;
+        table[i] = table[i] || {};
+        table[i].advanceWidth = advanceWidth;
+        table[i].leftSideBearing = leftSideBearing;
     }
+
+    return table;
 }
 
 function makeHmtxTable(glyphs) {

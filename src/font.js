@@ -3,6 +3,7 @@
 'use strict';
 
 var path = require('./path');
+var glyf = require('./tables/glyf');
 var sfnt = require('./tables/sfnt');
 var encoding = require('./encoding');
 
@@ -53,8 +54,49 @@ Font.prototype.charToGlyph = function(c) {
     var glyphIndex = this.charToGlyphIndex(c);
     var glyph = this.glyphs[glyphIndex];
     if (!glyph) {
-        // .notdef
-        glyph = this.glyphs[0];
+        if (this.lazyParsing) {
+            this.glyphs[glyphIndex] = this.getGlyph(glyphIndex);
+            glyph = this.glyphs[glyphIndex];
+        } else {
+            // .notdef
+            glyph = this.glyphs[0];
+        }
+    }
+
+    return glyph;
+};
+
+Font.prototype.getGlyph = function(glyphIndex) {
+    var c = this.encoding.glyphIndexToChar(glyphIndex);
+    var glyph;
+    var offset = this.glyfOffset + this.locaTable[glyphIndex];
+    glyph = glyf.parseGlyph(this.rawdata, offset, glyphIndex, this);
+    if (glyph.isComposite) {
+        for (var j = 0; j < glyph.components.length; j += 1) {
+            var component = glyph.components[j];
+            var componentGlyph = this.glyphs[component.glyphIndex];
+            if (!componentGlyph) {
+                componentGlyph = this.getGlyph(component.glyphIndex);
+            }
+
+            if (componentGlyph.points) {
+                var transformedPoints = glyf.transformPoints(componentGlyph.points, component);
+                glyph.points = glyph.points.concat(transformedPoints);
+            }
+        }
+    }
+
+    glyph.path = glyf.getPath(glyph.points);
+    glyph.advanceWidth = this.hmtx[glyphIndex].advanceWidth;
+    glyph.leftSideBearing = this.hmtx[glyphIndex].leftSideBearing;
+    if (c !== '') {
+        glyph.addUnicode(parseInt(c.charCodeAt(0)));
+    }
+
+    if (glyph.cffEncoding) {
+        glyph.name = this.cffEncoding.charset[glyphIndex];
+    } else {
+        glyph.name = this.glyphNames.glyphIndexToName(glyphIndex);
     }
 
     return glyph;

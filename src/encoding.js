@@ -145,12 +145,22 @@ DefaultEncoding.prototype.charToGlyphIndex = function(c) {
     }
 };
 
+DefaultEncoding.prototype.glyphIndexToChar = function(index) {
+    var glyph = this.font.glyphs[index];
+    var charCode = (glyph && glyph.unicode) ? glyph.unicode : 0;
+    return String.fromCharCode(charCode);
+};
+
 function CmapEncoding(cmap) {
     this.cmap = cmap;
 }
 
 CmapEncoding.prototype.charToGlyphIndex = function(c) {
     return this.cmap.glyphIndexMap[c.charCodeAt(0)] || 0;
+};
+
+CmapEncoding.prototype.glyphIndexToChar = function(index) {
+    return String.fromCharCode(this.cmap.unicodeIndexMap[index]);
 };
 
 function CffEncoding(encoding, charset) {
@@ -210,15 +220,20 @@ function addGlyphNames(font) {
         var c = charCodes[i];
         var glyphIndex = glyphIndexMap[c];
         glyph = font.glyphs[glyphIndex];
-        glyph.addUnicode(parseInt(c));
+        if (glyph) {
+            glyph.addUnicode(parseInt(c));
+        }
+
     }
 
     for (i = 0; i < font.glyphs.length; i += 1) {
         glyph = font.glyphs[i];
-        if (font.cffEncoding) {
-            glyph.name = font.cffEncoding.charset[i];
-        } else {
-            glyph.name = font.glyphNames.glyphIndexToName(i);
+        if (glyph) {
+            if (font.cffEncoding) {
+                glyph.name = font.cffEncoding.charset[i];
+            } else {
+                glyph.name = font.glyphNames.glyphIndexToName(i);
+            }
         }
     }
 }

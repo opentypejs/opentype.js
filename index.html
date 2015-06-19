@@ -38,6 +38,7 @@
     <label><input type="checkbox" onchange="drawPointsChanged(this)" checked="checked">Draw Points</label>
     <label><input type="checkbox" onchange="drawMetricsChanged(this)">Draw Metrics</label>
     <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked">Kerning</label>
+    <label><input type="checkbox" onchange="lazyParsingChanged(this)" checked="checked">Lazy Parsing</label>
 
     <hr>
 
@@ -87,6 +88,7 @@ var snapStrength = 80;
 var snapDistance = 53;
 var snapX = 0;
 var snapY = 0;
+var lazy = true;
 var fontSizeSlider = document.getElementById("font-size-range");
 
 function drawPointsChanged(e) {
@@ -101,6 +103,11 @@ function drawMetricsChanged(e) {
 
 function kerningChanged(e) {
     kerning = e.checked;
+    renderText();
+}
+
+function lazyParsingChanged(e) {
+    lazy = e.checked;
     renderText();
 }
 
@@ -278,7 +285,7 @@ fontSizeSlider.addEventListener('change', fontSizeChanged, false);
 enableHighDPICanvas('preview');
 enableHighDPICanvas('snap');
 
-opentype.load(fontFileName, function(err, font) {
+opentype.load(fontFileName, lazy, function(err, font) {
     var amount, glyph, ctx, x, y, fontSize;
     if (err) {
         showErrorMessage(err.toString());

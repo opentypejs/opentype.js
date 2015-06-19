@@ -303,3 +303,6 @@ function parseGlyfTable(data, start, loca, font) {
 }
 
 exports.parse = parseGlyfTable;
+exports.parseGlyph = parseGlyph;
+exports.getPath = getPath;
+exports.transformPoints = transformPoints;

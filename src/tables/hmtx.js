@@ -9,6 +9,7 @@ var table = require('../table');
 // Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
 // This function augments the glyph array, adding the advanceWidth and leftSideBearing to each glyph.
 function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
+    var table = glyphs.length === 0 ? [] : glyphs;
     var advanceWidth;
     var leftSideBearing;
     var p = new parse.Parser(data, start);
@@ -19,10 +20,12 @@ function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
             leftSideBearing = p.parseShort();
         }
 
-        var glyph = glyphs[i];
-        glyph.advanceWidth = advanceWidth;
-        glyph.leftSideBearing = leftSideBearing;
+        table[i] = table[i] || {};
+        table[i].advanceWidth = advanceWidth;
+        table[i].leftSideBearing = leftSideBearing;
     }
+
+    return table;
 }
 
 function makeHmtxTable(glyphs) {
