@@ -19,10 +19,6 @@ GlyphSet.prototype = {
             this.glyphs[index] = this.glyphs[index]();
         }
 
-        if (!this.glyphs[index]) {
-            console.log(index + ' does not exist...');
-        }
-
         return this.glyphs[index];
     },
 
@@ -48,7 +44,9 @@ GlyphSet.ttfGlyphLoader = function(font, index, parseGlyph, data, position, buil
 
         glyph.path = function() {
             parseGlyph(glyph, data, position);
-            return buildPath(font.glyphs, glyph);
+            var path = buildPath(font.glyphs, glyph);
+            path.unitsPerEm = font.unitsPerEm;
+            return path;
         };
 
         return glyph;
@@ -60,7 +58,9 @@ GlyphSet.cffGlyphLoader = function(font, index, parseCFFCharstring, charstring) 
         var glyph = new _glyph.Glyph({index: index, font: font});
 
         glyph.path = function() {
-            return parseCFFCharstring(font, glyph, charstring);
+            var path = parseCFFCharstring(font, glyph, charstring);
+            path.unitsPerEm = font.unitsPerEm;
+            return path;
         };
 
         return glyph;
