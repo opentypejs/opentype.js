@@ -14,12 +14,7 @@
     "ttf",
     "type"
   ],
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "https://raw.github.com/nodebox/opentype.js/master/LICENSE"
-    }
-  ],
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git://github.com/nodebox/opentype.js.git"
