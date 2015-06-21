@@ -870,7 +870,7 @@ GlyphSet.ttfGlyphLoader = function(font, index, parseGlyph, data, position, buil
 
         glyph.path = function() {
             parseGlyph(glyph, data, position);
-            var path = buildPath(font, glyph);
+            var path = buildPath(font.glyphs, glyph);
             path.unitsPerEm = font.unitsPerEm;
             return path;
         };
