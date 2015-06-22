@@ -39,7 +39,7 @@ function Glyph(options) {
 Glyph.prototype.bindConstructorValues = function(options) {
     this.index = options.index || 0;
 
-    // These threevalues cannnot be deferred for memory optimization:
+    // These three values cannnot be deferred for memory optimization:
     this.name = options.name || null;
     this.unicode = options.unicode || undefined;
     this.unicodes = options.unicodes || options.unicode !== undefined ? [options.unicode] : [];
