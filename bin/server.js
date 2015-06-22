@@ -24,6 +24,9 @@ http.createServer(function(req, res) {
     } else if (url === 'dist/opentype.js') {
         url = 'build/opentype.js';
         rewrite = ' -> ' + url;
+    } else if (url === '../dist/opentype.js') {
+        url = '../build/opentype.js';
+        rewrite = ' -> ' + url;
     }
 
     console.log('HTTP', req.url, rewrite);
