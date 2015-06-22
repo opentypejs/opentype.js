@@ -181,7 +181,7 @@ function drawBaseline(ctx) {
 
 function draw() {
     var ctx = gCtx;
-    var glyph = gFont.glyphs.get(gCurrentGlyphName);
+    var glyph = gFont.glyphMap[gCurrentGlyphName];
     ctx.fillStyle = '#f6f6f6';
     ctx.fillRect(0, 0, EDITOR_WIDTH, EDITOR_HEIGHT);
     drawGrid(ctx);
@@ -194,7 +194,7 @@ function canvasMouseDown(e) {
     e.preventDefault();
     var x = Math.floor(e.pageX / GRID_SIZE) - ORIGIN_X;
     var y = ORIGIN_Y - Math.floor((e.pageY - HEADER_HEIGHT) / GRID_SIZE);
-    var glyph = gFont.glyphs.get(gCurrentGlyphName);
+    var glyph = gFont.glyphMap[gCurrentGlyphName];
     var k = '' + x + ',' + y;
     if (glyph.blocks[k]) {
         delete glyph.blocks[k];
@@ -213,7 +213,7 @@ function canvasMouseDragged(e) {
     e.preventDefault();
     var x = Math.floor(e.pageX / GRID_SIZE) - ORIGIN_X;
     var y = ORIGIN_Y - Math.floor((e.pageY - HEADER_HEIGHT) / GRID_SIZE);
-    var glyph = gFont.glyphs.get(gCurrentGlyphName);
+    var glyph = gFont.glyphMap[gCurrentGlyphName];
     var k = '' + x + ',' + y;
     if (gDragMode === DRAG_ON) {
         glyph.blocks[k] = true;
@@ -235,14 +235,14 @@ function onGlyphClicked(e) {
 }
 
 function ensureGlyph(glyphName) {
-    if (!gFont.glyphs.get(glyphName)) {
+    if (!gFont.glyphMap[glyphName]) {
         var newGlyph = {
             name: glyphName,
             unicode: glyphName.charCodeAt(0),
             advanceWidth: 7,
             blocks: {}
         };
-        gFont.glyphs.get(glyphName) = newGlyph;
+        gFont.glyphMap[glyphName] = newGlyph;
     }
 }
 
@@ -273,7 +273,7 @@ function loadFont() {
             familyName: 'My Font',
             styleName: 'Regular',
             unitsPerEm: 10 * GRID_SIZE,
-            glyphs: {}
+            glyphMap: {}
         };
     }
 }
@@ -301,22 +301,23 @@ function blocksToPath(blocks) {
 function downloadFont() {
     // Our glyphs are not opentype Glyph objects.
     // We need to convert the blocks to paths.
-    var oGlyphs = [];
-    oGlyphs.push(new opentype.Glyph({
+    var glyphs = [];
+    glyphs.push(new opentype.Glyph({
         name: '.notdef',
         unicode: 0,
         path: new opentype.Path()
     }));
-    var keys = Object.keys(gFont.glyphs);
+    var keys = Object.keys(gFont.glyphMap);
     for (var i = 0; i < keys.length; i += 1) {
-        var glyph = gFont.glyphs.get(keys[i]);
+        var glyph = gFont.glyphMap[keys[i]];
         var newGlyph = new opentype.Glyph(glyph);
         newGlyph.advanceWidth = newGlyph.advanceWidth * GRID_SIZE;
         newGlyph.path = blocksToPath(glyph.blocks);
-        oGlyphs.push(newGlyph);
+        glyphs.push(newGlyph);
     }
-    var oFont = new opentype.Font(gFont);
-    oFont.glyphs = oGlyphs;
+    var options = JSON.parse(JSON.stringify(gFont));
+    options.glyphs = glyphs;
+    var oFont = new opentype.Font(options);
     console.log(oFont.toTables());
     oFont.download();
 }
@@ -338,4 +339,3 @@ document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
-
