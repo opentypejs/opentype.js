@@ -1,6 +1,6 @@
 // opentype.js
 // https://github.com/nodebox/opentype.js
-// (c) 2014 Frederik De Bleser
+// (c) 2015 Frederik De Bleser
 // opentype.js may be freely distributed under the MIT license.
 
 /* global ArrayBuffer, DataView, Uint8Array, XMLHttpRequest  */
