@@ -51,10 +51,10 @@ Font.prototype.charToGlyphIndex = function(s) {
 // the given character and a glyph; for complex scripts this might not be the case.
 Font.prototype.charToGlyph = function(c) {
     var glyphIndex = this.charToGlyphIndex(c);
-    var glyph = this.glyphs[glyphIndex];
+    var glyph = this.glyphs.get(glyphIndex);
     if (!glyph) {
         // .notdef
-        glyph = this.glyphs[0];
+        glyph = this.glyphs.get(0);
     }
 
     return glyph;
@@ -80,10 +80,10 @@ Font.prototype.nameToGlyphIndex = function(name) {
 
 Font.prototype.nameToGlyph = function(name) {
     var glyphIndex = this.nametoGlyphIndex(name);
-    var glyph = this.glyphs[glyphIndex];
+    var glyph = this.glyphs.get(glyphIndex);
     if (!glyph) {
         // .notdef
-        glyph = this.glyphs[0];
+        glyph = this.glyphs.get(0);
     }
 
     return glyph;

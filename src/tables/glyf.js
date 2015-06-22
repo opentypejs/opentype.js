@@ -4,7 +4,7 @@
 'use strict';
 
 var check = require('../check');
-var _glyph = require('../glyph');
+var _glyphset = require('../glyphset');
 var parse = require('../parse');
 var path = require('../path');
 
@@ -35,12 +35,8 @@ function parseGlyphCoordinate(p, flag, previousValue, shortVectorBitMask, sameBi
 }
 
 // Parse a TrueType glyph.
-function parseGlyph(data, start, index, font) {
-    //var p, glyph, flag, i, j, flags,
-    //    endPointIndices, numberOfCoordinates, repeatCount, points, point, px, py,
-    //    component, moreComponents;
+function parseGlyph(glyph, data, start) {
     var p = new parse.Parser(data, start);
-    var glyph = new _glyph.Glyph({font: font, index: index});
     glyph.numberOfContours = p.parseShort();
     glyph.xMin = p.parseShort();
     glyph.yMin = p.parseShort();
@@ -160,8 +156,6 @@ function parseGlyph(data, start, index, font) {
             moreComponents = !!(flags & 32);
         }
     }
-
-    return glyph;
 }
 
 // Transform an array of points and return a new array.
@@ -268,35 +262,35 @@ function getPath(points) {
     return p;
 }
 
+function buildPath(glyphs, glyph) {
+    if (glyph.isComposite) {
+        for (var j = 0; j < glyph.components.length; j += 1) {
+            var component = glyph.components[j];
+            var componentGlyph = glyphs.get(component.glyphIndex);
+            if (componentGlyph.points) {
+                var transformedPoints = transformPoints(componentGlyph.points, component);
+                glyph.points = glyph.points.concat(transformedPoints);
+            }
+        }
+    }
+
+    return getPath(glyph.points);
+}
+
 // Parse all the glyphs according to the offsets from the `loca` table.
 function parseGlyfTable(data, start, loca, font) {
-    var glyphs = [];
+    var glyphs = new _glyphset(font);
     var i;
+
     // The last element of the loca table is invalid.
     for (i = 0; i < loca.length - 1; i += 1) {
         var offset = loca[i];
         var nextOffset = loca[i + 1];
         if (offset !== nextOffset) {
-            glyphs.push(parseGlyph(data, start + offset, i, font));
+            glyphs.push(i, _glyphset.ttfGlyphLoader(font, i, parseGlyph, data, start + offset, buildPath));
         } else {
-            glyphs.push(new _glyph.Glyph({font: font, index: i}));
+            glyphs.push(i, _glyphset.glyphLoader(font, i));
         }
-    }
-    // Go over the glyphs again, resolving the composite glyphs.
-    for (i = 0; i < glyphs.length; i += 1) {
-        var glyph = glyphs[i];
-        if (glyph.isComposite) {
-            for (var j = 0; j < glyph.components.length; j += 1) {
-                var component = glyph.components[j];
-                var componentGlyph = glyphs[component.glyphIndex];
-                if (componentGlyph.points) {
-                    var transformedPoints = transformPoints(componentGlyph.points, component);
-                    glyph.points = glyph.points.concat(transformedPoints);
-                }
-            }
-        }
-
-        glyph.path = getPath(glyph.points);
     }
 
     return glyphs;

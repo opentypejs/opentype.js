@@ -6,24 +6,71 @@ var check = require('./check');
 var draw = require('./draw');
 var path = require('./path');
 
+function getPathDefinition(glyph, path) {
+    var _path = path || { commands: [] };
+    return {
+        configurable: true,
+
+        get: function() {
+            if (typeof _path === 'function') {
+                _path = _path();
+            }
+
+            return _path;
+        },
+
+        set: function(p) {
+            _path = p;
+        }
+    };
+}
+
 // A Glyph is an individual mark that often corresponds to a character.
 // Some glyphs, such as ligatures, are a combination of many characters.
 // Glyphs are the basic building blocks of a font.
 //
 // The `Glyph` class contains utility methods for drawing the path and its points.
 function Glyph(options) {
-    this.font = options.font || null;
+    // By putting all the code on a prototype function (which is only declared once)
+    // we reduce the memory requirements for larger fonts by some 2%
+    this.bindConstructorValues(options);
+}
+
+Glyph.prototype.bindConstructorValues = function(options) {
     this.index = options.index || 0;
+
+    // These threevalues cannnot be deferred for memory optimization:
     this.name = options.name || null;
     this.unicode = options.unicode || undefined;
     this.unicodes = options.unicodes || options.unicode !== undefined ? [options.unicode] : [];
-    this.xMin = options.xMin || 0;
-    this.yMin = options.yMin || 0;
-    this.xMax = options.xMax || 0;
-    this.yMax = options.yMax || 0;
-    this.advanceWidth = options.advanceWidth || 0;
-    this.path = options.path || null;
-}
+
+    // But by binding these values only when necessary, we reduce can
+    // the memory requirements by almost 3% for larger fonts.
+    if (options.xMin) {
+        this.xMin = options.xMin;
+    }
+
+    if (options.yMin) {
+        this.yMin = options.yMin;
+    }
+
+    if (options.xMax) {
+        this.xMax = options.xMax;
+    }
+
+    if (options.yMax) {
+        this.yMax = options.yMax;
+    }
+
+    if (options.advanceWidth) {
+        this.advanceWidth = options.advanceWidth;
+    }
+
+    // The path for a glyph is the most memory intensive, and is bound as a value
+    // with a getter/setter to ensure we actually do path parsing only once the
+    // path is actually needed by anything.
+    Object.defineProperty(this, 'path', getPathDefinition(this, options.path));
+};
 
 Glyph.prototype.addUnicode = function(unicode) {
     if (this.unicodes.length === 0) {
@@ -42,7 +89,7 @@ Glyph.prototype.getPath = function(x, y, fontSize) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
-    var scale = 1 / this.font.unitsPerEm * fontSize;
+    var scale = 1 / this.path.unitsPerEm * fontSize;
     var p = new path.Path();
     var commands = this.path.commands;
     for (var i = 0; i < commands.length; i += 1) {
@@ -157,7 +204,7 @@ Glyph.prototype.drawPoints = function(ctx, x, y, fontSize) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 24;
-    var scale = 1 / this.font.unitsPerEm * fontSize;
+    var scale = 1 / this.path.unitsPerEm * fontSize;
 
     var blueCircles = [];
     var redCircles = [];
@@ -197,7 +244,7 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 24;
-    scale = 1 / this.font.unitsPerEm * fontSize;
+    scale = 1 / this.path.unitsPerEm * fontSize;
     ctx.lineWidth = 1;
 
     // Draw the origin
@@ -205,16 +252,24 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
     draw.line(ctx, x, -10000, x, 10000);
     draw.line(ctx, -10000, y, 10000, y);
 
+    // This code is here due to memory optimization: by not using
+    // defaults in the constructor, we save a notable amount of memory.
+    var xMin = this.xMin || 0;
+    var yMin = this.yMin || 0;
+    var xMax = this.xMax || 0;
+    var yMax = this.yMax || 0;
+    var advanceWidth = this.advanceWidth || 0;
+
     // Draw the glyph box
     ctx.strokeStyle = 'blue';
-    draw.line(ctx, x + (this.xMin * scale), -10000, x + (this.xMin * scale), 10000);
-    draw.line(ctx, x + (this.xMax * scale), -10000, x + (this.xMax * scale), 10000);
-    draw.line(ctx, -10000, y + (-this.yMin * scale), 10000, y + (-this.yMin * scale));
-    draw.line(ctx, -10000, y + (-this.yMax * scale), 10000, y + (-this.yMax * scale));
+    draw.line(ctx, x + (xMin * scale), -10000, x + (xMin * scale), 10000);
+    draw.line(ctx, x + (xMax * scale), -10000, x + (xMax * scale), 10000);
+    draw.line(ctx, -10000, y + (-yMin * scale), 10000, y + (-yMin * scale));
+    draw.line(ctx, -10000, y + (-yMax * scale), 10000, y + (-yMax * scale));
 
     // Draw the advance width
     ctx.strokeStyle = 'green';
-    draw.line(ctx, x + (this.advanceWidth * scale), -10000, x + (this.advanceWidth * scale), 10000);
+    draw.line(ctx, x + (advanceWidth * scale), -10000, x + (advanceWidth * scale), 10000);
 };
 
 exports.Glyph = Glyph;

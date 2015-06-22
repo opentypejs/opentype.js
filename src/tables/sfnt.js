@@ -109,7 +109,7 @@ function metricsForChar(font, chars, notFoundMetrics) {
     for (var i = 0; i < chars.length; i += 1) {
         var glyphIndex = font.charToGlyphIndex(chars[i]);
         if (glyphIndex > 0) {
-            var glyph = font.glyphs[glyphIndex];
+            var glyph = font.glyphs.get(glyphIndex);
             return glyph.getMetrics();
         }
     }
@@ -142,8 +142,9 @@ function fontToSfntTable(font) {
     var ulUnicodeRange2 = 0;
     var ulUnicodeRange3 = 0;
     var ulUnicodeRange4 = 0;
+
     for (var i = 0; i < font.glyphs.length; i += 1) {
-        var glyph = font.glyphs[i];
+        var glyph = font.glyphs.get(i);
         var unicode = glyph.unicode | 0;
         if (firstCharIndex > unicode || firstCharIndex === null) {
             firstCharIndex = unicode;

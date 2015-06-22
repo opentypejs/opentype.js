@@ -125,7 +125,7 @@ function displayGlyphData(glyphIndex) {
         container.innerHTML = '';
         return;
     }
-    var glyph = font.glyphs[glyphIndex],
+    var glyph = font.glyphs.get(glyphIndex),
         html;
     html = '<dt>name</dt><dd>'+glyph.name+'</dd>';
 
@@ -237,7 +237,7 @@ function displayGlyph(glyphIndex) {
         height = canvas.height / pixelRatio;
     ctx.clearRect(0, 0, width, height);
     if(glyphIndex < 0) return;
-    var glyph = font.glyphs[glyphIndex],
+    var glyph = font.glyphs.get(glyphIndex),
         glyphWidth = glyph.advanceWidth * glyphScale,
         xmin = (width - glyphWidth)/2,
         xmax = (width + glyphWidth)/2,
@@ -271,7 +271,7 @@ function renderGlyphItem(canvas, glyphIndex) {
     ctx.fillStyle = '#606060';
     ctx.font = '9px sans-serif';
     ctx.fillText(glyphIndex, 1, cellHeight-1);
-    var glyph = font.glyphs[glyphIndex],
+    var glyph = font.glyphs.get(glyphIndex),
         glyphWidth = glyph.advanceWidth * fontScale,
         xmin = (cellWidth - glyphWidth)/2,
         xmax = (cellWidth + glyphWidth)/2,

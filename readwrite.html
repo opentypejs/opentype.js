@@ -70,7 +70,7 @@
         document.getElementById('fontFamilyName').innerHTML = outFont.familyName;
 
         for (var i = 0; i < outFont.glyphs.length; i++) {
-            var glyph = outFont.glyphs[i];
+            var glyph = outFont.glyphs.get(i);
             var ctx = createGlyphCanvas(glyph, 150);
             var x = 50;
             var y = 120;

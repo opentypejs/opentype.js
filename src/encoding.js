@@ -133,7 +133,7 @@ DefaultEncoding.prototype.charToGlyphIndex = function(c) {
     var glyphs = this.font.glyphs;
     if (glyphs) {
         for (var i = 0; i < glyphs.length; i += 1) {
-            var glyph = glyphs[i];
+            var glyph = glyphs.get(i);
             for (var j = 0; j < glyph.unicodes.length; j += 1) {
                 if (glyph.unicodes[j] === code) {
                     return i;
@@ -206,15 +206,16 @@ function addGlyphNames(font) {
     var glyph;
     var glyphIndexMap = font.tables.cmap.glyphIndexMap;
     var charCodes = Object.keys(glyphIndexMap);
+
     for (var i = 0; i < charCodes.length; i += 1) {
         var c = charCodes[i];
         var glyphIndex = glyphIndexMap[c];
-        glyph = font.glyphs[glyphIndex];
+        glyph = font.glyphs.get(glyphIndex);
         glyph.addUnicode(parseInt(c));
     }
 
     for (i = 0; i < font.glyphs.length; i += 1) {
-        glyph = font.glyphs[i];
+        glyph = font.glyphs.get(i);
         if (font.cffEncoding) {
             glyph.name = font.cffEncoding.charset[i];
         } else {

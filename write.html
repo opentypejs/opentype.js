@@ -137,7 +137,7 @@
     document.getElementById('fontFamilyName').innerHTML = font2.familyName;
 
     for (var i = 0; i < font2.glyphs.length; i++) {
-        var glyph = font2.glyphs[i];
+        var glyph = font2.glyphs.get(i);
         var ctx = createGlyphCanvas(glyph, 150);
         var x = 50;
         var y = 120;
