@@ -7,10 +7,15 @@ var _glyph = require('./glyph');
 // A GlyphSet represents all glyphs available in the font, but modelled using
 // a deferred glyph loader, for retrieving glyphs only once they are absolutely
 // necessary, to keep the memory footprint down.
-function GlyphSet(font) {
+function GlyphSet(font, glyphs) {
     this.font = font;
-    this.length = 0;
     this.glyphs = {};
+    if (Array.isArray(glyphs)) {
+        for (var i = 0; i < glyphs.length; i++) {
+            this.glyphs[i] = glyphs[i];
+        }
+    }
+    this.length = (glyphs && glyphs.length) || 0;
 }
 
 GlyphSet.prototype = {

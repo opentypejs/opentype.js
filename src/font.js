@@ -5,6 +5,7 @@
 var path = require('./path');
 var sfnt = require('./tables/sfnt');
 var encoding = require('./encoding');
+var GlyphSet = require('./glyphset');
 
 // A Font represents a loaded OpenType font file.
 // It contains a set of glyphs and methods to draw text on a drawing context,
@@ -29,7 +30,7 @@ function Font(options) {
     this.ascender = options.ascender;
     this.descender = options.descender;
     this.supported = true;
-    this.glyphs = options.glyphs || [];
+    this.glyphs = new GlyphSet(this, options.glyphs || []);
     this.encoding = new encoding.DefaultEncoding(this);
     this.tables = {};
 }
