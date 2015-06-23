@@ -15,6 +15,7 @@ function GlyphSet(font, glyphs) {
             this.glyphs[i] = glyphs[i];
         }
     }
+
     this.length = (glyphs && glyphs.length) || 0;
 }
 
