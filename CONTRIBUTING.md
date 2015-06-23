@@ -32,13 +32,13 @@ When creating a pull request, you **don't** need to run `npm run dist` -- we'll 
 
    Note that the compiled file ends up in the `build` folder, not the `dist` folder! The development server
    rewrites the JavaScript URL from `dist/opentype.min.js` to `build/opentype.js`.
-    
+
 6. Make some changes
 
 7. Check if tests pass (currently this just runs the code through JSHint)
 
     npm test
-    
+
 8. Commit your changes
 
     git add --all && git commit
@@ -58,8 +58,7 @@ This compiles the source  and places `opentype.js` and `opentype.min.js` in the 
 We use a set of [npm scripts](https://www.npmjs.org/doc/misc/npm-scripts.html) to build releases:
 
 1. Update the version number in `package.json` and `bower.json`.
-2. Run `npm run dist` to update the files in the `dist` folder.
-3. Commit (`git commit -a`) and create a tag (e.g. `git tag 1.2.1`). Push and push tags (`git push && git push --tags`).
-4. Run `npm publish` to publish the package to npm. Bower updates automatically.
-
-
+2. Add information about the new release in `RELEASES.md`.
+3. Run `npm run dist` to update the files in the `dist` folder.
+4. Commit (`git commit -a`) and create a tag (e.g. `git tag 1.2.1`). Push and push tags (`git push && git push --tags`).
+5. Run `npm publish` to publish the package to npm. Bower updates automatically.
