@@ -1,3 +1,8 @@
+0.4.9 (June 23, 2015)
+=====================
+* Improve memory usage by deferring glyph / path loading. Thanks @Pomax!
+* Put examples in the "examples" directory. Use the local web server to see them.
+
 0.4.8 (June 3, 2015)
 ====================
 * Fix an issue with writing out fonts that have an UPM != 1000.
