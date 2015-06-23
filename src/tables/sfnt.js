@@ -136,7 +136,7 @@ function fontToSfntTable(font) {
     var advanceWidths = [];
     var leftSideBearings = [];
     var rightSideBearings = [];
-    var firstCharIndex = undefined;
+    var firstCharIndex;
     var lastCharIndex = 0;
     var ulUnicodeRange1 = 0;
     var ulUnicodeRange2 = 0;
