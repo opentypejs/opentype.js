@@ -6,7 +6,7 @@
 'use strict';
 
 var encoding = require('../encoding');
-var _glyphset = require('../glyphset');
+var glyphset = require('../glyphset');
 var parse = require('../parse');
 var path = require('../path');
 var table = require('../table');
@@ -826,10 +826,10 @@ function parseCFFTable(data, start, font) {
     // Prefer the CMAP encoding to the CFF encoding.
     font.encoding = font.encoding || font.cffEncoding;
 
-    font.glyphs = new _glyphset(font);
+    font.glyphs = new glyphset.GlyphSet(font);
     for (var i = 0; i < font.nGlyphs; i += 1) {
         var charString = charStringsIndex.objects[i];
-        font.glyphs.push(i, _glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
+        font.glyphs.push(i, glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
     }
 }
 

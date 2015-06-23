@@ -19,24 +19,22 @@ function GlyphSet(font, glyphs) {
     this.length = (glyphs && glyphs.length) || 0;
 }
 
-GlyphSet.prototype = {
-    get: function(index) {
-        if (typeof this.glyphs[index] === 'function') {
-            this.glyphs[index] = this.glyphs[index]();
-        }
-
-        return this.glyphs[index];
-    },
-
-    push: function(index, loader) {
-        this.glyphs[index] = loader;
-        this.length++;
+GlyphSet.prototype.get = function(index) {
+    if (typeof this.glyphs[index] === 'function') {
+        this.glyphs[index] = this.glyphs[index]();
     }
+
+    return this.glyphs[index];
 };
 
-GlyphSet.glyphLoader = function(font, index) {
-    return new _glyph.Glyph({index: index, font: font});
+GlyphSet.prototype.push = function(index, loader) {
+    this.glyphs[index] = loader;
+    this.length++;
 };
+
+function glyphLoader(font, index) {
+    return new _glyph.Glyph({index: index, font: font});
+}
 
 /**
  * Generate a stub glyph that can be filled with all metadata *except*
@@ -44,7 +42,7 @@ GlyphSet.glyphLoader = function(font, index) {
  * the glyph's path is actually requested for text shaping.
  */
 
-GlyphSet.ttfGlyphLoader = function(font, index, parseGlyph, data, position, buildPath) {
+function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
     return function() {
         var glyph = new _glyph.Glyph({index: index, font: font});
 
@@ -57,9 +55,9 @@ GlyphSet.ttfGlyphLoader = function(font, index, parseGlyph, data, position, buil
 
         return glyph;
     };
-};
+}
 
-GlyphSet.cffGlyphLoader = function(font, index, parseCFFCharstring, charstring) {
+function cffGlyphLoader(font, index, parseCFFCharstring, charstring) {
     return function() {
         var glyph = new _glyph.Glyph({index: index, font: font});
 
@@ -71,6 +69,9 @@ GlyphSet.cffGlyphLoader = function(font, index, parseCFFCharstring, charstring) 
 
         return glyph;
     };
-};
+}
 
-module.exports = GlyphSet;
+exports.GlyphSet = GlyphSet;
+exports.glyphLoader = glyphLoader;
+exports.ttfGlyphLoader = ttfGlyphLoader;
+exports.cffGlyphLoader = cffGlyphLoader;
