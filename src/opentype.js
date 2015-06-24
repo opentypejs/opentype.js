@@ -204,9 +204,18 @@ function load(url, callback) {
     });
 }
 
+// Syncronously load the font from a URL or file.
+// When done, return the font object or throw an error.
+function loadSync(url) {
+    var fs = require('fs');
+    var buffer = fs.readFileSync(url);
+    return parseBuffer(toArrayBuffer(buffer));
+}
+
 exports._parse = parse;
 exports.Font = _font.Font;
 exports.Glyph = glyph.Glyph;
 exports.Path = path.Path;
 exports.parse = parseBuffer;
 exports.load = load;
+exports.loadSync = loadSync;

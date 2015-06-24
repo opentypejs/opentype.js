@@ -77,6 +77,11 @@ if they have encoding tables we can't read).
 
     var font = opentype.parse(myBuffer);
 
+### Loading a font synchronously (Node.js)
+Use `opentype.loadSync(url)` to load a font from a file and return a `Font` object.
+Throws an error if the font could not be parsed. This only works in Node.js.
+
+    var font = opentype.loadSync('fonts/Roboto-Black.ttf');
 
 ### Writing a font
 Once you have a `Font` object (either by using `opentype.load` or by creating a new one from scratch) you can write it
@@ -91,14 +96,14 @@ on the font name.
     var notdefPath = new opentype.Path();
     notdefPath.moveTo(100, 0);
     notdefPath.lineTo(100, 700);
-    // more drawing instructions.... 
+    // more drawing instructions....
     var notdefGlyph = new opentype.Glyph({
         name: '.notdef',
         unicode: 0,
         advanceWidth: 650,
         path: notdefPath
     });
-    
+
     var aPath = new opentype.Path();
     aPath.moveTo(100, 0);
     aPath.lineTo(100, 700);
@@ -173,7 +178,7 @@ A Glyph is an individual mark that often corresponds to a character. Some glyphs
 * `index`: The index number of the glyph.
 * `advanceWidth`: The width to advance the pen when drawing this glyph.
 * `xMin`, `yMin`, `xMax`, `yMax`: The bounding box of the glyph.
-* `path`: The raw, unscaled path of the glyph. 
+* `path`: The raw, unscaled path of the glyph.
 
 ##### `Glyph.getPath(x, y, fontSize)`
 Get a scaled glyph Path object we can draw on a drawing context.
