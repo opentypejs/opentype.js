@@ -26,7 +26,7 @@
   "scripts": {
     "watch": "watchify src/opentype.js --standalone opentype --debug -o build/opentype.js -v",
     "start": "mkdirp build && parallelshell \"npm run watch\" \"node ./bin/server.js\"",
-    "test": "jshint . && jscs .",
+    "test": "mocha --recursive && jshint . && jscs .",
     "browserify": "browserify src/opentype.js --bare --standalone opentype > dist/opentype.js",
     "uglify": "browserify src/opentype.js --bare --standalone opentype -g uglifyify > dist/opentype.min.js",
     "dist": "rimraf build && rimraf dist && mkdirp build && mkdirp dist && npm run test && npm run browserify && npm run uglify"
@@ -36,6 +36,7 @@
     "jscs": "^1.12.0",
     "jshint": "^2.8.0",
     "mkdirp": "^0.5.1",
+    "mocha": "^2.2.5",
     "parallelshell": "^1.1.1",
     "rimraf": "^2.4.0",
     "uglifyify": "^3.0.1",
