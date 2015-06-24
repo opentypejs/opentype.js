@@ -377,6 +377,7 @@ function onReadFile(e) {
             onFontLoaded(font);
         } catch (err) {
             showErrorMessage(err.toString());
+            if (err.stack) console.log(err.stack);
             throw(err);
         }
     }
