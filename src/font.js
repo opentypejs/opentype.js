@@ -29,7 +29,7 @@ function Font(options) {
     this.unitsPerEm = options.unitsPerEm || 1000;
     this.ascender = options.ascender;
     this.descender = options.descender;
-    this.supported = true;
+    this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
     this.glyphs = new glyphset.GlyphSet(this, options.glyphs || []);
     this.encoding = new encoding.DefaultEncoding(this);
     this.tables = {};
@@ -113,10 +113,6 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
 // Helper function that invokes the given callback for each glyph in the given text.
 // The callback gets `(glyph, x, y, fontSize, options)`.
 Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) {
-    if (!this.supported) {
-        return;
-    }
-
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;

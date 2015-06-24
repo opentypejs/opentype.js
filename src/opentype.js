@@ -69,8 +69,7 @@ function loadFromUrl(url, callback) {
 // Public API ///////////////////////////////////////////////////////////
 
 // Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
-// If the file could not be parsed (most likely because it contains Postscript outlines)
-// we return an empty Font object with the `supported` flag set to `false`.
+// Throws an error if the font could not be parsed.
 function parseBuffer(buffer) {
     var indexToLocFormat;
     var hmtxOffset;
@@ -110,10 +109,6 @@ function parseBuffer(buffer) {
         case 'cmap':
             font.tables.cmap = cmap.parse(data, offset);
             font.encoding = new encoding.CmapEncoding(font.tables.cmap);
-            if (!font.encoding) {
-                font.supported = false;
-            }
-
             break;
         case 'head':
             font.tables.head = head.parse(data, offset);
@@ -174,19 +169,17 @@ function parseBuffer(buffer) {
         cff.parse(data, cffOffset, font);
         encoding.addGlyphNames(font);
     } else {
-        font.supported = false;
+        throw new Error('Font doesn\'t contain TrueType or CFF outlines.');
     }
 
-    if (font.supported) {
-        if (kernOffset) {
-            font.kerningPairs = kern.parse(data, kernOffset);
-        } else {
-            font.kerningPairs = {};
-        }
+    if (kernOffset) {
+        font.kerningPairs = kern.parse(data, kernOffset);
+    } else {
+        font.kerningPairs = {};
+    }
 
-        if (gposOffset) {
-            gpos.parse(data, gposOffset, font);
-        }
+    if (gposOffset) {
+        gpos.parse(data, gposOffset, font);
     }
 
     return font;
@@ -207,10 +200,6 @@ function load(url, callback) {
         }
 
         var font = parseBuffer(arrayBuffer);
-        if (!font.supported) {
-            return callback('Font is not supported (is this a Postscript font?)');
-        }
-
         return callback(null, font);
     });
 }
