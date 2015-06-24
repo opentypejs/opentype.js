@@ -1,6 +1,5 @@
 {
   "browser": true,
-  "jquery": true,
   "node": true,
   "camelcase": true,
   "eqeqeq": true,
