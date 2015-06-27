@@ -34,10 +34,14 @@ var nameTableNames = [
     'wwsSubfamily'            // 22
 ];
 
-// Parse the naming `name` table
+// Parse the naming `name` table.
 // Only Windows Unicode English names are supported.
-// Format 1 additional fields are not supported
-function parseNameTable(data, start) {
+// Format 1 additional fields are not supported.
+// ltag is the content of the `ltag' table, such as ['en', 'zh-Hans', 'de-CH-1904'];
+// currently this is not yet used, it is merely piped through to this function.
+// FIXME: If the font supplies an `ltag' table, use it.
+function parseNameTable(data, start, ltag) {
+    if (ltag);  // Suppress warning for 'ltag' not being used yet.
     var name = {};
     var p = new parse.Parser(data, start);
     name.format = p.parseUShort();
