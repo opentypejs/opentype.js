@@ -2,16 +2,16 @@
 
 var hex = function(bytes) {
     var values = [];
-    for (var i = 0; i < bytes.length; ++i) {
+    for (var i = 0; i < bytes.length; i++) {
         var b = bytes[i];
         if (b < 16) {
-            values.push('0' + b.toString(16).toUpperCase());
+            values.push('0' + b.toString(16));
         } else {
-            values.push(b.toString(16).toUpperCase());
+            values.push(b.toString(16));
         }
     }
 
-    return values.join(' ');
+    return values.join(' ').toUpperCase();
 };
 
 var unhex = function(str) {
