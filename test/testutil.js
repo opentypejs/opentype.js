@@ -1,5 +1,19 @@
 'use strict';
 
+var hex = function(bytes) {
+    var values = [];
+    for (var i = 0; i < bytes.length; ++i) {
+        var b = bytes[i];
+        if (b < 16) {
+            values.push('0' + b.toString(16).toUpperCase());
+        } else {
+            values.push(b.toString(16).toUpperCase());
+        }
+    }
+
+    return values.join(' ');
+};
+
 var unhex = function(str) {
     str = str.split(' ').join('');
     var len = str.length / 2;
@@ -11,4 +25,5 @@ var unhex = function(str) {
     return data;
 };
 
+exports.hex = hex;
 exports.unhex = unhex;
