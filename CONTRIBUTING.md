@@ -35,7 +35,7 @@ When creating a pull request, you **don't** need to run `npm run dist` -- we'll 
 
 6. Make some changes
 
-7. Check if tests pass (currently this just runs the code through JSHint)
+7. Check if tests pass
 
     npm test
 
