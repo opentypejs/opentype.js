@@ -18,7 +18,7 @@ describe('OpenType.js', function() {
         assert.equal(aGlyph.path.commands.length, 18);
     });
 
-    it('can load a PostScript font', function() {
+    it('can load a OpenType/CFF font', function() {
         var font = opentype.loadSync('./fonts/FiraSansOT-Medium.otf');
         assert.equal(font.familyName, 'Fira Sans OT Medium');
         assert.equal(font.unitsPerEm, 1000);
