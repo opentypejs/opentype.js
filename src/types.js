@@ -36,7 +36,7 @@ encode.CHAR = function(v) {
     return [v.charCodeAt(0)];
 };
 
-sizeOf.BYTE = constant(1);
+sizeOf.CHAR = constant(1);
 
 // Convert an ASCII string to a list of bytes.
 encode.CHARARRAY = function(v) {
@@ -165,7 +165,7 @@ encode.NUMBER16 = function(v) {
     return [28, (v >> 8) & 0xFF, v & 0xFF];
 };
 
-sizeOf.NUMBER16 = constant(2);
+sizeOf.NUMBER16 = constant(3);
 
 // Convert a signed number between -(2^31) and +(2^31-1) to a four-byte value.
 // This is useful if you want to be sure you always use four bytes,
@@ -174,7 +174,7 @@ encode.NUMBER32 = function(v) {
     return [29, (v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
-sizeOf.NUMBER32 = constant(4);
+sizeOf.NUMBER32 = constant(5);
 
 encode.REAL = function(v) {
     var value = v.toString();
@@ -222,12 +222,13 @@ sizeOf.NAME = sizeOf.CHARARRAY;
 encode.STRING = encode.CHARARRAY;
 sizeOf.STRING = sizeOf.CHARARRAY;
 
-// Convert a ASCII string to a list of UTF16 bytes.
+// Convert a JavaScript string to UTF16-BE.
 encode.UTF16 = function(v) {
     var b = [];
     for (var i = 0; i < v.length; i += 1) {
-        b.push(0);
-        b.push(v.charCodeAt(i));
+        var codepoint = v.charCodeAt(i);
+        b.push((codepoint >> 8) & 0xFF);
+        b.push(codepoint & 0xFF);
     }
 
     return b;
@@ -378,6 +379,12 @@ encode.OBJECT = function(v) {
     return encodingFunction(v.value);
 };
 
+sizeOf.OBJECT = function(v) {
+    var sizeOfFunction = sizeOf[v.type];
+    check.argument(sizeOfFunction !== undefined, 'No sizeOf function for type ' + v.type);
+    return sizeOfFunction(v.value);
+};
+
 // Convert a table object to bytes.
 // A table contains a list of fields containing the metadata (name, type and default value).
 // The table itself has the field values set as attributes.
@@ -399,6 +406,25 @@ encode.TABLE = function(table) {
     }
 
     return d;
+};
+
+sizeOf.TABLE = function(table) {
+    var numBytes = 0;
+    var length = table.fields.length;
+
+    for (var i = 0; i < length; i += 1) {
+        var field = table.fields[i];
+        var sizeOfFunction = sizeOf[field.type];
+        check.argument(sizeOfFunction !== undefined, 'No sizeOf function for field type ' + field.type);
+        var value = table[field.name];
+        if (value === undefined) {
+            value = field.value;
+        }
+
+        numBytes += sizeOfFunction(value);
+    }
+
+    return numBytes;
 };
 
 // Merge in a list of bytes.
