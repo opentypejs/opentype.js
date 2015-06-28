@@ -8,11 +8,13 @@
 // should replace 'nameID' by 'name', and keep it as dictionary like
 // {en: 'Bold', fr: 'Gras'}? Decoding OpenType/TrueType name IDs to
 // IETF BCP-47 language tags would be certainly doable, but it will
-// probably need large changes to the 'name' handling of opentype.js.
+// need large changes to the 'name' handling of opentype.js.
 // Until this is resolved, we can't write back 'fvar' tables when
 // writing fonts (if we did, our name IDs would be dangling
 // references).  Therefore, the make() function is currently only
 // called from test code.
+//
+// See also https://github.com/nodebox/opentype.js/issues/144.
 
 'use strict';
 
