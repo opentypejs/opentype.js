@@ -167,7 +167,7 @@ encode.NUMBER16 = function(v) {
 
 sizeOf.NUMBER16 = constant(3);
 
-// Convert a signed number between -(2^31) and +(2^31-1) to a four-byte value.
+// Convert a signed number between -(2^31) and +(2^31-1) to a five-byte value.
 // This is useful if you want to be sure you always use four bytes,
 // at the expense of wasting a few bytes for smaller numbers.
 encode.NUMBER32 = function(v) {
