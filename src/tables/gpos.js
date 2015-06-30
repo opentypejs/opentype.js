@@ -194,14 +194,14 @@ function parseLookupTable(data, start) {
     };
     // LookupType 2, Pair adjustment
     if (lookupType === 2) {
-        var subtables = [];
+        table._subtables = [];
         for (var i = 0; i < subTableCount; i++) {
-            subtables.push(parsePairPosSubTable(data, start + subTableOffsets[i]));
+            table._subtables.push(parsePairPosSubTable(data, start + subTableOffsets[i]));
         }
         // Return a function which finds the kerning values in the subtables.
         table.getKerningValue = function(leftGlyph, rightGlyph) {
-            for (var i = subtables.length; i--;) {
-                var value = subtables[i](leftGlyph, rightGlyph);
+            for (var i = table._subtables.length; i--;) {
+                var value = table._subtables[i](leftGlyph, rightGlyph);
                 if (value !== undefined) return value;
             }
 
@@ -216,15 +216,17 @@ function parseLookupTable(data, start) {
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 function parseGposTable(data, start, font) {
     var p = new parse.Parser(data, start);
-    var tableVersion = p.parseFixed();
-    check.argument(tableVersion === 1, 'Unsupported GPOS table version.');
+    var gposData = {};
+    gposData.tableVersion = p.parseFixed();
+    check.argument(gposData.tableVersion === 1, 'Unsupported GPOS table version.');
 
     // ScriptList and FeatureList - ignored for now
-    parseTaggedListTable(data, start + p.parseUShort());
     // 'kern' is the feature we are looking for.
-    parseTaggedListTable(data, start + p.parseUShort());
+    gposData.scriptList = parseTaggedListTable(data, start + p.parseUShort());
+    gposData.featureList = parseTaggedListTable(data, start + p.parseUShort());
 
     // LookupList
+    gposData.lookupList = Array();
     var lookupListOffset = p.parseUShort();
     p.relativeOffset = lookupListOffset;
     var lookupCount = p.parseUShort();
@@ -233,7 +235,23 @@ function parseGposTable(data, start, font) {
     for (var i = 0; i < lookupCount; i++) {
         var table = parseLookupTable(data, lookupListAbsoluteOffset + lookupTableOffsets[i]);
         if (table.lookupType === 2 && !font.getGposKerningValue) font.getGposKerningValue = table.getKerningValue;
+        gposData.lookupList.push(table);
     }
+    font._gposData = gposData;
+}
+
+function makeGposTable(options) {
+    var tableRecord;
+
+//TODO:...
+
+    return new table.Table('gpos', [
+        {name: 'version', type: 'FIXED', value: 1},
+        {name: 'ScriptList', type: 'TABLE'}, /* ignored by parser */
+        {name: 'FeatureList', type: 'TABLE'}, /* ignored by parser */
+        {name: 'LookupList', type: 'TABLE', value: tableRecord},
+    ]);
 }
 
 exports.parse = parseGposTable;
+exports.make = makeGposTable;
