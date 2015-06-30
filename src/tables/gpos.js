@@ -96,26 +96,37 @@ function parseClassDefTable(data, start) {
 function parsePairPosSubTable(data, start) {
     var p = new parse.Parser(data, start);
     // This part is common to format 1 and format 2 subtables
-    var format = p.parseUShort();
-    var coverageOffset = p.parseUShort();
-    var coverage = parseCoverageTable(data, start + coverageOffset);
+
+    var subTable = {
+        format: p.parseUShort(),
+        coverageOffset: p.parseUShort()
+    };
+
+    subTable.coverage = parseCoverageTable(data, start + subTable.coverageOffset);
+
     // valueFormat 4: XAdvance only, 1: XPlacement only, 0: no ValueRecord for second glyph
     // Only valueFormat1=4 and valueFormat2=0 is supported.
-    var valueFormat1 = p.parseUShort();
-    var valueFormat2 = p.parseUShort();
+    subTable.valueFormat1 = p.parseUShort();
+    subTable.valueFormat2 = p.parseUShort();
+
     var value1;
     var value2;
-    if (valueFormat1 !== 4 || valueFormat2 !== 0) return;
-    var sharedPairSets = {};
-    if (format === 1) {
+    if (subTable.valueFormat1 !== 4
+        || subTable.valueFormat2 !== 0){
+        //FIX-ME: We need a way to inform the user with a
+        //        NotImplementedError here.
+        return;
+    }
+    subTable.sharedPairSets = {};
+    if (subTable.format === 1) {
         // Pair Positioning Adjustment: Format 1
         var pairSetCount = p.parseUShort();
-        var pairSet = [];
+        subTable.pairSet = [];
         // Array of offsets to PairSet tables-from beginning of PairPos subtable-ordered by Coverage Index
         var pairSetOffsets = p.parseOffset16List(pairSetCount);
         for (var firstGlyph = 0; firstGlyph < pairSetCount; firstGlyph++) {
             var pairSetOffset = pairSetOffsets[firstGlyph];
-            var sharedPairSet = sharedPairSets[pairSetOffset];
+            var sharedPairSet = subTable.sharedPairSets[pairSetOffset];
             if (!sharedPairSet) {
                 // Parse a pairset table in a pair adjustment subtable format 1
                 sharedPairSet = {};
@@ -123,21 +134,22 @@ function parsePairPosSubTable(data, start) {
                 var pairValueCount = p.parseUShort();
                 for (; pairValueCount--;) {
                     var secondGlyph = p.parseUShort();
-                    if (valueFormat1) value1 = p.parseShort();
-                    if (valueFormat2) value2 = p.parseShort();
+                    if (subTable.valueFormat1) value1 = p.parseShort();
+                    if (subTable.valueFormat2) value2 = p.parseShort();
                     // We only support valueFormat1 = 4 and valueFormat2 = 0,
                     // so value1 is the XAdvance and value2 is empty.
                     sharedPairSet[secondGlyph] = value1;
                 }
             }
 
-            pairSet[coverage[firstGlyph]] = sharedPairSet;
+            subTable.pairSet[subTable.coverage[firstGlyph]] = sharedPairSet;
         }
 
-        return function(leftGlyph, rightGlyph) {
-            var pairs = pairSet[leftGlyph];
+        subTable.getValue = function(leftGlyph, rightGlyph) {
+            var pairs = subTable.pairSet[leftGlyph];
             if (pairs) return pairs[rightGlyph];
         };
+        return subtable;
     }
     else if (format === 2) {
         // Pair Positioning Adjustment: Format 2
@@ -163,10 +175,11 @@ function parsePairPosSubTable(data, start) {
 
         // Convert coverage list to a hash
         var covered = {};
-        for (i = 0; i < coverage.length; i++) covered[coverage[i]] = 1;
+        for (i = 0; i < subTable.coverage.length; i++)
+            covered[subTable.coverage[i]] = 1;
 
         // Get the kerning value for a specific glyph pair.
-        return function(leftGlyph, rightGlyph) {
+        subTable.getValue = function(leftGlyph, rightGlyph) {
             if (!covered[leftGlyph]) return;
             var class1 = getClass1(leftGlyph);
             var class2 = getClass2(rightGlyph);
@@ -176,6 +189,7 @@ function parsePairPosSubTable(data, start) {
                 return kerningRow[class2];
             }
         };
+        return subTable;
     }
 }
 
@@ -190,24 +204,26 @@ function parseLookupTable(data, start) {
     var table = {
         lookupType: lookupType,
         lookupFlag: lookupFlag,
+        subtables: [],
         markFilteringSet: useMarkFilteringSet ? p.parseUShort() : -1
     };
+
     // LookupType 2, Pair adjustment
     if (lookupType === 2) {
-        table._subtables = [];
         for (var i = 0; i < subTableCount; i++) {
-            table._subtables.push(parsePairPosSubTable(data, start + subTableOffsets[i]));
+            table.subtables.push(parsePairPosSubTable(data, start + subTableOffsets[i]));
         }
-        // Return a function which finds the kerning values in the subtables.
-        table.getKerningValue = function(leftGlyph, rightGlyph) {
-            for (var i = table._subtables.length; i--;) {
-                var value = table._subtables[i](leftGlyph, rightGlyph);
-                if (value !== undefined) return value;
-            }
-
-            return 0;
-        };
     }
+
+    // Provide a function which finds the kerning values in the subtables.
+    table.getKerningValue = function(leftGlyph, rightGlyph) {
+        for (var i = table.subtables.length; i--;) {
+            var value = table.subtables[i].getValue(leftGlyph, rightGlyph);
+            if (value !== undefined) return value;
+        }
+
+        return 0;
+    };
 
     return table;
 }
@@ -216,17 +232,17 @@ function parseLookupTable(data, start) {
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 function parseGposTable(data, start, font) {
     var p = new parse.Parser(data, start);
-    var gposData = {};
-    gposData.tableVersion = p.parseFixed();
+
+    font._gposData.tableVersion = p.parseFixed();
     check.argument(gposData.tableVersion === 1, 'Unsupported GPOS table version.');
 
     // ScriptList and FeatureList - ignored for now
     // 'kern' is the feature we are looking for.
-    gposData.scriptList = parseTaggedListTable(data, start + p.parseUShort());
-    gposData.featureList = parseTaggedListTable(data, start + p.parseUShort());
+    font._gposData.scriptList = parseTaggedListTable(data, start + p.parseUShort());
+    font._gposData.featureList = parseTaggedListTable(data, start + p.parseUShort());
 
     // LookupList
-    gposData.lookupList = Array();
+    font._gposData.lookupList = Array();
     var lookupListOffset = p.parseUShort();
     p.relativeOffset = lookupListOffset;
     var lookupCount = p.parseUShort();
@@ -235,9 +251,8 @@ function parseGposTable(data, start, font) {
     for (var i = 0; i < lookupCount; i++) {
         var table = parseLookupTable(data, lookupListAbsoluteOffset + lookupTableOffsets[i]);
         if (table.lookupType === 2 && !font.getGposKerningValue) font.getGposKerningValue = table.getKerningValue;
-        gposData.lookupList.push(table);
+        font._gposData.lookupList.push(table);
     }
-    font._gposData = gposData;
 }
 
 function makeGposTable(options) {
