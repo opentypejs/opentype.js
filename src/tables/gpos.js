@@ -193,26 +193,70 @@ function parsePairPosSubTable(data, start) {
     }
 }
 
+const SINGLE_ADJUSTMENT = 1
+    , PAIR_ADJUSTMENT = 2
+    , CURSIVE_ADJUSTMENT = 3
+    , MARK_TO_BASE_ATTACHMENT = 4
+    , MARK_TO_LIGATURE_ATTACHMENT = 5
+    , MARK_TO_MARK_ATTACHMENT = 6
+    , CONTEXTUAL_POSITIONING = 7
+    , CHAINED_CONTEXTUAL_POSITIONING = 8
+    , EXTENSION_POSITIONING = 9
+    ;
+
 // Parse a LookupTable (present in of GPOS, GSUB, GDEF, BASE, JSTF tables).
 function parseLookupTable(data, start) {
-    var p = new parse.Parser(data, start);
-    var lookupType = p.parseUShort();
-    var lookupFlag = p.parseUShort();
-    var useMarkFilteringSet = lookupFlag & 0x10;
-    var subTableCount = p.parseUShort();
-    var subTableOffsets = p.parseOffset16List(subTableCount);
-    var table = {
-        lookupType: lookupType,
-        lookupFlag: lookupFlag,
-        subtables: [],
-        markFilteringSet: useMarkFilteringSet ? p.parseUShort() : -1
-    };
-
-    // LookupType 2, Pair adjustment
-    if (lookupType === 2) {
-        for (var i = 0; i < subTableCount; i++) {
-            table.subtables.push(parsePairPosSubTable(data, start + subTableOffsets[i]));
+    var p = new parse.Parser(data, start)
+      , lookupType = p.parseUShort();
+      , lookupFlag = p.parseUShort();
+      , useMarkFilteringSet = lookupFlag & 0x10;
+      , subTableCount = p.parseUShort();
+      , subTableOffsets = p.parseOffset16List(subTableCount);
+      , table = {
+            lookupType: lookupType,
+            lookupFlag: lookupFlag,
+            subtables: [],
+            markFilteringSet: useMarkFilteringSet ? p.parseUShort() : -1
         }
+      ;
+
+    switch (lookupType)
+        case SINGLE_ADJUSTMENT:
+            //FIX-ME: NotImplementedError
+            break;
+
+        case PAIR_ADJUSTMENT: //Pair adjustment
+            for (var i = 0; i < subTableCount; i++) {
+                table.subtables.push(parsePairPosSubTable(data, start + subTableOffsets[i]));
+            break;
+
+        case CURSIVE_ADJUSTMENT:
+            //FIX-ME: NotImplementedError
+            break;
+
+        case MARK_TO_BASE_ATTACHMENT:
+            //FIX-ME: NotImplementedError
+            break;
+
+        case MARK_TO_LIGATURE_ATTACHMENT:
+            //FIX-ME: NotImplementedError
+            break;
+
+        case MARK_TO_MARK_ATTACHMENT:
+            //FIX-ME: NotImplementedError
+            break;
+
+        case CONTEXTUAL_POSITIONING:
+            //FIX-ME: NotImplementedError
+            break;
+
+        case CHAINED_CONTEXTUAL_POSITIONING:
+            //FIX-ME: NotImplementedError
+            break;
+
+        case EXTENSION_POSITIONING:
+            //FIX-ME: NotImplementedError
+            break;
     }
 
     // Provide a function which finds the kerning values in the subtables.
