@@ -192,6 +192,8 @@ function fontToSfntTable(font) {
     globals.ascender = font.ascender !== undefined ? font.ascender : globals.yMax;
     globals.descender = font.descender !== undefined ? font.descender : globals.yMin;
 
+    var gposTable = gpos.make(font);
+
     var headTable = head.make({
         unitsPerEm: font.unitsPerEm,
         xMin: globals.xMin,
@@ -270,7 +272,7 @@ function fontToSfntTable(font) {
         unitsPerEm: font.unitsPerEm
     });
     // Order the tables according to the the OpenType specification 1.4.
-    var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable];
+    var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable, gposTable];
 
     var sfntTable = makeSfntTable(tables);
 

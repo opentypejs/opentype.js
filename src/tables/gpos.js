@@ -151,7 +151,7 @@ function parsePairPosSubTable(data, start) {
         };
         return subtable;
     }
-    else if (format === 2) {
+    else if (subTable.format === 2) {
         // Pair Positioning Adjustment: Format 2
         var classDef1Offset = p.parseUShort();
         var classDef2Offset = p.parseUShort();
@@ -299,7 +299,12 @@ function parseGposTable(data, start, font) {
     }
 }
 
-function makeGposTable(options) {
+function makeGposTable(font) {
+    if (font.subTable.format === 2)
+        //FIX-ME: We need a way to inform the user with a
+        //        NotImplementedError here.
+        return;
+
     var tableRecord;
 
 //TODO:...
