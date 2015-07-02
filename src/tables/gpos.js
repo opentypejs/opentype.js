@@ -149,7 +149,7 @@ function parsePairPosSubTable(data, start) {
             var pairs = subTable.pairSet[leftGlyph];
             if (pairs) return pairs[rightGlyph];
         };
-        return subtable;
+        return subTable;
     }
     else if (subTable.format === 2) {
         // Pair Positioning Adjustment: Format 2
@@ -165,8 +165,8 @@ function parsePairPosSubTable(data, start) {
         for (var i = 0; i < class1Count; i++) {
             var kerningRow = kerningMatrix[i] = [];
             for (var j = 0; j < class2Count; j++) {
-                if (valueFormat1) value1 = p.parseShort();
-                if (valueFormat2) value2 = p.parseShort();
+                if (subTable.valueFormat1) value1 = p.parseShort();
+                if (subTable.valueFormat2) value2 = p.parseShort();
                 // We only support valueFormat1 = 4 and valueFormat2 = 0,
                 // so value1 is the XAdvance and value2 is empty.
                 kerningRow[j] = value1;
@@ -193,25 +193,26 @@ function parsePairPosSubTable(data, start) {
     }
 }
 
-const SINGLE_ADJUSTMENT = 1
-    , PAIR_ADJUSTMENT = 2
-    , CURSIVE_ADJUSTMENT = 3
-    , MARK_TO_BASE_ATTACHMENT = 4
-    , MARK_TO_LIGATURE_ATTACHMENT = 5
-    , MARK_TO_MARK_ATTACHMENT = 6
-    , CONTEXTUAL_POSITIONING = 7
-    , CHAINED_CONTEXTUAL_POSITIONING = 8
-    , EXTENSION_POSITIONING = 9
-    ;
+var LType = Object.freeze({
+      SINGLE_ADJUSTMENT: 1
+    , PAIR_ADJUSTMENT: 2
+    , CURSIVE_ADJUSTMENT: 3
+    , MARK_TO_BASE_ATTACHMENT: 4
+    , MARK_TO_LIGATURE_ATTACHMENT: 5
+    , MARK_TO_MARK_ATTACHMENT: 6
+    , CONTEXTUAL_POSITIONING: 7
+    , CHAINED_CONTEXTUAL_POSITIONING: 8
+    , EXTENSION_POSITIONING: 9
+});
 
 // Parse a LookupTable (present in of GPOS, GSUB, GDEF, BASE, JSTF tables).
 function parseLookupTable(data, start) {
     var p = new parse.Parser(data, start)
-      , lookupType = p.parseUShort();
-      , lookupFlag = p.parseUShort();
-      , useMarkFilteringSet = lookupFlag & 0x10;
-      , subTableCount = p.parseUShort();
-      , subTableOffsets = p.parseOffset16List(subTableCount);
+      , lookupType = p.parseUShort()
+      , lookupFlag = p.parseUShort()
+      , useMarkFilteringSet = lookupFlag & 0x10
+      , subTableCount = p.parseUShort()
+      , subTableOffsets = p.parseOffset16List(subTableCount)
       , table = {
             lookupType: lookupType,
             lookupFlag: lookupFlag,
@@ -220,41 +221,42 @@ function parseLookupTable(data, start) {
         }
       ;
 
-    switch (lookupType)
-        case SINGLE_ADJUSTMENT:
+    switch (lookupType){
+        case LType.SINGLE_ADJUSTMENT:
             //FIX-ME: NotImplementedError
             break;
 
-        case PAIR_ADJUSTMENT: //Pair adjustment
+        case LType.PAIR_ADJUSTMENT: //Pair adjustment
             for (var i = 0; i < subTableCount; i++) {
                 table.subtables.push(parsePairPosSubTable(data, start + subTableOffsets[i]));
+            }
             break;
 
-        case CURSIVE_ADJUSTMENT:
+        case LType.CURSIVE_ADJUSTMENT:
             //FIX-ME: NotImplementedError
             break;
 
-        case MARK_TO_BASE_ATTACHMENT:
+        case LType.MARK_TO_BASE_ATTACHMENT:
             //FIX-ME: NotImplementedError
             break;
 
-        case MARK_TO_LIGATURE_ATTACHMENT:
+        case LType.MARK_TO_LIGATURE_ATTACHMENT:
             //FIX-ME: NotImplementedError
             break;
 
-        case MARK_TO_MARK_ATTACHMENT:
+        case LType.MARK_TO_MARK_ATTACHMENT:
             //FIX-ME: NotImplementedError
             break;
 
-        case CONTEXTUAL_POSITIONING:
+        case LType.CONTEXTUAL_POSITIONING:
             //FIX-ME: NotImplementedError
             break;
 
-        case CHAINED_CONTEXTUAL_POSITIONING:
+        case LType.CHAINED_CONTEXTUAL_POSITIONING:
             //FIX-ME: NotImplementedError
             break;
 
-        case EXTENSION_POSITIONING:
+        case LType.EXTENSION_POSITIONING:
             //FIX-ME: NotImplementedError
             break;
     }
@@ -277,8 +279,9 @@ function parseLookupTable(data, start) {
 function parseGposTable(data, start, font) {
     var p = new parse.Parser(data, start);
 
+    font._gposData = {};
     font._gposData.tableVersion = p.parseFixed();
-    check.argument(gposData.tableVersion === 1, 'Unsupported GPOS table version.');
+    check.argument(font._gposData.tableVersion === 1, 'Unsupported GPOS table version.');
 
     // ScriptList and FeatureList - ignored for now
     // 'kern' is the feature we are looking for.
@@ -310,7 +313,7 @@ function makeGposTable(font) {
 //TODO:...
 
     return new table.Table('gpos', [
-        {name: 'version', type: 'FIXED', value: 1},
+        {name: 'version', type: 'FIXED', value: font._gposData.tableVersion},
         {name: 'ScriptList', type: 'TABLE'}, /* ignored by parser */
         {name: 'FeatureList', type: 'TABLE'}, /* ignored by parser */
         {name: 'LookupList', type: 'TABLE', value: tableRecord},
