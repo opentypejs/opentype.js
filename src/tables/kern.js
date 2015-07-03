@@ -12,7 +12,8 @@ function parseKernTable(data, start) {
     var pairs = {};
     var p = new parse.Parser(data, start);
     var tableVersion = p.parseUShort();
-    check.argument(tableVersion === 0, 'Unsupported kern table version.');
+    if (tableVersion !== 0) return;
+//    check.argument(tableVersion === 0, 'Unsupported kern table version.');
     // Skip nTables.
     p.skip('uShort', 1);
     var subTableVersion = p.parseUShort();

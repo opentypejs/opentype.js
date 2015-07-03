@@ -28,4 +28,20 @@ describe('OpenType.js', function() {
         assert.equal(aGlyph.unicode, 65);
         assert.equal(aGlyph.path.commands.length, 14);
     });
+
+    it('can parse OpenType GPOS tables', function() {
+        var font = opentype.loadSync('./fonts/FiraSansOT-Medium_gpos.otf');
+        assert.notEqual(font.tables.gpos, undefined);
+        var llist = font.tables.gpos.lookupList;
+        assert.equal(llist.length, 2);
+        assert.equal(llist[0].lookupType, 1);
+        assert.equal(llist[1].lookupType, 2);
+        assert.equal(llist[1].subtables.length, 3);
+
+        var pairsets=llist[1].subtables[0].pairSet;
+        assert.equal(pairsets.length, 1145);
+        assert.equal(pairsets[7]["476"], -5);
+        assert.equal(pairsets[7]["508"], -25);
+        assert.equal(pairsets[7]["1069"], -20);
+    });
 });
