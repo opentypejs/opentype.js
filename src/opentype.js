@@ -179,7 +179,7 @@ function parseBuffer(buffer) {
     }
 
     if (gposOffset) {
-        gpos.parse(data, gposOffset, font);
+        font.tables.gpos = gpos.parse(data, gposOffset, font);
     }
 
     return font;

@@ -92,16 +92,13 @@ function parseClassDefTable(data, start) {
 }
 
 // Parse a pair adjustment positioning subtable, format 1 or format 2
-// The subtable is returned in the form of a lookup function.
 function parsePairPosSubTable(data, start) {
     var p = new parse.Parser(data, start);
     // This part is common to format 1 and format 2 subtables
 
-    var subTable = {
-        format: p.parseUShort(),
-        coverageOffset: p.parseUShort()
-    };
-
+    var subTable = {};
+    subTable.format = p.parseUShort();
+    subTable.coverageOffset = p.parseUShort();
     subTable.coverage = parseCoverageTable(data, start + subTable.coverageOffset);
 
     // valueFormat 4: XAdvance only, 1: XPlacement only, 0: no ValueRecord for second glyph
@@ -111,12 +108,8 @@ function parsePairPosSubTable(data, start) {
 
     var value1;
     var value2;
-    if (subTable.valueFormat1 !== 4
-        || subTable.valueFormat2 !== 0){
-        //FIX-ME: We need a way to inform the user with a
-        //        NotImplementedError here.
-        return;
-    }
+    check.argument(subTable.valueFormat1 == 4 && subTable.valueFormat2 == 0,
+                   'GPOS table: Only valueFormat1 = 4 and valueFormat2 = 0 is supported.');
     subTable.sharedPairSets = {};
     if (subTable.format === 1) {
         // Pair Positioning Adjustment: Format 1
@@ -233,29 +226,11 @@ function parseLookupTable(data, start) {
             break;
 
         case LType.CURSIVE_ADJUSTMENT:
-            //FIX-ME: NotImplementedError
-            break;
-
         case LType.MARK_TO_BASE_ATTACHMENT:
-            //FIX-ME: NotImplementedError
-            break;
-
         case LType.MARK_TO_LIGATURE_ATTACHMENT:
-            //FIX-ME: NotImplementedError
-            break;
-
         case LType.MARK_TO_MARK_ATTACHMENT:
-            //FIX-ME: NotImplementedError
-            break;
-
         case LType.CONTEXTUAL_POSITIONING:
-            //FIX-ME: NotImplementedError
-            break;
-
         case LType.CHAINED_CONTEXTUAL_POSITIONING:
-            //FIX-ME: NotImplementedError
-            break;
-
         case LType.EXTENSION_POSITIONING:
             //FIX-ME: NotImplementedError
             break;
@@ -279,17 +254,17 @@ function parseLookupTable(data, start) {
 function parseGposTable(data, start, font) {
     var p = new parse.Parser(data, start);
 
-    font._gposData = {};
-    font._gposData.tableVersion = p.parseFixed();
-    check.argument(font._gposData.tableVersion === 1, 'Unsupported GPOS table version.');
+    var gpos = {};
+    gpos.tableVersion = p.parseFixed();
+    check.argument(gpos.tableVersion === 1, 'Unsupported GPOS table version.');
 
     // ScriptList and FeatureList - ignored for now
     // 'kern' is the feature we are looking for.
-    font._gposData.scriptList = parseTaggedListTable(data, start + p.parseUShort());
-    font._gposData.featureList = parseTaggedListTable(data, start + p.parseUShort());
+    gpos.scriptList = parseTaggedListTable(data, start + p.parseUShort());
+    gpos.featureList = parseTaggedListTable(data, start + p.parseUShort());
 
     // LookupList
-    font._gposData.lookupList = Array();
+    gpos.lookupList = Array();
     var lookupListOffset = p.parseUShort();
     p.relativeOffset = lookupListOffset;
     var lookupCount = p.parseUShort();
@@ -298,26 +273,57 @@ function parseGposTable(data, start, font) {
     for (var i = 0; i < lookupCount; i++) {
         var table = parseLookupTable(data, lookupListAbsoluteOffset + lookupTableOffsets[i]);
         if (table.lookupType === 2 && !font.getGposKerningValue) font.getGposKerningValue = table.getKerningValue;
-        font._gposData.lookupList.push(table);
+        gpos.lookupList.push(table);
     }
+    return gpos;
+}
+
+function makeLookupList(gpos){
+/*
+    TODO: based on the specs and the following parser snippets,
+          implement the corresponding encoder routine:
+
+    // LookupList
+    gpos.lookupList = Array();
+    var lookupListOffset = p.parseUShort();
+    p.relativeOffset = lookupListOffset;
+    var lookupCount = p.parseUShort();
+    var lookupTableOffsets = p.parseOffset16List(lookupCount);
+    var lookupListAbsoluteOffset = start + lookupListOffset;
+    for (var i = 0; i < lookupCount; i++) {
+        var table = parseLookupTable(data, lookupListAbsoluteOffset + lookupTableOffsets[i]);
+        if (table.lookupType === 2 && !font.getGposKerningValue) font.getGposKerningValue = table.getKerningValue;
+        gpos.lookupList.push(table);
+    }
+
+*/
+    var t = new table.Table('LookupList', [
+      , {name: 'names', type: 'INDEX', value: []}
+    ]);
+/*
+    t.names = [];
+    for (var i = 0; i < fontNames.length; i += 1) {
+        t.names.push({name: 'name_' + i, type: 'NAME', value: fontNames[i]});
+    }
+*/
+    return t;
 }
 
 function makeGposTable(font) {
-    if (font.subTable.format === 2)
-        //FIX-ME: We need a way to inform the user with a
-        //        NotImplementedError here.
-        return;
+    var gpos = font.tables.gpos;
 
-    var tableRecord;
-
-//TODO:...
-
-    return new table.Table('gpos', [
-        {name: 'version', type: 'FIXED', value: font._gposData.tableVersion},
-        {name: 'ScriptList', type: 'TABLE'}, /* ignored by parser */
-        {name: 'FeatureList', type: 'TABLE'}, /* ignored by parser */
-        {name: 'LookupList', type: 'TABLE', value: tableRecord},
+    var t = new table.Table('gpos', [
+        {name: 'version', type: 'FIXED', value: gpos.tableVersion},
+        {name: 'ScriptList', type: 'TABLE'},
+        {name: 'FeatureList', type: 'TABLE'},
+        {name: 'LookupList', type: 'TABLE'},
     ]);
+
+//    t.ScriptList = makeScriptList(gpos); /* ignored by parser */
+//    t.FeatureList = makeFeatureList(gpos); /* ignored by parser */
+    t.LookupList = makeLookupList(gpos);
+
+    return t;
 }
 
 exports.parse = parseGposTable;
