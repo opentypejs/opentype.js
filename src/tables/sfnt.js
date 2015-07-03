@@ -11,6 +11,7 @@ var table = require('../table');
 
 var cmap = require('./cmap');
 var cff = require('./cff');
+var gpos = require('./gpos');
 var head = require('./head');
 var hhea = require('./hhea');
 var hmtx = require('./hmtx');

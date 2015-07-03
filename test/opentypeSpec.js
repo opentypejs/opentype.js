@@ -29,6 +29,11 @@ describe('OpenType.js', function() {
         assert.equal(aGlyph.path.commands.length, 14);
     });
 
+    it('can generate an OpenType/CFF font', function() {
+        var font = opentype.loadSync('./fonts/FiraSansOT-Medium.otf');
+        font.toBuffer();
+    });
+
     it('can parse OpenType GPOS tables', function() {
         var font = opentype.loadSync('./fonts/FiraSansOT-Medium_gpos.otf');
         assert.notEqual(font.tables.gpos, undefined);

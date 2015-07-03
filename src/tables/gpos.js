@@ -5,6 +5,7 @@
 
 var check = require('../check');
 var parse = require('../parse');
+var table = require('../table');
 
 // Parse ScriptList and FeatureList tables of GPOS, GSUB, GDEF, BASE, JSTF tables.
 // These lists are unused by now, this function is just the basis for a real parsing.
@@ -278,50 +279,39 @@ function parseGposTable(data, start, font) {
     return gpos;
 }
 
-function makeLookupList(gpos){
-/*
-    TODO: based on the specs and the following parser snippets,
-          implement the corresponding encoder routine:
-
-    // LookupList
-    gpos.lookupList = Array();
-    var lookupListOffset = p.parseUShort();
-    p.relativeOffset = lookupListOffset;
-    var lookupCount = p.parseUShort();
-    var lookupTableOffsets = p.parseOffset16List(lookupCount);
-    var lookupListAbsoluteOffset = start + lookupListOffset;
-    for (var i = 0; i < lookupCount; i++) {
-        var table = parseLookupTable(data, lookupListAbsoluteOffset + lookupTableOffsets[i]);
-        if (table.lookupType === 2 && !font.getGposKerningValue) font.getGposKerningValue = table.getKerningValue;
-        gpos.lookupList.push(table);
-    }
-
-*/
-    var t = new table.Table('LookupList', [
-      , {name: 'names', type: 'INDEX', value: []}
-    ]);
-/*
-    t.names = [];
-    for (var i = 0; i < fontNames.length; i += 1) {
-        t.names.push({name: 'name_' + i, type: 'NAME', value: fontNames[i]});
-    }
-*/
-    return t;
-}
-
 function makeGposTable(font) {
     var gpos = font.tables.gpos;
 
     var t = new table.Table('gpos', [
         {name: 'version', type: 'FIXED', value: gpos.tableVersion},
-        {name: 'ScriptList', type: 'TABLE'},
-        {name: 'FeatureList', type: 'TABLE'},
-        {name: 'LookupList', type: 'TABLE'},
+        {name: 'ScriptListOffset', type: 'USHORT', value: 0}, /* ignored by parser */
+        {name: 'FeatureListOffset', type: 'USHORT', value: 0}, /* ignored by parser */
+        {name: 'lookupListOffset', type: 'USHORT', value: 0},
+        {name: 'lookupCount', type: 'USHORT', value: gpos.lookupCount},
+        {name: 'lookupOffsets', type: 'TABLE'}
     ]);
 
 //    t.ScriptList = makeScriptList(gpos); /* ignored by parser */
 //    t.FeatureList = makeFeatureList(gpos); /* ignored by parser */
-    t.LookupList = makeLookupList(gpos);
+
+// OVERALL STRUCTURE of the data we need to parse here:
+//
+//      < UShort lookupListOffset >
+//at offset = lookupListOffset:
+//      < UShort lookupCount >
+//      < Offset16List[lookupCount] lookupTableOffsets >
+//
+//at offset = start + lookupListOffset + lookupTableOffsets[i]:
+//      < LookupTable data entry >
+
+    t.lookupOffsets = [];
+    var offset = 0;
+    for (var i = 0; i < gpos.lookupCount; i++) {
+        //TODO: encode a Lookup entry
+        //TODO: offset += lookupEntry.sizeOf()
+        t.lookupOffsets.push({name: 'lookup_offset_' + i, type: 'USHORT', value: offset});
+        offset += 2;
+    }
 
     return t;
 }
