@@ -31,6 +31,8 @@ describe('OpenType.js', function() {
 
     it('can generate an OpenType/CFF font', function() {
         var font = opentype.loadSync('./fonts/FiraSansOT-Medium.otf');
+        assert.notEqual(font.tables.gpos, undefined);
+        assert.notEqual(font.tables.gpos.lookupList, undefined);
         font.toBuffer();
     });
 

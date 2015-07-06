@@ -287,8 +287,7 @@ function makeGposTable(font) {
         {name: 'ScriptListOffset', type: 'USHORT', value: 0}, /* ignored by parser */
         {name: 'FeatureListOffset', type: 'USHORT', value: 0}, /* ignored by parser */
         {name: 'lookupListOffset', type: 'USHORT', value: 0},
-        {name: 'lookupCount', type: 'USHORT', value: gpos.lookupCount},
-        {name: 'lookupOffsets', type: 'TABLE'}
+        {name: 'lookupCount', type: 'USHORT', value: gpos.lookupList ? gpos.lookupList.length : 0},
     ]);
 
 //    t.ScriptList = makeScriptList(gpos); /* ignored by parser */
@@ -304,12 +303,11 @@ function makeGposTable(font) {
 //at offset = start + lookupListOffset + lookupTableOffsets[i]:
 //      < LookupTable data entry >
 
-    t.lookupOffsets = [];
     var offset = 0;
     for (var i = 0; i < gpos.lookupCount; i++) {
         //TODO: encode a Lookup entry
         //TODO: offset += lookupEntry.sizeOf()
-        t.lookupOffsets.push({name: 'lookup_offset_' + i, type: 'USHORT', value: offset});
+        t.fields.push({name: 'lookup_offset_' + i, type: 'USHORT', value: offset});
         offset += 2;
     }
 
