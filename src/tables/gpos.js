@@ -235,6 +235,8 @@ function parseLookupTable(data, start) {
         case LType.EXTENSION_POSITIONING:
             //FIX-ME: NotImplementedError
             break;
+        default:
+            //FIX-ME: Invalid Lookup Type
     }
 
     // Provide a function which finds the kerning values in the subtables.
@@ -257,7 +259,7 @@ function parseGposTable(data, start, font) {
 
     var gpos = {};
     gpos.tableVersion = p.parseFixed();
-    check.argument(gpos.tableVersion === 1, 'Unsupported GPOS table version.');
+    check.argument(gpos.tableVersion === 1, 'Unsupported GPOS table version ('+gpos.tableVersion+').');
 
     // ScriptList and FeatureList - ignored for now
     // 'kern' is the feature we are looking for.
@@ -269,6 +271,9 @@ function parseGposTable(data, start, font) {
     var lookupListOffset = p.parseUShort();
     p.relativeOffset = lookupListOffset;
     var lookupCount = p.parseUShort();
+
+    console.error("lookupCount:", lookupCount);
+
     var lookupTableOffsets = p.parseOffset16List(lookupCount);
     var lookupListAbsoluteOffset = start + lookupListOffset;
     for (var i = 0; i < lookupCount; i++) {
@@ -279,14 +284,73 @@ function parseGposTable(data, start, font) {
     return gpos;
 }
 
+function encodePairPosSubTable(t, subtable, i, prefix){
+    var size = 0;
+    var PREFIX = prefix + '_' + i;
+
+    //TODO: Implement-me
+
+    return size;
+}
+
+function encodeLookupEntry(t, gpos, i){
+    var size = 0;
+    var table = gpos.lookupList[i];
+    var PREFIX = 'lookup_' + i;
+
+    t.push({name: PREFIX+'_type', type: 'USHORT', value: table.lookupType});
+    t.push({name: PREFIX+'_flag', type: 'USHORT', value: table.lookupFlag});
+    t.push({name: PREFIX+'_subtable_count', type: 'USHORT', value: table.subtables.length});
+    size += 6;
+
+    for (var j=0; j < table.subtables.length; j++){
+        t.push({name: PREFIX+'_subtable_offset_' + j, type: 'USHORT', value: 0});
+        size += 2;
+    }
+
+    if (table.lookupFlag & 0x10){
+        t.push({name: PREFIX+'_markFilteringSet', type: 'USHORT', value: table.markFilteringSet});
+        size += 2;
+    }
+
+    switch (table.lookupType){
+        case LType.SINGLE_ADJUSTMENT:
+            //FIX-ME: NotImplementedError
+            break;
+
+        case LType.PAIR_ADJUSTMENT: //Pair adjustment
+            for (var j = 0; j < table.subtables.length; j++) {
+                //TODO: t[PREFIX+'_subtable_offset_' + j].value = size;
+                size += encodePairPosSubTable(t, table.subtables[j], j, PREFIX);
+            }
+            break;
+
+        case LType.CURSIVE_ADJUSTMENT:
+        case LType.MARK_TO_BASE_ATTACHMENT:
+        case LType.MARK_TO_LIGATURE_ATTACHMENT:
+        case LType.MARK_TO_MARK_ATTACHMENT:
+        case LType.CONTEXTUAL_POSITIONING:
+        case LType.CHAINED_CONTEXTUAL_POSITIONING:
+        case LType.EXTENSION_POSITIONING:
+            //FIX-ME: NotImplementedError
+            break;
+        default:
+            //FIX-ME: Invalid Lookup Type
+    }
+
+    return size;
+}
+
 function makeGposTable(font) {
     var gpos = font.tables.gpos;
 
-    var t = new table.Table('gpos', [
-        {name: 'version', type: 'FIXED', value: gpos.tableVersion},
+    check.argument(gpos.tableVersion === 1, 'Encoding unsupported GPOS table version ('+gpos.tableVersion+').');
+
+    var t = new table.Table('GPOS', [
+        {name: 'version', type: 'FIXED', value: 0x00010000 /*gpos.tableVersion*/},
         {name: 'ScriptListOffset', type: 'USHORT', value: 0}, /* ignored by parser */
         {name: 'FeatureListOffset', type: 'USHORT', value: 0}, /* ignored by parser */
-        {name: 'lookupListOffset', type: 'USHORT', value: 0},
+        {name: 'lookupListOffset', type: 'USHORT', value: 10}, /* FIXED (4bytes) + 3 * USHORT (2bytes) = 10 */
         {name: 'lookupCount', type: 'USHORT', value: gpos.lookupList ? gpos.lookupList.length : 0},
     ]);
 
@@ -303,14 +367,18 @@ function makeGposTable(font) {
 //at offset = start + lookupListOffset + lookupTableOffsets[i]:
 //      < LookupTable data entry >
 
-    var offset = 0;
-    for (var i = 0; i < gpos.lookupCount; i++) {
-        //TODO: encode a Lookup entry
-        //TODO: offset += lookupEntry.sizeOf()
-        t.fields.push({name: 'lookup_offset_' + i, type: 'USHORT', value: offset});
-        offset += 2;
+    var lookupOffsets = [];
+    var lookupEntries = [];
+
+    var offset = 2 * gpos.lookupList.length + 12; //FIXME: 12 bytes is the hardcoded header-size in the current implementation
+    for (var i = 0; i < gpos.lookupList.length; i++) {
+        offset += encodeLookupEntry(lookupEntries, gpos, i, offset);
+        console.error("saving offset[",i,"] = ", offset);
+        lookupOffsets.push({name: 'lookup_offset_' + i, type: 'USHORT', value: offset});
     }
 
+    t.fields = t.fields.concat(lookupOffsets);
+    t.fields = t.fields.concat(lookupEntries);
     return t;
 }
 

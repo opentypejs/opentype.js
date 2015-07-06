@@ -36,6 +36,29 @@ describe('OpenType.js', function() {
         font.toBuffer();
     });
 
+    it('can preserve OTF GPOS table fields', function() {
+        //Load original font
+        var font = opentype.loadSync('./fonts/FiraSansOT-Medium.otf');
+        assert.notEqual(font.tables, undefined);
+        assert.notEqual(font.tables.gpos, undefined);
+        assert.notEqual(font.tables.gpos.lookupList, undefined);
+
+        //keep copies of the values of the fields we'll ckeck for persistance
+        var lookupListCount = font.tables.gpos.lookupList.length;
+
+        //export the font
+        var buffer = font.toBuffer();
+
+        //load the generated font
+        var newfont = opentype.parse(buffer);
+        assert.notEqual(newfont.tables, undefined);
+        assert.notEqual(newfont.tables.gpos, undefined);
+        assert.notEqual(newfont.tables.gpos.lookupList, undefined);
+
+        //verify if the regenearted tables still hold the correct values
+        assert.equal(newfont.tables.gpos.lookupList.length, lookupListCount);
+    });
+
     it('can parse OpenType GPOS tables', function() {
         var font = opentype.loadSync('./fonts/FiraSansOT-Medium_gpos.otf');
         assert.notEqual(font.tables.gpos, undefined);
