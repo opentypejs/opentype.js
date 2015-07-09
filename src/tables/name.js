@@ -92,12 +92,56 @@ function makeNameRecord(platformID, encodingID, languageID, nameID, length, offs
     ]);
 }
 
+var macEncodings = (function() {
+    /*jshint -W053 */  // Suppress "Do not use String as a constructor."
+
+    // encode.MACSTRING uses the encoding IDs as cache keys for a WeakMap.
+    // Therefore, they must be Objects. We use IANA character set IDs.
+    var croatian = new String('x-mac-croatian');
+    var cyrillic = new String('x-mac-cyrillic');
+    var greek = new String('x-mac-greek');
+    var icelandic = new String('x-mac-icelandic');
+    var centralEurope = new String('x-mac-ce');
+    var roman = new String('macintosh');
+    var romanian = new String('x-mac-romanian');
+    var turkish = new String('x-mac-turkish');
+
+    // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6name.html
+    // https://github.com/behdad/fonttools/issues/236
+    return {
+        0: {
+            0: roman,
+            15: icelandic,
+            17: turkish,
+            18: croatian,
+            24: centralEurope,
+            25: centralEurope,
+            26: centralEurope,
+            27: centralEurope,
+            28: centralEurope,
+            36: centralEurope,
+            37: romanian,
+            38: centralEurope,
+            39: centralEurope,
+            40: centralEurope
+        },
+        6: greek,
+        7: cyrillic,
+        29: centralEurope,
+        35: turkish,
+        37: icelandic
+    };
+}());
+
 function addMacintoshNameRecord(t, recordID, s, offset) {
     // Macintosh, Roman, English
-    var stringBytes = encode.STRING(s);
-    t.records.push(makeNameRecord(1, 0, 0, recordID, stringBytes.length, offset));
-    t.strings.push(stringBytes);
-    offset += stringBytes.length;
+    var stringBytes = encode.MACSTRING(s, macEncodings[0][0]);
+    if (stringBytes !== undefined) {
+        t.records.push(makeNameRecord(1, 0, 0, recordID, stringBytes.length, offset));
+        t.strings.push(stringBytes);
+        offset += stringBytes.length;
+    }
+
     return offset;
 }
 
