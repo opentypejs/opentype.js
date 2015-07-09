@@ -15,6 +15,7 @@ var path = require('./path');
 
 var cmap = require('./tables/cmap');
 var cff = require('./tables/cff');
+var fvar = require('./tables/fvar');
 var glyf = require('./tables/glyf');
 var gpos = require('./tables/gpos');
 var head = require('./tables/head');
@@ -113,6 +114,9 @@ function parseBuffer(buffer) {
         case 'cmap':
             font.tables.cmap = cmap.parse(data, offset);
             font.encoding = new encoding.CmapEncoding(font.tables.cmap);
+            break;
+        case 'fvar':
+            font.tables.fvar = fvar.parse(data, offset);
             break;
         case 'head':
             font.tables.head = head.parse(data, offset);
