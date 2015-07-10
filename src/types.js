@@ -222,6 +222,16 @@ sizeOf.NAME = sizeOf.CHARARRAY;
 encode.STRING = encode.CHARARRAY;
 sizeOf.STRING = sizeOf.CHARARRAY;
 
+decode.UTF16 = function(data, offset, numBytes) {
+    var codePoints = [];
+    var numChars = numBytes / 2;
+    for (var j = 0; j < numChars; j++, offset += 2) {
+        codePoints[j] = data.getUint16(offset);
+    }
+
+    return String.fromCharCode.apply(null, codePoints);
+};
+
 // Convert a JavaScript string to UTF16-BE.
 encode.UTF16 = function(v) {
     var b = [];
