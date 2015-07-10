@@ -194,6 +194,7 @@ describe('types.js', function() {
     });
 
     it('can handle UTF16', function() {
+        assert.equal(decode.UTF16(unhex('DE AD 5B 57 4F 53'), 2, 4), '字体');
         assert.equal(hex(encode.UTF16('字体')), '5B 57 4F 53');
         assert.equal(sizeOf.UTF16('字体'), 4);
 
@@ -201,6 +202,7 @@ describe('types.js', function() {
         // are represented with surrogate pairs. For example, U+1F404 COW
         // is stored as the surrogate pair U+D83D U+DC04. This is also
         // exactly what we need for representing U+1F404 in UTF-16.
+        assert.equal(decode.UTF16(unhex('DE AD D8 3D DC 04'), 2, 4), '\uD83D\uDC04');
         assert.equal(hex(encode.UTF16('\uD83D\uDC04')), 'D8 3D DC 04');
         assert.equal(sizeOf.UTF16('\uD83D\uDC04'), 4);
     });

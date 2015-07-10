@@ -3,7 +3,9 @@
 
 'use strict';
 
-var encode = require('../types').encode;
+var types = require('../types');
+var decode = types.decode;
+var encode = types.encode;
 var parse = require('../parse');
 var table = require('../table');
 
@@ -60,17 +62,10 @@ function parseNameTable(data, start, ltag) {
         // 1 - 0 - 0 : Macintosh, Roman, English
         // 3 - 1 - 0x409 : Windows, Unicode BMP (UCS-2), en-US
         if (platformID === 3 && encodingID === 1 && languageID === 0x409) {
-            var codePoints = [];
-            var length = byteLength / 2;
-            for (var j = 0; j < length; j++, offset += 2) {
-                codePoints[j] = parse.getShort(data, stringOffset + offset);
-            }
-
-            var str = String.fromCharCode.apply(null, codePoints);
+            var str = decode.UTF16(data, stringOffset + offset, byteLength);
             if (property) {
                 name[property] = str;
-            }
-            else {
+            } else {
                 unknownCount++;
                 name['unknown' + unknownCount] = str;
             }
