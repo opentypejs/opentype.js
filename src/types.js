@@ -314,16 +314,31 @@ decode.MACSTRING = function(dataView, offset, dataLength, encoding) {
 // Unicode character codes to their 8-bit MacOS equivalent. This table
 // is not exactly a super cheap data structure, but we do not care because
 // encoding Macintosh strings is only rarely needed in typical applications.
-// Since we use encoding as a cache key for WeakMap, it must be a String
-// object and not a literal.
 var macEncodingTableCache = typeof WeakMap === 'function' && new WeakMap();
+var macEncodingCacheKeys;
 var getMacEncodingTable = function(encoding) {
+    // Since we use encoding as a cache key for WeakMap, it has to be
+    // a String object and not a literal. And at least on NodeJS 2.10.1,
+    // WeakMap requires that the same String instance is passed for cache hits.
+    if (!macEncodingCacheKeys) {
+        macEncodingCacheKeys = {};
+        for (var e in eightBitMacEncodings) {
+            /*jshint -W053 */  // Suppress "Do not use String as a constructor."
+            macEncodingCacheKeys[e] = new String(e);
+        }
+    }
+
+    var cacheKey = macEncodingCacheKeys[encoding];
+    if (cacheKey === undefined) {
+        return undefined;
+    }
+
     // We can't do "if (cache.has(key)) {return cache.get(key)}" here:
     // since garbage collection may run at any time, it could also kick in
     // between the calls to cache.has() and cache.get(). In that case,
     // we would return 'undefined' even though we do support the encoding.
     if (macEncodingTableCache) {
-        var cachedTable = macEncodingTableCache.get(encoding);
+        var cachedTable = macEncodingTableCache.get(cacheKey);
         if (cachedTable !== undefined) {
             return cachedTable;
         }
@@ -340,7 +355,7 @@ var getMacEncodingTable = function(encoding) {
     }
 
     if (macEncodingTableCache) {
-        macEncodingTableCache.set(encoding, encodingTable);
+        macEncodingTableCache.set(cacheKey, encodingTable);
     }
 
     return encodingTable;

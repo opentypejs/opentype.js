@@ -208,8 +208,7 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Central European encoding', function() {
-        /*jshint -W053 */  // Suppress "Do not use String as a constructor."
-        var encoding = new String('x-mac-ce');
+        var encoding = 'x-mac-ce';
         var data = '42 65 74 F5 74 92 70 75 73';
 
         assert.equal(
@@ -225,8 +224,7 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Croatian encoding', function() {
-        /*jshint -W053 */  // Suppress "Do not use String as a constructor."
-        var encoding = new String('x-mac-croatian');
+        var encoding = 'x-mac-croatian';
         var data = 'A9 74 61 6D 70 61 E8';
 
         assert.equal(
@@ -242,8 +240,7 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Cyrillic encoding', function() {
-        /*jshint -W053 */  // Suppress "Do not use String as a constructor."
-        var encoding = new String('x-mac-cyrillic');
+        var encoding = 'x-mac-cyrillic';
         var data = '98 F0 E8 F4 F2 20 46 6F 6F';
 
         assert.equal(
@@ -259,8 +256,7 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Greek encoding', function() {
-        /*jshint -W053 */  // Suppress "Do not use String as a constructor."
-        var encoding = new String('x-mac-greek');
+        var encoding = 'x-mac-greek';
         var data = 'A1 F2 E1 ED ED E1 F4 EF F3 E5 E9 F2 C0 20 2E 85 2E';
 
         assert.equal(
@@ -276,8 +272,7 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Icelandic encoding', function() {
-        /*jshint -W053 */  // Suppress "Do not use String as a constructor."
-        var encoding = new String('x-mac-icelandic');
+        var encoding = 'x-mac-icelandic';
         var data = 'DE 97 72 69 73 64 97 74 74 69 72 20 DF 97 20 61 DD 8E 67';
 
         assert.equal(
@@ -293,8 +288,7 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Roman encoding', function() {
-        /*jshint -W053 */  // Suppress "Do not use String as a constructor."
-        var encoding = new String('macintosh');
+        var encoding = 'macintosh';
         var data = '86 65 74 6C 69 62 8A 72 67';
 
         assert.equal(
@@ -310,8 +304,7 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Romanian encoding', function() {
-        /*jshint -W053 */  // Suppress "Do not use String as a constructor."
-        var encoding = new String('x-mac-romanian');
+        var encoding = 'x-mac-romanian';
         var data = '54 69 70 BE 72 69 72 65';
 
         assert.equal(
@@ -327,8 +320,7 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Turkish encoding', function() {
-        /*jshint -W053 */  // Suppress "Do not use String as a constructor."
-        var encoding = new String('x-mac-turkish');
+        var encoding = 'x-mac-turkish';
         var data = '42 61 73 DD 6C 6D DD DF';
 
         assert.equal(
@@ -344,8 +336,7 @@ describe('types.js', function() {
     });
 
     it('rejects MACSTRING in unsupported encodings', function() {
-        /*jshint -W053 */  // Suppress "Do not use String as a constructor."
-        var encoding = new String('KOI8-R');
+        var encoding = 'KOI8-R';
         assert.equal(decode.MACSTRING(unhex('41 42'), 0, 1, encoding), undefined);
         assert.equal(encode.MACSTRING('AB', encoding), undefined);
         assert.equal(sizeOf.MACSTRING('AB', encoding), 0);

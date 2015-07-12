@@ -92,18 +92,14 @@ function makeNameRecord(platformID, encodingID, languageID, nameID, length, offs
 }
 
 var macEncodings = (function() {
-    /*jshint -W053 */  // Suppress "Do not use String as a constructor."
-
-    // encode.MACSTRING uses the encoding IDs as cache keys for a WeakMap.
-    // Therefore, they must be Objects. We use IANA character set IDs.
-    var croatian = new String('x-mac-croatian');
-    var cyrillic = new String('x-mac-cyrillic');
-    var greek = new String('x-mac-greek');
-    var icelandic = new String('x-mac-icelandic');
-    var centralEurope = new String('x-mac-ce');
-    var roman = new String('macintosh');
-    var romanian = new String('x-mac-romanian');
-    var turkish = new String('x-mac-turkish');
+    var croatian = 'x-mac-croatian';
+    var cyrillic = 'x-mac-cyrillic';
+    var greek = 'x-mac-greek';
+    var icelandic = 'x-mac-icelandic';
+    var centralEurope = 'x-mac-ce';
+    var roman = 'macintosh';
+    var romanian = 'x-mac-romanian';
+    var turkish = 'x-mac-turkish';
 
     // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6name.html
     // https://github.com/behdad/fonttools/issues/236
