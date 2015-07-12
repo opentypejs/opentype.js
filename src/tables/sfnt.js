@@ -14,6 +14,7 @@ var cff = require('./cff');
 var head = require('./head');
 var hhea = require('./hhea');
 var hmtx = require('./hmtx');
+var ltag = require('./ltag');
 var maxp = require('./maxp');
 var _name = require('./name');
 var os2 = require('./os2');
@@ -239,38 +240,54 @@ function fontToSfntTable(font) {
     var hmtxTable = hmtx.make(font.glyphs);
     var cmapTable = cmap.make(font.glyphs);
 
-    var fullName = font.familyName + ' ' + font.styleName;
-    var postScriptName = font.familyName.replace(/\s/g, '') + '-' + font.styleName;
-    var nameTable = _name.make({
-        copyright: font.copyright,
-        fontFamily: font.familyName,
-        fontSubfamily: font.styleName,
-        uniqueID: font.manufacturer + ':' + fullName,
-        fullName: fullName,
-        version: font.version,
-        postScriptName: postScriptName,
-        trademark: font.trademark,
-        manufacturer: font.manufacturer,
-        designer: font.designer,
-        description: font.description,
-        manufacturerURL: font.manufacturerURL,
-        designerURL: font.designerURL,
-        license: font.license,
-        licenseURL: font.licenseURL,
-        preferredFamily: font.familyName,
-        preferredSubfamily: font.styleName
-    });
+    var englishFamilyName = font.getEnglishName('fontFamily');
+    var englishStyleName = font.getEnglishName('fontSubfamily');
+    var englishFullName = englishFamilyName + ' ' + englishStyleName;
+    var postScriptName = font.getEnglishName('postScriptName');
+    if (!postScriptName) {
+        postScriptName = englishFamilyName.replace(/\s/g, '') + '-' + englishStyleName;
+    }
+
+    var names = {};
+    for (var n in font.names) {
+        names[n] = font.names[n];
+    }
+
+    if (!names.uniqueID) {
+        names.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
+    }
+
+    if (!names.postScriptName) {
+        names.postScriptName = {en: postScriptName};
+    }
+
+    if (!names.preferredFamily) {
+        names.preferredFamily = font.names.fontFamily;
+    }
+
+    if (!names.preferredSubfamily) {
+        names.preferredSubfamily = font.names.fontSubfamily;
+    }
+
+    var languageTags = [];
+    var nameTable = _name.make(names, languageTags);
+    var ltagTable = (languageTags.length > 0 ? ltag.make(languageTags) : undefined);
+
     var postTable = post.make();
     var cffTable = cff.make(font.glyphs, {
-        version: font.version,
-        fullName: fullName,
-        familyName: font.familyName,
-        weightName: font.styleName,
+        version: font.getEnglishName('version'),
+        fullName: englishFullName,
+        familyName: englishFamilyName,
+        weightName: englishStyleName,
         postScriptName: postScriptName,
         unitsPerEm: font.unitsPerEm
     });
-    // Order the tables according to the the OpenType specification 1.4.
+
+    // The order does not matter because makeSfntTable() will sort them.
     var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable];
+    if (ltagTable) {
+        tables.push(ltagTable);
+    }
 
     var sfntTable = makeSfntTable(tables);
 

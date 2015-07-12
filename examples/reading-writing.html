@@ -67,7 +67,7 @@
         inFont = font;
         var buffer = inFont.toBuffer();
         outFont = opentype.parse(buffer);
-        document.getElementById('fontFamilyName').innerHTML = outFont.familyName;
+        document.getElementById('fontFamilyName').innerHTML = outFont.names.fontFamily.en;
 
         for (var i = 0; i < outFont.glyphs.length; i++) {
             var glyph = outFont.glyphs.get(i);

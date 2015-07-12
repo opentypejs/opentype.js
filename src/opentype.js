@@ -169,8 +169,7 @@ function parseBuffer(buffer) {
     }
 
     font.tables.name = _name.parse(data, nameOffset, ltagTable);
-    font.familyName = font.tables.name.fontFamily;
-    font.styleName = font.tables.name.fontSubfamily;
+    font.names = font.tables.name;
 
     if (glyfOffset && locaOffset) {
         var shortVersion = indexToLocFormat === 0;

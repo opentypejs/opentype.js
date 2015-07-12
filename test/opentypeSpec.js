@@ -9,7 +9,7 @@ var opentype = require('../src/opentype.js');
 describe('OpenType.js', function() {
     it('can load a TrueType font', function() {
         var font = opentype.loadSync('./fonts/Roboto-Black.ttf');
-        assert.equal(font.familyName, 'Roboto Bk');
+        assert.deepEqual(font.names.fontFamily, {en: 'Roboto Bk'});
         assert.equal(font.unitsPerEm, 2048);
         assert.equal(font.glyphs.length, 1037);
         var aGlyph = font.charToGlyph('A');
@@ -20,7 +20,7 @@ describe('OpenType.js', function() {
 
     it('can load a OpenType/CFF font', function() {
         var font = opentype.loadSync('./fonts/FiraSansOT-Medium.otf');
-        assert.equal(font.familyName, 'Fira Sans OT Medium');
+        assert.deepEqual(font.names.fontFamily, {en: 'Fira Sans OT Medium'});
         assert.equal(font.unitsPerEm, 1000);
         assert.equal(font.glyphs.length, 1151);
         var aGlyph = font.charToGlyph('A');

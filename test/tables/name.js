@@ -1,0 +1,277 @@
+'use strict';
+
+var assert = require('assert');
+var mocha = require('mocha');
+var describe = mocha.describe;
+var it = mocha.it;
+var table = require('../../src/table');
+var testutil = require('../testutil');
+var types = require('../../src/types');
+var _name = require('../../src/tables/name');
+
+// For testing, we need a custom function that builds name tables.
+// The public name.make() API of opentype.js is hiding the complexity
+// of the various historic encodings and language identification
+// systems that are used in OpenType and TrueType. Instead, it emits a
+// simple JavaScript dictionary keyed by IETF BCP 47 language codes,
+// which is the same format that is used for HTML and XML language
+// tags.  That is convenient for users of opentype.js, but it
+// complicates testing.
+function makeNameTable(names) {
+    var t = new table.Table('name', [
+        {name: 'format', type: 'USHORT', value: 0},
+        {name: 'count', type: 'USHORT', value: names.length},
+        {name: 'stringOffset', type: 'USHORT', value: 6 + names.length * 12}
+    ]);
+    var stringPool = [];
+
+    for (var i = 0; i < names.length; i++) {
+        var name = names[i];
+        var text = testutil.unhex(name[1]);
+        var record = new table.Table('NameRecord', [
+            {name: 'platformID', type: 'USHORT', value: name[2]},
+            {name: 'encodingID', type: 'USHORT', value: name[3]},
+            {name: 'languageID', type: 'USHORT', value: name[4]},
+            {name: 'nameID', type: 'USHORT', value: name[0]},
+            {name: 'length', type: 'USHORT', value: text.byteLength},
+            {name: 'offset', type: 'USHORT', value: stringPool.length}
+        ]);
+        t.fields.push({name: 'record_' + i, type: 'TABLE', value: record});
+        for (var j = 0; j < text.byteLength; j++) {
+            stringPool.push(text.getUint8(j));
+        }
+    }
+
+    t.fields.push({name: 'strings', type: 'LITERAL', value: stringPool});
+    var bytes = types.encode.TABLE(t);
+    var data = new DataView(new ArrayBuffer(bytes.length), 0);
+    for (var k = 0; k < bytes.length; k++) {
+        data.setUint8(k, bytes[k]);
+    }
+
+    return data;
+}
+
+function parseNameTable(names, ltag) {
+    return _name.parse(makeNameTable(names), 0, ltag);
+}
+
+function getNameRecords(names) {
+    var result = [];
+    var stringPool = names.fields[names.fields.length - 1];
+    assert(stringPool.name === 'strings');
+    for (var i = 0; i < names.fields.length; i++) {
+        var field = names.fields[i];
+        if (field.name.indexOf('record_') === 0) {
+            var name = field.value;
+            var encodedText =
+                stringPool.value.slice(name.offset, name.offset + name.length);
+            var plat =
+                {0: 'Uni', 1: 'Mac', 2: 'ISO', 3: 'Win'}[name.platformID] ||
+                name.platormID;
+            var enc;
+            var lang;
+            if (name.platformID === 0) {
+                enc = {3: 'UCS-2', 4: 'UTF-16'}[name.encodingID];
+                lang = undefined;
+            } else if (name.platformID === 1) {
+                enc = {0: 'smRoman', 28: 'smEthiopic'}[name.encodingID];
+                lang = {
+                    0: 'langEnglish',
+                    2: 'langGerman',
+                    81: 'langIndonesian',
+                    143: 'langInuktitut'
+                }[name.languageID];
+            } else if (name.platformID === 3) {
+                enc = {1: 'UCS-2', 10: 'UCS-4'}[name.encodingID];
+                lang = {
+                    0x0407: 'German/Germany',
+                    0x0409: 'English/US',
+                    0x0411: 'Japanese/Japan',
+                    0x0421: 'Indonesian/Indonesia',
+                    0x045d: 'Inuktitut/Canada',
+                    0x085d: 'Inuktitut-Latin/Canada'
+                }[name.languageID];
+            } else {
+                enc = lang = undefined;
+            }
+
+            result.push(plat + ' ' + (enc ? enc : name.encodingID) +
+                        ' ' + (lang ? lang : name.languageID) +
+                        ' N' + name.nameID +
+                        ' [' + testutil.hex(encodedText) + ']');
+        }
+    }
+
+    return result;
+}
+
+describe('tables/name.js', function() {
+    it('can parse a naming table', function() {
+        assert.deepEqual(parseNameTable([
+            [1, '0057 0061 006C 0072 0075 0073', 3, 1, 0x0409],
+            [1, '140A 1403 1555 1585', 3, 1, 0x045D],
+            [1, '0041 0069 0076 0069 0071', 3, 1, 0x085D],
+            [1, '6D77 99AC', 3, 1, 0x0411],
+            [300, '42 6C 61 63 6B 20 43 6F 6E 64 65 6E 73 65 64', 1, 0, 0],
+            [300, '4B 6F 79 75 20 53 DD 6B DD DF DD 6B', 1, 35, 17],
+            [300, '8F EE EB F3 F7 E5 F0 20 F2 E5 F1 E5 ED', 1, 7, 44],
+            [44444, '004C 0069 0070 0073 0074 0069 0063 006B 0020 D83D DC84', 3, 10, 0x0409]
+        ], undefined), {
+            fontFamily: {
+                en: 'Walrus',
+                iu: 'ᐊᐃᕕᖅ',
+                'iu-Latn': 'Aiviq',
+                ja: '海馬'
+            },
+            300: {
+                bg: 'Получер тесен',
+                en: 'Black Condensed',
+                tr: 'Koyu Sıkışık'
+            },
+            44444: {
+                en: 'Lipstick 💄'
+            }
+        });
+    });
+
+    it('can parse a naming table which refers to an ‘ltag’ table', function() {
+        var ltag = ['en', 'de', 'de-1901'];
+        assert.deepEqual(parseNameTable([
+            [1, '0057 0061 006C 0072 0075 0073', 0, 4, 0],
+            [1, '0057 0061 006C 0072 006F 0073 0073', 0, 4, 1],
+            [1, '0057 0061 006C 0072 006F 00DF', 0, 4, 2],
+            [999, '0057 0061 006C 0072 0075 0073 002D 0054 0068 0069 006E', 0, 4, 0xFFFF]
+        ], ltag), {
+            fontFamily: {
+                de: 'Walross',
+                'de-1901': 'Walroß',
+                en: 'Walrus'
+            },
+            999: {
+                und: 'Walrus-Thin'
+            }
+        });
+    });
+
+    it('ignores name records for unknown platforms', function() {
+        assert.deepEqual(parseNameTable([
+            [1, '01 02', 666, 1, 1]
+        ]), {});
+    });
+
+    it('can make a naming table', function() {
+        // This is an interesting test case for various reasons:
+        // * Indonesian ('id') uses the same string as English,
+        //   so we exercise the building of string pools;
+        var names = {
+            fontFamily: {
+                en: 'Walrus',
+                de: 'Walross',
+                id: 'Walrus'
+            }
+        };
+        var ltag = [];
+        assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
+            'Mac smRoman langEnglish N1 [57 61 6C 72 75 73]',
+            'Mac smRoman langGerman N1 [57 61 6C 72 6F 73 73]',
+            'Mac smRoman langIndonesian N1 [57 61 6C 72 75 73]',
+            'Win UCS-2 German/Germany N1 [00 57 00 61 00 6C 00 72 00 6F 00 73 00 73]',
+            'Win UCS-2 English/US N1 [00 57 00 61 00 6C 00 72 00 75 00 73]',
+            'Win UCS-2 Indonesian/Indonesia N1 [00 57 00 61 00 6C 00 72 00 75 00 73]'
+        ]);
+        assert.deepEqual(ltag, []);
+    });
+
+    it('can make a naming table that refers to a language tag table', function() {
+        // Neither Windows nor MacOS define a numeric language code
+        // for “German in the traditional orthography” (de-1901).
+        // Windows has one for “Inuktitut in Latin” (iu-Latn),
+        // but MacOS does not.
+        var names = {
+            fontFamily: {
+                'de-1901': 'Walroß',
+                'iu-Latn': 'Aiviq'
+            }
+        };
+        var ltag = [];
+        assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
+            'Uni UTF-16 0 N1 [00 57 00 61 00 6C 00 72 00 6F 00 DF]',
+            'Uni UTF-16 1 N1 [00 41 00 69 00 76 00 69 00 71]',
+            'Win UCS-2 Inuktitut-Latin/Canada N1 [00 41 00 69 00 76 00 69 00 71]'
+        ]);
+        assert.deepEqual(ltag, ['de-1901', 'iu-Latn']);
+    });
+
+    it('can make a naming table for languages in unsupported scripts', function() {
+        // MacJapanese would need very large tables for conversion,
+        // so we do not ship a codec for this encoding in opentype.js.
+        // The implementation should fall back to emitting Unicode strings
+        // with a BCP 47 language code; only newer versions of MacOS will
+        // recognize it but this is better than stripping the string away.
+        var names = {
+            fontFamily: {
+                ja: '海馬'
+            }
+        };
+        var ltag = [];
+        assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
+            'Uni UTF-16 0 N1 [6D 77 99 AC]',
+            'Win UCS-2 Japanese/Japan N1 [6D 77 99 AC]'
+        ]);
+        assert.deepEqual(ltag, ['ja']);
+    });
+
+    it('can make a naming table for English names with unusual characters', function() {
+        // The MacRoman encoding has no interrobang character. When
+        // building a name table, this case should be handled gracefully.
+        var names = {
+            fontFamily: {
+                en: 'Hello‽'
+            }
+        };
+        var ltag = [];
+        assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
+            'Uni UTF-16 0 N1 [00 48 00 65 00 6C 00 6C 00 6F 20 3D]',
+            'Win UCS-2 English/US N1 [00 48 00 65 00 6C 00 6C 00 6F 20 3D]'
+        ]);
+        assert.deepEqual(ltag, ['en']);
+    });
+
+    it('can make a naming table for languages with unusual Mac script codes', function() {
+        // Inuktitut ('iu') has a very unusual MacOS script code (smEthiopic)
+        // although there are probably not too many Inuit in Ethiopia.
+        // Apple had run out of script codes and needed a quick hack.
+        // The implementation uses a secondary look-up table for handling such
+        // corner cases (Inuktitut is not the only one), and this test exercises it.
+        var names = {
+            fontFamily: {
+                iu: 'ᐊᐃᕕᖅ'
+            }
+        };
+        var ltag = [];
+        assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
+            'Mac smEthiopic langInuktitut N1 [84 80 CD E7]',
+            'Win UCS-2 Inuktitut/Canada N1 [14 0A 14 03 15 55 15 85]'
+        ]);
+        assert.deepEqual(ltag, []);
+    });
+
+    it('can make a naming table with custom names', function() {
+        // Custom name for a font variation axis.
+        var names = {
+            256: {
+                en: 'Width',
+                de: 'Breite'
+            }
+        };
+        var ltag = [];
+        assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
+            'Mac smRoman langEnglish N256 [57 69 64 74 68]',
+            'Mac smRoman langGerman N256 [42 72 65 69 74 65]',
+            'Win UCS-2 German/Germany N256 [00 42 00 72 00 65 00 69 00 74 00 65]',
+            'Win UCS-2 English/US N256 [00 57 00 69 00 64 00 74 00 68]'
+        ]);
+        assert.deepEqual(ltag, []);
+    });
+});
