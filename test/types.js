@@ -255,6 +255,22 @@ describe('types.js', function() {
         assert.equal(sizeOf.MACSTRING('Шрифт 字体', encoding), 0);
     });
 
+    it('can handle MACSTRING in Gaelic encoding', function() {
+        var encoding = 'x-mac-gaelic';
+        var data = '44 9C 69 E0 B6 92';
+
+        assert.equal(
+            decode.MACSTRING(unhex('DE AD BE EF ' + data), 4, 6, encoding),
+            'Dúiṫċí');
+
+        assert.equal(hex(encode.MACSTRING('Dúiṫċí', encoding)), data);  // not in cache
+        assert.equal(hex(encode.MACSTRING('Dúiṫċí', encoding)), data);  // likely cached
+        assert.equal(encode.MACSTRING('Dúiṫċí 字体', encoding), undefined);
+
+        assert.equal(sizeOf.MACSTRING('Dúiṫċí Foo', encoding), 10);
+        assert.equal(sizeOf.MACSTRING('Dúiṫċí 字体', encoding), 0);
+    });
+
     it('can handle MACSTRING in Greek encoding', function() {
         var encoding = 'x-mac-greek';
         var data = 'A1 F2 E1 ED ED E1 F4 EF F3 E5 E9 F2 C0 20 2E 85 2E';
@@ -285,6 +301,22 @@ describe('types.js', function() {
 
         assert.equal(sizeOf.MACSTRING('Þórisdóttir þó aðég', encoding), 19);
         assert.equal(sizeOf.MACSTRING('Þórisdóttir 字体', encoding), 0);
+    });
+
+    it('can handle MACSTRING in Inuit encoding', function() {
+        var encoding = 'x-mac-inuit';
+        var data = '8A 80 8C 8B AB DA CC C6 93';
+
+        assert.equal(
+            decode.MACSTRING(unhex('DE AD BE EF ' + data), 4, 9, encoding),
+            'ᐸᐃᑉᐹᒨᕆᔾᔪᑦ');
+
+        assert.equal(hex(encode.MACSTRING('ᐸᐃᑉᐹᒨᕆᔾᔪᑦ', encoding)), data);  // not in cache
+        assert.equal(hex(encode.MACSTRING('ᐸᐃᑉᐹᒨᕆᔾᔪᑦ', encoding)), data);  // likely cached
+        assert.equal(encode.MACSTRING('ᐸᐃᑉᐹᒨᕆᔾᔪᑦ 字体', encoding), undefined);
+
+        assert.equal(sizeOf.MACSTRING('ᐸᐃᑉᐹᒨᕆᔾᔪᑦ Foo', encoding), 13);
+        assert.equal(sizeOf.MACSTRING('ᐸᐃᑉᐹᒨᕆᔾᔪᑦ 字体', encoding), 0);
     });
 
     it('can handle MACSTRING in Roman encoding', function() {
