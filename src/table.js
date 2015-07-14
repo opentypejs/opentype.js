@@ -36,6 +36,8 @@ Table.prototype.sizeOf = function() {
             value = field.value;
         }
 
+        check.assert(value !== undefined, 'field.name: "' + field.name + '" has undefined value!');
+
         if (typeof value.sizeOf === 'function') {
             v += value.sizeOf();
         } else {

@@ -104,6 +104,33 @@ Parser.prototype.parseByte = function() {
     return v;
 };
 
+Parser.prototype.hexdump = function(length, width) {
+    var length = length || 32;
+    var width = width || 8;
+
+    function paddedHex(v, n){
+        return (v + (1<<(4*n))).toString(16).substr(-n).toUpperCase();
+    }
+
+    var result = "";
+    var values = [];
+    for (var i=0; i < length; i++){
+        var v = this.data.getUint8(this.offset + this.relativeOffset + i);
+        values.push(paddedHex(v,2));
+        if (i % width === width-1){
+            var address = width * Math.floor(i/width);
+            result += paddedHex(address,4) + ":\t";
+            result += values.join(' ') + "\n";
+            values = []
+        }
+    }
+    if (values.length){
+        result += width * Math.floor(i/width) + ":\t";
+        result += values.join('\t') + "\n";
+    }
+    return result;
+};
+
 Parser.prototype.parseChar = function() {
     var v = this.data.getInt8(this.offset + this.relativeOffset);
     this.relativeOffset += 1;

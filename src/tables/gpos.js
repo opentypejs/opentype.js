@@ -25,15 +25,17 @@ function parseTaggedListTable(data, start) {
 // Format 2 is a list of ranges. It is expanded in a list of glyphs, maybe not the best idea.
 function parseCoverageTable(data, start, subtable) {
     var p = new parse.Parser(data, start);
-    subtable.format = p.parseUShort();
-    subtable.count =  p.parseUShort();
-    if (subtable.format === 1) {
-        return p.parseUShortList(subtable.count);
+    subtable.coveragetable = [];
+    subtable.coveragetable.format = p.parseUShort();
+    subtable.coveragetable.count =  p.parseUShort();
+    if (subtable.coveragetable.format === 1) {
+        return p.parseUShortList(subtable.coveragetable.count);
     }
-    else if (subtable.format === 2) {
+    else if (subtable.coveragetable.format === 2) {
         subtable.ranges = [];
         var coverage = [];
-        for (var i=0; i < subtable.count; i++) {
+        var count = subtable.coveragetable.count;
+        for (; count--;) {
             var range = {
                 'begin': p.parseUShort(),
                 'end': p.parseUShort(),
@@ -101,11 +103,18 @@ function parseClassDefTable(data, start) {
 // Parse a pair adjustment positioning subtable, format 1 or format 2
 function parsePairPosSubTable(data, start) {
     var p = new parse.Parser(data, start);
+    console.error("parsePairPosSubTable(data, start="+start+")");
+    console.error("hexdump:\n" + p.hexdump());
+
     // This part is common to format 1 and format 2 subtables
 
     var subTable = {};
     subTable.format = p.parseUShort();
     subTable.coverageOffset = p.parseUShort();
+
+    console.error("subTable.format: " + subTable.format);
+    console.error("coverageOffset: " + subTable.coverageOffset);
+
     subTable.coverage = parseCoverageTable(data, start + subTable.coverageOffset, subTable);
 
     // valueFormat 4: XAdvance only, 1: XPlacement only, 0: no ValueRecord for second glyph
@@ -113,14 +122,20 @@ function parsePairPosSubTable(data, start) {
     subTable.valueFormat1 = p.parseUShort();
     subTable.valueFormat2 = p.parseUShort();
 
+    console.error("valueFormat1: " + subTable.valueFormat1);
+    console.error("valueFormat2: " + subTable.valueFormat2);
+
     var value1;
     var value2;
     check.argument(subTable.valueFormat1 == 4 && subTable.valueFormat2 == 0,
                    'GPOS table: Only valueFormat1 = 4 and valueFormat2 = 0 is supported.');
     subTable.sharedPairSets = {};
-    if (subTable.format === 1) {
+
+    console.error("subTable.format: " + subTable.format);
+    if (subTable.format == 1) {
         // Pair Positioning Adjustment: Format 1
         var pairSetCount = p.parseUShort();
+        console.error("FORMAT==1: pairSetCount: " + pairSetCount);
         subTable.pairSet = [];
         // Array of offsets to PairSet tables-from beginning of PairPos subtable-ordered by Coverage Index
         var pairSetOffsets = p.parseOffset16List(pairSetCount);
@@ -151,7 +166,9 @@ function parsePairPosSubTable(data, start) {
         };
         return subTable;
     }
-    else if (subTable.format === 2) {
+    else if (subTable.format == 2) {
+        console.error("FORMAT==2");
+
         // Pair Positioning Adjustment: Format 2
         var classDef1Offset = p.parseUShort();
         var classDef2Offset = p.parseUShort();
@@ -207,8 +224,11 @@ var LType = Object.freeze({
 
 // Parse a LookupTable (present in of GPOS, GSUB, GDEF, BASE, JSTF tables).
 function parseLookupTable(data, start) {
-    var p = new parse.Parser(data, start)
-      , lookupType = p.parseUShort()
+    console.error("== Parse Lookup Table ==");
+    console.error("== start:" + start + " ==");
+    var p = new parse.Parser(data, start);
+        console.error(">> hexdump:\n" + p.hexdump());
+    var lookupType = p.parseUShort()
       , lookupFlag = p.parseUShort()
       , useMarkFilteringSet = lookupFlag & 0x10
       , subTableCount = p.parseUShort()
@@ -292,21 +312,21 @@ function parseGposTable(data, start, font) {
 
 function encodeCoverageTable(t, subtable, PREFIX){
     var size = 0;
-    t.push({name: PREFIX+'_format', type: 'USHORT', value: subtable.format});
-    t.push({name: PREFIX+'_count', type: 'USHORT', value: subtable.count});
+    t.push({name: PREFIX+'_format', type: 'USHORT', value: subtable.coveragetable.format});
+    t.push({name: PREFIX+'_count', type: 'USHORT', value: subtable.coveragetable.count});
     size += 4;
 
     switch (subtable.format){
         case 1:
-            for (var i=0; i < subtable.count; i++){
+            for (var i=0; i < subtable.coveragetable.count; i++){
                 t.push({type: 'USHORT', value: subtable.coverage[i]});
                 size += 2;
             }
             break;
         case 2:
-            check.argument(subtable.count === subtable.ranges.length, 'subtable.ranges.length=' + subtable.ranges.length + ' subtable.count=' + subtable.count);
+            check.argument(subtable.ranges.length === subtable.coveragetable.count, 'subtable.ranges.length=' + subtable.ranges.length + ' subtable.count=' + subtable.coveragetable.count);
             var coverage = [];
-            for (var i=0; i < subtable.count; i++) {
+            for (var i=0; i < subtable.coveragetable.count; i++) {
                 var range = subtable.ranges[i];
                 t.push({type: 'USHORT', value: range.begin});
                 t.push({type: 'USHORT', value: range.end});
@@ -329,7 +349,7 @@ function encodePairPosSubTable(t, subtable, i, prefix){
     t.push({name: PREFIX+'_coverageOffset', type: 'USHORT', value: subtable.coverageOffset});
     size += 4;
 
-    size += encodeCoverageTable(t, subtable, prefix);
+    size += encodeCoverageTable(t, subtable, PREFIX);
 
     t.push({name: PREFIX+'_valueFormat1', type: 'USHORT', value: subtable.valueFormat1});
     t.push({name: PREFIX+'_valueFormat2', type: 'USHORT', value: subtable.valueFormat2});
@@ -339,6 +359,8 @@ function encodePairPosSubTable(t, subtable, i, prefix){
 }
 
 function encodeLookupEntry(t, gpos, i){
+    console.error("== Encode Lookup Entry ==");
+
     var size = 0;
     var table = gpos.lookupList[i];
     var PREFIX = 'lookup_' + i;
@@ -390,6 +412,7 @@ function encodeLookupEntry(t, gpos, i){
 
 function makeGposTable(font) {
     var gpos = font.tables.gpos;
+    console.error("MAKE GPOS TABLE");
 
     check.argument(gpos.tableVersion === 1, 'Encoding unsupported GPOS table version ('+gpos.tableVersion+').');
 
@@ -417,11 +440,12 @@ function makeGposTable(font) {
     var lookupOffsets = [];
     var lookupEntries = [];
 
-    var offset = 2 * gpos.lookupList.length + 12; //FIXME: 12 bytes is the hardcoded header-size in the current implementation
+//    var offset = 2 * gpos.lookupList.length + 12; //FIXME: 12 bytes is the hardcoded header-size in the current implementation
+    var offset = 2 * gpos.lookupList.length;
     for (var i = 0; i < gpos.lookupList.length; i++) {
-        offset += encodeLookupEntry(lookupEntries, gpos, i, offset);
         console.error("saving offset[",i,"] = ", offset);
         lookupOffsets.push({name: 'lookup_offset_' + i, type: 'USHORT', value: offset});
+        offset += encodeLookupEntry(lookupEntries, gpos, i);
     }
 
     t.fields = t.fields.concat(lookupOffsets);
