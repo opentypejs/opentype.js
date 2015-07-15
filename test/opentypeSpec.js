@@ -59,14 +59,36 @@ describe('OpenType.js', function() {
         var new_llist = newfont.tables.gpos.lookupList;
         assert.equal(old_llist.length,
                      new_llist.length);
+
+
+        var r = "old lookupTypes: ";
         for (var i=0; i < old_llist.length; i++){
-            assert.equal(old_llist[i].lookupType,
-                         new_llist[i].lookupType);
-            assert.equal(old_llist[i].subtables.length,
-                         new_llist[i].subtables.length);
-            for (var j=0; j < old_llist[i].subtables.length; j++){
-                assert.equal(old_llist[i].subtables[j].pairSet.length,
-                             new_llist[i].subtables[j].pairSet.length);
+            r += " " + old_llist[i].lookupType;
+        }
+
+        r += "\nnew lookupTypes: ";
+        for (var i=0; i < new_llist.length; i++){
+            r += " " + new_llist[i].lookupType;
+        }
+        assert.equal(r, 0); //This will break on purpose right now, for debugging purposes, sorry :-)
+
+        var oi=0, ni=0;
+        for (; ni < new_llist.length; oi++, ni++){
+            while (new_llist[ni].lookupType != 2){
+                if (ni++ == new_llist.length) break;
+            };
+
+            while (old_llist[ni].lookupType != 2){
+                if (oi++ == old_llist.length) break;
+            };
+
+            assert.equal(old_llist[oi].lookupType,
+                         new_llist[ni].lookupType);
+            assert.equal(old_llist[oi].subtables.length,
+                         new_llist[ni].subtables.length);
+            for (var j=0; j < new_llist[ni].subtables.length; j++){
+                assert.equal(old_llist[oi].subtables[j].pairSet.length,
+                             new_llist[ni].subtables[j].pairSet.length);
             }
         }
     });

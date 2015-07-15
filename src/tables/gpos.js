@@ -301,6 +301,8 @@ function parseLookupTable(data, start) {
 function parseGposTable(data, start, font) {
     var p = new parse.Parser(data, start);
 
+    console.error("parseGposTable hexdump:\n" + p.hexdump());
+
     var gpos = {};
     gpos.tableVersion = p.parseFixed();
     check.argument(gpos.tableVersion === 1, 'Unsupported GPOS table version ('+gpos.tableVersion+').');
@@ -428,6 +430,22 @@ function encodeLookupEntry(t, gpos, i){
     return size;
 }
 
+function makeScriptList(t, gpos){
+ /* ignored by parser */
+ // FIX-ME! For now this is only a void list:
+    var numEntries = 0;
+    t.fields.push({type: 'USHORT', value: numEntries});
+    return 2;
+}
+
+function makeFeatureList(t, gpos){
+ /* ignored by parser */
+ // FIX-ME! For now this is only a void list:
+    var numEntries = 0;
+    t.fields.push({type: 'USHORT', value: numEntries});
+    return 2;
+}
+
 function makeGposTable(font) {
     var gpos = font.tables.gpos;
     console.error("MAKE GPOS TABLE");
@@ -436,34 +454,30 @@ function makeGposTable(font) {
 
     var t = new table.Table('GPOS', [
         {name: 'version', type: 'FIXED', value: 0x00010000 /*gpos.tableVersion*/},
-        {name: 'ScriptListOffset', type: 'USHORT', value: 0}, /* ignored by parser */
-        {name: 'FeatureListOffset', type: 'USHORT', value: 0}, /* ignored by parser */
-        {name: 'lookupListOffset', type: 'USHORT', value: 10}, /* FIXED (4bytes) + 3 * USHORT (2bytes) = 10 */
-        {name: 'lookupCount', type: 'USHORT', value: gpos.lookupList ? gpos.lookupList.length : 0},
+        {name: 'ScriptListOffset', type: 'USHORT', value: 0},
+        {name: 'FeatureListOffset', type: 'USHORT', value: 0},
+        {name: 'lookupListOffset', type: 'USHORT', value: 0},
     ]);
 
-//    t.ScriptList = makeScriptList(gpos); /* ignored by parser */
-//    t.FeatureList = makeFeatureList(gpos); /* ignored by parser */
+    var offset = 10;  /* FIXED (4bytes) + 3 * USHORT (2bytes) = 10 */
 
-// OVERALL STRUCTURE of the data we need to parse here:
-//
-//      < UShort lookupListOffset >
-//at offset = lookupListOffset:
-//      < UShort lookupCount >
-//      < Offset16List[lookupCount] lookupTableOffsets >
-//
-//at offset = start + lookupListOffset + lookupTableOffsets[i]:
-//      < LookupTable data entry >
+    t.ScriptListOffset = offset;
+    offset += makeScriptList(t, gpos);
+
+    t.featureListOffset = offset;
+    offset += makeFeatureList(t, gpos);
+
+    t.lookupListOffset = offset;
+
+    t.fields.push({name: 'lookupCount', type: 'USHORT',
+                  value: gpos.lookupList ? gpos.lookupList.length : 0});
 
     var lookupOffsets = [];
     var lookupEntries = [];
-
-//    var offset = 2 * gpos.lookupList.length + 12; //FIXME: 12 bytes is the hardcoded header-size in the current implementation
-    var offset = 2 * gpos.lookupList.length;
+    var offset_in_table = 0;
     for (var i = 0; i < gpos.lookupList.length; i++) {
-        console.error("saving offset[",i,"] = ", offset);
-        lookupOffsets.push({name: 'lookup_offset_' + i, type: 'USHORT', value: offset});
-        offset += encodeLookupEntry(lookupEntries, gpos, i);
+        lookupOffsets.push({type: 'USHORT', value: offset_in_table});
+        offset_in_table += encodeLookupEntry(lookupEntries, gpos, i);
     }
 
     t.fields = t.fields.concat(lookupOffsets);
