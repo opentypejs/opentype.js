@@ -44,7 +44,7 @@ describe('OpenType.js', function() {
         assert.notEqual(font.tables.gpos.lookupList, undefined);
 
         //keep copies of the values of the fields we'll ckeck for persistance
-        var lookupListCount = font.tables.gpos.lookupList.length;
+        var old_llist = font.tables.gpos.lookupList;
 
         //export the font
         var buffer = font.toBuffer();
@@ -56,7 +56,19 @@ describe('OpenType.js', function() {
         assert.notEqual(newfont.tables.gpos.lookupList, undefined);
 
         //verify if the regenearted tables still hold the correct values
-        assert.equal(newfont.tables.gpos.lookupList.length, lookupListCount);
+        var new_llist = newfont.tables.gpos.lookupList;
+        assert.equal(old_llist.length,
+                     new_llist.length);
+        for (var i=0; i < old_llist.length; i++){
+            assert.equal(old_llist[i].lookupType,
+                         new_llist[i].lookupType);
+            assert.equal(old_llist[i].subtables.length,
+                         new_llist[i].subtables.length);
+            for (var j=0; j < old_llist[i].subtables.length; j++){
+                assert.equal(old_llist[i].subtables[j].pairSet.length,
+                             new_llist[i].subtables[j].pairSet.length);
+            }
+        }
     });
 
     it('can parse OpenType GPOS tables', function() {
