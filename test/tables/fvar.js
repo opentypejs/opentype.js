@@ -22,7 +22,6 @@ describe('tables/fvar.js', function() {
                 minValue: 100,
                 defaultValue: 400,
                 maxValue: 900,
-                flags: 0,
                 nameID: 257
             },
             {
@@ -30,19 +29,16 @@ describe('tables/fvar.js', function() {
                 minValue: 50,
                 defaultValue: 100,
                 maxValue: 200,
-                flags: 0,
                 nameID: 258
             }
         ],
         instances: [
             {
                 nameID: 259,
-                flags: 0,
                 coordinates: {wght: 300, wdth: 100}
             },
             {
                 nameID: 260,
-                flags: 0,
                 coordinates: {wght: 300, wdth: 75}
             }
         ]

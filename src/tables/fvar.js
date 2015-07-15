@@ -28,7 +28,7 @@ function makeFvarAxis(axis) {
         {name: 'minValue', type: 'FIXED', value: axis.minValue << 16},
         {name: 'defaultValue', type: 'FIXED', value: axis.defaultValue << 16},
         {name: 'maxValue', type: 'FIXED', value: axis.maxValue << 16},
-        {name: 'flags', type: 'USHORT', value: axis.flags},
+        {name: 'flags', type: 'USHORT', value: 0},
         {name: 'nameID', type: 'USHORT', value: axis.nameID}
     ]);
 }
@@ -40,7 +40,7 @@ function parseFvarAxis(data, start) {
     axis.minValue = p.parseFixed();
     axis.defaultValue = p.parseFixed();
     axis.maxValue = p.parseFixed();
-    axis.flags = p.parseUShort();
+    p.skip('uShort', 1);  // reserved for flags; no values defined
     axis.nameID = p.parseUShort();
     return axis;
 }
@@ -48,7 +48,7 @@ function parseFvarAxis(data, start) {
 function makeFvarInstance(inst, axes) {
     var fields = [
         {name: 'nameID', type: 'USHORT', value: inst.nameID},
-        {name: 'flags', type: 'USHORT', value: inst.flags}
+        {name: 'flags', type: 'USHORT', value: 0}
     ];
 
     for (var i = 0; i < axes.length; ++i) {
@@ -67,7 +67,7 @@ function parseFvarInstance(data, start, axes) {
     var inst = {};
     var p = new parse.Parser(data, start);
     inst.nameID = p.parseUShort();
-    inst.flags = p.parseUShort();
+    p.skip('uShort', 1);  // reserved for flags; no values defined
 
     inst.coordinates = {};
     for (var i = 0; i < axes.length; ++i) {
