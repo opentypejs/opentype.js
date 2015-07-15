@@ -243,7 +243,7 @@ function parseLookupTable(data, start) {
 
     switch (lookupType){
         case LType.SINGLE_ADJUSTMENT:
-            //FIX-ME: NotImplementedError
+            console.error("FIX-ME: lookup type SINGLE_ADJUSTMENT is not implemented!");
             break;
 
         case LType.PAIR_ADJUSTMENT: //Pair adjustment
@@ -253,16 +253,34 @@ function parseLookupTable(data, start) {
             break;
 
         case LType.CURSIVE_ADJUSTMENT:
+            console.error("FIX-ME: lookup type CURSIVE_ADJUSTMENT is not implemented!");
+            break;
+
         case LType.MARK_TO_BASE_ATTACHMENT:
+            console.error("FIX-ME: lookup type MARK_TO_BASE_ATTACHMENT is not implemented!");
+            break;
+
         case LType.MARK_TO_LIGATURE_ATTACHMENT:
+            console.error("FIX-ME: lookup type MARK_TO_LIGATURE_ATTACHMENT is not implemented!");
+            break;
+
         case LType.MARK_TO_MARK_ATTACHMENT:
+            console.error("FIX-ME: lookup type MARK_TO_MARK_ATTACHMENT is not implemented!");
+            break;
+
         case LType.CONTEXTUAL_POSITIONING:
+            console.error("FIX-ME: lookup type CONTEXTUAL_POSITIONING is not implemented!");
+            break;
+
         case LType.CHAINED_CONTEXTUAL_POSITIONING:
+            console.error("FIX-ME: lookup type CHAINED_CONTEXTUAL_POSITIONING is not implemented!");
+            break;
+
         case LType.EXTENSION_POSITIONING:
-            //FIX-ME: NotImplementedError
+            console.error("FIX-ME: lookup type EXTENSION_POSITIONING is not implemented!");
             break;
         default:
-            //FIX-ME: Invalid Lookup Type
+            console.error("Invalid Lookup Type!");
     }
 
     // Provide a function which finds the kerning values in the subtables.
