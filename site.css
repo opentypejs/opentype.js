@@ -191,6 +191,16 @@ a {
     margin-left: 12em;
 }
 
+#font-data .langtag {
+    font-size: 85%;
+    color: #999;
+    white-space: nowrap;
+}
+
+#font-data .langname {
+    padding-right: 0.5em;
+}
+
 #file {
     float: left;
     font-size: 11px;
