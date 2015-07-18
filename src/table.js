@@ -31,6 +31,8 @@ Table.prototype.sizeOf = function() {
     var v = 0;
     for (var i = 0; i < this.fields.length; i += 1) {
         var field = this.fields[i];
+        check.assert(field.name !== undefined, 'Field at index i='+i+' has undefined name and its value is "' + field.value + '". The field object is:'+ field + ' this.tableName='+this.tableName);
+
         var value = this[field.name];
         if (value === undefined) {
             value = field.value;

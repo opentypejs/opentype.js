@@ -346,7 +346,7 @@ function encodeCoverageTable(t, subtable, PREFIX){
     switch (subtable.format){
         case 1:
             for (var i=0; i < subtable.coveragetable.count; i++){
-                t.fields.push({type: 'USHORT', value: subtable.coverage[i]});
+                t.fields.push({name: PREFIX+"_coverage_"+i, type: 'USHORT', value: subtable.coverage[i]});
                 size += 2;
             }
             break;
@@ -355,9 +355,9 @@ function encodeCoverageTable(t, subtable, PREFIX){
             var coverage = [];
             for (var i=0; i < subtable.coveragetable.count; i++) {
                 var range = subtable.ranges[i];
-                t.fields.push({type: 'USHORT', value: range.begin});
-                t.fields.push({type: 'USHORT', value: range.end});
-                t.fields.push({type: 'USHORT', value: range.index});
+                t.fields.push({name: PREFIX+"_rage_begin_"+i, type: 'USHORT', value: range.begin});
+                t.fields.push({name: PREFIX+"_rage_end_"+i, type: 'USHORT', value: range.end});
+                t.fields.push({name: PREFIX+"_rage_index_"+i, type: 'USHORT', value: range.index});
                 size += 6;
             }
             break;
@@ -371,17 +371,18 @@ function encodeCoverageTable(t, subtable, PREFIX){
 function encodePairSet(t, subtable, i){
     var size = 0;
     var pairset = subtable.pairsets[subtable.coverage[i]];
+    if (!pairset) console.error("encodePairSet: pairset is undefined! i="+i);
     var pairValueCount = pairset.valueRecords.length;
 
-    t.push({type: 'USHORT', value: pairValueCount});
+    t.push({name: "PairValueCount", type: 'USHORT', value: pairValueCount});
     size += 2;
     for (var firstGlyph = 0; firstGlyph < pairValueCount; firstGlyph++) {
         var value = pairset.valueRecords[firstGlyph];
-        t.push({type: 'USHORT', value: value.secondGlyph});
+        t.push({name: "value_secondGlyph", type: 'USHORT', value: value.secondGlyph});
         size += 2;
 
-        if (subtable.valueFormat1) { t.push({type: 'USHORT', value: value.v1}); size += 2; }
-        if (subtable.valueFormat2) { t.push({type: 'USHORT', value: value.v2}); size += 2; }
+        if (subtable.valueFormat1) { t.push({name: "value_v1", type: 'USHORT', value: value.v1}); size += 2; }
+        if (subtable.valueFormat2) { t.push({name: "value_v2", type: 'USHORT', value: value.v2}); size += 2; }
     }
 
     return size;
@@ -407,8 +408,8 @@ function encodePairPosSubTable(t, subtable, i, prefix){
             var pairSets = [];
             
             var offset = t.sizeOf();
-            for (var j=0; j < subtable.pairsets.length; j++){
-                pairSetOffsets.push({type: 'USHORT', value: offset});
+            for (var j=0; j < subtable.coverage.length; j++){
+                pairSetOffsets.push({name: PREFIX+'_offset_'+j, type: 'USHORT', value: offset});
                 offset += encodePairSet(pairSets, subtable, j);
             }
 
@@ -428,34 +429,31 @@ function encodeLookupEntry(t, gpos, i){
     console.error("== Encode Lookup Entry ==");
 
     var size = 0;
-    var table = gpos.lookupList[i];
+    var ltable = gpos.lookupList[i];
     var PREFIX = 'lookup_' + i;
+    var lookupEntry = new table.Table('LookupEntry', []);
 
-    t.fields.push({name: PREFIX+'_type', type: 'USHORT', value: table.lookupType});
-    t.fields.push({name: PREFIX+'_flag', type: 'USHORT', value: table.lookupFlag});
-    t.fields.push({name: PREFIX+'_subtable_count', type: 'USHORT', value: table.subtables.length});
-    size += 6;
+    lookupEntry.fields.push({name: PREFIX+'_type', type: 'USHORT', value: ltable.lookupType});
+    lookupEntry.fields.push({name: PREFIX+'_flag', type: 'USHORT', value: ltable.lookupFlag});
+    size += 4;
 
-    var subtable_offsets = [];
-    for (var j=0; j < table.subtables.length; j++){
-        subtable_offsets.push({name: PREFIX+'_subtable_offset_' + j, type: 'USHORT', value: 0});
-        size += 2;
-    }
+    var offsets = [];
+    var subtable_data = new table.Table('DATA', []);
 
     if (table.lookupFlag & 0x10){
-        t.fields.push({name: PREFIX+'_markFilteringSet', type: 'USHORT', value: table.markFilteringSet});
+        subtable_data.push({name: PREFIX+'_markFilteringSet', type: 'USHORT', value: ltable.markFilteringSet});
         size += 2;
     }
 
-    switch (table.lookupType){
+    switch (ltable.lookupType){
         case LType.SINGLE_ADJUSTMENT:
             //FIX-ME: NotImplementedError
-            break;
+            return 0;
 
         case LType.PAIR_ADJUSTMENT: //Pair adjustment
-            for (var j = 0; j < table.subtables.length; j++) {
-                subtable_offsets[j].value = size;
-                size += encodePairPosSubTable(t, table.subtables[j], j, PREFIX);
+            for (var j = 0; j < ltable.subtables.length; j++) {
+                offsets.push(size);
+                size += encodePairPosSubTable(subtable_data, ltable.subtables[j], j, PREFIX);
             }
             break;
 
@@ -467,14 +465,21 @@ function encodeLookupEntry(t, gpos, i){
         case LType.CHAINED_CONTEXTUAL_POSITIONING:
         case LType.EXTENSION_POSITIONING:
             //FIX-ME: NotImplementedError
-            break;
+            return 0;
         default:
             //FIX-ME: Invalid Lookup Type
+            return 0;
     }
 
-    t.fields = t.fields.concat(subtable_offsets);
-    console.error("== SIZE: " + size + "==");
+    t.fields = t.fields.concat(lookupEntry.fields);
 
+    t.fields.push({name: PREFIX+'_subtable_count', type: 'USHORT', value: offsets});
+    for (var i=0; i<offsets.length; i++){
+        t.fields.push({name: PREFIX+"_offset_"+i, type: 'USHORT', value: offsets[i]});
+        size += 2;
+    }
+
+    t.fields = t.fields.concat(subtable_data.fields);
     return size;
 }
 
@@ -482,14 +487,14 @@ function makeScriptList(t, gpos){
  /* ignored by parser */
  // FIX-ME! For now this is only a void list:
     var numEntries = 0;
-    t.fields.push({type: 'USHORT', value: numEntries});
+    t.fields.push({name: 'ScripitListNumEntries', type: 'USHORT', value: numEntries});
 }
 
 function makeFeatureList(t, gpos){
  /* ignored by parser */
  // FIX-ME! For now this is only a void list:
     var numEntries = 0;
-    t.fields.push({type: 'USHORT', value: numEntries});
+    t.fields.push({name: 'FeatureListNumEntries', type: 'USHORT', value: numEntries});
 }
 
 function makeGposTable(font) {
@@ -513,17 +518,19 @@ function makeGposTable(font) {
     console.error("makeGposTable(): gpos.lookupList.length = " + gpos.lookupList.length);
 
     t.lookupListOffset = t.sizeOf();
-    t.fields.push({name: 'lookupCount', type: 'USHORT',
-                  value: gpos.lookupList ? gpos.lookupList.length : 0});
 
     var lookupOffsets = [];
     var lookupEntries = new table.Table('LookupEntries', []);
     var offset_in_table = 0;
     for (var i = 0; i < gpos.lookupList.length; i++) {
-        lookupOffsets.push({type: 'USHORT', value: offset_in_table});
-        offset_in_table += encodeLookupEntry(lookupEntries, gpos, i);
+        var size = encodeLookupEntry(lookupEntries, gpos, i);
+        if (size>0){
+            offset_in_table += size;
+            lookupOffsets.push({name: 'LookupOffset_'+i, type: 'USHORT', value: offset_in_table});
+        }
     }
 
+    t.fields.push({name: 'lookupCount', type: 'USHORT', value: lookupOffsets.length});
     t.fields = t.fields.concat(lookupOffsets);
     t.fields = t.fields.concat(lookupEntries.fields);
     return t;
