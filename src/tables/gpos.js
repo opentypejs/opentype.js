@@ -428,14 +428,13 @@ function encodePairPosSubTable(t, subtable, i, prefix){
 function encodeLookupEntry(t, gpos, i){
     console.error("== Encode Lookup Entry ==");
 
-    var size = 0;
     var ltable = gpos.lookupList[i];
     var PREFIX = 'lookup_' + i;
-    var lookupEntry = new table.Table('LookupEntry', []);
-
-    lookupEntry.fields.push({name: PREFIX+'_type', type: 'USHORT', value: ltable.lookupType});
-    lookupEntry.fields.push({name: PREFIX+'_flag', type: 'USHORT', value: ltable.lookupFlag});
-    size += 4;
+    var lookupEntry = new table.Table('LookupEntry', [
+        {name: PREFIX+'_type', type: 'USHORT', value: ltable.lookupType}
+      , {name: PREFIX+'_flag', type: 'USHORT', value: ltable.lookupFlag}
+    ]);
+    var size = lookupEntry.sizeOf();
 
     var offsets = [];
     var subtable_data = new table.Table('DATA', []);
