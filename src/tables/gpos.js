@@ -227,9 +227,9 @@ var LType = Object.freeze({
 // Parse a LookupTable (present in of GPOS, GSUB, GDEF, BASE, JSTF tables).
 function parseLookupTable(data, start) {
     console.error("== Parse Lookup Table ==");
-    console.error("== start:" + start + " ==");
+//    console.error("== start:" + start + " ==");
     var p = new parse.Parser(data, start);
-    console.error(">> hexdump:\n" + p.hexdump());
+//    console.error(">> hexdump:\n" + p.hexdump());
 
     var lookupType = p.parseUShort()
       , lookupFlag = p.parseUShort()
@@ -254,7 +254,9 @@ function parseLookupTable(data, start) {
             break;
 
         case LType.PAIR_ADJUSTMENT:
+            console.error("PAIR_ADJUSTMENT start:", start);
             for (var i = 0; i < subTableCount; i++) {
+                console.error("parsed subTableOffsets[i]:", subTableOffsets[i]);
                 table.subtables.push(parsePairPosSubTable(data, start + subTableOffsets[i]));
             }
             break;
@@ -308,7 +310,8 @@ function parseLookupTable(data, start) {
 function parseGposTable(data, start, font) {
     var p = new parse.Parser(data, start);
 
-    console.error("**********************************************************\nparseGposTable hexdump:\n" + p.hexdump());
+    console.error("**********************************************************\nparseGposTable");
+//  console.error("hexdump:\n" + p.hexdump());
 
     var gpos = {};
     gpos.tableVersion = p.parseFixed();
@@ -329,7 +332,9 @@ function parseGposTable(data, start, font) {
 
     var lookupTableOffsets = p.parseOffset16List(lookupCount);
     var lookupListAbsoluteOffset = start + lookupListOffset;
+    console.error("lookupListAbsoluteOffset: " + lookupListAbsoluteOffset);
     for (var i = 0; i < lookupCount; i++) {
+        console.error("lookupTableOffsets["+i+"]: " + lookupTableOffsets[i]);
         var table = parseLookupTable(data, lookupListAbsoluteOffset + lookupTableOffsets[i]);
         if (table.lookupType === 2 && !font.getGposKerningValue) font.getGposKerningValue = table.getKerningValue;
         gpos.lookupList.push(table);
@@ -427,20 +432,24 @@ function encodePairPosSubTable(t, subtable, i, prefix){
 
 function encodeLookupEntry(t, gpos, i){
     console.error("== Encode Lookup Entry ==");
-
+    var start = t.sizeOf();
     var ltable = gpos.lookupList[i];
     var PREFIX = 'lookup_' + i;
     var lookupEntry = new table.Table('LookupEntry', [
         {name: PREFIX+'_type', type: 'USHORT', value: ltable.lookupType}
       , {name: PREFIX+'_flag', type: 'USHORT', value: ltable.lookupFlag}
+      , {name: PREFIX+'_subtable_count', type: 'USHORT', value: 0}
     ]);
     var size = lookupEntry.sizeOf();
+
+    console.error("ltable.lookupType: " + ltable.lookupType);
+    console.error("ltable.lookupFlag: " + ltable.lookupFlag);
 
     var offsets = [];
     var subtable_data = new table.Table('DATA', []);
 
     if (table.lookupFlag & 0x10){
-        subtable_data.push({name: PREFIX+'_markFilteringSet', type: 'USHORT', value: ltable.markFilteringSet});
+        lookupEntry.push({name: PREFIX+'_markFilteringSet', type: 'USHORT', value: ltable.markFilteringSet});
         size += 2;
     }
 
@@ -472,14 +481,15 @@ function encodeLookupEntry(t, gpos, i){
 
     t.fields = t.fields.concat(lookupEntry.fields);
 
-    t.fields.push({name: PREFIX+'_subtable_count', type: 'USHORT', value: offsets});
+    t[PREFIX+'_subtable_count'] = offsets.length;
+    console.error("encoded subtable_count:" + offsets.length);
     for (var i=0; i<offsets.length; i++){
+        console.error("encoded offsets[i]:" + offsets[i]);
         t.fields.push({name: PREFIX+"_offset_"+i, type: 'USHORT', value: offsets[i]});
-        size += 2;
     }
 
     t.fields = t.fields.concat(subtable_data.fields);
-    return size;
+    return t.sizeOf() - start;
 }
 
 function makeScriptList(t, gpos){
@@ -524,13 +534,18 @@ function makeGposTable(font) {
     for (var i = 0; i < gpos.lookupList.length; i++) {
         var size = encodeLookupEntry(lookupEntries, gpos, i);
         if (size>0){
+            console.error("encoded offset_in_table: ", offset_in_table);
+            lookupOffsets.push(offset_in_table);
             offset_in_table += size;
-            lookupOffsets.push({name: 'LookupOffset_'+i, type: 'USHORT', value: offset_in_table});
         }
     }
 
+    console.error("encoded lookupOffsets.length: ", lookupOffsets.length);
+
     t.fields.push({name: 'lookupCount', type: 'USHORT', value: lookupOffsets.length});
-    t.fields = t.fields.concat(lookupOffsets);
+    for (var i = 0; i < lookupOffsets.length; i++) {
+        t.fields.push({name: 'LookupOffset_'+i, type: 'USHORT', value: 2 + 2*lookupOffsets + lookupOffsets[i]});
+    }
     t.fields = t.fields.concat(lookupEntries.fields);
     return t;
 }

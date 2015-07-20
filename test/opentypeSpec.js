@@ -57,27 +57,14 @@ describe('OpenType.js', function() {
 
         //verify if the regenearted tables still hold the correct values
         var new_llist = newfont.tables.gpos.lookupList;
-        assert.equal(old_llist.length,
-                     new_llist.length);
 
-        var oi=0, ni=0;
-        for (; ni < new_llist.length; oi++, ni++){
-            while (new_llist[ni].lookupType != 2){
-                if (ni++ == new_llist.length) break;
-            };
-
-            while (old_llist[ni].lookupType != 2){
-                if (oi++ == old_llist.length) break;
-            };
-
-            assert.equal(old_llist[oi].lookupType,
-                         new_llist[ni].lookupType);
-            assert.equal(old_llist[oi].subtables.length,
-                         new_llist[ni].subtables.length);
-            for (var j=0; j < new_llist[ni].subtables.length; j++){
-                assert.equal(old_llist[oi].subtables[j].pairSet.length,
-                             new_llist[ni].subtables[j].pairSet.length);
-            }
+        assert.equal(old_llist[1].lookupType,
+                     new_llist[0].lookupType);
+        assert.equal(old_llist[1].subtables.length,
+                     new_llist[0].subtables.length);
+        for (var j=0; j < new_llist[0].subtables.length; j++){
+            assert.equal(old_llist[1].subtables[j].pairSet.length,
+                         new_llist[0].subtables[j].pairSet.length);
         }
     });
 
