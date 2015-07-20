@@ -229,7 +229,7 @@ function parseLookupTable(data, start) {
     console.error("== Parse Lookup Table ==");
 //    console.error("== start:" + start + " ==");
     var p = new parse.Parser(data, start);
-//    console.error(">> hexdump:\n" + p.hexdump());
+    console.error(">> hexdump:\n" + p.hexdump());
 
     var lookupType = p.parseUShort()
       , lookupFlag = p.parseUShort()
@@ -438,7 +438,6 @@ function encodeLookupEntry(t, gpos, i){
     var lookupEntry = new table.Table('LookupEntry', [
         {name: PREFIX+'_type', type: 'USHORT', value: ltable.lookupType}
       , {name: PREFIX+'_flag', type: 'USHORT', value: ltable.lookupFlag}
-      , {name: PREFIX+'_subtable_count', type: 'USHORT', value: 0}
     ]);
     var size = lookupEntry.sizeOf();
 
@@ -455,7 +454,7 @@ function encodeLookupEntry(t, gpos, i){
 
     switch (ltable.lookupType){
         case LType.SINGLE_ADJUSTMENT:
-            //FIX-ME: NotImplementedError
+            console.error("ERROR: Unimplemented Lookup Type: " + ltable.lookupType);
             return 0;
 
         case LType.PAIR_ADJUSTMENT: //Pair adjustment
@@ -472,17 +471,17 @@ function encodeLookupEntry(t, gpos, i){
         case LType.CONTEXTUAL_POSITIONING:
         case LType.CHAINED_CONTEXTUAL_POSITIONING:
         case LType.EXTENSION_POSITIONING:
-            //FIX-ME: NotImplementedError
+            console.error("ERROR: Unimplemented Lookup Type: " + ltable.lookupType);
             return 0;
         default:
-            //FIX-ME: Invalid Lookup Type
+            console.error("Invalid Lookup Type: " + ltable.lookupType);
             return 0;
     }
 
     t.fields = t.fields.concat(lookupEntry.fields);
-
-    t[PREFIX+'_subtable_count'] = offsets.length;
+    t.fields.push({name: PREFIX+'_subtable_count', type: 'USHORT', value: offsets.length})
     console.error("encoded subtable_count:" + offsets.length);
+
     for (var i=0; i<offsets.length; i++){
         console.error("encoded offsets[i]:" + offsets[i]);
         t.fields.push({name: PREFIX+"_offset_"+i, type: 'USHORT', value: offsets[i]});
@@ -544,7 +543,7 @@ function makeGposTable(font) {
 
     t.fields.push({name: 'lookupCount', type: 'USHORT', value: lookupOffsets.length});
     for (var i = 0; i < lookupOffsets.length; i++) {
-        t.fields.push({name: 'LookupOffset_'+i, type: 'USHORT', value: 2 + 2*lookupOffsets + lookupOffsets[i]});
+        t.fields.push({name: 'LookupOffset_'+i, type: 'USHORT', value: 2 + 2*lookupOffsets.length + lookupOffsets[i]});
     }
     t.fields = t.fields.concat(lookupEntries.fields);
     return t;
