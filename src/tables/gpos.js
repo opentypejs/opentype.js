@@ -103,18 +103,18 @@ function parseClassDefTable(data, start) {
 // Parse a pair adjustment positioning subtable, format 1 or format 2
 function parsePairPosSubTable(data, start) {
     var p = new parse.Parser(data, start);
-    console.error("parsePairPosSubTable(data, start="+start+"): " + p.hexdump(8));
+    console.error("parsePairPosSubTable(data, start="+start+"): \n" + p.hexdump());
 
     // This part is common to format 1 and format 2 subtables
 
     var subTable = {};
     subTable.format = p.parseUShort();
-    subTable.coverageOffset = p.parseUShort();
+    var coverageOffset = p.parseUShort();
 
     console.error("subTable.format: " + subTable.format);
-    console.error("coverageOffset: " + subTable.coverageOffset);
+    console.error("coverageOffset: " + coverageOffset);
 
-    subTable.coverage = parseCoverageTable(data, start + subTable.coverageOffset, subTable);
+    subTable.coverage = parseCoverageTable(data, start + coverageOffset, subTable);
 
     // valueFormat 4: XAdvance only, 1: XPlacement only, 0: no ValueRecord for second glyph
     // Only valueFormat1=4 and valueFormat2=0 is supported.
@@ -132,7 +132,7 @@ function parsePairPosSubTable(data, start) {
     if (subTable.format == 1) {
         // Pair Positioning Adjustment: Format 1
         var pairSetCount = p.parseUShort();
-        //console.error("FORMAT==1: pairSetCount: " + pairSetCount);
+        console.error("FORMAT==1: pairSetCount: " + pairSetCount);
         var psets = [];
         subTable.pairsets = [];
         // Array of offsets to PairSet tables-from beginning of PairPos subtable-ordered by Coverage Index
@@ -145,13 +145,14 @@ function parsePairPosSubTable(data, start) {
                 sharedPairSet = {valueRecords: []};
                 p.relativeOffset = pairSetOffset;
                 var pairValueCount = p.parseUShort();
-                var value = {};
+                console.error("pairValueCount = " + pairValueCount);
                 for (; pairValueCount--;) {
+                    var value = {};
                     value.secondGlyph = p.parseUShort();
                     if (subTable.valueFormat1) value.v1 = p.parseShort();
                     if (subTable.valueFormat2) value.v2 = p.parseShort();
                     sharedPairSet.valueRecords.push(value);
-                    //console.error("VALUE: v1=" + value.v1 + " v2=" + value.v2 + " secondGlyph=" + value.secondGlyph);
+                    if (sharedPairSet.valueRecords.length < 5) console.error("VALUE: v1=" + value.v1 + " v2=" + value.v2 + " secondGlyph=" + value.secondGlyph);
                 }
                 psets[pairSetOffset] = sharedPairSet;
             }
@@ -395,24 +396,24 @@ function encodePairSet(t, subtable, i){
 
 function encodePairPosSubTable(t, subtable, i, prefix){
     var size = 0;
+    var start = t.sizeOf();
     var PREFIX = prefix + '_' + i;
 
     t.fields.push({name: PREFIX+'_format', type: 'USHORT', value: subtable.format});
-    t.fields.push({name: PREFIX+'_coverageOffset', type: 'USHORT', value: subtable.coverageOffset});
-
-    encodeCoverageTable(t, subtable, PREFIX);
-
+    t.fields.push({name: PREFIX+'_coverageOffset', type: 'USHORT', value: 0});
     t.fields.push({name: PREFIX+'_valueFormat1', type: 'USHORT', value: subtable.valueFormat1});
     t.fields.push({name: PREFIX+'_valueFormat2', type: 'USHORT', value: subtable.valueFormat2});
 
     switch (subtable.format){
         case 1:
+            console.error("subtable.pairsets.length: " + subtable.pairsets.length);
             t.fields.push({name: PREFIX+'_pairSetCount', type: 'USHORT', value: subtable.pairsets.length});
 
             var pairSetOffsets = [];
             var pairSets = [];
             
             var offset = t.sizeOf();
+            console.error("encodePairPosSubTable >>>>>>>>>>>>>>>>> subtable.coverage.length: " + subtable.coverage.length);
             for (var j=0; j < subtable.coverage.length; j++){
                 pairSetOffsets.push({name: PREFIX+'_offset_'+j, type: 'USHORT', value: offset});
                 offset += encodePairSet(pairSets, subtable, j);
@@ -427,6 +428,12 @@ function encodePairPosSubTable(t, subtable, i, prefix){
         default:
             console.error("Invalid subtable format: encodePairPosSubTable format=" + subtable.format);
     }
+
+    var ct = new table.Table("Coverage", []);
+    encodeCoverageTable(ct, subtable, PREFIX);
+    t[PREFIX+'_coverageOffset'] = t.sizeOf() - start;
+    t.fields = t.fields.concat(ct.fields);
+
     return t.sizeOf();
 }
 
@@ -459,7 +466,7 @@ function encodeLookupEntry(t, gpos, i){
 
         case LType.PAIR_ADJUSTMENT: //Pair adjustment
             for (var j = 0; j < ltable.subtables.length; j++) {
-                offsets.push(size);
+                offsets.push(8+size); //why 8 ?! This probably should be calculated from the previous table header size...
                 size += encodePairPosSubTable(subtable_data, ltable.subtables[j], j, PREFIX);
             }
             break;
