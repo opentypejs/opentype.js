@@ -105,38 +105,38 @@ function parsePairPosSubTable(data, start) {
     var p = new parse.Parser(data, start);
     console.error("parsePairPosSubTable(data, start="+start+"): \n" + p.hexdump());
 
-    // This part is common to format 1 and format 2 subtables
-
     var subTable = {};
+    var coverageOffset;
+    var value1;
+    var value2;
+
+    // This part is common to format 1 and format 2 subtables
     subTable.format = p.parseUShort();
-    var coverageOffset = p.parseUShort();
-
-    console.error("subTable.format: " + subTable.format);
-    console.error("coverageOffset: " + coverageOffset);
-
-    subTable.coverage = parseCoverageTable(data, start + coverageOffset, subTable);
-
-    // valueFormat 4: XAdvance only, 1: XPlacement only, 0: no ValueRecord for second glyph
-    // Only valueFormat1=4 and valueFormat2=0 is supported.
+    coverageOffset = p.parseUShort();
     subTable.valueFormat1 = p.parseUShort();
     subTable.valueFormat2 = p.parseUShort();
 
+    console.error("subTable.format: " + subTable.format);
+    console.error("coverageOffset: " + coverageOffset);
     console.error("valueFormat1: " + subTable.valueFormat1);
     console.error("valueFormat2: " + subTable.valueFormat2);
 
-    var value1;
-    var value2;
+    // valueFormat 4: XAdvance only, 1: XPlacement only, 0: no ValueRecord for second glyph
+    // Only valueFormat1=4 and valueFormat2=0 is supported.
     check.argument(subTable.valueFormat1 == 4 && subTable.valueFormat2 == 0,
                    'GPOS table: Only valueFormat1 = 4 and valueFormat2 = 0 is supported.');
 
+    subTable.coverage = parseCoverageTable(data, start + coverageOffset, subTable);
+
     if (subTable.format == 1) {
         // Pair Positioning Adjustment: Format 1
+
         var pairSetCount = p.parseUShort();
+        var pairSetOffsets = p.parseOffset16List(pairSetCount);  // Array of offsets to PairSet tables-from beginning of PairPos subtable-ordered by Coverage Index
         console.error("FORMAT==1: pairSetCount: " + pairSetCount);
+
         var psets = [];
         subTable.pairsets = [];
-        // Array of offsets to PairSet tables-from beginning of PairPos subtable-ordered by Coverage Index
-        var pairSetOffsets = p.parseOffset16List(pairSetCount);
         for (var firstGlyph = 0; firstGlyph < pairSetCount; firstGlyph++) {
             var pairSetOffset = pairSetOffsets[firstGlyph];
             var sharedPairSet = psets[pairSetOffset];
@@ -145,7 +145,7 @@ function parsePairPosSubTable(data, start) {
                 sharedPairSet = {valueRecords: []};
                 p.relativeOffset = pairSetOffset;
                 var pairValueCount = p.parseUShort();
-                console.error("pairValueCount = " + pairValueCount);
+                console.error("pairValueCount = " + pairValueCount + "\nhexdump:\n" + p.hexdump(4*5, 4));
                 for (; pairValueCount--;) {
                     var value = {};
                     value.secondGlyph = p.parseUShort();
