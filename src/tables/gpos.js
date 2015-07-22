@@ -135,6 +135,11 @@ function parsePairPosSubTable(data, start) {
         var pairSetOffsets = p.parseOffset16List(pairSetCount);  // Array of offsets to PairSet tables-from beginning of PairPos subtable-ordered by Coverage Index
         console.error("FORMAT==1: pairSetCount: " + pairSetCount);
 
+        for (var i=0; i<pairSetCount; i++){
+            p.relativeOffset = pairSetOffsets[i] + 0;
+            console.error("DEBUG pairSetOffsets["+i+"] = " + pairSetOffsets[i] + " HEXDUMP: " + p.hexdump(80));
+        }
+
         var psets = [];
         subTable.pairsets = [];
         for (var firstGlyph = 0; firstGlyph < pairSetCount; firstGlyph++) {
@@ -160,6 +165,33 @@ function parsePairPosSubTable(data, start) {
             subTable.pairsets[subTable.coverage[firstGlyph]] = sharedPairSet;
         }
 
+/*
+        var psets = [];
+        subTable.pairsets = [];
+        for (var index = 0; index < subTable.coverage.length; index++) {
+            var firstGlyph = subTable.coverage[index];
+            var pairSetOffset = pairSetOffsets[firstGlyph];
+            var sharedPairSet = psets[pairSetOffset];
+            if (!sharedPairSet) {
+                // Parse a pairset table in a pair adjustment subtable format 1
+                sharedPairSet = {valueRecords: []};
+                p.relativeOffset = pairSetOffset;
+                var pairValueCount = p.parseUShort();
+                console.error("pairValueCount = " + pairValueCount + "\nhexdump:\n" + p.hexdump(4*5, 4));
+                for (; pairValueCount--;) {
+                    var value = {};
+                    value.secondGlyph = p.parseUShort();
+                    if (subTable.valueFormat1) value.v1 = p.parseShort();
+                    if (subTable.valueFormat2) value.v2 = p.parseShort();
+                    sharedPairSet.valueRecords.push(value);
+                    if (sharedPairSet.valueRecords.length < 5) console.error("VALUE: v1=" + value.v1 + " v2=" + value.v2 + " secondGlyph=" + value.secondGlyph);
+                }
+                psets[pairSetOffset] = sharedPairSet;
+            }
+
+            subTable.pairsets[index] = sharedPairSet;
+        }
+*/
         subTable.getValue = function(leftGlyph, rightGlyph) {
             var pairs = subTable.pairsets[leftGlyph];
 
