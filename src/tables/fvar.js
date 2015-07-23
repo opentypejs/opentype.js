@@ -1,39 +1,47 @@
 // The `fvar` table stores font variation axes and instances.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6fvar.html
 
-// FIXME: Currently, we drop the names of design axes ("Weight") and
-// font instances ("Thin Condensed"). In the spec and also in real
-// fonts, these are multilingual properties: The font supplies the
-// same name in French, English, etc. In the code below, perhaps we
-// should replace 'nameID' by 'name', and keep it as dictionary like
-// {en: 'Bold', fr: 'Gras'}? Decoding OpenType/TrueType name IDs to
-// IETF BCP-47 language tags would be certainly doable, but it will
-// need large changes to the 'name' handling of opentype.js.
-// Until this is resolved, we can't write back 'fvar' tables when
-// writing fonts (if we did, our name IDs would be dangling
-// references).  Therefore, the make() function is currently only
-// called from test code.
-//
-// See also https://github.com/nodebox/opentype.js/issues/144.
-
 'use strict';
 
 var check = require('../check');
 var parse = require('../parse');
 var table = require('../table');
 
-function makeFvarAxis(axis) {
+function addName(name, names) {
+    var nameString = JSON.stringify(name);
+    var nameID = 256;
+    for (var nameKey in names) {
+        var n = parseInt(nameKey);
+        if (!n || n < 256) {
+            continue;
+        }
+
+        if (JSON.stringify(names[nameKey]) === nameString) {
+            return n;
+        }
+
+        if (nameID <= n) {
+            nameID = n + 1;
+        }
+    }
+
+    names[nameID] = name;
+    return nameID;
+}
+
+function makeFvarAxis(axis, names) {
+    var nameID = addName(axis.name, names);
     return new table.Table('fvarAxis', [
         {name: 'tag', type: 'TAG', value: axis.tag},
         {name: 'minValue', type: 'FIXED', value: axis.minValue << 16},
         {name: 'defaultValue', type: 'FIXED', value: axis.defaultValue << 16},
         {name: 'maxValue', type: 'FIXED', value: axis.maxValue << 16},
         {name: 'flags', type: 'USHORT', value: 0},
-        {name: 'nameID', type: 'USHORT', value: axis.nameID}
+        {name: 'nameID', type: 'USHORT', value: nameID}
     ]);
 }
 
-function parseFvarAxis(data, start) {
+function parseFvarAxis(data, start, names) {
     var axis = {};
     var p = new parse.Parser(data, start);
     axis.tag = p.parseTag();
@@ -41,13 +49,14 @@ function parseFvarAxis(data, start) {
     axis.defaultValue = p.parseFixed();
     axis.maxValue = p.parseFixed();
     p.skip('uShort', 1);  // reserved for flags; no values defined
-    axis.nameID = p.parseUShort();
+    axis.name = names[p.parseUShort()] || {};
     return axis;
 }
 
-function makeFvarInstance(inst, axes) {
+function makeFvarInstance(inst, axes, names) {
+    var nameID = addName(inst.name, names);
     var fields = [
-        {name: 'nameID', type: 'USHORT', value: inst.nameID},
+        {name: 'nameID', type: 'USHORT', value: nameID},
         {name: 'flags', type: 'USHORT', value: 0}
     ];
 
@@ -63,10 +72,10 @@ function makeFvarInstance(inst, axes) {
     return new table.Table('fvarInstance', fields);
 }
 
-function parseFvarInstance(data, start, axes) {
+function parseFvarInstance(data, start, axes, names) {
     var inst = {};
     var p = new parse.Parser(data, start);
-    inst.nameID = p.parseUShort();
+    inst.name = names[p.parseUShort()] || {};
     p.skip('uShort', 1);  // reserved for flags; no values defined
 
     inst.coordinates = {};
@@ -77,7 +86,7 @@ function parseFvarInstance(data, start, axes) {
     return inst;
 }
 
-function makeFvarTable(fvar) {
+function makeFvarTable(fvar, names) {
     var result = new table.Table('fvar', [
         {name: 'version', type: 'ULONG', value: 0x10000},
         {name: 'offsetToData', type: 'USHORT', value: 0},
@@ -93,21 +102,21 @@ function makeFvarTable(fvar) {
         result.fields.push({
             name: 'axis ' + i,
             type: 'TABLE',
-            value: makeFvarAxis(fvar.axes[i])});
+            value: makeFvarAxis(fvar.axes[i], names)});
     }
 
     for (var j = 0; j < fvar.instances.length; j++) {
         result.fields.push({
             name: 'instance ' + j,
             type: 'TABLE',
-            value: makeFvarInstance(fvar.instances[j], fvar.axes)
+            value: makeFvarInstance(fvar.instances[j], fvar.axes, names)
         });
     }
 
     return result;
 }
 
-function parseFvarTable(data, start) {
+function parseFvarTable(data, start, names) {
     var p = new parse.Parser(data, start);
     var tableVersion = p.parseULong();
     check.argument(tableVersion === 0x00010000, 'Unsupported fvar table version.');
@@ -121,13 +130,13 @@ function parseFvarTable(data, start) {
 
     var axes = [];
     for (var i = 0; i < axisCount; i++) {
-        axes.push(parseFvarAxis(data, start + offsetToData + i * axisSize));
+        axes.push(parseFvarAxis(data, start + offsetToData + i * axisSize, names));
     }
 
     var instances = [];
     var instanceStart = start + offsetToData + axisCount * axisSize;
     for (var j = 0; j < instanceCount; j++) {
-        instances.push(parseFvarInstance(data, instanceStart + j * instanceSize, axes));
+        instances.push(parseFvarInstance(data, instanceStart + j * instanceSize, axes, names));
     }
 
     return {axes:axes, instances:instances};

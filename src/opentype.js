@@ -77,6 +77,7 @@ function parseBuffer(buffer) {
     var ltagTable;
 
     var cffOffset;
+    var fvarOffset;
     var glyfOffset;
     var gposOffset;
     var hmtxOffset;
@@ -116,7 +117,7 @@ function parseBuffer(buffer) {
             font.encoding = new encoding.CmapEncoding(font.tables.cmap);
             break;
         case 'fvar':
-            font.tables.fvar = fvar.parse(data, offset);
+            fvarOffset = offset;
             break;
         case 'head':
             font.tables.head = head.parse(data, offset);
@@ -192,6 +193,10 @@ function parseBuffer(buffer) {
 
     if (gposOffset) {
         gpos.parse(data, gposOffset, font);
+    }
+
+    if (fvarOffset) {
+        font.tables.fvar = fvar.parse(data, fvarOffset, font.names);
     }
 
     return font;

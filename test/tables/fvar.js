@@ -22,33 +22,59 @@ describe('tables/fvar.js', function() {
                 minValue: 100,
                 defaultValue: 400,
                 maxValue: 900,
-                nameID: 257
+                name: {en: 'Weight', ja: 'ウエイト'}
             },
             {
                 tag: 'wdth',
                 minValue: 50,
                 defaultValue: 100,
                 maxValue: 200,
-                nameID: 258
+                name: {en: 'Width', ja: '幅'}
             }
         ],
         instances: [
             {
-                nameID: 259,
+                name: {en: 'Regular', ja: 'レギュラー'},
                 coordinates: {wght: 300, wdth: 100}
             },
             {
-                nameID: 260,
+                name: {en: 'Condensed', ja: 'コンデンス'},
                 coordinates: {wght: 300, wdth: 75}
             }
         ]
     };
 
     it('can parse a font variations table', function() {
-        assert.deepEqual(table, fvar.parse(testutil.unhex(data), 0));
+        var names = {
+            257: {en: 'Weight', ja: 'ウエイト'},
+            258: {en: 'Width', ja: '幅'},
+            259: {en: 'Regular', ja: 'レギュラー'},
+            260: {en: 'Condensed', ja: 'コンデンス'}
+        };
+        assert.deepEqual(table, fvar.parse(testutil.unhex(data), 0, names));
     });
 
     it('can make a font variations table', function() {
-        assert.deepEqual(data, testutil.hex(fvar.make(table).encode()));
+        var names = {
+            // When assigning name IDs, numbers below 256 should be ignored,
+            // as these are not valid IDs of ‘fvar’ axis or instance names.
+            111: {en: 'Name #111'},
+
+            // Existing names with ID 256 or higher should be left untouched,
+            // as these can be valid names of font features.
+            256: {en: 'Ligatures', ja: 'リガチャ'},
+
+            // Existing names with ID 256 or higher should be re-used.
+            257: {en: 'Weight', ja: 'ウエイト'}
+        };
+        assert.deepEqual(data, testutil.hex(fvar.make(table, names).encode()));
+        assert.deepEqual(names, {
+            111: {en: 'Name #111'},
+            256: {en: 'Ligatures', ja: 'リガチャ'},
+            257: {en: 'Weight', ja: 'ウエイト'},
+            258: {en: 'Width', ja: '幅'},
+            259: {en: 'Regular', ja: 'レギュラー'},
+            260: {en: 'Condensed', ja: 'コンデンス'}
+        });
     });
 });
