@@ -219,6 +219,15 @@ Once you have a path through `Font.getPath` or `Glyph.getPath`, you can use it.
 Draw the path on the given 2D context. This uses the `fill`, `stroke` and `strokeWidth` properties of the `Path` object.
 * `ctx`: The drawing context.
 
+##### `Path.toPathData(decimalPlaces)`
+Convert the Path to a string of path data instructions.
+See http://www.w3.org/TR/SVG/paths.html#PathData
+* `decimalPlaces`: The amount of decimal places for floating-point values. (default: 2)
+
+##### `Path.toSVG(decimalPlaces)`
+Convert the path to a SVG &lt;path&gt; element, as a string.
+* `decimalPlaces`: The amount of decimal places for floating-point values. (default: 2)
+
 #### Path commands
 * **Move To**: Move to a new position. This creates a new contour. Example: `{type: 'M', x: 100, y: 200}`
 * **Line To**: Draw a line from the previous position to the given coordinate. Example: `{type: 'L', x: 100, y: 200}`
@@ -229,7 +238,6 @@ Draw the path on the given 2D context. This uses the `fill`, `stroke` and `strok
 Planned
 =======
 * Support for ligatures and contextual alternates.
-* Support for SVG paths.
 
 Thanks
 ======
