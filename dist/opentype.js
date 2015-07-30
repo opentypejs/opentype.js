@@ -299,7 +299,7 @@ function Font(options) {
     this.unitsPerEm = options.unitsPerEm || 1000;
     this.ascender = options.ascender;
     this.descender = options.descender;
-    this.supported = true;
+    this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
     this.glyphs = new glyphset.GlyphSet(this, options.glyphs || []);
     this.encoding = new encoding.DefaultEncoding(this);
     this.tables = {};
@@ -383,10 +383,6 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
 // Helper function that invokes the given callback for each glyph in the given text.
 // The callback gets `(glyph, x, y, fontSize, options)`.
 Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) {
-    if (!this.supported) {
-        return;
-    }
-
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
@@ -975,8 +971,7 @@ function loadFromUrl(url, callback) {
 // Public API ///////////////////////////////////////////////////////////
 
 // Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
-// If the file could not be parsed (most likely because it contains Postscript outlines)
-// we return an empty Font object with the `supported` flag set to `false`.
+// Throws an error if the font could not be parsed.
 function parseBuffer(buffer) {
     var indexToLocFormat;
     var hmtxOffset;
@@ -1016,10 +1011,6 @@ function parseBuffer(buffer) {
         case 'cmap':
             font.tables.cmap = cmap.parse(data, offset);
             font.encoding = new encoding.CmapEncoding(font.tables.cmap);
-            if (!font.encoding) {
-                font.supported = false;
-            }
-
             break;
         case 'head':
             font.tables.head = head.parse(data, offset);
@@ -1080,19 +1071,17 @@ function parseBuffer(buffer) {
         cff.parse(data, cffOffset, font);
         encoding.addGlyphNames(font);
     } else {
-        font.supported = false;
+        throw new Error('Font doesn\'t contain TrueType or CFF outlines.');
     }
 
-    if (font.supported) {
-        if (kernOffset) {
-            font.kerningPairs = kern.parse(data, kernOffset);
-        } else {
-            font.kerningPairs = {};
-        }
+    if (kernOffset) {
+        font.kerningPairs = kern.parse(data, kernOffset);
+    } else {
+        font.kerningPairs = {};
+    }
 
-        if (gposOffset) {
-            gpos.parse(data, gposOffset, font);
-        }
+    if (gposOffset) {
+        gpos.parse(data, gposOffset, font);
     }
 
     return font;
@@ -1113,12 +1102,16 @@ function load(url, callback) {
         }
 
         var font = parseBuffer(arrayBuffer);
-        if (!font.supported) {
-            return callback('Font is not supported (is this a Postscript font?)');
-        }
-
         return callback(null, font);
     });
+}
+
+// Syncronously load the font from a URL or file.
+// When done, return the font object or throw an error.
+function loadSync(url) {
+    var fs = require('fs');
+    var buffer = fs.readFileSync(url);
+    return parseBuffer(toArrayBuffer(buffer));
 }
 
 exports._parse = parse;
@@ -1127,6 +1120,7 @@ exports.Glyph = glyph.Glyph;
 exports.Path = path.Path;
 exports.parse = parseBuffer;
 exports.load = load;
+exports.loadSync = loadSync;
 
 },{"./encoding":3,"./font":4,"./glyph":5,"./parse":8,"./path":9,"./tables/cff":11,"./tables/cmap":12,"./tables/glyf":13,"./tables/gpos":14,"./tables/head":15,"./tables/hhea":16,"./tables/hmtx":17,"./tables/kern":18,"./tables/loca":19,"./tables/maxp":20,"./tables/name":21,"./tables/os2":22,"./tables/post":23,"fs":undefined}],8:[function(require,module,exports){
 // Parsing utility functions
@@ -4521,7 +4515,7 @@ encode.CHAR = function(v) {
     return [v.charCodeAt(0)];
 };
 
-sizeOf.BYTE = constant(1);
+sizeOf.CHAR = constant(1);
 
 // Convert an ASCII string to a list of bytes.
 encode.CHARARRAY = function(v) {
@@ -4650,16 +4644,16 @@ encode.NUMBER16 = function(v) {
     return [28, (v >> 8) & 0xFF, v & 0xFF];
 };
 
-sizeOf.NUMBER16 = constant(2);
+sizeOf.NUMBER16 = constant(3);
 
-// Convert a signed number between -(2^31) and +(2^31-1) to a four-byte value.
+// Convert a signed number between -(2^31) and +(2^31-1) to a five-byte value.
 // This is useful if you want to be sure you always use four bytes,
 // at the expense of wasting a few bytes for smaller numbers.
 encode.NUMBER32 = function(v) {
     return [29, (v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
-sizeOf.NUMBER32 = constant(4);
+sizeOf.NUMBER32 = constant(5);
 
 encode.REAL = function(v) {
     var value = v.toString();
@@ -4707,12 +4701,13 @@ sizeOf.NAME = sizeOf.CHARARRAY;
 encode.STRING = encode.CHARARRAY;
 sizeOf.STRING = sizeOf.CHARARRAY;
 
-// Convert a ASCII string to a list of UTF16 bytes.
+// Convert a JavaScript string to UTF16-BE.
 encode.UTF16 = function(v) {
     var b = [];
     for (var i = 0; i < v.length; i += 1) {
-        b.push(0);
-        b.push(v.charCodeAt(i));
+        var codepoint = v.charCodeAt(i);
+        b.push((codepoint >> 8) & 0xFF);
+        b.push(codepoint & 0xFF);
     }
 
     return b;
@@ -4863,6 +4858,12 @@ encode.OBJECT = function(v) {
     return encodingFunction(v.value);
 };
 
+sizeOf.OBJECT = function(v) {
+    var sizeOfFunction = sizeOf[v.type];
+    check.argument(sizeOfFunction !== undefined, 'No sizeOf function for type ' + v.type);
+    return sizeOfFunction(v.value);
+};
+
 // Convert a table object to bytes.
 // A table contains a list of fields containing the metadata (name, type and default value).
 // The table itself has the field values set as attributes.
@@ -4884,6 +4885,25 @@ encode.TABLE = function(table) {
     }
 
     return d;
+};
+
+sizeOf.TABLE = function(table) {
+    var numBytes = 0;
+    var length = table.fields.length;
+
+    for (var i = 0; i < length; i += 1) {
+        var field = table.fields[i];
+        var sizeOfFunction = sizeOf[field.type];
+        check.argument(sizeOfFunction !== undefined, 'No sizeOf function for field type ' + field.type);
+        var value = table[field.name];
+        if (value === undefined) {
+            value = field.value;
+        }
+
+        numBytes += sizeOfFunction(value);
+    }
+
+    return numBytes;
 };
 
 // Merge in a list of bytes.

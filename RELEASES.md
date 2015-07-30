@@ -1,3 +1,11 @@
+0.4.10 (July 30, 2015)
+======================
+* Add loadSync method for Node.js.
+* Unit tests for basic types and tables.
+* Implement MACSTRING codec.
+* Support multilingual names.
+* Handle names of font variation axes and instances.
+
 0.4.9 (June 23, 2015)
 =====================
 * Improve memory usage by deferring glyph / path loading. Thanks @Pomax!
