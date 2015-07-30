@@ -134,7 +134,7 @@
     var buffer = font.toBuffer();
     var font2 = opentype.parse(buffer);
 
-    document.getElementById('fontFamilyName').innerHTML = font2.familyName;
+    document.getElementById('fontFamilyName').innerHTML = font2.names.fontFamily.en;
 
     for (var i = 0; i < font2.glyphs.length; i++) {
         var glyph = font2.glyphs.get(i);

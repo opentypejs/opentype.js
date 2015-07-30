@@ -14,18 +14,20 @@ function Font(options) {
     options = options || {};
 
     // OS X will complain if the names are empty, so we put a single space everywhere by default.
-    this.familyName = options.familyName || ' ';
-    this.styleName = options.styleName || ' ';
-    this.designer = options.designer || ' ';
-    this.designerURL = options.designerURL || ' ';
-    this.manufacturer = options.manufacturer || ' ';
-    this.manufacturerURL = options.manufacturerURL || ' ';
-    this.license = options.license || ' ';
-    this.licenseURL = options.licenseURL || ' ';
-    this.version = options.version || 'Version 0.1';
-    this.description = options.description || ' ';
-    this.copyright = options.copyright || ' ';
-    this.trademark = options.trademark || ' ';
+    this.names = {
+        fontFamily: {en: options.familyName || ' '},
+        fontSubfamily: {en: options.styleName || ' '},
+        designer: {en: options.designer || ' '},
+        designerURL: {en: options.designerURL || ' '},
+        manufacturer: {en: options.manufacturer || ' '},
+        manufacturerURL: {en: options.manufacturerURL || ' '},
+        license: {en: options.license || ' '},
+        licenseURL: {en: options.licenseURL || ' '},
+        version: {en: options.version || 'Version 0.1'},
+        description: {en: options.description || ' '},
+        copyright: {en: options.copyright || ' '},
+        trademark: {en: options.trademark || ' '}
+    };
     this.unitsPerEm = options.unitsPerEm || 1000;
     this.ascender = options.ascender;
     this.descender = options.descender;
@@ -201,6 +203,13 @@ Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
     });
 };
 
+Font.prototype.getEnglishName = function(name) {
+    var translations = this.names[name];
+    if (translations) {
+        return translations.en;
+    }
+};
+
 // Validate
 Font.prototype.validate = function() {
     var warnings = [];
@@ -212,16 +221,18 @@ Font.prototype.validate = function() {
         }
     }
 
-    function assertStringAttribute(attrName) {
-        assert(_this[attrName] && _this[attrName].trim().length > 0, 'No ' + attrName + ' specified.');
+    function assertNamePresent(name) {
+        var englishName = _this.getEnglishName(name);
+        assert(englishName && englishName.trim().length > 0,
+               'No English ' + name + ' specified.');
     }
 
     // Identification information
-    assertStringAttribute('familyName');
-    assertStringAttribute('weightName');
-    assertStringAttribute('manufacturer');
-    assertStringAttribute('copyright');
-    assertStringAttribute('version');
+    assertNamePresent('fontFamily');
+    assertNamePresent('weightName');
+    assertNamePresent('manufacturer');
+    assertNamePresent('copyright');
+    assertNamePresent('version');
 
     // Dimension information
     assert(this.unitsPerEm > 0, 'No unitsPerEm specified.');
@@ -247,7 +258,9 @@ Font.prototype.toBuffer = function() {
 
 // Initiate a download of the OpenType font.
 Font.prototype.download = function() {
-    var fileName = this.familyName.replace(/\s/g, '') + '-' + this.styleName + '.otf';
+    var familyName = this.getEnglishName('fontFamily');
+    var styleName = this.getEnglishName('fontSubfamily');
+    var fileName = familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
     var buffer = this.toBuffer();
 
     window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;

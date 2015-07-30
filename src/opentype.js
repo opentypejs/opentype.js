@@ -15,12 +15,14 @@ var path = require('./path');
 
 var cmap = require('./tables/cmap');
 var cff = require('./tables/cff');
+var fvar = require('./tables/fvar');
 var glyf = require('./tables/glyf');
 var gpos = require('./tables/gpos');
 var head = require('./tables/head');
 var hhea = require('./tables/hhea');
 var hmtx = require('./tables/hmtx');
 var kern = require('./tables/kern');
+var ltag = require('./tables/ltag');
 var loca = require('./tables/loca');
 var maxp = require('./tables/maxp');
 var _name = require('./tables/name');
@@ -72,12 +74,16 @@ function loadFromUrl(url, callback) {
 // Throws an error if the font could not be parsed.
 function parseBuffer(buffer) {
     var indexToLocFormat;
-    var hmtxOffset;
-    var glyfOffset;
-    var locaOffset;
+    var ltagTable;
+
     var cffOffset;
-    var kernOffset;
+    var fvarOffset;
+    var glyfOffset;
     var gposOffset;
+    var hmtxOffset;
+    var kernOffset;
+    var locaOffset;
+    var nameOffset;
 
     // OpenType fonts use big endian byte ordering.
     // We can't rely on typed array view types, because they operate with the endianness of the host computer.
@@ -110,6 +116,9 @@ function parseBuffer(buffer) {
             font.tables.cmap = cmap.parse(data, offset);
             font.encoding = new encoding.CmapEncoding(font.tables.cmap);
             break;
+        case 'fvar':
+            fvarOffset = offset;
+            break;
         case 'head':
             font.tables.head = head.parse(data, offset);
             font.unitsPerEm = font.tables.head.unitsPerEm;
@@ -124,14 +133,15 @@ function parseBuffer(buffer) {
         case 'hmtx':
             hmtxOffset = offset;
             break;
+        case 'ltag':
+            ltagTable = ltag.parse(data, offset);
+            break;
         case 'maxp':
             font.tables.maxp = maxp.parse(data, offset);
             font.numGlyphs = font.tables.maxp.numGlyphs;
             break;
         case 'name':
-            font.tables.name = _name.parse(data, offset);
-            font.familyName = font.tables.name.fontFamily;
-            font.styleName = font.tables.name.fontSubfamily;
+            nameOffset = offset;
             break;
         case 'OS/2':
             font.tables.os2 = os2.parse(data, offset);
@@ -159,6 +169,9 @@ function parseBuffer(buffer) {
         p += 16;
     }
 
+    font.tables.name = _name.parse(data, nameOffset, ltagTable);
+    font.names = font.tables.name;
+
     if (glyfOffset && locaOffset) {
         var shortVersion = indexToLocFormat === 0;
         var locaTable = loca.parse(data, locaOffset, font.numGlyphs, shortVersion);
@@ -180,6 +193,10 @@ function parseBuffer(buffer) {
 
     if (gposOffset) {
         gpos.parse(data, gposOffset, font);
+    }
+
+    if (fvarOffset) {
+        font.tables.fvar = fvar.parse(data, fvarOffset, font.names);
     }
 
     return font;
