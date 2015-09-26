@@ -176,14 +176,14 @@ function parseBuffer(buffer) {
         var shortVersion = indexToLocFormat === 0;
         var locaTable = loca.parse(data, locaOffset, font.numGlyphs, shortVersion);
         font.glyphs = glyf.parse(data, glyfOffset, locaTable, font);
-        hmtx.parse(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
-        encoding.addGlyphNames(font);
     } else if (cffOffset) {
         cff.parse(data, cffOffset, font);
-        encoding.addGlyphNames(font);
     } else {
         throw new Error('Font doesn\'t contain TrueType or CFF outlines.');
     }
+
+    hmtx.parse(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
+    encoding.addGlyphNames(font);
 
     if (kernOffset) {
         font.kerningPairs = kern.parse(data, kernOffset);
