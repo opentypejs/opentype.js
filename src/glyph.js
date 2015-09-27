@@ -166,6 +166,23 @@ Glyph.prototype.getMetrics = function() {
         yMax: Math.max.apply(null, yCoords),
         leftSideBearing: 0
     };
+
+    if (!isFinite(metrics.xMin)) {
+        metrics.xMin = 0;
+    }
+
+    if (!isFinite(metrics.xMax)) {
+        metrics.xMax = this.advanceWidth;
+    }
+
+    if (!isFinite(metrics.yMin)) {
+        metrics.yMin = 0;
+    }
+
+    if (!isFinite(metrics.yMax)) {
+        metrics.yMax = 0;
+    }
+
     metrics.rightSideBearing = this.advanceWidth - metrics.leftSideBearing - (metrics.xMax - metrics.xMin);
     return metrics;
 };
