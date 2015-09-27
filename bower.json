@@ -1,6 +1,6 @@
 {
   "name": "opentype.js",
-  "version": "0.4.10",
+  "version": "0.4.11",
   "main": "dist/opentype.js",
   "keywords": [
     "vector",

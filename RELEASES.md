@@ -1,3 +1,9 @@
+0.4.11 (September 27, 2015)
+===========================
+* Fix issue with loading of TrueType composite glyphs.
+* Fix issue with missing hmtx values.
+* Sensible getMetrics() values for empty glyphs (e.g. space).
+
 0.4.10 (July 30, 2015)
 ======================
 * Add loadSync method for Node.js.
