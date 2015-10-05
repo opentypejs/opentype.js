@@ -81,6 +81,7 @@ function parseOpenTypeTableEntries(data, numTables) {
         tableEntries.push({tag: tag, offset: offset, compression: false});
         p += 16;
     }
+
     return tableEntries;
 }
 
@@ -98,10 +99,12 @@ function parseWOFFTableEntries(data, numTables) {
         } else {
             compression = false;
         }
+
         tableEntries.push({tag: tag, offset: offset, compression: compression,
             compressedLength: compLength, originalLength: origLength});
         p += 20;
     }
+
     return tableEntries;
 }
 
@@ -113,6 +116,7 @@ function uncompressTable(data, tableEntry) {
         if (outBuffer.byteLength !== tableEntry.originalLength) {
             throw new Error('Decompression error: ' + tableEntry.tag + ' decompressed length doesn\'t match recorded length');
         }
+
         console.assert(outBuffer.byteLength === tableEntry.originalLength);
         var view = new DataView(outBuffer.buffer, 0);
         return {data: view, offset: 0};
