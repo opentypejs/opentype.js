@@ -28,4 +28,16 @@ describe('OpenType.js', function() {
         assert.equal(aGlyph.unicode, 65);
         assert.equal(aGlyph.path.commands.length, 14);
     });
+
+    it('can load a WOFF/CFF font', function() {
+        var font = opentype.loadSync('./fonts/FiraSansMedium.woff');
+        assert.deepEqual(font.names.fontFamily, {en: 'Fira Sans OT'});
+        assert.equal(font.unitsPerEm, 1000);
+        assert.equal(font.glyphs.length, 1147);
+        var aGlyph = font.charToGlyph('A');
+        assert.equal(aGlyph.name, 'A');
+        assert.equal(aGlyph.unicode, 65);
+        assert.equal(aGlyph.path.commands.length, 14);
+    });
+
 });
