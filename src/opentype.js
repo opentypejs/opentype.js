@@ -79,6 +79,7 @@ function parseOpenTypeTableEntries(data, numTables) {
         var tag = parse.getTag(data, p);
         var offset = parse.getULong(data, p + 8);
         tableEntries.push({tag: tag, offset: offset, compression: false});
+        p += 16;
     }
     return tableEntries;
 }
