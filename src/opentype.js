@@ -8,7 +8,6 @@
 'use strict';
 
 var inflate = require('tiny-inflate');
-var pako = require('pako');
 
 var encoding = require('./encoding');
 var _font = require('./font');
@@ -107,10 +106,12 @@ function parseWOFFTableEntries(data, numTables) {
 
 function uncompressTable(data, tableEntry) {
     if (tableEntry.compression) {
-        var inBuffer = new Uint8Array(data.buffer, tableEntry.offset, tableEntry.compressedLength);
-        var outBuffer = pako.inflate(inBuffer);
-        //var outBuffer = new Uint8Array(tableEntry.originalLength);
-        //inflate(inBuffer, outBuffer);
+        var inBuffer = new Uint8Array(data.buffer, tableEntry.offset + 2, tableEntry.compressedLength - 2);
+        var outBuffer = new Uint8Array(tableEntry.originalLength);
+        inflate(inBuffer, outBuffer);
+        if (outBuffer.byteLength !== tableEntry.originalLength) {
+            throw new Error('Decompression error: ' + tableEntry.tag + ' decompressed length doesn\'t match recorded length');
+        }
         console.assert(outBuffer.byteLength === tableEntry.originalLength);
         var view = new DataView(outBuffer.buffer, 0);
         return {data: view, offset: 0};

@@ -46,7 +46,6 @@
     "fs": false
   },
   "dependencies": {
-    "pako": "^0.2.8",
     "tiny-inflate": "^1.0.1"
   }
 }
