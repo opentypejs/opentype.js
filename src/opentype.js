@@ -117,7 +117,6 @@ function uncompressTable(data, tableEntry) {
             throw new Error('Decompression error: ' + tableEntry.tag + ' decompressed length doesn\'t match recorded length');
         }
 
-        console.assert(outBuffer.byteLength === tableEntry.originalLength);
         var view = new DataView(outBuffer.buffer, 0);
         return {data: view, offset: 0};
     } else {
