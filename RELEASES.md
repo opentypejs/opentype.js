@@ -1,3 +1,7 @@
+0.5.0 (October 6, 2015)
+=======================
+* Read support for WOFF.
+
 0.4.11 (September 27, 2015)
 ===========================
 * Fix issue with loading of TrueType composite glyphs.
