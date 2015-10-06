@@ -109,7 +109,7 @@ function parseWOFFTableEntries(data, numTables) {
 }
 
 function uncompressTable(data, tableEntry) {
-    if (tableEntry.compression) {
+    if (tableEntry.compression === 'WOFF') {
         var inBuffer = new Uint8Array(data.buffer, tableEntry.offset + 2, tableEntry.compressedLength - 2);
         var outBuffer = new Uint8Array(tableEntry.originalLength);
         inflate(inBuffer, outBuffer);
