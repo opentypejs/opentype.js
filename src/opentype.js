@@ -158,6 +158,7 @@ function parseBuffer(buffer) {
         } else {
             throw new Error('Unsupported OpenType flavor ' + signature);
         }
+
         numTables = parse.getUShort(data, 12);
         tableEntries = parseWOFFTableEntries(data, numTables);
     } else {
