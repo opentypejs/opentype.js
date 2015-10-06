@@ -158,18 +158,8 @@ function parseBuffer(buffer) {
         } else {
             throw new Error('Unsupported OpenType flavor ' + signature);
         }
-        // var length = parse.getULong(data, 8);
         numTables = parse.getUShort(data, 12);
         tableEntries = parseWOFFTableEntries(data, numTables);
-        // var totalSfntSize = parse.getUShort(data, 16);
-        // // FIXME Check if totalSfntSize is a multiple of 4.
-        // var majorVersion = parse.getUShort(data, 20);
-        // var minorVersion = parse.getUShort(data, 22);
-        // var metaOffset = parse.getULong(data, 24);
-        // var metaLength = parse.getULong(data, 28);
-        // var metaOrigLength = parse.getULong(data, 32);
-        // var privOffset = parse.getULong(data, 36);
-        // var privLength = parse.getULong(data, 40);
     } else {
         throw new Error('Unsupported OpenType signature ' + signature);
     }
