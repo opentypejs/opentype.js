@@ -44,5 +44,8 @@
   },
   "browser": {
     "fs": false
+  },
+  "dependencies": {
+    "tiny-inflate": "^1.0.1"
   }
 }

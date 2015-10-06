@@ -7,6 +7,8 @@
 
 'use strict';
 
+var inflate = require('tiny-inflate');
+
 var encoding = require('./encoding');
 var _font = require('./font');
 var glyph = require('./glyph');
@@ -68,6 +70,60 @@ function loadFromUrl(url, callback) {
     request.send();
 }
 
+// Table Directory Entries //////////////////////////////////////////////
+
+function parseOpenTypeTableEntries(data, numTables) {
+    var tableEntries = [];
+    var p = 12;
+    for (var i = 0; i < numTables; i += 1) {
+        var tag = parse.getTag(data, p);
+        var offset = parse.getULong(data, p + 8);
+        tableEntries.push({tag: tag, offset: offset, compression: false});
+        p += 16;
+    }
+
+    return tableEntries;
+}
+
+function parseWOFFTableEntries(data, numTables) {
+    var tableEntries = [];
+    var p = 44; // offset to the first table directory entry.
+    for (var i = 0; i < numTables; i += 1) {
+        var tag = parse.getTag(data, p);
+        var offset = parse.getULong(data, p + 4);
+        var compLength = parse.getULong(data, p + 8);
+        var origLength = parse.getULong(data, p + 12);
+        var compression;
+        if (compLength < origLength) {
+            compression = 'WOFF';
+        } else {
+            compression = false;
+        }
+
+        tableEntries.push({tag: tag, offset: offset, compression: compression,
+            compressedLength: compLength, originalLength: origLength});
+        p += 20;
+    }
+
+    return tableEntries;
+}
+
+function uncompressTable(data, tableEntry) {
+    if (tableEntry.compression === 'WOFF') {
+        var inBuffer = new Uint8Array(data.buffer, tableEntry.offset + 2, tableEntry.compressedLength - 2);
+        var outBuffer = new Uint8Array(tableEntry.originalLength);
+        inflate(inBuffer, outBuffer);
+        if (outBuffer.byteLength !== tableEntry.originalLength) {
+            throw new Error('Decompression error: ' + tableEntry.tag + ' decompressed length doesn\'t match recorded length');
+        }
+
+        var view = new DataView(outBuffer.buffer, 0);
+        return {data: view, offset: 0};
+    } else {
+        return {data: data, offset: tableEntry.offset};
+    }
+}
+
 // Public API ///////////////////////////////////////////////////////////
 
 // Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
@@ -76,127 +132,151 @@ function parseBuffer(buffer) {
     var indexToLocFormat;
     var ltagTable;
 
-    var cffOffset;
-    var fvarOffset;
-    var glyfOffset;
-    var gposOffset;
-    var hmtxOffset;
-    var kernOffset;
-    var locaOffset;
-    var nameOffset;
-
     // OpenType fonts use big endian byte ordering.
     // We can't rely on typed array view types, because they operate with the endianness of the host computer.
     // Instead we use DataViews where we can specify endianness.
 
     var font = new _font.Font();
     var data = new DataView(buffer, 0);
-
-    var version = parse.getFixed(data, 0);
-    if (version === 1.0) {
+    var numTables;
+    var tableEntries = [];
+    var signature = parse.getTag(data, 0);
+    if (signature === String.fromCharCode(0, 1, 0, 0)) {
         font.outlinesFormat = 'truetype';
-    } else {
-        version = parse.getTag(data, 0);
-        if (version === 'OTTO') {
+        numTables = parse.getUShort(data, 4);
+        tableEntries = parseOpenTypeTableEntries(data, numTables);
+    } else if (signature === 'OTTO') {
+        font.outlinesFormat = 'cff';
+        numTables = parse.getUShort(data, 4);
+        tableEntries = parseOpenTypeTableEntries(data, numTables);
+    } else if (signature === 'wOFF') {
+        var flavor = parse.getTag(data, 4);
+        if (flavor === String.fromCharCode(0, 1, 0, 0)) {
+            font.outlinesFormat = 'truetype';
+        } else if (flavor === 'OTTO') {
             font.outlinesFormat = 'cff';
         } else {
-            throw new Error('Unsupported OpenType version ' + version);
+            throw new Error('Unsupported OpenType flavor ' + signature);
         }
+
+        numTables = parse.getUShort(data, 12);
+        tableEntries = parseWOFFTableEntries(data, numTables);
+    } else {
+        throw new Error('Unsupported OpenType signature ' + signature);
     }
 
-    var numTables = parse.getUShort(data, 4);
+    var cffTableEntry;
+    var fvarTableEntry;
+    var glyfTableEntry;
+    var gposTableEntry;
+    var hmtxTableEntry;
+    var kernTableEntry;
+    var locaTableEntry;
+    var nameTableEntry;
 
-    // Offset into the table records.
-    var p = 12;
     for (var i = 0; i < numTables; i += 1) {
-        var tag = parse.getTag(data, p);
-        var offset = parse.getULong(data, p + 8);
-        switch (tag) {
+        var tableEntry = tableEntries[i];
+        var table;
+        switch (tableEntry.tag) {
         case 'cmap':
-            font.tables.cmap = cmap.parse(data, offset);
+            table = uncompressTable(data, tableEntry);
+            font.tables.cmap = cmap.parse(table.data, table.offset);
             font.encoding = new encoding.CmapEncoding(font.tables.cmap);
             break;
         case 'fvar':
-            fvarOffset = offset;
+            fvarTableEntry = tableEntry;
             break;
         case 'head':
-            font.tables.head = head.parse(data, offset);
+            table = uncompressTable(data, tableEntry);
+            font.tables.head = head.parse(table.data, table.offset);
             font.unitsPerEm = font.tables.head.unitsPerEm;
             indexToLocFormat = font.tables.head.indexToLocFormat;
             break;
         case 'hhea':
-            font.tables.hhea = hhea.parse(data, offset);
+            table = uncompressTable(data, tableEntry);
+            font.tables.hhea = hhea.parse(table.data, table.offset);
             font.ascender = font.tables.hhea.ascender;
             font.descender = font.tables.hhea.descender;
             font.numberOfHMetrics = font.tables.hhea.numberOfHMetrics;
             break;
         case 'hmtx':
-            hmtxOffset = offset;
+            hmtxTableEntry = tableEntry;
             break;
         case 'ltag':
-            ltagTable = ltag.parse(data, offset);
+            table = uncompressTable(data, tableEntry);
+            ltagTable = ltag.parse(table.data, table.offset);
             break;
         case 'maxp':
-            font.tables.maxp = maxp.parse(data, offset);
+            table = uncompressTable(data, tableEntry);
+            font.tables.maxp = maxp.parse(table.data, table.offset);
             font.numGlyphs = font.tables.maxp.numGlyphs;
             break;
         case 'name':
-            nameOffset = offset;
+            nameTableEntry = tableEntry;
             break;
         case 'OS/2':
-            font.tables.os2 = os2.parse(data, offset);
+            table = uncompressTable(data, tableEntry);
+            font.tables.os2 = os2.parse(table.data, table.offset);
             break;
         case 'post':
-            font.tables.post = post.parse(data, offset);
+            table = uncompressTable(data, tableEntry);
+            font.tables.post = post.parse(table.data, table.offset);
             font.glyphNames = new encoding.GlyphNames(font.tables.post);
             break;
         case 'glyf':
-            glyfOffset = offset;
+            glyfTableEntry = tableEntry;
             break;
         case 'loca':
-            locaOffset = offset;
+            locaTableEntry = tableEntry;
             break;
         case 'CFF ':
-            cffOffset = offset;
+            cffTableEntry = tableEntry;
             break;
         case 'kern':
-            kernOffset = offset;
+            kernTableEntry = tableEntry;
             break;
         case 'GPOS':
-            gposOffset = offset;
+            gposTableEntry = tableEntry;
             break;
         }
-        p += 16;
     }
 
-    font.tables.name = _name.parse(data, nameOffset, ltagTable);
+    var nameTable = uncompressTable(data, nameTableEntry);
+    font.tables.name = _name.parse(nameTable.data, nameTable.offset, ltagTable);
     font.names = font.tables.name;
 
-    if (glyfOffset && locaOffset) {
+    if (glyfTableEntry && locaTableEntry) {
         var shortVersion = indexToLocFormat === 0;
-        var locaTable = loca.parse(data, locaOffset, font.numGlyphs, shortVersion);
-        font.glyphs = glyf.parse(data, glyfOffset, locaTable, font);
-    } else if (cffOffset) {
-        cff.parse(data, cffOffset, font);
+        var locaTable = uncompressTable(data, locaTableEntry);
+        var locaOffsets = loca.parse(locaTable.data, locaTable.offset, font.numGlyphs, shortVersion);
+        var glyfTable = uncompressTable(data, glyfTableEntry);
+        font.glyphs = glyf.parse(glyfTable.data, glyfTable.offset, locaOffsets, font);
+    } else if (cffTableEntry) {
+        var cffTable = uncompressTable(data, cffTableEntry);
+        cff.parse(cffTable.data, cffTable.offset, font);
     } else {
         throw new Error('Font doesn\'t contain TrueType or CFF outlines.');
     }
 
-    hmtx.parse(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
+    var hmtxTable = uncompressTable(data, hmtxTableEntry);
+    hmtx.parse(hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
     encoding.addGlyphNames(font);
 
-    if (kernOffset) {
-        font.kerningPairs = kern.parse(data, kernOffset);
+    if (kernTableEntry) {
+        var kernTable = uncompressTable(data, kernTableEntry);
+        font.kerningPairs = kern.parse(kernTable.data, kernTable.offset);
     } else {
         font.kerningPairs = {};
     }
 
-    if (gposOffset) {
-        gpos.parse(data, gposOffset, font);
+    if (gposTableEntry) {
+        var gposTable = uncompressTable(data, gposTableEntry);
+        gpos.parse(gposTable.data, gposTable.offset, font);
     }
 
-    if (fvarOffset) {
-        font.tables.fvar = fvar.parse(data, fvarOffset, font.names);
+    if (fvarTableEntry) {
+        var fvarTable = uncompressTable(data, fvarTableEntry);
+        font.tables.fvar = fvar.parse(fvarTable.data, fvarTable.offset, font.names);
     }
 
     return font;
