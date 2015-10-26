@@ -803,6 +803,26 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
     return fullPath;
 };
 
+// Create an array of Path objects that represent the glyps of a given text.
+//
+// text - The text to create.
+// x - Horizontal position of the beginning of the text. (default: 0)
+// y - Vertical position of the *baseline* of the text. (default: 0)
+// fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
+// Options is an optional object that contains:
+// - kerning - Whether to take kerning information into account. (default: true)
+//
+// Returns an array of Path objects.
+Font.prototype.getPaths = function(text, x, y, fontSize, options) {
+    var glyphPaths = [];
+    this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
+        var glyphPath = glyph.getPath(gX, gY, gFontSize);
+        glyphPaths.push(glyphPath);
+    });
+
+    return glyphPaths;
+};
+
 // Draw the text on the given drawing context.
 //
 // ctx - A 2D drawing context, like Canvas.

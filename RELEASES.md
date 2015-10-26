@@ -1,3 +1,7 @@
+0.5.1 (October 26, 2015)
+========================
+* Add `Font.getPaths()` which returns a list of paths.
+
 0.5.0 (October 6, 2015)
 =======================
 * Read support for WOFF.
