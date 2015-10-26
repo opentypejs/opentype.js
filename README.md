@@ -140,6 +140,8 @@ Create a Path that represents the given text.
 Options is an optional object containing:
 * `kerning`: if true takes kerning information into account (default: true)
 
+_Note: there is also `Font.getPaths` with the same arguments which returns a list of Paths._
+
 #### `Font.draw(ctx, text, x, y, fontSize, options)`
 Create a Path that represents the given text.
 * `ctx`: A 2D drawing context, like Canvas.
