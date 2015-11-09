@@ -49,7 +49,7 @@ When creating a pull request, you **don't** need to run `npm run dist` -- we'll 
 
 If you want to create your own self-contained version of opentype.js, run
 
-    npm dist
+    npm run dist
 
 This compiles the source  and places `opentype.js` and `opentype.min.js` in the `dist` folder.
 
