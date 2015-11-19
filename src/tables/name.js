@@ -24,8 +24,8 @@ var nameTableNames = [
     'description',            // 10
     'manufacturerURL',        // 11
     'designerURL',            // 12
-    'licence',                // 13
-    'licenceURL',             // 14
+    'license',                // 13
+    'licenseURL',             // 14
     'reserved',               // 15
     'preferredFamily',        // 16
     'preferredSubfamily',     // 17
