@@ -21,7 +21,7 @@ function Font(options) {
         util.checkArgument(options.unitsPerEm, 'When creating a new Font object, unitsPerEm is required.');
         util.checkArgument(options.ascender, 'When creating a new Font object, ascender is required.');
         util.checkArgument(options.descender, 'When creating a new Font object, descender is required.');
-        util.checkArgument(options.descender < 0, 'Descender should be negative (e.g. -512).')
+        util.checkArgument(options.descender < 0, 'Descender should be negative (e.g. -512).');
 
         // OS X will complain if the names are empty, so we put a single space everywhere by default.
         this.names = {
@@ -281,7 +281,7 @@ Font.prototype.toTables = function() {
 Font.prototype.toBuffer = function() {
     console.warn('Font.toBuffer is deprecated. Use Font.toArrayBuffer instead.');
     return this.toArrayBuffer();
-}
+};
 
 Font.prototype.toArrayBuffer = function() {
     var sfntTable = this.toTables();

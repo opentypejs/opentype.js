@@ -14,8 +14,9 @@ exports.nodeBufferToArrayBuffer = function(buffer) {
     for (var i = 0; i < buffer.length; ++i) {
         view[i] = buffer[i];
     }
+
     return ab;
-}
+};
 
 exports.arrayBufferToNodeBuffer = function(ab) {
     var buffer = new Buffer(ab.byteLength);
@@ -23,11 +24,12 @@ exports.arrayBufferToNodeBuffer = function(ab) {
     for (var i = 0; i < buffer.length; ++i) {
         buffer[i] = view[i];
     }
+
     return buffer;
-}
+};
 
 exports.checkArgument = function(expression, message) {
     if (!expression) {
         throw message;
     }
-}
+};

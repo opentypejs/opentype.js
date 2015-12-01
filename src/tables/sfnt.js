@@ -238,7 +238,7 @@ function fontToSfntTable(font) {
         ulCodePageRange1: 1, // FIXME: hard-code Latin 1 support for now
         sxHeight: metricsForChar(font, 'xyvw', {yMax: Math.round(globals.ascender / 2)}).yMax,
         sCapHeight: metricsForChar(font, 'HIKLEFJMNTZBDPRAGOQSUVWXY', globals).yMax,
-        usDefaultChar: font.hasChar(' ') ? 32: 0, // Use space as the default character, if available.
+        usDefaultChar: font.hasChar(' ') ? 32 : 0, // Use space as the default character, if available.
         usBreakChar: font.hasChar(' ') ? 32 : 0 // Use space as the break character, if available.
     });
 

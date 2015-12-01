@@ -3,7 +3,7 @@
 // (c) 2015 Frederik De Bleser
 // opentype.js may be freely distributed under the MIT license.
 
-/* global ArrayBuffer, DataView, Uint8Array, XMLHttpRequest  */
+/* global DataView, Uint8Array, XMLHttpRequest  */
 
 'use strict';
 
