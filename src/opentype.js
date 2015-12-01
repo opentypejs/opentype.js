@@ -14,6 +14,7 @@ var _font = require('./font');
 var glyph = require('./glyph');
 var parse = require('./parse');
 var path = require('./path');
+var util = require('./util');
 
 var cmap = require('./tables/cmap');
 var cff = require('./tables/cff');
@@ -33,17 +34,6 @@ var post = require('./tables/post');
 
 // File loaders /////////////////////////////////////////////////////////
 
-// Convert a Node.js Buffer to an ArrayBuffer
-function toArrayBuffer(buffer) {
-    var arrayBuffer = new ArrayBuffer(buffer.length);
-    var data = new Uint8Array(arrayBuffer);
-    for (var i = 0; i < buffer.length; i += 1) {
-        data[i] = buffer[i];
-    }
-
-    return arrayBuffer;
-}
-
 function loadFromFile(path, callback) {
     var fs = require('fs');
     fs.readFile(path, function(err, buffer) {
@@ -51,7 +41,7 @@ function loadFromFile(path, callback) {
             return callback(err.message);
         }
 
-        callback(null, toArrayBuffer(buffer));
+        callback(null, util.nodeBufferToArrayBuffer(buffer));
     });
 }
 
@@ -306,7 +296,7 @@ function load(url, callback) {
 function loadSync(url) {
     var fs = require('fs');
     var buffer = fs.readFileSync(url);
-    return parseBuffer(toArrayBuffer(buffer));
+    return parseBuffer(util.nodeBufferToArrayBuffer(buffer));
 }
 
 exports._parse = parse;
