@@ -122,11 +122,13 @@ function parseBuffer(buffer) {
     var indexToLocFormat;
     var ltagTable;
 
+    // Since the constructor can also be called to create new fonts from scratch, we indicate this
+    // should be an empty font that we'll fill with our own data.
+    var font = new _font.Font({empty: true});
+
     // OpenType fonts use big endian byte ordering.
     // We can't rely on typed array view types, because they operate with the endianness of the host computer.
     // Instead we use DataViews where we can specify endianness.
-
-    var font = new _font.Font();
     var data = new DataView(buffer, 0);
     var numTables;
     var tableEntries = [];

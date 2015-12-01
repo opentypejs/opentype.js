@@ -6,6 +6,7 @@ var path = require('./path');
 var sfnt = require('./tables/sfnt');
 var encoding = require('./encoding');
 var glyphset = require('./glyphset');
+var util = require('./util');
 
 // A Font represents a loaded OpenType font file.
 // It contains a set of glyphs and methods to draw text on a drawing context,
@@ -13,24 +14,37 @@ var glyphset = require('./glyphset');
 function Font(options) {
     options = options || {};
 
-    // OS X will complain if the names are empty, so we put a single space everywhere by default.
-    this.names = {
-        fontFamily: {en: options.familyName || ' '},
-        fontSubfamily: {en: options.styleName || ' '},
-        designer: {en: options.designer || ' '},
-        designerURL: {en: options.designerURL || ' '},
-        manufacturer: {en: options.manufacturer || ' '},
-        manufacturerURL: {en: options.manufacturerURL || ' '},
-        license: {en: options.license || ' '},
-        licenseURL: {en: options.licenseURL || ' '},
-        version: {en: options.version || 'Version 0.1'},
-        description: {en: options.description || ' '},
-        copyright: {en: options.copyright || ' '},
-        trademark: {en: options.trademark || ' '}
-    };
-    this.unitsPerEm = options.unitsPerEm || 1000;
-    this.ascender = options.ascender;
-    this.descender = options.descender;
+    if (!options.empty) {
+        // Check that we've provided the minimum set of names.
+        util.checkArgument(options.familyName, 'When creating a new Font object, familyName is required.');
+        util.checkArgument(options.styleName, 'When creating a new Font object, styleName is required.');
+        util.checkArgument(options.unitsPerEm, 'When creating a new Font object, unitsPerEm is required.');
+        util.checkArgument(options.ascender, 'When creating a new Font object, ascender is required.');
+        util.checkArgument(options.descender, 'When creating a new Font object, descender is required.');
+        util.checkArgument(options.descender < 0, 'Descender should be negative (e.g. -512).')
+
+        // OS X will complain if the names are empty, so we put a single space everywhere by default.
+        this.names = {
+            fontFamily: {en: options.familyName || ' '},
+            fontSubfamily: {en: options.styleName || ' '},
+            fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
+            postScriptName: {en: options.postScriptName || options.familyName + options.styleName},
+            designer: {en: options.designer || ' '},
+            designerURL: {en: options.designerURL || ' '},
+            manufacturer: {en: options.manufacturer || ' '},
+            manufacturerURL: {en: options.manufacturerURL || ' '},
+            license: {en: options.license || ' '},
+            licenseURL: {en: options.licenseURL || ' '},
+            version: {en: options.version || 'Version 0.1'},
+            description: {en: options.description || ' '},
+            copyright: {en: options.copyright || ' '},
+            trademark: {en: options.trademark || ' '}
+        };
+        this.unitsPerEm = options.unitsPerEm || 1000;
+        this.ascender = options.ascender;
+        this.descender = options.descender;
+    }
+
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
     this.glyphs = new glyphset.GlyphSet(this, options.glyphs || []);
     this.encoding = new encoding.DefaultEncoding(this);
