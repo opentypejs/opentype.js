@@ -120,7 +120,7 @@ on the font name.
     font.download();
 
 If you want to inspect the font, use `font.toTables()` to generate an object showing the data structures that map
-directly to binary values. If you want to get an `ArrayBuffer`, use `font.toBuffer()`.
+directly to binary values. If you want to get an `ArrayBuffer`, use `font.toArrayBuffer()`.
 
 
 ### The Font object

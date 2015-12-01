@@ -279,6 +279,11 @@ Font.prototype.toTables = function() {
 };
 
 Font.prototype.toBuffer = function() {
+    console.warn('Font.toBuffer is deprecated. Use Font.toArrayBuffer instead.');
+    return this.toArrayBuffer();
+}
+
+Font.prototype.toArrayBuffer = function() {
     var sfntTable = this.toTables();
     var bytes = sfntTable.encode();
     var buffer = new ArrayBuffer(bytes.length);
