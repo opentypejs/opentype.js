@@ -194,11 +194,13 @@ function fontToSfntTable(font) {
     globals.descender = font.descender !== undefined ? font.descender : globals.yMin;
 
     var headTable = head.make({
+        flags: 3, // 00000011 (baseline for font at y=0; left sidebearing point at x=0)
         unitsPerEm: font.unitsPerEm,
         xMin: globals.xMin,
         yMin: globals.yMin,
         xMax: globals.xMax,
-        yMax: globals.yMax
+        yMax: globals.yMax,
+        lowestRecPPEM: 3
     });
 
     var hheaTable = hhea.make({
@@ -223,6 +225,7 @@ function fontToSfntTable(font) {
         ulUnicodeRange2: ulUnicodeRange2,
         ulUnicodeRange3: ulUnicodeRange3,
         ulUnicodeRange4: ulUnicodeRange4,
+        fsSelection: 64, // REGULAR
         // See http://typophile.com/node/13081 for more info on vertical metrics.
         // We get metrics for typical characters (such as "x" for xHeight).
         // We provide some fallback characters if characters are unavailable: their
@@ -230,10 +233,12 @@ function fontToSfntTable(font) {
         sTypoAscender: globals.ascender,
         sTypoDescender: globals.descender,
         sTypoLineGap: 0,
-        usWinAscent: globals.ascender,
-        usWinDescent: -globals.descender,
-        sxHeight: metricsForChar(font, 'xyvw', {yMax: 0}).yMax,
+        usWinAscent: globals.yMax,
+        usWinDescent: Math.abs(globals.yMin),
+        ulCodePageRange1: 1, // FIXME: hard-code Latin 1 support for now
+        sxHeight: metricsForChar(font, 'xyvw', {yMax: Math.round(globals.ascender / 2)}).yMax,
         sCapHeight: metricsForChar(font, 'HIKLEFJMNTZBDPRAGOQSUVWXY', globals).yMax,
+        usDefaultChar: font.hasChar(' ') ? 32: 0, // Use space as the default character, if available.
         usBreakChar: font.hasChar(' ') ? 32 : 0 // Use space as the break character, if available.
     });
 
@@ -280,7 +285,8 @@ function fontToSfntTable(font) {
         familyName: englishFamilyName,
         weightName: englishStyleName,
         postScriptName: postScriptName,
-        unitsPerEm: font.unitsPerEm
+        unitsPerEm: font.unitsPerEm,
+        fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax]
     });
 
     // The order does not matter because makeSfntTable() will sort them.
