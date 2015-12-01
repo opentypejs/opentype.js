@@ -1035,14 +1035,6 @@ function makePrivateDict(attrs, strings) {
     return t;
 }
 
-function makePrivateDictIndex(privateDict) {
-    var t = new table.Table('Private DICT INDEX', [
-        {name: 'privateDicts', type: 'INDEX', value: []}
-    ]);
-    t.privateDicts = [{name: 'privateDict_0', type: 'TABLE', value: privateDict}];
-    return t;
-}
-
 function makeCFFTable(glyphs, options) {
     var t = new table.Table('CFF ', [
         {name: 'header', type: 'TABLE'},
@@ -1052,7 +1044,7 @@ function makeCFFTable(glyphs, options) {
         {name: 'globalSubrIndex', type: 'TABLE'},
         {name: 'charsets', type: 'TABLE'},
         {name: 'charStringsIndex', type: 'TABLE'},
-        {name: 'privateDictIndex', type: 'TABLE'}
+        {name: 'privateDict', type: 'TABLE'}
     ]);
 
     var fontScale = 1 / options.unitsPerEm;
@@ -1092,8 +1084,7 @@ function makeCFFTable(glyphs, options) {
     t.globalSubrIndex = makeGlobalSubrIndex();
     t.charsets = makeCharsets(glyphNames, strings);
     t.charStringsIndex = makeCharStringsIndex(glyphs);
-    var privateDict = makePrivateDict(privateAttrs, strings);
-    t.privateDictIndex = makePrivateDictIndex(privateDict);
+    t.privateDict = makePrivateDict(privateAttrs, strings);
 
     // Needs to come at the end, to encode all custom strings used in the font.
     t.stringIndex = makeStringIndex(strings);
