@@ -92,16 +92,11 @@ on the font name.
 
     // Create the bézier paths for each of the glyphs.
     // Note that the .notdef glyph is required.
-
-    var notdefPath = new opentype.Path();
-    notdefPath.moveTo(100, 0);
-    notdefPath.lineTo(100, 700);
-    // more drawing instructions....
     var notdefGlyph = new opentype.Glyph({
         name: '.notdef',
         unicode: 0,
         advanceWidth: 650,
-        path: notdefPath
+        path: new opentype.Path();
     });
 
     var aPath = new opentype.Path();
@@ -116,7 +111,13 @@ on the font name.
     });
 
     var glyphs = [notdefGlyph, aGlyph];
-    var font = new opentype.Font({familyName: 'OpenTypeSans', styleName: 'Medium', unitsPerEm: 1000, glyphs: glyphs});
+    var font = new opentype.Font({
+        familyName: 'OpenTypeSans',
+        styleName: 'Medium',
+        unitsPerEm: 1000,
+        ascender: 800,
+        descender: -200,
+        glyphs: glyphs});
     font.download();
 
 If you want to inspect the font, use `font.toTables()` to generate an object showing the data structures that map
