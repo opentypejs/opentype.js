@@ -27,7 +27,7 @@ function parseHeadTable(data, start) {
     head.macStyle = p.parseUShort();
     head.lowestRecPPEM = p.parseUShort();
     head.fontDirectionHint = p.parseShort();
-    head.indexToLocFormat = p.parseShort();     // 50
+    head.indexToLocFormat = p.parseShort();
     head.glyphDataFormat = p.parseShort();
     return head;
 }
