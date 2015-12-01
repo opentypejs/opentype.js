@@ -65,7 +65,7 @@
             console.log(err);
         }
         inFont = font;
-        var buffer = inFont.toBuffer();
+        var buffer = inFont.toArrayBuffer();
         outFont = opentype.parse(buffer);
         document.getElementById('fontFamilyName').innerHTML = outFont.names.fontFamily.en;
 

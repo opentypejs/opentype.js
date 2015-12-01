@@ -129,9 +129,9 @@
     });
 
     var glyphs = [notdefGlyph, aGlyph, bGlyph];
-    var font = new opentype.Font({familyName: 'OpenTypeSans', styleName: 'Medium', unitsPerEm: 1000, glyphs: glyphs});
+    var font = new opentype.Font({familyName: 'OpenTypeSans', styleName: 'Medium', unitsPerEm: 1000, ascender: 800, descender: -200, glyphs: glyphs});
     console.log(font.toTables());
-    var buffer = font.toBuffer();
+    var buffer = font.toArrayBuffer();
     var font2 = opentype.parse(buffer);
 
     document.getElementById('fontFamilyName').innerHTML = font2.names.fontFamily.en;
