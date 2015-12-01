@@ -1,3 +1,8 @@
+0.6.0 (December 1, 2015)
+========================
+* Improvements to font writing: generated fonts now work properly on OS X.
+* When creating a new font, ascender and descender are now required.
+
 0.5.1 (October 26, 2015)
 ========================
 * Add `Font.getPaths()` which returns a list of paths.
