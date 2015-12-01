@@ -300,27 +300,32 @@ Font.prototype.download = function() {
     var familyName = this.getEnglishName('fontFamily');
     var styleName = this.getEnglishName('fontSubfamily');
     var fileName = familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
-    var buffer = this.toBuffer();
+    var arrayBuffer = this.toArrayBuffer();
 
-    window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-    window.requestFileSystem(window.TEMPORARY, buffer.byteLength, function(fs) {
-        fs.root.getFile(fileName, {create: true}, function(fileEntry) {
-            fileEntry.createWriter(function(writer) {
-                var dataView = new DataView(buffer);
-                var blob = new Blob([dataView], {type: 'font/opentype'});
-                writer.write(blob);
+    if (util.isBrowser()) {
+        window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+        window.requestFileSystem(window.TEMPORARY, arrayBuffer.byteLength, function(fs) {
+            fs.root.getFile(fileName, {create: true}, function(fileEntry) {
+                fileEntry.createWriter(function(writer) {
+                    var dataView = new DataView(arrayBuffer);
+                    var blob = new Blob([dataView], {type: 'font/opentype'});
+                    writer.write(blob);
 
-                writer.addEventListener('writeend', function() {
-                    // Navigating to the file will download it.
-                    location.href = fileEntry.toURL();
-                }, false);
+                    writer.addEventListener('writeend', function() {
+                        // Navigating to the file will download it.
+                        location.href = fileEntry.toURL();
+                    }, false);
+                });
             });
+        },
+        function(err) {
+            throw err;
         });
-    },
-
-    function(err) {
-        throw err;
-    });
+    } else {
+        var fs = require('fs');
+        var buffer = util.arrayBufferToNodeBuffer(arrayBuffer);
+        fs.writeFileSync(fileName, buffer);
+    }
 };
 
 exports.Font = Font;
