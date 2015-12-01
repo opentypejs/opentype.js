@@ -2,5 +2,6 @@
     "excludeFiles": ["node_modules/**", "build/**", "dist/**"],
     "preset": "airbnb",
     "validateIndentation": 4,
-    "requirePaddingNewLinesBeforeLineComments": null
+    "requirePaddingNewLinesBeforeLineComments": null,
+    "requirePaddingNewLinesAfterBlocks": null
 }
