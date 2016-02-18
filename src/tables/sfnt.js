@@ -190,8 +190,8 @@ function fontToSfntTable(font) {
         maxLeftSideBearing: Math.max.apply(null, leftSideBearings),
         minRightSideBearing: Math.min.apply(null, rightSideBearings)
     };
-    globals.ascender = font.ascender !== undefined ? font.ascender : globals.yMax;
-    globals.descender = font.descender !== undefined ? font.descender : globals.yMin;
+    globals.ascender = font.ascender;
+    globals.descender = font.descender;
 
     var headTable = head.make({
         flags: 3, // 00000011 (baseline for font at y=0; left sidebearing point at x=0)
