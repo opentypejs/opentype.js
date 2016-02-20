@@ -1,3 +1,8 @@
+0.6.1 (February 20, 2015)
+=========================
+* Left side bearing is now correctly reported.
+* Simplified code for including ascender / descender values.
+
 0.6.0 (December 1, 2015)
 ========================
 * Improvements to font writing: generated fonts now work properly on OS X.
