@@ -164,7 +164,7 @@ Glyph.prototype.getMetrics = function() {
         yMin: Math.min.apply(null, yCoords),
         xMax: Math.max.apply(null, xCoords),
         yMax: Math.max.apply(null, yCoords),
-        leftSideBearing: 0
+        leftSideBearing: this.leftSideBearing
     };
 
     if (!isFinite(metrics.xMin)) {
