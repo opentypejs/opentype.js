@@ -455,6 +455,70 @@ describe('types.js', function() {
         assert.equal(sizeOf.TABLE(table), 6);
     });
 
+    it('can handle subTABLEs', function() {
+        var table = {
+            fields: [
+                {name: 'version', type: 'FIXED', value: 0x01234567},
+                {name: 'subtable', type: 'TABLE', value: {
+                    fields: [
+                        {name: 'flags', type: 'USHORT', value: 0xBEEF}
+                    ]
+                }}
+            ]
+        };
+        assert.equal(hex(encode.TABLE(table)), '01 23 45 67 00 06 BE EF');
+        assert.equal(sizeOf.TABLE(table), 8);
+    });
+
+    it('can handle deeply nested TABLEs', function() {
+        // First 58 bytes of Roboto-Black.ttf GSUB table.
+        var expected = '00 01 00 00 00 0A 00 20 00 3A ' +                                           // header
+            '00 01 44 46 4C 54 00 08 00 04 00 00 00 00 FF FF 00 02 00 00 00 01 ' +                  // script list
+            '00 02 6C 69 67 61 00 0E 73 6D 63 70 00 14 00 00 00 01 00 01 00 00 00 01 00 00';        // feature list
+
+        var table = {
+            fields: [
+                {name: 'version', type: 'FIXED', value: 0x00010000},
+                {name: 'scriptList', type: 'TABLE'},
+                {name: 'featureList', type: 'TABLE'},
+                {name: 'lookupList', type: 'TABLE'}
+            ],
+            scriptList: { fields: [
+                {name: 'scriptCount', type: 'USHORT', value: 1},
+                {name: 'scriptTag_0', type: 'TAG', value: 'DFLT'},
+                {name: 'script_0', type: 'TABLE', value: { fields: [
+                    {name: 'defaultLangSys', type: 'TABLE', value: { fields: [
+                        {name: 'lookupOrder', type: 'USHORT', value: 0},
+                        {name: 'reqFeatureIndex', type: 'USHORT', value: 0xffff},
+                        {name: 'featureCount', type: 'USHORT', value: 2},
+                        {name: 'featureIndex_0', type: 'USHORT', value: 0},
+                        {name: 'featureIndex_1', type: 'USHORT', value: 1}
+                    ]}},
+                    {name: 'langSysCount', type: 'USHORT', value: 0}
+                ]}}
+            ]},
+            featureList: { fields: [
+                {name: 'featureCount', type: 'USHORT', value: 2},
+                {name: 'featureTag_0', type: 'TAG', value: 'liga'},
+                {name: 'feature_0', type: 'TABLE', value: { fields: [
+                    {name: 'featureParams', type: 'USHORT', value: 0},
+                    {name: 'lookupCount', type: 'USHORT', value: 1},
+                    {name: 'lookupListIndex', type: 'USHORT', value: 1}
+                ]}},
+                {name: 'featureTag_1', type: 'TAG', value: 'smcp'},
+                {name: 'feature_1', type: 'TABLE', value: { fields: [
+                    {name: 'featureParams', type: 'USHORT', value: 0},
+                    {name: 'lookupCount', type: 'USHORT', value: 1},
+                    {name: 'lookupListIndex', type: 'USHORT', value: 0}
+                ]}}
+            ]},
+            lookupList: { fields: [] }
+        };
+
+        assert.equal(hex(encode.TABLE(table)), expected);
+        assert.equal(sizeOf.TABLE(table), 58);
+    });
+
     it('can handle LITERAL', function() {
         assert.equal(hex(encode.LITERAL([])), '');
         assert.equal(sizeOf.LITERAL([]), 0);

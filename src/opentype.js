@@ -67,8 +67,10 @@ function parseOpenTypeTableEntries(data, numTables) {
     var p = 12;
     for (var i = 0; i < numTables; i += 1) {
         var tag = parse.getTag(data, p);
+        var checksum = parse.getULong(data, p + 4);
         var offset = parse.getULong(data, p + 8);
-        tableEntries.push({tag: tag, offset: offset, compression: false});
+        var length = parse.getULong(data, p + 12);
+        tableEntries.push({tag: tag, checksum: checksum, offset: offset, length: length, compression: false});
         p += 16;
     }
 
