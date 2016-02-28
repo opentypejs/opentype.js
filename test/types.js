@@ -471,7 +471,7 @@ describe('types.js', function() {
     });
 
     it('can handle deeply nested TABLEs', function() {
-        // 58 first bytes of Roboto-Black.ttf GSUB table.
+        // First 58 bytes of Roboto-Black.ttf GSUB table.
         var expected = '00 01 00 00 00 0A 00 20 00 3A ' +                                           // header
             '00 01 44 46 4C 54 00 08 00 04 00 00 00 00 FF FF 00 02 00 00 00 01 ' +                  // script list
             '00 02 6C 69 67 61 00 0E 73 6D 63 70 00 14 00 00 00 01 00 01 00 00 00 01 00 00';        // feature list
