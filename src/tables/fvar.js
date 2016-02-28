@@ -29,16 +29,16 @@ function addName(name, names) {
     return nameID;
 }
 
-function makeFvarAxis(axis, names) {
+function makeFvarAxis(n, axis, names) {
     var nameID = addName(axis.name, names);
-    return new table.Table('fvarAxis', [
-        {name: 'tag', type: 'TAG', value: axis.tag},
-        {name: 'minValue', type: 'FIXED', value: axis.minValue << 16},
-        {name: 'defaultValue', type: 'FIXED', value: axis.defaultValue << 16},
-        {name: 'maxValue', type: 'FIXED', value: axis.maxValue << 16},
-        {name: 'flags', type: 'USHORT', value: 0},
-        {name: 'nameID', type: 'USHORT', value: nameID}
-    ]);
+    return [
+        {name: 'tag_' + n, type: 'TAG', value: axis.tag},
+        {name: 'minValue_' + n, type: 'FIXED', value: axis.minValue << 16},
+        {name: 'defaultValue_' + n, type: 'FIXED', value: axis.defaultValue << 16},
+        {name: 'maxValue_' + n, type: 'FIXED', value: axis.maxValue << 16},
+        {name: 'flags_' + n, type: 'USHORT', value: 0},
+        {name: 'nameID_' + n, type: 'USHORT', value: nameID}
+    ];
 }
 
 function parseFvarAxis(data, start, names) {
@@ -53,23 +53,23 @@ function parseFvarAxis(data, start, names) {
     return axis;
 }
 
-function makeFvarInstance(inst, axes, names) {
+function makeFvarInstance(n, inst, axes, names) {
     var nameID = addName(inst.name, names);
     var fields = [
-        {name: 'nameID', type: 'USHORT', value: nameID},
-        {name: 'flags', type: 'USHORT', value: 0}
+        {name: 'nameID_' + n, type: 'USHORT', value: nameID},
+        {name: 'flags_' + n, type: 'USHORT', value: 0}
     ];
 
     for (var i = 0; i < axes.length; ++i) {
         var axisTag = axes[i].tag;
         fields.push({
-            name: 'axis ' + axisTag,
+            name: 'axis_' + n + ' ' + axisTag,
             type: 'FIXED',
             value: inst.coordinates[axisTag] << 16
         });
     }
 
-    return new table.Table('fvarInstance', fields);
+    return fields;
 }
 
 function parseFvarInstance(data, start, axes, names) {
@@ -99,18 +99,11 @@ function makeFvarTable(fvar, names) {
     result.offsetToData = result.sizeOf();
 
     for (var i = 0; i < fvar.axes.length; i++) {
-        result.fields.push({
-            name: 'axis ' + i,
-            type: 'TABLE',
-            value: makeFvarAxis(fvar.axes[i], names)});
+        result.fields = result.fields.concat(makeFvarAxis(i, fvar.axes[i], names));
     }
 
     for (var j = 0; j < fvar.instances.length; j++) {
-        result.fields.push({
-            name: 'instance ' + j,
-            type: 'TABLE',
-            value: makeFvarInstance(fvar.instances[j], fvar.axes, names)
-        });
+        result.fields = result.fields.concat(makeFvarInstance(j, fvar.instances[j], fvar.axes, names));
     }
 
     return result;

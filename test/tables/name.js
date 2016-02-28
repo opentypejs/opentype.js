@@ -28,21 +28,19 @@ function makeNameTable(names) {
     for (var i = 0; i < names.length; i++) {
         var name = names[i];
         var text = testutil.unhex(name[1]);
-        var record = new table.Table('NameRecord', [
-            {name: 'platformID', type: 'USHORT', value: name[2]},
-            {name: 'encodingID', type: 'USHORT', value: name[3]},
-            {name: 'languageID', type: 'USHORT', value: name[4]},
-            {name: 'nameID', type: 'USHORT', value: name[0]},
-            {name: 'length', type: 'USHORT', value: text.byteLength},
-            {name: 'offset', type: 'USHORT', value: stringPool.length}
-        ]);
-        t.fields.push({name: 'record_' + i, type: 'TABLE', value: record});
+        t.fields.push({name: 'platformID_' + i, type: 'USHORT', value: name[2]});
+        t.fields.push({name: 'encodingID_' + i, type: 'USHORT', value: name[3]});
+        t.fields.push({name: 'languageID_' + i, type: 'USHORT', value: name[4]});
+        t.fields.push({name: 'nameID_' + i, type: 'USHORT', value: name[0]});
+        t.fields.push({name: 'length_' + i, type: 'USHORT', value: text.byteLength});
+        t.fields.push({name: 'offset_' + i, type: 'USHORT', value: stringPool.length});
         for (var j = 0; j < text.byteLength; j++) {
             stringPool.push(text.getUint8(j));
         }
     }
 
     t.fields.push({name: 'strings', type: 'LITERAL', value: stringPool});
+
     var bytes = types.encode.TABLE(t);
     var data = new DataView(new ArrayBuffer(bytes.length), 0);
     for (var k = 0; k < bytes.length; k++) {

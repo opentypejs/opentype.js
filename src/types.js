@@ -566,18 +566,36 @@ sizeOf.OBJECT = function(v) {
 encode.TABLE = function(table) {
     var d = [];
     var length = table.fields.length;
+    var subtables = [];
+    var subtableOffsets = [];
+    var i;
 
-    for (var i = 0; i < length; i += 1) {
+    for (i = 0; i < length; i += 1) {
         var field = table.fields[i];
         var encodingFunction = encode[field.type];
-        check.argument(encodingFunction !== undefined, 'No encoding function for field type ' + field.type);
+        check.argument(encodingFunction !== undefined, 'No encoding function for field type ' + field.type + ' (' + field.name + ')');
         var value = table[field.name];
         if (value === undefined) {
             value = field.value;
         }
 
         var bytes = encodingFunction(value);
-        d = d.concat(bytes);
+        if (field.type === 'TABLE') {
+            subtableOffsets.push(d.length);
+            d = d.concat([0, 0]);
+            subtables.push(bytes);
+        } else {
+            d = d.concat(bytes);
+        }
+    }
+
+    for (i = 0; i < subtables.length; i += 1) {
+        var o = subtableOffsets[i];
+        var offset = d.length;
+        check.argument(offset < 65536, 'Table ' + table.name + ' too big.');
+        d[o] = offset >> 8;
+        d[o + 1] = offset & 0xff;
+        d = d.concat(subtables[i]);
     }
 
     return d;
@@ -590,13 +608,18 @@ sizeOf.TABLE = function(table) {
     for (var i = 0; i < length; i += 1) {
         var field = table.fields[i];
         var sizeOfFunction = sizeOf[field.type];
-        check.argument(sizeOfFunction !== undefined, 'No sizeOf function for field type ' + field.type);
+        check.argument(sizeOfFunction !== undefined, 'No sizeOf function for field type ' + field.type + ' (' + field.name + ')');
         var value = table[field.name];
         if (value === undefined) {
             value = field.value;
         }
 
         numBytes += sizeOfFunction(value);
+
+        // Subtables take 2 more bytes for offsets.
+        if (field.type === 'TABLE') {
+            numBytes += 2;
+        }
     }
 
     return numBytes;
