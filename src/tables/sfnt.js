@@ -222,15 +222,15 @@ function fontToSfntTable(font) {
 
     var os2Table = os2.make({
         xAvgCharWidth: Math.round(globals.advanceWidthAvg),
-        usWeightClass: 500, // Medium FIXME Make this configurable
-        usWidthClass: 5, // Medium (normal) FIXME Make this configurable
+        usWeightClass: font.os2Values.weightClass,
+        usWidthClass: font.os2Values.widthClass,
         usFirstCharIndex: firstCharIndex,
         usLastCharIndex: lastCharIndex,
         ulUnicodeRange1: ulUnicodeRange1,
         ulUnicodeRange2: ulUnicodeRange2,
         ulUnicodeRange3: ulUnicodeRange3,
         ulUnicodeRange4: ulUnicodeRange4,
-        fsSelection: 64, // REGULAR
+        fsSelection: font.os2Values.fsSelection, // REGULAR
         // See http://typophile.com/node/13081 for more info on vertical metrics.
         // We get metrics for typical characters (such as "x" for xHeight).
         // We provide some fallback characters if characters are unavailable: their
