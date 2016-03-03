@@ -857,7 +857,7 @@ function encodeString(s, strings) {
 }
 
 function makeHeader() {
-    return new table.Table('Header', [
+    return new table.Record('Header', [
         {name: 'major', type: 'Card8', value: 1},
         {name: 'minor', type: 'Card8', value: 0},
         {name: 'hdrSize', type: 'Card8', value: 4},
@@ -866,7 +866,7 @@ function makeHeader() {
 }
 
 function makeNameIndex(fontNames) {
-    var t = new table.Table('Name INDEX', [
+    var t = new table.Record('Name INDEX', [
         {name: 'names', type: 'INDEX', value: []}
     ]);
     t.names = [];
@@ -897,7 +897,7 @@ function makeDict(meta, attrs, strings) {
 
 // The Top DICT houses the global font attributes.
 function makeTopDict(attrs, strings) {
-    var t = new table.Table('Top DICT', [
+    var t = new table.Record('Top DICT', [
         {name: 'dict', type: 'DICT', value: {}}
     ]);
     t.dict = makeDict(TOP_DICT_META, attrs, strings);
@@ -905,7 +905,7 @@ function makeTopDict(attrs, strings) {
 }
 
 function makeTopDictIndex(topDict) {
-    var t = new table.Table('Top DICT INDEX', [
+    var t = new table.Record('Top DICT INDEX', [
         {name: 'topDicts', type: 'INDEX', value: []}
     ]);
     t.topDicts = [{name: 'topDict_0', type: 'TABLE', value: topDict}];
@@ -913,7 +913,7 @@ function makeTopDictIndex(topDict) {
 }
 
 function makeStringIndex(strings) {
-    var t = new table.Table('String INDEX', [
+    var t = new table.Record('String INDEX', [
         {name: 'strings', type: 'INDEX', value: []}
     ]);
     t.strings = [];
@@ -926,13 +926,13 @@ function makeStringIndex(strings) {
 
 function makeGlobalSubrIndex() {
     // Currently we don't use subroutines.
-    return new table.Table('Global Subr INDEX', [
+    return new table.Record('Global Subr INDEX', [
         {name: 'subrs', type: 'INDEX', value: []}
     ]);
 }
 
 function makeCharsets(glyphNames, strings) {
-    var t = new table.Table('Charsets', [
+    var t = new table.Record('Charsets', [
         {name: 'format', type: 'Card8', value: 0}
     ]);
     for (var i = 0; i < glyphNames.length; i += 1) {
@@ -1014,7 +1014,7 @@ function glyphToOps(glyph) {
 }
 
 function makeCharStringsIndex(glyphs) {
-    var t = new table.Table('CharStrings INDEX', [
+    var t = new table.Record('CharStrings INDEX', [
         {name: 'charStrings', type: 'INDEX', value: []}
     ]);
 
@@ -1028,7 +1028,7 @@ function makeCharStringsIndex(glyphs) {
 }
 
 function makePrivateDict(attrs, strings) {
-    var t = new table.Table('Private DICT', [
+    var t = new table.Record('Private DICT', [
         {name: 'dict', type: 'DICT', value: {}}
     ]);
     t.dict = makeDict(PRIVATE_DICT_META, attrs, strings);
@@ -1037,14 +1037,14 @@ function makePrivateDict(attrs, strings) {
 
 function makeCFFTable(glyphs, options) {
     var t = new table.Table('CFF ', [
-        {name: 'header', type: 'TABLE'},
-        {name: 'nameIndex', type: 'TABLE'},
-        {name: 'topDictIndex', type: 'TABLE'},
-        {name: 'stringIndex', type: 'TABLE'},
-        {name: 'globalSubrIndex', type: 'TABLE'},
-        {name: 'charsets', type: 'TABLE'},
-        {name: 'charStringsIndex', type: 'TABLE'},
-        {name: 'privateDict', type: 'TABLE'}
+        {name: 'header', type: 'RECORD'},
+        {name: 'nameIndex', type: 'RECORD'},
+        {name: 'topDictIndex', type: 'RECORD'},
+        {name: 'stringIndex', type: 'RECORD'},
+        {name: 'globalSubrIndex', type: 'RECORD'},
+        {name: 'charsets', type: 'RECORD'},
+        {name: 'charStringsIndex', type: 'RECORD'},
+        {name: 'privateDict', type: 'RECORD'}
     ]);
 
     var fontScale = 1 / options.unitsPerEm;
