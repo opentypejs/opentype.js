@@ -230,7 +230,7 @@ function fontToSfntTable(font) {
         ulUnicodeRange2: ulUnicodeRange2,
         ulUnicodeRange3: ulUnicodeRange3,
         ulUnicodeRange4: ulUnicodeRange4,
-        fsSelection: font.os2Values.fsSelection, // REGULAR
+        fsSelection: font.tables.os2.fsSelection, // REGULAR
         // See http://typophile.com/node/13081 for more info on vertical metrics.
         // We get metrics for typical characters (such as "x" for xHeight).
         // We provide some fallback characters if characters are unavailable: their

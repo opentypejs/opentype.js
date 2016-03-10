@@ -315,7 +315,7 @@ function tinf_inflate_uncompressed_block(d) {
 /* inflate stream from source to dest */
 function tinf_uncompress(source, dest) {
   var d = new Data(source, dest);
-  var bfinal, res;
+  var bfinal, btype, res;
 
   do {
     /* read final block flag */
@@ -5766,6 +5766,11 @@ function fontToSfntTable(font) {
     for (var i = 0; i < font.glyphs.length; i += 1) {
         var glyph = font.glyphs.get(i);
         var unicode = glyph.unicode | 0;
+
+        if (typeof glyph.advanceWidth === 'undefined') {
+            throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is required.');
+        }
+
         if (firstCharIndex > unicode || firstCharIndex === null) {
             firstCharIndex = unicode;
         }
@@ -5844,7 +5849,7 @@ function fontToSfntTable(font) {
         ulUnicodeRange2: ulUnicodeRange2,
         ulUnicodeRange3: ulUnicodeRange3,
         ulUnicodeRange4: ulUnicodeRange4,
-        fsSelection: font.os2Values.fsSelection, // REGULAR
+        fsSelection: font.tables.os2.fsSelection, // REGULAR
         // See http://typophile.com/node/13081 for more info on vertical metrics.
         // We get metrics for typical characters (such as "x" for xHeight).
         // We provide some fallback characters if characters are unavailable: their
