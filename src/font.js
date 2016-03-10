@@ -44,17 +44,17 @@ function Font(options) {
         this.ascender = options.ascender;
         this.descender = options.descender;
         this.createdTimestamp = options.createdTimestamp;
-        this.os2Values = {
-            weightClass: options.weightClass || this.usWeightClasses.MEDIUM,
-            widthClass: options.widthClass || this.usWidthClasses.MEDIUM,
+        this.tables = { os2: {
+            usWeightClass: options.weightClass || this.usWeightClasses.MEDIUM,
+            usWidthClass: options.widthClass || this.usWidthClasses.MEDIUM,
             fsSelection: options.fsSelection || this.fsSelectionValues.REGULAR
-        };
+        } };
     }
 
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
     this.glyphs = new glyphset.GlyphSet(this, options.glyphs || []);
     this.encoding = new encoding.DefaultEncoding(this);
-    this.tables = {};
+    this.tables = this.tables || {};
 }
 
 // Check if the font has a glyph for the given character.

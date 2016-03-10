@@ -226,8 +226,8 @@ function fontToSfntTable(font) {
 
     var os2Table = os2.make({
         xAvgCharWidth: Math.round(globals.advanceWidthAvg),
-        usWeightClass: font.os2Values.weightClass,
-        usWidthClass: font.os2Values.widthClass,
+        usWeightClass: font.tables.os2.usWeightClass,
+        usWidthClass: font.tables.os2.usWidthClass,
         usFirstCharIndex: firstCharIndex,
         usLastCharIndex: lastCharIndex,
         ulUnicodeRange1: ulUnicodeRange1,
