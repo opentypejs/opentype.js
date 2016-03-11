@@ -1,4 +1,8 @@
-0.6.1 (February 20, 2015)
+0.6.2 (March 11, 2016)
+=========================
+* Improve table writing to support nested subtables. Thanks @fpirsch!
+
+0.6.1 (February 20, 2016)
 =========================
 * Left side bearing is now correctly reported.
 * Simplified code for including ascender / descender values.

@@ -315,7 +315,7 @@ function tinf_inflate_uncompressed_block(d) {
 /* inflate stream from source to dest */
 function tinf_uncompress(source, dest) {
   var d = new Data(source, dest);
-  var bfinal, btype, res;
+  var bfinal, res;
 
   do {
     /* read final block flag */
@@ -2053,7 +2053,6 @@ exports.Path = Path;
 
 'use strict';
 
-var check = require('./check');
 var encode = require('./types').encode;
 var sizeOf = require('./types').sizeOf;
 
@@ -2078,34 +2077,17 @@ function Table(tableName, fields, options) {
     }
 }
 
-Table.prototype.sizeOf = function() {
-    var v = 0;
-    for (var i = 0; i < this.fields.length; i += 1) {
-        var field = this.fields[i];
-        var value = this[field.name];
-        if (value === undefined) {
-            value = field.value;
-        }
-
-        if (typeof value.sizeOf === 'function') {
-            v += value.sizeOf();
-        } else {
-            var sizeOfFunction = sizeOf[field.type];
-            check.assert(typeof sizeOfFunction === 'function', 'Could not find sizeOf function for field' + field.name);
-            v += sizeOfFunction(value);
-        }
-    }
-
-    return v;
-};
-
 Table.prototype.encode = function() {
     return encode.TABLE(this);
 };
 
-exports.Table = Table;
+Table.prototype.sizeOf = function() {
+    return sizeOf.TABLE(this);
+};
 
-},{"./check":2,"./types":28}],12:[function(require,module,exports){
+exports.Record = exports.Table = Table;
+
+},{"./types":28}],12:[function(require,module,exports){
 // The `CFF` table contains the glyph outlines in PostScript format.
 // https://www.microsoft.com/typography/OTSPEC/cff.htm
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf
@@ -2965,7 +2947,7 @@ function encodeString(s, strings) {
 }
 
 function makeHeader() {
-    return new table.Table('Header', [
+    return new table.Record('Header', [
         {name: 'major', type: 'Card8', value: 1},
         {name: 'minor', type: 'Card8', value: 0},
         {name: 'hdrSize', type: 'Card8', value: 4},
@@ -2974,7 +2956,7 @@ function makeHeader() {
 }
 
 function makeNameIndex(fontNames) {
-    var t = new table.Table('Name INDEX', [
+    var t = new table.Record('Name INDEX', [
         {name: 'names', type: 'INDEX', value: []}
     ]);
     t.names = [];
@@ -3005,7 +2987,7 @@ function makeDict(meta, attrs, strings) {
 
 // The Top DICT houses the global font attributes.
 function makeTopDict(attrs, strings) {
-    var t = new table.Table('Top DICT', [
+    var t = new table.Record('Top DICT', [
         {name: 'dict', type: 'DICT', value: {}}
     ]);
     t.dict = makeDict(TOP_DICT_META, attrs, strings);
@@ -3013,7 +2995,7 @@ function makeTopDict(attrs, strings) {
 }
 
 function makeTopDictIndex(topDict) {
-    var t = new table.Table('Top DICT INDEX', [
+    var t = new table.Record('Top DICT INDEX', [
         {name: 'topDicts', type: 'INDEX', value: []}
     ]);
     t.topDicts = [{name: 'topDict_0', type: 'TABLE', value: topDict}];
@@ -3021,7 +3003,7 @@ function makeTopDictIndex(topDict) {
 }
 
 function makeStringIndex(strings) {
-    var t = new table.Table('String INDEX', [
+    var t = new table.Record('String INDEX', [
         {name: 'strings', type: 'INDEX', value: []}
     ]);
     t.strings = [];
@@ -3034,13 +3016,13 @@ function makeStringIndex(strings) {
 
 function makeGlobalSubrIndex() {
     // Currently we don't use subroutines.
-    return new table.Table('Global Subr INDEX', [
+    return new table.Record('Global Subr INDEX', [
         {name: 'subrs', type: 'INDEX', value: []}
     ]);
 }
 
 function makeCharsets(glyphNames, strings) {
-    var t = new table.Table('Charsets', [
+    var t = new table.Record('Charsets', [
         {name: 'format', type: 'Card8', value: 0}
     ]);
     for (var i = 0; i < glyphNames.length; i += 1) {
@@ -3122,7 +3104,7 @@ function glyphToOps(glyph) {
 }
 
 function makeCharStringsIndex(glyphs) {
-    var t = new table.Table('CharStrings INDEX', [
+    var t = new table.Record('CharStrings INDEX', [
         {name: 'charStrings', type: 'INDEX', value: []}
     ]);
 
@@ -3136,7 +3118,7 @@ function makeCharStringsIndex(glyphs) {
 }
 
 function makePrivateDict(attrs, strings) {
-    var t = new table.Table('Private DICT', [
+    var t = new table.Record('Private DICT', [
         {name: 'dict', type: 'DICT', value: {}}
     ]);
     t.dict = makeDict(PRIVATE_DICT_META, attrs, strings);
@@ -3145,14 +3127,14 @@ function makePrivateDict(attrs, strings) {
 
 function makeCFFTable(glyphs, options) {
     var t = new table.Table('CFF ', [
-        {name: 'header', type: 'TABLE'},
-        {name: 'nameIndex', type: 'TABLE'},
-        {name: 'topDictIndex', type: 'TABLE'},
-        {name: 'stringIndex', type: 'TABLE'},
-        {name: 'globalSubrIndex', type: 'TABLE'},
-        {name: 'charsets', type: 'TABLE'},
-        {name: 'charStringsIndex', type: 'TABLE'},
-        {name: 'privateDict', type: 'TABLE'}
+        {name: 'header', type: 'RECORD'},
+        {name: 'nameIndex', type: 'RECORD'},
+        {name: 'topDictIndex', type: 'RECORD'},
+        {name: 'stringIndex', type: 'RECORD'},
+        {name: 'globalSubrIndex', type: 'RECORD'},
+        {name: 'charsets', type: 'RECORD'},
+        {name: 'charStringsIndex', type: 'RECORD'},
+        {name: 'privateDict', type: 'RECORD'}
     ]);
 
     var fontScale = 1 / options.unitsPerEm;
@@ -5120,7 +5102,7 @@ function reverseDict(dict) {
 }
 
 function makeNameRecord(platformID, encodingID, languageID, nameID, length, offset) {
-    return new table.Table('NameRecord', [
+    return new table.Record('NameRecord', [
         {name: 'platformID', type: 'USHORT', value: platformID},
         {name: 'encodingID', type: 'USHORT', value: encodingID},
         {name: 'languageID', type: 'USHORT', value: languageID},
@@ -5253,7 +5235,7 @@ function makeNameTable(names, ltag) {
     ]);
 
     for (var r = 0; r < nameRecords.length; r++) {
-        t.fields.push({name: 'record_' + r, type: 'TABLE', value: nameRecords[r]});
+        t.fields.push({name: 'record_' + r, type: 'RECORD', value: nameRecords[r]});
     }
 
     t.fields.push({name: 'strings', type: 'LITERAL', value: stringPool});
@@ -5637,7 +5619,7 @@ function computeCheckSum(bytes) {
 }
 
 function makeTableRecord(tag, checkSum, offset, length) {
-    return new table.Table('Table Record', [
+    return new table.Record('Table Record', [
         {name: 'tag', type: 'TAG', value: tag !== undefined ? tag : ''},
         {name: 'checkSum', type: 'ULONG', value: checkSum !== undefined ? checkSum : 0},
         {name: 'offset', type: 'ULONG', value: offset !== undefined ? offset : 0},
@@ -5674,8 +5656,8 @@ function makeSfntTable(tables) {
         check.argument(t.tableName.length === 4, 'Table name' + t.tableName + ' is invalid.');
         var tableLength = t.sizeOf();
         var tableRecord = makeTableRecord(t.tableName, computeCheckSum(t.encode()), offset, tableLength);
-        recordFields.push({name: tableRecord.tag + ' Table Record', type: 'TABLE', value: tableRecord});
-        tableFields.push({name: t.tableName + ' table', type: 'TABLE', value: t});
+        recordFields.push({name: tableRecord.tag + ' Table Record', type: 'RECORD', value: tableRecord});
+        tableFields.push({name: t.tableName + ' table', type: 'RECORD', value: t});
         offset += tableLength;
         check.argument(!isNaN(offset), 'Something went wrong calculating the offset.');
         while (offset % 4 !== 0) {
@@ -6499,6 +6481,7 @@ encode.TABLE = function(table) {
         }
 
         var bytes = encodingFunction(value);
+
         if (field.type === 'TABLE') {
             subtableOffsets.push(d.length);
             d = d.concat([0, 0]);
@@ -6511,7 +6494,7 @@ encode.TABLE = function(table) {
     for (i = 0; i < subtables.length; i += 1) {
         var o = subtableOffsets[i];
         var offset = d.length;
-        check.argument(offset < 65536, 'Table ' + table.name + ' too big.');
+        check.argument(offset < 65536, 'Table ' + table.tableName + ' too big.');
         d[o] = offset >> 8;
         d[o + 1] = offset & 0xff;
         d = d.concat(subtables[i]);
@@ -6543,6 +6526,9 @@ sizeOf.TABLE = function(table) {
 
     return numBytes;
 };
+
+encode.RECORD = encode.TABLE;
+sizeOf.RECORD = sizeOf.TABLE;
 
 // Merge in a list of bytes.
 encode.LITERAL = function(v) {
