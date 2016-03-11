@@ -147,6 +147,11 @@ function fontToSfntTable(font) {
     for (var i = 0; i < font.glyphs.length; i += 1) {
         var glyph = font.glyphs.get(i);
         var unicode = glyph.unicode | 0;
+
+        if (typeof glyph.advanceWidth === 'undefined') {
+            throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is required.');
+        }
+
         if (firstCharIndex > unicode || firstCharIndex === null) {
             firstCharIndex = unicode;
         }

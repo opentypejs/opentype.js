@@ -40,4 +40,21 @@ describe('OpenType.js', function() {
         assert.equal(aGlyph.path.commands.length, 14);
     });
 
+    it('throws an error when advanceWidth is not set', function() {
+        var notdefGlyph = new opentype.Glyph({
+            name: '.notdef',
+            unicode: 0,
+            path: new opentype.Path()
+        });
+        var font = new opentype.Font({
+            familyName: 'MyFont',
+            styleName: 'Medium',
+            unitsPerEm: 1000,
+            ascender: 800,
+            descender: -200,
+            glyphs: [notdefGlyph]
+        });
+        assert.throws(function() { font.toArrayBuffer(); }, /advanceWidth is required/);
+    });
+
 });
