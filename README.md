@@ -96,7 +96,7 @@ on the font name.
         name: '.notdef',
         unicode: 0,
         advanceWidth: 650,
-        path: new opentype.Path();
+        path: new opentype.Path()
     });
 
     var aPath = new opentype.Path();
