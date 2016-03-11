@@ -580,6 +580,7 @@ encode.TABLE = function(table) {
         }
 
         var bytes = encodingFunction(value);
+
         if (field.type === 'TABLE') {
             subtableOffsets.push(d.length);
             d = d.concat([0, 0]);
@@ -592,7 +593,7 @@ encode.TABLE = function(table) {
     for (i = 0; i < subtables.length; i += 1) {
         var o = subtableOffsets[i];
         var offset = d.length;
-        check.argument(offset < 65536, 'Table ' + table.name + ' too big.');
+        check.argument(offset < 65536, 'Table ' + table.tableName + ' too big.');
         d[o] = offset >> 8;
         d[o + 1] = offset & 0xff;
         d = d.concat(subtables[i]);
@@ -624,6 +625,9 @@ sizeOf.TABLE = function(table) {
 
     return numBytes;
 };
+
+encode.RECORD = encode.TABLE;
+sizeOf.RECORD = sizeOf.TABLE;
 
 // Merge in a list of bytes.
 encode.LITERAL = function(v) {

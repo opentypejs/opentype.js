@@ -686,7 +686,7 @@ function reverseDict(dict) {
 }
 
 function makeNameRecord(platformID, encodingID, languageID, nameID, length, offset) {
-    return new table.Table('NameRecord', [
+    return new table.Record('NameRecord', [
         {name: 'platformID', type: 'USHORT', value: platformID},
         {name: 'encodingID', type: 'USHORT', value: encodingID},
         {name: 'languageID', type: 'USHORT', value: languageID},
@@ -819,7 +819,7 @@ function makeNameTable(names, ltag) {
     ]);
 
     for (var r = 0; r < nameRecords.length; r++) {
-        t.fields.push({name: 'record_' + r, type: 'TABLE', value: nameRecords[r]});
+        t.fields.push({name: 'record_' + r, type: 'RECORD', value: nameRecords[r]});
     }
 
     t.fields.push({name: 'strings', type: 'LITERAL', value: stringPool});

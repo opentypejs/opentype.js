@@ -42,7 +42,7 @@ function computeCheckSum(bytes) {
 }
 
 function makeTableRecord(tag, checkSum, offset, length) {
-    return new table.Table('Table Record', [
+    return new table.Record('Table Record', [
         {name: 'tag', type: 'TAG', value: tag !== undefined ? tag : ''},
         {name: 'checkSum', type: 'ULONG', value: checkSum !== undefined ? checkSum : 0},
         {name: 'offset', type: 'ULONG', value: offset !== undefined ? offset : 0},
@@ -79,8 +79,8 @@ function makeSfntTable(tables) {
         check.argument(t.tableName.length === 4, 'Table name' + t.tableName + ' is invalid.');
         var tableLength = t.sizeOf();
         var tableRecord = makeTableRecord(t.tableName, computeCheckSum(t.encode()), offset, tableLength);
-        recordFields.push({name: tableRecord.tag + ' Table Record', type: 'TABLE', value: tableRecord});
-        tableFields.push({name: t.tableName + ' table', type: 'TABLE', value: t});
+        recordFields.push({name: tableRecord.tag + ' Table Record', type: 'RECORD', value: tableRecord});
+        tableFields.push({name: t.tableName + ' table', type: 'RECORD', value: t});
         offset += tableLength;
         check.argument(!isNaN(offset), 'Something went wrong calculating the offset.');
         while (offset % 4 !== 0) {

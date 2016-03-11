@@ -519,6 +519,25 @@ describe('types.js', function() {
         assert.equal(sizeOf.TABLE(table), 58);
     });
 
+    it('can handle RECORD', function() {
+        var table = {
+            fields: [
+                {name: 'version', type: 'FIXED', value: 0x01234567},
+                {name: 'record', type: 'RECORD'}
+            ]
+        };
+
+        table.record = {
+            fields: [
+                {name: 'flags_0', type: 'USHORT', value: 0xDEAF},
+                {name: 'flags_1', type: 'USHORT', value: 0xCAFE}
+            ]
+        };
+
+        assert.equal(hex(encode.TABLE(table)), '01 23 45 67 DE AF CA FE');
+        assert.equal(sizeOf.TABLE(table), 8);
+    });
+
     it('can handle LITERAL', function() {
         assert.equal(hex(encode.LITERAL([])), '');
         assert.equal(sizeOf.LITERAL([]), 0);
