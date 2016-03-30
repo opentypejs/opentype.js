@@ -32,7 +32,7 @@ function Font(options) {
             designer: {en: options.designer || ' '},
             designerURL: {en: options.designerURL || ' '},
             manufacturer: {en: options.manufacturer || ' '},
-            manufacturerURL: {en: options.manufacturerURL || ' '},
+            vendorURL: {en: options.vendorURL || ' '},
             license: {en: options.license || ' '},
             licenseURL: {en: options.licenseURL || ' '},
             version: {en: options.version || 'Version 0.1'},

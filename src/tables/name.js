@@ -22,7 +22,7 @@ var nameTableNames = [
     'manufacturer',           // 8
     'designer',               // 9
     'description',            // 10
-    'manufacturerURL',        // 11
+    'vendorURL',              // 11
     'designerURL',            // 12
     'license',                // 13
     'licenseURL',             // 14
