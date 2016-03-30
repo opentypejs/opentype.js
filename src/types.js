@@ -222,6 +222,16 @@ sizeOf.NAME = sizeOf.CHARARRAY;
 encode.STRING = encode.CHARARRAY;
 sizeOf.STRING = sizeOf.CHARARRAY;
 
+decode.UTF8 = function(data, offset, numBytes) {
+    var codePoints = [];
+    var numChars = numBytes;
+    for (var j = 0; j < numChars; j++, offset += 1) {
+        codePoints[j] = data.getUint8(offset);
+    }
+
+    return String.fromCharCode.apply(null, codePoints);
+};
+
 decode.UTF16 = function(data, offset, numBytes) {
     var codePoints = [];
     var numChars = numBytes / 2;

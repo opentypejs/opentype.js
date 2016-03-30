@@ -19,6 +19,7 @@ var maxp = require('./maxp');
 var _name = require('./name');
 var os2 = require('./os2');
 var post = require('./post');
+var meta = require('./meta');
 
 function log2(v) {
     return Math.log(v) / Math.log(2) | 0;
@@ -294,8 +295,10 @@ function fontToSfntTable(font) {
         fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax]
     });
 
+    var metaTable = meta.make(font.meta);
+
     // The order does not matter because makeSfntTable() will sort them.
-    var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable];
+    var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable, metaTable];
     if (ltagTable) {
         tables.push(ltagTable);
     }

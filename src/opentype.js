@@ -31,6 +31,7 @@ var maxp = require('./tables/maxp');
 var _name = require('./tables/name');
 var os2 = require('./tables/os2');
 var post = require('./tables/post');
+var meta = require('./tables/meta');
 
 // File loaders /////////////////////////////////////////////////////////
 
@@ -167,6 +168,7 @@ function parseBuffer(buffer) {
     var kernTableEntry;
     var locaTableEntry;
     var nameTableEntry;
+    var metaTableEntry;
 
     for (var i = 0; i < numTables; i += 1) {
         var tableEntry = tableEntries[i];
@@ -232,6 +234,9 @@ function parseBuffer(buffer) {
         case 'GPOS':
             gposTableEntry = tableEntry;
             break;
+        case 'meta':
+            metaTableEntry = tableEntry;
+            break;
         }
     }
 
@@ -271,6 +276,11 @@ function parseBuffer(buffer) {
     if (fvarTableEntry) {
         var fvarTable = uncompressTable(data, fvarTableEntry);
         font.tables.fvar = fvar.parse(fvarTable.data, fvarTable.offset, font.names);
+    }
+
+    if (metaTableEntry) {
+        var metaTable = uncompressTable(data, metaTableEntry);
+        font.tables.meta = meta.parse(metaTable.data, metaTable.offset);
     }
 
     return font;

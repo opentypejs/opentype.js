@@ -977,7 +977,7 @@ Font.prototype.download = function() {
 
 exports.Font = Font;
 
-},{"./encoding":4,"./glyphset":7,"./path":10,"./tables/sfnt":27,"./util":29,"fs":undefined}],6:[function(require,module,exports){
+},{"./encoding":4,"./glyphset":7,"./path":10,"./tables/sfnt":28,"./util":30,"fs":undefined}],6:[function(require,module,exports){
 // The Glyph object
 
 'use strict';
@@ -1384,6 +1384,7 @@ var maxp = require('./tables/maxp');
 var _name = require('./tables/name');
 var os2 = require('./tables/os2');
 var post = require('./tables/post');
+var meta = require('./tables/meta');
 
 // File loaders /////////////////////////////////////////////////////////
 
@@ -1520,6 +1521,7 @@ function parseBuffer(buffer) {
     var kernTableEntry;
     var locaTableEntry;
     var nameTableEntry;
+    var metaTableEntry;
 
     for (var i = 0; i < numTables; i += 1) {
         var tableEntry = tableEntries[i];
@@ -1585,6 +1587,9 @@ function parseBuffer(buffer) {
         case 'GPOS':
             gposTableEntry = tableEntry;
             break;
+        case 'meta':
+            metaTableEntry = tableEntry;
+            break;
         }
     }
 
@@ -1626,6 +1631,11 @@ function parseBuffer(buffer) {
         font.tables.fvar = fvar.parse(fvarTable.data, fvarTable.offset, font.names);
     }
 
+    if (metaTableEntry) {
+        var metaTable = uncompressTable(data, metaTableEntry);
+        font.tables.meta = meta.parse(metaTable.data, metaTable.offset);
+    }
+
     return font;
 }
 
@@ -1664,7 +1674,7 @@ exports.parse = parseBuffer;
 exports.load = load;
 exports.loadSync = loadSync;
 
-},{"./encoding":4,"./font":5,"./glyph":6,"./parse":9,"./path":10,"./tables/cff":12,"./tables/cmap":13,"./tables/fvar":14,"./tables/glyf":15,"./tables/gpos":16,"./tables/head":17,"./tables/hhea":18,"./tables/hmtx":19,"./tables/kern":20,"./tables/loca":21,"./tables/ltag":22,"./tables/maxp":23,"./tables/name":24,"./tables/os2":25,"./tables/post":26,"./util":29,"fs":undefined,"tiny-inflate":1}],9:[function(require,module,exports){
+},{"./encoding":4,"./font":5,"./glyph":6,"./parse":9,"./path":10,"./tables/cff":12,"./tables/cmap":13,"./tables/fvar":14,"./tables/glyf":15,"./tables/gpos":16,"./tables/head":17,"./tables/hhea":18,"./tables/hmtx":19,"./tables/kern":20,"./tables/loca":21,"./tables/ltag":22,"./tables/maxp":23,"./tables/meta":24,"./tables/name":25,"./tables/os2":26,"./tables/post":27,"./util":30,"fs":undefined,"tiny-inflate":1}],9:[function(require,module,exports){
 // Parsing utility functions
 
 'use strict';
@@ -2087,7 +2097,7 @@ Table.prototype.sizeOf = function() {
 
 exports.Record = exports.Table = Table;
 
-},{"./types":28}],12:[function(require,module,exports){
+},{"./types":29}],12:[function(require,module,exports){
 // The `CFF` table contains the glyph outlines in PostScript format.
 // https://www.microsoft.com/typography/OTSPEC/cff.htm
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf
@@ -4414,6 +4424,83 @@ exports.parse = parseMaxpTable;
 exports.make = makeMaxpTable;
 
 },{"../parse":9,"../table":11}],24:[function(require,module,exports){
+// The `GPOS` table contains kerning pairs, among other things.
+// https://www.microsoft.com/typography/OTSPEC/gpos.htm
+
+'use strict';
+
+var types = require('../types');
+var decode = types.decode;
+var check = require('../check');
+var parse = require('../parse');
+var table = require('../table');
+
+// Parse the metadata `meta` table.
+// https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6meta.html
+function parseMetaTable(data, start, additionalTags) {
+    var supportedTags = ['dlng', 'slng'];
+    if (additionalTags) {
+        supportedTags = supportedTags.concat(additionalTags);
+    }
+
+    var p = new parse.Parser(data, start);
+    var tableVersion = p.parseULong();
+    check.argument(tableVersion === 1, 'Unsupported META table version.');
+    p.parseULong(); // flags - currently unused and set to 0
+    p.parseULong(); // tableOffset
+    var numDataMaps = p.parseULong();
+
+    var tags = [];
+    for (var i = 0; i < numDataMaps; i++) {
+        var tag = p.parseTag();
+
+        // Skip non-supported tags (like 'appl' or 'bild')
+        if (supportedTags.indexOf(tag) === -1) {
+            continue;
+        }
+
+        var dataOffset = p.parseULong();
+        var dataLength = p.parseULong();
+        var text = decode.UTF8(data, dataOffset, dataLength);
+
+        tags.push({
+            tag: tag,
+            data: text
+        });
+    }
+
+    return tags;
+}
+
+function makeMetaTable(tags) {
+    var stringPool = '';
+    var stringPoolOffset = 16 + tags.length * 12;
+
+    var result = new table.Table('meta', [
+        {name: 'version', type: 'ULONG', value: 1},
+        {name: 'flags', type: 'ULONG', value: 0},
+        {name: 'offset', type: 'ULONG', value: stringPoolOffset},
+        {name: 'numTags', type: 'ULONG', value: tags.length}
+    ]);
+
+    for (var i = 0; i < tags.length; ++i) {
+        var pos = stringPool.length;
+        stringPool += tags[i].data;
+
+        result.fields.push({name: 'tag ' + i, type: 'TAG', value: tags[i].tag});
+        result.fields.push({name: 'offset ' + i, type: 'ULONG', value: stringPoolOffset + pos});
+        result.fields.push({name: 'length ' + i, type: 'ULONG', value: tags[i].data.length});
+    }
+
+    result.fields.push({name: 'stringPool', type: 'CHARARRAY', value: stringPool});
+
+    return result;
+}
+
+exports.parse = parseMetaTable;
+exports.make = makeMetaTable;
+
+},{"../check":2,"../parse":9,"../table":11,"../types":29}],25:[function(require,module,exports){
 // The `name` naming table.
 // https://www.microsoft.com/typography/OTSPEC/name.htm
 
@@ -5245,7 +5332,7 @@ function makeNameTable(names, ltag) {
 exports.parse = parseNameTable;
 exports.make = makeNameTable;
 
-},{"../parse":9,"../table":11,"../types":28}],25:[function(require,module,exports){
+},{"../parse":9,"../table":11,"../types":29}],26:[function(require,module,exports){
 // The `OS/2` table contains metrics required in OpenType fonts.
 // https://www.microsoft.com/typography/OTSPEC/os2.htm
 
@@ -5501,7 +5588,7 @@ exports.getUnicodeRange = getUnicodeRange;
 exports.parse = parseOS2Table;
 exports.make = makeOS2Table;
 
-},{"../parse":9,"../table":11}],26:[function(require,module,exports){
+},{"../parse":9,"../table":11}],27:[function(require,module,exports){
 // The `post` table stores additional PostScript information, such as glyph names.
 // https://www.microsoft.com/typography/OTSPEC/post.htm
 
@@ -5574,7 +5661,7 @@ function makePostTable() {
 exports.parse = parsePostTable;
 exports.make = makePostTable;
 
-},{"../encoding":4,"../parse":9,"../table":11}],27:[function(require,module,exports){
+},{"../encoding":4,"../parse":9,"../table":11}],28:[function(require,module,exports){
 // The `sfnt` wrapper provides organization for the tables in the font.
 // It is the top-level data structure in a font.
 // https://www.microsoft.com/typography/OTSPEC/otff.htm
@@ -5596,6 +5683,7 @@ var maxp = require('./maxp');
 var _name = require('./name');
 var os2 = require('./os2');
 var post = require('./post');
+var meta = require('./meta');
 
 function log2(v) {
     return Math.log(v) / Math.log(2) | 0;
@@ -5724,6 +5812,11 @@ function fontToSfntTable(font) {
     for (var i = 0; i < font.glyphs.length; i += 1) {
         var glyph = font.glyphs.get(i);
         var unicode = glyph.unicode | 0;
+
+        if (typeof glyph.advanceWidth === 'undefined') {
+            throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is required.');
+        }
+
         if (firstCharIndex > unicode || firstCharIndex === null) {
             firstCharIndex = unicode;
         }
@@ -5866,8 +5959,10 @@ function fontToSfntTable(font) {
         fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax]
     });
 
+    var metaTable = meta.make(font.meta);
+
     // The order does not matter because makeSfntTable() will sort them.
-    var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable];
+    var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable, metaTable];
     if (ltagTable) {
         tables.push(ltagTable);
     }
@@ -5898,7 +5993,7 @@ exports.computeCheckSum = computeCheckSum;
 exports.make = makeSfntTable;
 exports.fontToTable = fontToSfntTable;
 
-},{"../check":2,"../table":11,"./cff":12,"./cmap":13,"./head":17,"./hhea":18,"./hmtx":19,"./ltag":22,"./maxp":23,"./name":24,"./os2":25,"./post":26}],28:[function(require,module,exports){
+},{"../check":2,"../table":11,"./cff":12,"./cmap":13,"./head":17,"./hhea":18,"./hmtx":19,"./ltag":22,"./maxp":23,"./meta":24,"./name":25,"./os2":26,"./post":27}],29:[function(require,module,exports){
 // Data types used in the OpenType font file.
 // All OpenType fonts use Motorola-style byte ordering (Big Endian)
 
@@ -6122,6 +6217,16 @@ sizeOf.NAME = sizeOf.CHARARRAY;
 
 encode.STRING = encode.CHARARRAY;
 sizeOf.STRING = sizeOf.CHARARRAY;
+
+decode.UTF8 = function(data, offset, numBytes) {
+    var codePoints = [];
+    var numChars = numBytes;
+    for (var j = 0; j < numChars; j++, offset += 1) {
+        codePoints[j] = data.getUint8(offset);
+    }
+
+    return String.fromCharCode.apply(null, codePoints);
+};
 
 decode.UTF16 = function(data, offset, numBytes) {
     var codePoints = [];
@@ -6543,7 +6648,7 @@ exports.decode = decode;
 exports.encode = encode;
 exports.sizeOf = sizeOf;
 
-},{"./check":2}],29:[function(require,module,exports){
+},{"./check":2}],30:[function(require,module,exports){
 'use strict';
 
 exports.isBrowser = function() {
