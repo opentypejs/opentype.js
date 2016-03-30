@@ -24,7 +24,7 @@ function parseMetaTable(data, start) {
         var tag = p.parseTag();
         var dataOffset = p.parseULong();
         var dataLength = p.parseULong();
-        var text = decode.UTF8(data, dataOffset, dataLength);
+        var text = decode.UTF8(data, start + dataOffset, dataLength);
 
         tags[tag] = text;
     }
