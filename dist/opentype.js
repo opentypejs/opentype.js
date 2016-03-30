@@ -4450,7 +4450,7 @@ function parseMetaTable(data, start) {
         var tag = p.parseTag();
         var dataOffset = p.parseULong();
         var dataLength = p.parseULong();
-        var text = decode.UTF8(data, dataOffset, dataLength);
+        var text = decode.UTF8(data, start + dataOffset, dataLength);
 
         tags[tag] = text;
     }
@@ -5945,12 +5945,15 @@ function fontToSfntTable(font) {
         fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax]
     });
 
-    var metaTable = meta.make(font.meta);
+    var metaTable = (font.metas && Object.keys(font.metas).length > 0) ? meta.make(font.metas) : undefined;
 
     // The order does not matter because makeSfntTable() will sort them.
-    var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable, metaTable];
+    var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable];
     if (ltagTable) {
         tables.push(ltagTable);
+    }
+    if (metaTable) {
+        tables.push(metaTable);
     }
 
     var sfntTable = makeSfntTable(tables);
