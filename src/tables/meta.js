@@ -11,12 +11,7 @@ var table = require('../table');
 
 // Parse the metadata `meta` table.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6meta.html
-function parseMetaTable(data, start, additionalTags) {
-    var supportedTags = ['dlng', 'slng'];
-    if (additionalTags) {
-        supportedTags = supportedTags.concat(additionalTags);
-    }
-
+function parseMetaTable(data, start) {
     var p = new parse.Parser(data, start);
     var tableVersion = p.parseULong();
     check.argument(tableVersion === 1, 'Unsupported META table version.');
@@ -24,46 +19,37 @@ function parseMetaTable(data, start, additionalTags) {
     p.parseULong(); // tableOffset
     var numDataMaps = p.parseULong();
 
-    var tags = [];
+    var tags = {};
     for (var i = 0; i < numDataMaps; i++) {
         var tag = p.parseTag();
-
-        // Skip non-supported tags (like 'appl' or 'bild')
-        if (supportedTags.indexOf(tag) === -1) {
-            continue;
-        }
-
         var dataOffset = p.parseULong();
         var dataLength = p.parseULong();
         var text = decode.UTF8(data, dataOffset, dataLength);
 
-        tags.push({
-            tag: tag,
-            data: text
-        });
+        tags[tag] = text;
     }
-
     return tags;
 }
 
 function makeMetaTable(tags) {
+    var numTags = Object.keys(tags).length;
     var stringPool = '';
-    var stringPoolOffset = 16 + tags.length * 12;
+    var stringPoolOffset = 16 + numTags * 12;
 
     var result = new table.Table('meta', [
         {name: 'version', type: 'ULONG', value: 1},
         {name: 'flags', type: 'ULONG', value: 0},
         {name: 'offset', type: 'ULONG', value: stringPoolOffset},
-        {name: 'numTags', type: 'ULONG', value: tags.length}
+        {name: 'numTags', type: 'ULONG', value: numTags}
     ]);
 
-    for (var i = 0; i < tags.length; ++i) {
+    for (var tag in tags) {
         var pos = stringPool.length;
-        stringPool += tags[i].data;
+        stringPool += tags[tag];
 
-        result.fields.push({name: 'tag ' + i, type: 'TAG', value: tags[i].tag});
-        result.fields.push({name: 'offset ' + i, type: 'ULONG', value: stringPoolOffset + pos});
-        result.fields.push({name: 'length ' + i, type: 'ULONG', value: tags[i].data.length});
+        result.fields.push({name: 'tag ' + tag, type: 'TAG', value: tag});
+        result.fields.push({name: 'offset ' + tag, type: 'ULONG', value: stringPoolOffset + pos});
+        result.fields.push({name: 'length ' + tag, type: 'ULONG', value: tags[tag].length});
     }
 
     result.fields.push({name: 'stringPool', type: 'CHARARRAY', value: stringPool});
