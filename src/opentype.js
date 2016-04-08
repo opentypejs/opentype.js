@@ -281,6 +281,7 @@ function parseBuffer(buffer) {
     if (metaTableEntry) {
         var metaTable = uncompressTable(data, metaTableEntry);
         font.tables.meta = meta.parse(metaTable.data, metaTable.offset);
+        font.metas = font.tables.meta;
     }
 
     return font;
