@@ -295,7 +295,7 @@ function load(url, callback) {
     });
 }
 
-// Syncronously load the font from a URL or file.
+// Synchronously load the font from a URL or file.
 // When done, return the font object or throw an error.
 function loadSync(url) {
     var fs = require('fs');
