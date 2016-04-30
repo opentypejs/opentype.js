@@ -289,8 +289,12 @@ function load(url, callback) {
         if (err) {
             return callback(err);
         }
-
-        var font = parseBuffer(arrayBuffer);
+        var font;
+        try {
+            font = parseBuffer(arrayBuffer);
+        } catch (e) {
+            return callback(e, null);
+        }
         return callback(null, font);
     });
 }
