@@ -40,6 +40,14 @@ describe('OpenType.js', function() {
         assert.equal(aGlyph.path.commands.length, 14);
     });
 
+    it('handles a parseBuffer error', function(done) {
+        opentype.load('./fonts/华文黑体.ttf', function(err) {
+            if (err) {
+                done();
+            }
+        });
+    });
+
     it('throws an error when advanceWidth is not set', function() {
         var notdefGlyph = new opentype.Glyph({
             name: '.notdef',
