@@ -132,7 +132,7 @@ function parseFvarTable(data, start, names) {
         instances.push(parseFvarInstance(data, instanceStart + j * instanceSize, axes, names));
     }
 
-    return {axes:axes, instances:instances};
+    return {axes: axes, instances: instances};
 }
 
 exports.make = makeFvarTable;

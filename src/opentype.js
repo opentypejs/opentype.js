@@ -172,66 +172,66 @@ function parseBuffer(buffer) {
         var tableEntry = tableEntries[i];
         var table;
         switch (tableEntry.tag) {
-        case 'cmap':
-            table = uncompressTable(data, tableEntry);
-            font.tables.cmap = cmap.parse(table.data, table.offset);
-            font.encoding = new encoding.CmapEncoding(font.tables.cmap);
-            break;
-        case 'fvar':
-            fvarTableEntry = tableEntry;
-            break;
-        case 'head':
-            table = uncompressTable(data, tableEntry);
-            font.tables.head = head.parse(table.data, table.offset);
-            font.unitsPerEm = font.tables.head.unitsPerEm;
-            indexToLocFormat = font.tables.head.indexToLocFormat;
-            break;
-        case 'hhea':
-            table = uncompressTable(data, tableEntry);
-            font.tables.hhea = hhea.parse(table.data, table.offset);
-            font.ascender = font.tables.hhea.ascender;
-            font.descender = font.tables.hhea.descender;
-            font.numberOfHMetrics = font.tables.hhea.numberOfHMetrics;
-            break;
-        case 'hmtx':
-            hmtxTableEntry = tableEntry;
-            break;
-        case 'ltag':
-            table = uncompressTable(data, tableEntry);
-            ltagTable = ltag.parse(table.data, table.offset);
-            break;
-        case 'maxp':
-            table = uncompressTable(data, tableEntry);
-            font.tables.maxp = maxp.parse(table.data, table.offset);
-            font.numGlyphs = font.tables.maxp.numGlyphs;
-            break;
-        case 'name':
-            nameTableEntry = tableEntry;
-            break;
-        case 'OS/2':
-            table = uncompressTable(data, tableEntry);
-            font.tables.os2 = os2.parse(table.data, table.offset);
-            break;
-        case 'post':
-            table = uncompressTable(data, tableEntry);
-            font.tables.post = post.parse(table.data, table.offset);
-            font.glyphNames = new encoding.GlyphNames(font.tables.post);
-            break;
-        case 'glyf':
-            glyfTableEntry = tableEntry;
-            break;
-        case 'loca':
-            locaTableEntry = tableEntry;
-            break;
-        case 'CFF ':
-            cffTableEntry = tableEntry;
-            break;
-        case 'kern':
-            kernTableEntry = tableEntry;
-            break;
-        case 'GPOS':
-            gposTableEntry = tableEntry;
-            break;
+            case 'cmap':
+                table = uncompressTable(data, tableEntry);
+                font.tables.cmap = cmap.parse(table.data, table.offset);
+                font.encoding = new encoding.CmapEncoding(font.tables.cmap);
+                break;
+            case 'fvar':
+                fvarTableEntry = tableEntry;
+                break;
+            case 'head':
+                table = uncompressTable(data, tableEntry);
+                font.tables.head = head.parse(table.data, table.offset);
+                font.unitsPerEm = font.tables.head.unitsPerEm;
+                indexToLocFormat = font.tables.head.indexToLocFormat;
+                break;
+            case 'hhea':
+                table = uncompressTable(data, tableEntry);
+                font.tables.hhea = hhea.parse(table.data, table.offset);
+                font.ascender = font.tables.hhea.ascender;
+                font.descender = font.tables.hhea.descender;
+                font.numberOfHMetrics = font.tables.hhea.numberOfHMetrics;
+                break;
+            case 'hmtx':
+                hmtxTableEntry = tableEntry;
+                break;
+            case 'ltag':
+                table = uncompressTable(data, tableEntry);
+                ltagTable = ltag.parse(table.data, table.offset);
+                break;
+            case 'maxp':
+                table = uncompressTable(data, tableEntry);
+                font.tables.maxp = maxp.parse(table.data, table.offset);
+                font.numGlyphs = font.tables.maxp.numGlyphs;
+                break;
+            case 'name':
+                nameTableEntry = tableEntry;
+                break;
+            case 'OS/2':
+                table = uncompressTable(data, tableEntry);
+                font.tables.os2 = os2.parse(table.data, table.offset);
+                break;
+            case 'post':
+                table = uncompressTable(data, tableEntry);
+                font.tables.post = post.parse(table.data, table.offset);
+                font.glyphNames = new encoding.GlyphNames(font.tables.post);
+                break;
+            case 'glyf':
+                glyfTableEntry = tableEntry;
+                break;
+            case 'loca':
+                locaTableEntry = tableEntry;
+                break;
+            case 'CFF ':
+                cffTableEntry = tableEntry;
+                break;
+            case 'kern':
+                kernTableEntry = tableEntry;
+                break;
+            case 'GPOS':
+                gposTableEntry = tableEntry;
+                break;
         }
     }
 

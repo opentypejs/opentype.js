@@ -3,5 +3,9 @@
     "preset": "airbnb",
     "validateIndentation": 4,
     "requirePaddingNewLinesBeforeLineComments": null,
-    "requirePaddingNewLinesAfterBlocks": null
+    "requirePaddingNewLinesAfterBlocks": null,
+    "requireSpacesInAnonymousFunctionExpression": null,
+    "requireSpacesInsideObjectBrackets": null,
+    "requireTrailingComma": null,
+    "maximumLineLength": 200
 }
