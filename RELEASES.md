@@ -1,3 +1,8 @@
+0.6.3 (May 10, 2016)
+=========================
+* Wrapped parseBuffer in a try/catch so it doesn't throw exceptions. Thanks @rBurgett!
+* Fix a leaking global variable. Thanks @cuixiping!
+
 0.6.2 (March 11, 2016)
 =========================
 * Improve table writing to support nested subtables. Thanks @fpirsch!
