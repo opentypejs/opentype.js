@@ -46,6 +46,6 @@
     "fs": false
   },
   "dependencies": {
-    "tiny-inflate": "^1.0.1"
+    "tiny-inflate": "^1.0.2"
   }
 }
