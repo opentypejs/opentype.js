@@ -85,26 +85,31 @@ Glyph.prototype.addUnicode = function(unicode) {
 // x - Horizontal position of the glyph. (default: 0)
 // y - Vertical position of the *baseline* of the glyph. (default: 0)
 // fontSize - Font size, in pixels (default: 72).
-Glyph.prototype.getPath = function(x, y, fontSize) {
+// options - xScale and yScale to strech the glyph.
+Glyph.prototype.getPath = function(x, y, fontSize, options) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
+    options = options !== undefined ? options : {xScale: 1.0, yScale:1.0};
     fontSize = fontSize !== undefined ? fontSize : 72;
     var scale = 1 / this.path.unitsPerEm * fontSize;
+    var xScale = options.xScale * scale;
+    var yScale = options.yScale * scale;
+
     var p = new path.Path();
     var commands = this.path.commands;
     for (var i = 0; i < commands.length; i += 1) {
         var cmd = commands[i];
         if (cmd.type === 'M') {
-            p.moveTo(x + (cmd.x * scale), y + (-cmd.y * scale));
+            p.moveTo(x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'L') {
-            p.lineTo(x + (cmd.x * scale), y + (-cmd.y * scale));
+            p.lineTo(x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'Q') {
-            p.quadraticCurveTo(x + (cmd.x1 * scale), y + (-cmd.y1 * scale),
-                               x + (cmd.x * scale), y + (-cmd.y * scale));
+            p.quadraticCurveTo(x + (cmd.x1 * xScale), y + (-cmd.y1 * yScale),
+                               x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'C') {
-            p.curveTo(x + (cmd.x1 * scale), y + (-cmd.y1 * scale),
-                      x + (cmd.x2 * scale), y + (-cmd.y2 * scale),
-                      x + (cmd.x * scale), y + (-cmd.y * scale));
+            p.curveTo(x + (cmd.x1 * xScale), y + (-cmd.y1 * yScale),
+                      x + (cmd.x2 * xScale), y + (-cmd.y2 * yScale),
+                      x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'Z') {
             p.closePath();
         }
@@ -193,8 +198,9 @@ Glyph.prototype.getMetrics = function() {
 // x - Horizontal position of the glyph. (default: 0)
 // y - Vertical position of the *baseline* of the glyph. (default: 0)
 // fontSize - Font size, in pixels (default: 72).
-Glyph.prototype.draw = function(ctx, x, y, fontSize) {
-    this.getPath(x, y, fontSize).draw(ctx);
+// options - xScale, yScale to strech the glyph
+Glyph.prototype.draw = function(ctx, x, y, fontSize, options) {
+    this.getPath(x, y, fontSize, options).draw(ctx);
 };
 
 // Draw the points of the glyph.
