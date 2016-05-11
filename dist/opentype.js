@@ -1069,7 +1069,7 @@ Glyph.prototype.addUnicode = function(unicode) {
 Glyph.prototype.getPath = function(x, y, fontSize, options) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
-    options = options !== undefined ? options : {xScale: 1.0, yScale:1.0};
+    options = options !== undefined ? options : {xScale: 1.0, yScale: 1.0};
     fontSize = fontSize !== undefined ? fontSize : 72;
     var scale = 1 / this.path.unitsPerEm * fontSize;
     var xScale = options.xScale * scale;
