@@ -161,6 +161,8 @@ function displayFontData() {
                 html += value.map(function(item) {
                     return JSON.stringify(item);
                 }).join('<br>');
+            } else if (typeof value === 'object') {
+              html += JSON.stringify(value);
             } else {
                 html += value;
             }
