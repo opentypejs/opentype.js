@@ -43,6 +43,7 @@ function Font(options) {
         this.unitsPerEm = options.unitsPerEm || 1000;
         this.ascender = options.ascender;
         this.descender = options.descender;
+        this.createdTimestamp = options.createdTimestamp;
     }
 
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.

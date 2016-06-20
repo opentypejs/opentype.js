@@ -205,7 +205,8 @@ function fontToSfntTable(font) {
         yMin: globals.yMin,
         xMax: globals.xMax,
         yMax: globals.yMax,
-        lowestRecPPEM: 3
+        lowestRecPPEM: 3,
+        createdTimestamp: font.createdTimestamp
     });
 
     var hheaTable = hhea.make({
