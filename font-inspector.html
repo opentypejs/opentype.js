@@ -163,7 +163,11 @@ function displayFontData() {
                 }).join('<br>');
             } else if (typeof value === 'object') {
               html += JSON.stringify(value);
-            } else {
+            } else if (['created', 'modified'].indexOf(property) > -1) {
+                var date = new Date(value * 1000);
+                html += date;
+            }
+            else {
                 html += value;
             }
             html += '</dd>';

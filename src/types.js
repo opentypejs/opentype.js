@@ -107,8 +107,9 @@ encode.UFWORD = encode.USHORT;
 sizeOf.UFWORD = sizeOf.USHORT;
 
 // FIXME Implement LONGDATETIME
-encode.LONGDATETIME = function() {
-    return [0, 0, 0, 0, 0, 0, 0, 0];
+// Convert a 32-bit Apple Mac timestamp integer to a list of 8 bytes, 64-bit timestamp.
+encode.LONGDATETIME = function(v) {
+    return [0, 0, 0, 0, (v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
 sizeOf.LONGDATETIME = constant(8);

@@ -179,8 +179,12 @@ Parser.prototype.parseTag = function() {
 // LONGDATETIME is a 64-bit integer.
 // JavaScript and unix timestamps traditionally use 32 bits, so we
 // only take the last 32 bits.
+// + Since until 2038 those bits will be filled by zeros we can ignore them.
 Parser.prototype.parseLongDateTime = function() {
     var v = exports.getULong(this.data, this.offset + this.relativeOffset + 4);
+    // Substract seconds between 01/01/1904 and 01/01/1970
+    // to convert Apple Mac timstamp to Standard Unix timestamp
+    v -= 2082844800;
     this.relativeOffset += 8;
     return v;
 };
