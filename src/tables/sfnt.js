@@ -152,8 +152,11 @@ function fontToSfntTable(font) {
             throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is required.');
         }
 
-        if (firstCharIndex > unicode || firstCharIndex === null) {
-            firstCharIndex = unicode;
+        if (firstCharIndex > unicode || firstCharIndex === undefined) {
+            // ignore .notdef char
+            if (unicode > 0) {
+                firstCharIndex = unicode;
+            }
         }
 
         if (lastCharIndex < unicode) {
