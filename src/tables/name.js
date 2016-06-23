@@ -744,6 +744,11 @@ function makeNameTable(names, ltag) {
         }
 
         nameID = parseInt(id);
+
+        if (isNaN(nameID)) {
+            throw new Error('Name table entry "' + key + '" does not exist, see nameTableNames for complete list.');
+        }
+
         namesWithNumericKeys[nameID] = names[key];
         nameIDs.push(nameID);
     }

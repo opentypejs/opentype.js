@@ -320,7 +320,7 @@ Font.prototype.download = function() {
             });
         },
         function(err) {
-            throw err;
+            throw new Error(err.name + ': ' + err.message);
         });
     } else {
         var fs = require('fs');
