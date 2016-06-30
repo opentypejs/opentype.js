@@ -148,7 +148,7 @@ function fontToSfntTable(font) {
         var glyph = font.glyphs.get(i);
         var unicode = glyph.unicode | 0;
 
-        if (typeof glyph.advanceWidth === 'undefined') {
+        if (isNaN(glyph.advanceWidth)) {
             throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is required.');
         }
 
