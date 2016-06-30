@@ -148,8 +148,8 @@ function fontToSfntTable(font) {
         var glyph = font.glyphs.get(i);
         var unicode = glyph.unicode | 0;
 
-        if (typeof glyph.advanceWidth === 'undefined') {
-            throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is required.');
+        if (isNaN(glyph.advanceWidth)) {
+            throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is not a number.');
         }
 
         if (firstCharIndex > unicode || firstCharIndex === undefined) {
@@ -226,15 +226,15 @@ function fontToSfntTable(font) {
 
     var os2Table = os2.make({
         xAvgCharWidth: Math.round(globals.advanceWidthAvg),
-        usWeightClass: 500, // Medium FIXME Make this configurable
-        usWidthClass: 5, // Medium (normal) FIXME Make this configurable
+        usWeightClass: font.tables.os2.usWeightClass,
+        usWidthClass: font.tables.os2.usWidthClass,
         usFirstCharIndex: firstCharIndex,
         usLastCharIndex: lastCharIndex,
         ulUnicodeRange1: ulUnicodeRange1,
         ulUnicodeRange2: ulUnicodeRange2,
         ulUnicodeRange3: ulUnicodeRange3,
         ulUnicodeRange4: ulUnicodeRange4,
-        fsSelection: 64, // REGULAR
+        fsSelection: font.tables.os2.fsSelection, // REGULAR
         // See http://typophile.com/node/13081 for more info on vertical metrics.
         // We get metrics for typical characters (such as "x" for xHeight).
         // We provide some fallback characters if characters are unavailable: their

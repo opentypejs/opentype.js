@@ -690,12 +690,18 @@ function Font(options) {
         this.unitsPerEm = options.unitsPerEm || 1000;
         this.ascender = options.ascender;
         this.descender = options.descender;
+        this.createdTimestamp = options.createdTimestamp;
+        this.tables = { os2: {
+            usWeightClass: options.weightClass || this.usWeightClasses.MEDIUM,
+            usWidthClass: options.widthClass || this.usWidthClasses.MEDIUM,
+            fsSelection: options.fsSelection || this.fsSelectionValues.REGULAR
+        } };
     }
 
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
     this.glyphs = new glyphset.GlyphSet(this, options.glyphs || []);
     this.encoding = new encoding.DefaultEncoding(this);
-    this.tables = {};
+    this.tables = this.tables || {};
 }
 
 // Check if the font has a glyph for the given character.
@@ -973,6 +979,43 @@ Font.prototype.download = function() {
         var buffer = util.arrayBufferToNodeBuffer(arrayBuffer);
         fs.writeFileSync(fileName, buffer);
     }
+};
+
+Font.prototype.fsSelectionValues = {
+    ITALIC:              0x001, //1
+    UNDERSCORE:          0x002, //2
+    NEGATIVE:            0x004, //4
+    OUTLINED:            0x008, //8
+    STRIKEOUT:           0x010, //16
+    BOLD:                0x020, //32
+    REGULAR:             0x040, //64
+    USER_TYPO_METRICS:   0x080, //128
+    WWS:                 0x100, //256
+    OBLIQUE:             0x200  //512
+};
+
+Font.prototype.usWidthClasses = {
+    ULTRA_CONDENSED: 1,
+    EXTRA_CONDENSED: 2,
+    CONDENSED: 3,
+    SEMI_CONDENSED: 4,
+    MEDIUM: 5,
+    SEMI_EXPANDED: 6,
+    EXPANDED: 7,
+    EXTRA_EXPANDED: 8,
+    ULTRA_EXPANDED: 9
+};
+
+Font.prototype.usWeightClasses = {
+    THIN: 100,
+    EXTRA_LIGHT: 200,
+    LIGHT: 300,
+    NORMAL: 400,
+    MEDIUM: 500,
+    SEMI_BOLD: 600,
+    BOLD: 700,
+    EXTRA_BOLD: 800,
+    BLACK:    900
 };
 
 exports.Font = Font;
@@ -1856,8 +1899,12 @@ Parser.prototype.parseTag = function() {
 // LONGDATETIME is a 64-bit integer.
 // JavaScript and unix timestamps traditionally use 32 bits, so we
 // only take the last 32 bits.
+// + Since until 2038 those bits will be filled by zeros we can ignore them.
 Parser.prototype.parseLongDateTime = function() {
     var v = exports.getULong(this.data, this.offset + this.relativeOffset + 4);
+    // Substract seconds between 01/01/1904 and 01/01/1970
+    // to convert Apple Mac timstamp to Standard Unix timestamp
+    v -= 2082844800;
     this.relativeOffset += 8;
     return v;
 };
@@ -4117,6 +4164,14 @@ function parseHeadTable(data, start) {
 }
 
 function makeHeadTable(options) {
+    // Apple Mac timestamp epoch is 01/01/1904 not 01/01/1970
+    var timestamp = Math.round(new Date().getTime() / 1000) + 2082844800;
+    var createdTimestamp = timestamp;
+
+    if (options.createdTimestamp) {
+        createdTimestamp = options.createdTimestamp + 2082844800;
+    }
+
     return new table.Table('head', [
         {name: 'version', type: 'FIXED', value: 0x00010000},
         {name: 'fontRevision', type: 'FIXED', value: 0x00010000},
@@ -4124,8 +4179,8 @@ function makeHeadTable(options) {
         {name: 'magicNumber', type: 'ULONG', value: 0x5F0F3CF5},
         {name: 'flags', type: 'USHORT', value: 0},
         {name: 'unitsPerEm', type: 'USHORT', value: 1000},
-        {name: 'created', type: 'LONGDATETIME', value: 0},
-        {name: 'modified', type: 'LONGDATETIME', value: 0},
+        {name: 'created', type: 'LONGDATETIME', value: createdTimestamp},
+        {name: 'modified', type: 'LONGDATETIME', value: timestamp},
         {name: 'xMin', type: 'SHORT', value: 0},
         {name: 'yMin', type: 'SHORT', value: 0},
         {name: 'xMax', type: 'SHORT', value: 0},
@@ -5732,12 +5787,15 @@ function fontToSfntTable(font) {
         var glyph = font.glyphs.get(i);
         var unicode = glyph.unicode | 0;
 
-        if (typeof glyph.advanceWidth === 'undefined') {
-            throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is required.');
+        if (isNaN(glyph.advanceWidth)) {
+            throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is not a number.');
         }
 
-        if (firstCharIndex > unicode || firstCharIndex === null) {
-            firstCharIndex = unicode;
+        if (firstCharIndex > unicode || firstCharIndex === undefined) {
+            // ignore .notdef char
+            if (unicode > 0) {
+                firstCharIndex = unicode;
+            }
         }
 
         if (lastCharIndex < unicode) {
@@ -5789,7 +5847,8 @@ function fontToSfntTable(font) {
         yMin: globals.yMin,
         xMax: globals.xMax,
         yMax: globals.yMax,
-        lowestRecPPEM: 3
+        lowestRecPPEM: 3,
+        createdTimestamp: font.createdTimestamp
     });
 
     var hheaTable = hhea.make({
@@ -5806,15 +5865,15 @@ function fontToSfntTable(font) {
 
     var os2Table = os2.make({
         xAvgCharWidth: Math.round(globals.advanceWidthAvg),
-        usWeightClass: 500, // Medium FIXME Make this configurable
-        usWidthClass: 5, // Medium (normal) FIXME Make this configurable
+        usWeightClass: font.tables.os2.usWeightClass,
+        usWidthClass: font.tables.os2.usWidthClass,
         usFirstCharIndex: firstCharIndex,
         usLastCharIndex: lastCharIndex,
         ulUnicodeRange1: ulUnicodeRange1,
         ulUnicodeRange2: ulUnicodeRange2,
         ulUnicodeRange3: ulUnicodeRange3,
         ulUnicodeRange4: ulUnicodeRange4,
-        fsSelection: 64, // REGULAR
+        fsSelection: font.tables.os2.fsSelection, // REGULAR
         // See http://typophile.com/node/13081 for more info on vertical metrics.
         // We get metrics for typical characters (such as "x" for xHeight).
         // We provide some fallback characters if characters are unavailable: their
@@ -6020,8 +6079,9 @@ encode.UFWORD = encode.USHORT;
 sizeOf.UFWORD = sizeOf.USHORT;
 
 // FIXME Implement LONGDATETIME
-encode.LONGDATETIME = function() {
-    return [0, 0, 0, 0, 0, 0, 0, 0];
+// Convert a 32-bit Apple Mac timestamp integer to a list of 8 bytes, 64-bit timestamp.
+encode.LONGDATETIME = function(v) {
+    return [0, 0, 0, 0, (v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
 sizeOf.LONGDATETIME = constant(8);
