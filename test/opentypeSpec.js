@@ -62,7 +62,7 @@ describe('OpenType.js', function() {
             descender: -200,
             glyphs: [notdefGlyph]
         });
-        assert.throws(function() { font.toArrayBuffer(); }, /advanceWidth is required/);
+        assert.throws(function() { font.toArrayBuffer(); }, /advanceWidth is not a number/);
     });
 
 });

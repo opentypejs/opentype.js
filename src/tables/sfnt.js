@@ -149,7 +149,7 @@ function fontToSfntTable(font) {
         var unicode = glyph.unicode | 0;
 
         if (isNaN(glyph.advanceWidth)) {
-            throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is required.');
+            throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is not a number.');
         }
 
         if (firstCharIndex > unicode || firstCharIndex === undefined) {
