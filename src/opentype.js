@@ -21,6 +21,7 @@ var cff = require('./tables/cff');
 var fvar = require('./tables/fvar');
 var glyf = require('./tables/glyf');
 var gpos = require('./tables/gpos');
+var gsub = require('./tables/gsub');
 var head = require('./tables/head');
 var hhea = require('./tables/hhea');
 var hmtx = require('./tables/hmtx');
@@ -163,6 +164,7 @@ function parseBuffer(buffer) {
     var fvarTableEntry;
     var glyfTableEntry;
     var gposTableEntry;
+    var gsubTableEntry;
     var hmtxTableEntry;
     var kernTableEntry;
     var locaTableEntry;
@@ -232,6 +234,9 @@ function parseBuffer(buffer) {
             case 'GPOS':
                 gposTableEntry = tableEntry;
                 break;
+            case 'GSUB':
+                gsubTableEntry = tableEntry;
+                break;
         }
     }
 
@@ -266,6 +271,10 @@ function parseBuffer(buffer) {
     if (gposTableEntry) {
         var gposTable = uncompressTable(data, gposTableEntry);
         gpos.parse(gposTable.data, gposTable.offset, font);
+    }
+    if (gsubTableEntry) {
+        var gsubTable = uncompressTable(data, gsubTableEntry);
+        font.tables.gsub = gsub.parse(gsubTable.data, gsubTable.offset);
     }
 
     if (fvarTableEntry) {
