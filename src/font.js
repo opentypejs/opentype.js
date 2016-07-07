@@ -6,6 +6,7 @@ var path = require('./path');
 var sfnt = require('./tables/sfnt');
 var encoding = require('./encoding');
 var glyphset = require('./glyphset');
+var Substitution = require('./substitution');
 var util = require('./util');
 
 // A Font represents a loaded OpenType font file.
@@ -54,6 +55,7 @@ function Font(options) {
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
     this.glyphs = new glyphset.GlyphSet(this, options.glyphs || []);
     this.encoding = new encoding.DefaultEncoding(this);
+    this.substitution = new Substitution(this);
     this.tables = this.tables || {};
 }
 
