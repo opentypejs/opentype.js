@@ -415,18 +415,16 @@ sizeOf.MACSTRING = function(str, encoding) {
 encode.INDEX = function(l) {
     var i;
     //var offset, offsets, offsetEncoder, encodedOffsets, encodedOffset, data,
-    //    dataSize, i, v;
+    //    i, v;
     // Because we have to know which data type to use to encode the offsets,
     // we have to go through the values twice: once to encode the data and
     // calculate the offets, then again to encode the offsets using the fitting data type.
     var offset = 1; // First offset is always 1.
     var offsets = [offset];
     var data = [];
-    var dataSize = 0;
     for (i = 0; i < l.length; i += 1) {
         var v = encode.OBJECT(l[i]);
         Array.prototype.push.apply(data, v);
-        dataSize += v.length;
         offset += v.length;
         offsets.push(offset);
     }
@@ -436,7 +434,7 @@ encode.INDEX = function(l) {
     }
 
     var encodedOffsets = [];
-    var offSize = (1 + Math.floor(Math.log(dataSize) / Math.log(2)) / 8) | 0;
+    var offSize = (1 + Math.floor(Math.log(offset) / Math.log(2)) / 8) | 0;
     var offsetEncoder = [undefined, encode.BYTE, encode.USHORT, encode.UINT24, encode.ULONG][offSize];
     for (i = 0; i < offsets.length; i += 1) {
         var encodedOffset = offsetEncoder(offsets[i]);
