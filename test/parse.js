@@ -3,8 +3,8 @@
 'use strict';
 
 var assert = require('assert');
-var testutil = require('./testutil.js');
-var Parser = require('../src/parse.js').Parser;
+var testutil = require('./testutil');
+var Parser = require('../src/parse').Parser;
 
 describe('parse.js', function() {
 

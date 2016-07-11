@@ -3,8 +3,8 @@
 'use strict';
 
 var assert = require('assert');
-var testutil = require('../testutil.js');
-var gsub = require('../../src/tables/gsub.js');
+var testutil = require('../testutil');
+var gsub = require('../../src/tables/gsub');
 
 // Helper that builds a minimal GSUB table to test a lookup subtable.
 function parseLookup(lookupType, subTableData) {

@@ -3,8 +3,8 @@
 'use strict';
 
 var assert = require('assert');
-var opentype = require('../src/opentype.js');
-var Substitution = require('../src/substitution.js');
+var opentype = require('../src/opentype');
+var Substitution = require('../src/substitution');
 
 describe('substitution.js', function() {
 
