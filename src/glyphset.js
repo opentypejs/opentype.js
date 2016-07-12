@@ -4,6 +4,22 @@
 
 var _glyph = require('./glyph');
 
+// Define a property on the glyph that depends on the path being loaded.
+function defineDependentProperty(glyph, externalName, internalName) {
+    Object.defineProperty(glyph, externalName, {
+        get: function() {
+            // Request the path property to make sure the path is loaded.
+            glyph.path; // jshint ignore:line
+            return glyph[internalName];
+        },
+        set: function(newValue) {
+            glyph[internalName] = newValue;
+        },
+        enumerable: true,
+        configurable: true
+    });
+}
+
 // A GlyphSet represents all glyphs available in the font, but modelled using
 // a deferred glyph loader, for retrieving glyphs only once they are absolutely
 // necessary, to keep the memory footprint down.
@@ -52,6 +68,11 @@ function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
             path.unitsPerEm = font.unitsPerEm;
             return path;
         };
+
+        defineDependentProperty(glyph, 'xMin', '_xMin');
+        defineDependentProperty(glyph, 'xMax', '_xMax');
+        defineDependentProperty(glyph, 'yMin', '_yMin');
+        defineDependentProperty(glyph, 'yMax', '_yMax');
 
         return glyph;
     };
