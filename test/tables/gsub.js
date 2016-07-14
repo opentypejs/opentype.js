@@ -232,7 +232,7 @@ describe('tables/gsub.js', function() {
     });
 
     /// Writing ///////////////////////////////////////////////////////////////
-    it.only('should write a simple GSUB table', function() {
+    it('should write a simple GSUB table', function() {
         var expectedData = Array.prototype.slice.call(new Uint8Array(testutil.unhex(
             '00 01 00 00 00 0A 00 1E  00 2C 00 01 44 46 4C 54  00 08 00 04 00 00 00 00  FF FF 00 01 00 00 00 01' +
             '6C 69 67 61 00 08 00 00  00 01 00 00 00 01 00 04  00 04 00 00 00 01 00 08  00 01 00 0A 00 02 00 12' +
