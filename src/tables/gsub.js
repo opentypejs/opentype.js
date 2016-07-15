@@ -234,44 +234,12 @@ subtableMakers[4] = function makeLookup4(subtable) {
 };
 
 function makeGsubTable(gsub) {
-    // Feature limitation - we can only write the table in the most simple cases.
-    var onlyDfltScript = (gsub.scripts.length === 1 && gsub.scripts[0].tag === 'DFLT');
-    check.assert(onlyDfltScript, 'Unable to write: GSUB table must contain only the DFLT script.');
-    var dfltScript = gsub.scripts[0].script;
-    var onlyDfltLang = (dfltScript.defaultLangSys && dfltScript.langSysRecords.length === 0);
-    check.assert(onlyDfltLang, 'Unable to write: GSUB table must contain only the default language system.');
-
-    for (var i = 0; i < gsub.lookups.length; i++) {
-        var lookup = gsub.lookups[i];
-        var canWriteLookup = (lookup.lookupType === 4);
-        check.assert(canWriteLookup, 'Unable to write: GSUB table must contain only type 4 lookup tables');
-    }
-
-    var scriptList = new table.Table('scriptList', [
-        {name: 'scriptCount', type: 'USHORT', value: 1},
-        {name: 'scriptTag_0', type: 'TAG', value: 'DFLT'},
-        {name: 'script_0', type: 'TABLE', value: new table.Table('scriptTable', [
-            {name: 'defaultLangSys', type: 'TABLE', value: new table.Table('langSysTable', [
-                {name: 'lookupOrder', type: 'USHORT', value: 0},
-                {name: 'reqFeatureIndex', type: 'USHORT', value: 0xffff},
-                {name: 'featureCount', type: 'USHORT', value: gsub.features.length},
-                {name: 'featureIndex_0', type: 'USHORT', value: 0}
-            ])},
-            {name: 'langSysCount', type: 'USHORT', value: 0}
-        ])},
-    ]);
-
-    var featureList = new table.FeatureList(gsub.features);
-    var lookupList = new table.LookupList(gsub.lookups, subtableMakers);
-
-    var gsubTable = new table.Table('GSUB', [
+    return new table.Table('GSUB', [
         {name: 'version', type: 'ULONG', value: 0x10000},
-        {name: 'scripts', type: 'TABLE', value: scriptList},
-        {name: 'features', type: 'TABLE', value: featureList},
-        {name: 'lookups', type: 'TABLE', value: lookupList}
+        {name: 'scripts', type: 'TABLE', value: new table.ScriptList(gsub.scripts)},
+        {name: 'features', type: 'TABLE', value: new table.FeatureList(gsub.features)},
+        {name: 'lookups', type: 'TABLE', value: new table.LookupList(gsub.lookups, subtableMakers)}
     ]);
-
-    return gsubTable;
 }
 
 exports.parse = parseGsubTable;

@@ -27,3 +27,6 @@ var unhex = function(str) {
 
 exports.hex = hex;
 exports.unhex = unhex;
+exports.unhexArray = function(str) {
+    return Array.prototype.slice.call(new Uint8Array(unhex(str).buffer));
+};

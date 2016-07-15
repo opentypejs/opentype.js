@@ -81,7 +81,35 @@ function Coverage(coverageTable) {
 Coverage.prototype = Object.create(Table.prototype);
 Coverage.prototype.constructor = Coverage;
 
-// Missing: script list. See gsub.js
+function ScriptList(scriptListTable) {
+    Table.call(this, 'scriptListTable',
+        recordList('scriptRecord', scriptListTable, function(scriptRecord, i) {
+            var script = scriptRecord.script;
+            var defaultLangSys = script.defaultLangSys;
+            check.assert(!!defaultLangSys, 'Unable to write GSUB: script ' + scriptRecord.tag + ' has no default language system.');
+            return [
+                {name: 'scriptTag' + i, type: 'TAG', value: scriptRecord.tag},
+                {name: 'script' + i, type: 'TABLE', value: new Table('scriptTable', [
+                    {name: 'defaultLangSys', type: 'TABLE', value: new Table('defaultLangSys', [
+                        {name: 'lookupOrder', type: 'USHORT', value: 0},
+                        {name: 'reqFeatureIndex', type: 'USHORT', value: defaultLangSys.reqFeatureIndex}]
+                        .concat(ushortList('featureIndex', defaultLangSys.featureIndexes)))}
+                    ].concat(recordList('langSys', script.langSysRecords, function(langSysRecord, i) {
+                        var langSys = langSysRecord.langSys;
+                        return [
+                            {name: 'langSysTag' + i, type: 'TAG', value: langSysRecord.tag},
+                            {name: 'langSys' + i, type: 'TABLE', value: new Table('langSys', [
+                                {name: 'lookupOrder', type: 'USHORT', value: 0},
+                                {name: 'reqFeatureIndex', type: 'USHORT', value: langSys.reqFeatureIndex}
+                                ].concat(ushortList('featureIndex', langSys.featureIndexes)))}
+                        ];
+                    })))}
+            ];
+        })
+    );
+}
+ScriptList.prototype = Object.create(Table.prototype);
+ScriptList.prototype.constructor = ScriptList;
 
 function FeatureList(featureListTable) {
     Table.call(this, 'featureListTable',
@@ -101,10 +129,12 @@ FeatureList.prototype.constructor = FeatureList;
 
 function LookupList(lookupListTable, subtableMakers) {
     Table.call(this, 'lookupListTable', tableList('lookup', lookupListTable, function(lookupTable) {
+        var subtableCallback = subtableMakers[lookupTable.lookupType];
+        check.assert(!!subtableCallback, 'Unable to write GSUB lookup type ' + lookupTable.lookupType + ' tables.');
         return new Table('lookupTable', [
             {name: 'lookupType', type: 'USHORT', value: lookupTable.lookupType},
             {name: 'lookupFlag', type: 'USHORT', value: lookupTable.lookupFlag}
-        ].concat(tableList('subtable', lookupTable.subtables, subtableMakers[lookupTable.lookupType])));
+        ].concat(tableList('subtable', lookupTable.subtables, subtableCallback)));
     }));
 }
 LookupList.prototype = Object.create(Table.prototype);
@@ -114,6 +144,7 @@ LookupList.prototype.constructor = LookupList;
 // Don't use offsets inside Records (probable bug), only in Tables.
 exports.Record = exports.Table = Table;
 exports.Coverage = Coverage;
+exports.ScriptList = ScriptList;
 exports.FeatureList = FeatureList;
 exports.LookupList = LookupList;
 
