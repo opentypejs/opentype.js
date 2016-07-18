@@ -3,8 +3,8 @@
 'use strict';
 
 var assert = require('assert');
-var testutil = require('../testutil.js');
-var gsub = require('../../src/tables/gsub.js');
+var testutil = require('../testutil');
+var gsub = require('../../src/tables/gsub');
 
 // Helper that builds a minimal GSUB table to test a lookup subtable.
 function parseLookup(lookupType, subTableData) {
@@ -229,5 +229,46 @@ describe('tables/gsub.js', function() {
             }],
             substitutes: [0xa7, 0xb9, 0xc5, 0xd4, 0xea, 0xf2, 0xfd, 0x10d, 0x11b, 0x12b, 0x13b, 0x141]
         });
+    });
+
+    /// Writing ///////////////////////////////////////////////////////////////
+    it('should write a simple GSUB table', function() {
+        var expectedData = Array.prototype.slice.call(new Uint8Array(testutil.unhex(
+            '00 01 00 00 00 0A 00 1E  00 2C 00 01 44 46 4C 54  00 08 00 04 00 00 00 00  FF FF 00 01 00 00 00 01' +
+            '6C 69 67 61 00 08 00 00  00 01 00 00 00 01 00 04  00 04 00 00 00 01 00 08  00 01 00 0A 00 02 00 12' +
+            '00 2E 00 01 00 02 00 18  00 1A 00 03 00 08 00 10  00 16 04 8A 00 03 00 34  00 34 04 84 00 02 00 18' +
+            '04 83 00 02 00 34 00 01  00 04 04 8D 00 02 00 1D'
+        ).buffer));
+
+        var gsubTable = {
+            version: 1,
+            scripts: [{
+                tag: 'DFLT',
+                script: {
+                    defaultLangSys: { reserved: 0, reqFeatureIndex: 65535, featureIndexes: [0] },
+                    langSysRecords: []
+                }
+            }],
+            features: [{ tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0] } }],
+            lookups: [{
+                lookupType: 4,
+                lookupFlag: 0,
+                subtables: [{
+                    substFormat: 1,
+                    coverage: { format: 1, glyphs: [24, 26] },
+                    ligatureSets: [
+                        [
+                            {ligGlyph: 1162, components: [52, 52]},
+                            {ligGlyph: 1156, components: [24]},
+                            {ligGlyph: 1155, components: [52]}
+                        ],
+                        [
+                            {ligGlyph: 1165, components: [29]}
+                        ]
+                    ]
+                }]
+            }]
+        };
+        assert.deepEqual(gsub.make(gsubTable).encode(), expectedData);
     });
 });
