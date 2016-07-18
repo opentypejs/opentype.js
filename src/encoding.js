@@ -218,7 +218,7 @@ function addGlyphNames(font) {
         glyph = font.glyphs.get(i);
         if (font.cffEncoding) {
             glyph.name = font.cffEncoding.charset[i];
-        } else {
+        } else if (font.glyphNames.names) {
             glyph.name = font.glyphNames.glyphIndexToName(i);
         }
     }
