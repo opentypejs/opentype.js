@@ -38,7 +38,10 @@ function binSearch(arr, value) {
     // Not found: return -1-insertion point
     return -imin - 1;
 }
-
+/**
+ * @exports opentype.Layout
+ * @class
+ */
 var Layout = {
     // Binary search an object by "tag" property
     searchTag: searchTag,

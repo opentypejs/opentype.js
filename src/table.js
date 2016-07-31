@@ -5,7 +5,14 @@
 var check = require('./check');
 var encode = require('./types').encode;
 var sizeOf = require('./types').sizeOf;
-
+/**
+ * @exports opentype.Table
+ * @class
+ * @param {string} tableName
+ * @param {Array} fields
+ * @param {object} options
+ * @constructor
+ */
 function Table(tableName, fields, options) {
     var i;
     for (i = 0; i < fields.length; i += 1) {
@@ -27,14 +34,25 @@ function Table(tableName, fields, options) {
     }
 }
 
+/**
+ * Encodes the table and returns an array of bytes
+ * @return {Array}
+ */
 Table.prototype.encode = function() {
     return encode.TABLE(this);
 };
 
+/**
+ * Get the size of the table.
+ * @return {number}
+ */
 Table.prototype.sizeOf = function() {
     return sizeOf.TABLE(this);
 };
 
+/**
+ * @private
+ */
 function ushortList(itemName, list, count) {
     if (count === undefined) {
         count = list.length;
@@ -47,6 +65,9 @@ function ushortList(itemName, list, count) {
     return fields;
 }
 
+/**
+ * @private
+ */
 function tableList(itemName, records, itemCallback) {
     var count = records.length;
     var fields = new Array(count + 1);
@@ -57,6 +78,9 @@ function tableList(itemName, records, itemCallback) {
     return fields;
 }
 
+/**
+ * @private
+ */
 function recordList(itemName, records, itemCallback) {
     var count = records.length;
     var fields = [];
@@ -68,6 +92,14 @@ function recordList(itemName, records, itemCallback) {
 }
 
 // Common Layout Tables
+
+/**
+ * @exports opentype.Coverage
+ * @class
+ * @param {opentype.Table}
+ * @constructor
+ * @extends opentype.Table
+ */
 function Coverage(coverageTable) {
     if (coverageTable.format === 1) {
         Table.call(this, 'coverageTable',
@@ -111,6 +143,13 @@ function ScriptList(scriptListTable) {
 ScriptList.prototype = Object.create(Table.prototype);
 ScriptList.prototype.constructor = ScriptList;
 
+/**
+ * @exports opentype.FeatureList
+ * @class
+ * @param {opentype.Table}
+ * @constructor
+ * @extends opentype.Table
+ */
 function FeatureList(featureListTable) {
     Table.call(this, 'featureListTable',
         recordList('featureRecord', featureListTable, function(featureRecord, i) {
@@ -127,6 +166,14 @@ function FeatureList(featureListTable) {
 FeatureList.prototype = Object.create(Table.prototype);
 FeatureList.prototype.constructor = FeatureList;
 
+/**
+ * @exports opentype.LookupList
+ * @class
+ * @param {opentype.Table}
+ * @param {Object}
+ * @constructor
+ * @extends opentype.Table
+ */
 function LookupList(lookupListTable, subtableMakers) {
     Table.call(this, 'lookupListTable', tableList('lookup', lookupListTable, function(lookupTable) {
         var subtableCallback = subtableMakers[lookupTable.lookupType];
