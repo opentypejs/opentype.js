@@ -205,7 +205,7 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
  * @type Object
  * @property {boolean} [kerning] - whether to include kerning values
  */
- 
+
 /**
  * Helper function that invokes the given callback for each glyph in the given text.
  * The callback gets `(glyph, x, y, fontSize, options)`.* @param  {string} text
@@ -243,7 +243,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options 
+ * @param  {GlyphRenderOptions=} options
  * @return {opentype.Path}
  */
 Font.prototype.getPath = function(text, x, y, fontSize, options) {

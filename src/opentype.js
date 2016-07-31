@@ -100,7 +100,6 @@ function parseOpenTypeTableEntries(data, numTables) {
 
 /**
  * Parses WOFF table entries.
- * 
  * @param  {DataView}
  * @param  {Number}
  * @return {Object[]}
@@ -161,7 +160,6 @@ function uncompressTable(data, tableEntry) {
 /**
  * Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
  * Throws an error if the font could not be parsed.
- * 
  * @param  {ArrayBuffer}
  * @return {opentype.Font}
  */
@@ -329,15 +327,12 @@ function parseBuffer(buffer) {
     return font;
 }
 
-
 /**
  * Asynchronously load the font from a URL or a filesystem. When done, call the callback
  * with two arguments `(err, font)`. The `err` will be null on success,
  * the `font` is a Font object.
- *
  * We use the node.js callback convention so that
  * opentype.js can integrate with frameworks like async.js.
- *
  * @alias external:opentype.load
  * @param  {string} url - The URL of the font to load.
  * @param  {Function} callback - The callback.
@@ -362,7 +357,6 @@ function load(url, callback) {
 /**
  * Synchronously load the font from a URL or file.
  * When done, returns the font object or throws an error.
- * 
  * @alias external:opentype.loadSync
  * @param  {string} url - The URL of the font to load.
  * @return {opentype.Font}
