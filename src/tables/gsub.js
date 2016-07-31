@@ -117,7 +117,6 @@ subtableParsers[5] = function parseLookup5() {
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#CC
 subtableParsers[6] = function parseLookup6() {
-    // TODO add automated tests for lookup 6 : no examples in the MS doc.
     var start = this.offset + this.relativeOffset;
     var substFormat = this.parseUShort();
     if (substFormat === 1) {
@@ -213,9 +212,22 @@ subtableMakers[1] = function makeLookup1(subtable) {
             {name: 'deltaGlyphID', type: 'USHORT', value: subtable.deltaGlyphId}
         ]);
     } else {
-        check.assert(false, 'Can\'t write lookup type 1 subtable format 2.');
+        return new table.Table('substitutionTable', [
+            {name: 'substFormat', type: 'USHORT', value: 2},
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
+        ].concat(table.ushortList('substitute', subtable.substitute)));
     }
-    check.assert(false, 'Lookup type 1 substFormat must be 1 or 2.');
+    check.fail('Lookup type 1 substFormat must be 1 or 2.');
+};
+
+subtableMakers[3] = function makeLookup3(subtable) {
+    check.assert(subtable.substFormat === 1, 'Lookup type 3 substFormat must be 1.');
+    return new table.Table('substitutionTable', [
+        {name: 'substFormat', type: 'USHORT', value: 1},
+        {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
+    ].concat(table.tableList('altSet', subtable.alternateSets, function(alternateSet) {
+        return new table.Table('alternateSetTable', table.ushortList('alternate', alternateSet));
+    })));
 };
 
 subtableMakers[4] = function makeLookup4(subtable) {

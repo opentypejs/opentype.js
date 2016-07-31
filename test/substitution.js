@@ -24,6 +24,14 @@ describe('substitution.js', function() {
         });
     }));
 
+    var defaultScriptList = [{
+        tag: 'DFLT',
+        script: {
+            defaultLangSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [0] },
+            langSysRecords: []
+        }
+    }];
+
     beforeEach(function() {
         font = new opentype.Font({
             familyName: 'MyFont',
@@ -59,17 +67,51 @@ describe('substitution.js', function() {
     });
 
     describe('add', function() {
+        it('can add single substitutions (lookup type 1 format 2)', function() {
+            substitution.add('salt', { sub: 4, by: 10 });
+            substitution.add('salt', { sub: 5, by: 11 });
+            assert.deepEqual(font.tables.gsub.scripts, defaultScriptList);
+            assert.deepEqual(font.tables.gsub.features, [{
+                tag: 'salt',
+                feature: { params: 0, lookupListIndexes: [0] }
+            }]);
+            assert.deepEqual(font.tables.gsub.lookups, [{
+                lookupFlag: 0,
+                lookupType: 1,
+                markFilteringSet: undefined,
+                subtables: [{
+                    substFormat: 2,
+                    coverage: { format: 1, glyphs: [4, 5] },
+                    substitute: [10, 11]
+                }]
+            }]);
+        });
+
+        it('can add alternate substitutions (lookup type 3)', function() {
+            substitution.add('aalt', { sub: 4, by: [5, 6, 7] });
+            substitution.add('aalt', { sub: 8, by: [9, 10] });
+            assert.deepEqual(font.tables.gsub.scripts, defaultScriptList);
+            assert.deepEqual(font.tables.gsub.features, [{
+                tag: 'aalt',
+                feature: { params: 0, lookupListIndexes: [0] }
+            }]);
+            assert.deepEqual(font.tables.gsub.lookups, [{
+                lookupFlag: 0,
+                lookupType: 3,
+                markFilteringSet: undefined,
+                subtables: [{
+                    substFormat: 1,
+                    coverage: { format: 1, glyphs: [4, 8] },
+                    alternateSets: [[5, 6, 7], [9, 10]]
+                }]
+            }]);
+        });
+
         it('can add ligatures (lookup type 4)', function() {
             substitution.add('liga', { sub: [4, 5], by: 17 });
             substitution.add('liga', { sub: [4, 6], by: 18 });
             substitution.add('liga', { sub: [8, 1, 2], by: 19 });
-            assert.deepEqual(font.tables.gsub.scripts, [{
-                tag: 'DFLT',
-                script: {
-                    defaultLangSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [0] },
-                    langSysRecords: []
-                }
-            }]);
+            assert.deepEqual(font.tables.gsub.scripts, defaultScriptList);
             assert.deepEqual(font.tables.gsub.features, [{
                 tag: 'liga',
                 feature: { params: 0, lookupListIndexes: [0] }

@@ -3,6 +3,8 @@
 
 'use strict';
 
+var check = require('./check');
+
 function searchTag(arr, tag) {
     /* jshint bitwise: false */
     var imin = 0;
@@ -128,11 +130,13 @@ var Layout = {
                 }
             }
             if (create) {
+                var index = allFeatures.length;
+                // Automatic ordering of features would require to shift feature indexes in the script list.
+                check.assert(index === 0 || feature >= allFeatures[index - 1].tag, 'Features must be added in alphabetical order.');
                 featureRecord = {
                     tag: feature,
                     feature: { params: 0, lookupListIndexes: [] }
                 };
-                var index = allFeatures.length;
                 allFeatures.push(featureRecord);
                 featIndexes.push(index);
                 return featureRecord.feature;
