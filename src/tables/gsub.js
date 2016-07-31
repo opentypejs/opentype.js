@@ -117,7 +117,6 @@ subtableParsers[5] = function parseLookup5() {
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#CC
 subtableParsers[6] = function parseLookup6() {
-    // TODO add automated tests for lookup 6 : no examples in the MS doc.
     var start = this.offset + this.relativeOffset;
     var substFormat = this.parseUShort();
     if (substFormat === 1) {
@@ -213,9 +212,22 @@ subtableMakers[1] = function makeLookup1(subtable) {
             {name: 'deltaGlyphID', type: 'USHORT', value: subtable.deltaGlyphId}
         ]);
     } else {
-        check.assert(false, 'Can\'t write lookup type 1 subtable format 2.');
+        return new table.Table('substitutionTable', [
+            {name: 'substFormat', type: 'USHORT', value: 2},
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
+        ].concat(table.ushortList('substitute', subtable.substitute)));
     }
-    check.assert(false, 'Lookup type 1 substFormat must be 1 or 2.');
+    check.fail('Lookup type 1 substFormat must be 1 or 2.');
+};
+
+subtableMakers[3] = function makeLookup3(subtable) {
+    check.assert(subtable.substFormat === 1, 'Lookup type 3 substFormat must be 1.');
+    return new table.Table('substitutionTable', [
+        {name: 'substFormat', type: 'USHORT', value: 1},
+        {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
+    ].concat(table.tableList('altSet', subtable.alternateSets, function(alternateSet) {
+        return new table.Table('alternateSetTable', table.ushortList('alternate', alternateSet));
+    })));
 };
 
 subtableMakers[4] = function makeLookup4(subtable) {
@@ -234,44 +246,12 @@ subtableMakers[4] = function makeLookup4(subtable) {
 };
 
 function makeGsubTable(gsub) {
-    // Feature limitation - we can only write the table in the most simple cases.
-    var onlyDfltScript = (gsub.scripts.length === 1 && gsub.scripts[0].tag === 'DFLT');
-    check.assert(onlyDfltScript, 'Unable to write: GSUB table must contain only the DFLT script.');
-    var dfltScript = gsub.scripts[0].script;
-    var onlyDfltLang = (dfltScript.defaultLangSys && dfltScript.langSysRecords.length === 0);
-    check.assert(onlyDfltLang, 'Unable to write: GSUB table must contain only the default language system.');
-
-    for (var i = 0; i < gsub.lookups.length; i++) {
-        var lookup = gsub.lookups[i];
-        var canWriteLookup = (lookup.lookupType === 4);
-        check.assert(canWriteLookup, 'Unable to write: GSUB table must contain only type 4 lookup tables');
-    }
-
-    var scriptList = new table.Table('scriptList', [
-        {name: 'scriptCount', type: 'USHORT', value: 1},
-        {name: 'scriptTag_0', type: 'TAG', value: 'DFLT'},
-        {name: 'script_0', type: 'TABLE', value: new table.Table('scriptTable', [
-            {name: 'defaultLangSys', type: 'TABLE', value: new table.Table('langSysTable', [
-                {name: 'lookupOrder', type: 'USHORT', value: 0},
-                {name: 'reqFeatureIndex', type: 'USHORT', value: 0xffff},
-                {name: 'featureCount', type: 'USHORT', value: gsub.features.length},
-                {name: 'featureIndex_0', type: 'USHORT', value: 0}
-            ])},
-            {name: 'langSysCount', type: 'USHORT', value: 0}
-        ])},
-    ]);
-
-    var featureList = new table.FeatureList(gsub.features);
-    var lookupList = new table.LookupList(gsub.lookups, subtableMakers);
-
-    var gsubTable = new table.Table('GSUB', [
+    return new table.Table('GSUB', [
         {name: 'version', type: 'ULONG', value: 0x10000},
-        {name: 'scripts', type: 'TABLE', value: scriptList},
-        {name: 'features', type: 'TABLE', value: featureList},
-        {name: 'lookups', type: 'TABLE', value: lookupList}
+        {name: 'scripts', type: 'TABLE', value: new table.ScriptList(gsub.scripts)},
+        {name: 'features', type: 'TABLE', value: new table.FeatureList(gsub.features)},
+        {name: 'lookups', type: 'TABLE', value: new table.LookupList(gsub.lookups, subtableMakers)}
     ]);
-
-    return gsubTable;
 }
 
 exports.parse = parseGsubTable;

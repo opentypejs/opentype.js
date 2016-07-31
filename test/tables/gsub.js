@@ -17,6 +17,19 @@ function parseLookup(lookupType, subTableData) {
     return gsub.parse(data).lookups[0].subtables[0];
 }
 
+function makeLookup(lookupType, data) {
+    return gsub.make({
+        version: 1,
+        scripts: [],
+        features: [],
+        lookups: [{
+            lookupType: lookupType,
+            lookupFlag: 0,
+            subtables: [data]
+        }]
+    }).encode().slice(0x1a);                             // sub table start offset: 0x1a
+}
+
 describe('tables/gsub.js', function() {
 
     //// Header ///////////////////////////////////////////////////////////////
@@ -232,13 +245,13 @@ describe('tables/gsub.js', function() {
     });
 
     /// Writing ///////////////////////////////////////////////////////////////
-    it('should write a simple GSUB table', function() {
-        var expectedData = Array.prototype.slice.call(new Uint8Array(testutil.unhex(
+    it('should write a simple GSUB table + lookup type 4', function() {
+        var expectedData = testutil.unhexArray(
             '00 01 00 00 00 0A 00 1E  00 2C 00 01 44 46 4C 54  00 08 00 04 00 00 00 00  FF FF 00 01 00 00 00 01' +
             '6C 69 67 61 00 08 00 00  00 01 00 00 00 01 00 04  00 04 00 00 00 01 00 08  00 01 00 0A 00 02 00 12' +
             '00 2E 00 01 00 02 00 18  00 1A 00 03 00 08 00 10  00 16 04 8A 00 03 00 34  00 34 04 84 00 02 00 18' +
             '04 83 00 02 00 34 00 01  00 04 04 8D 00 02 00 1D'
-        ).buffer));
+        );
 
         var gsubTable = {
             version: 1,
@@ -270,5 +283,47 @@ describe('tables/gsub.js', function() {
             }]
         };
         assert.deepEqual(gsub.make(gsubTable).encode(), expectedData);
+    });
+
+    //// Lookup type 1 ////////////////////////////////////////////////////////
+    it('can write lookup1 substFormat 1', function() {
+        var expectedData = testutil.unhexArray('0001 0006 00C0   0001 0004 003C 0040 004B 004F');
+        assert.deepEqual(makeLookup(1, {
+            substFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0x3c, 0x40, 0x4b, 0x4f]
+            },
+            deltaGlyphId: 0xc0
+        }), expectedData);
+    });
+
+    it('can write lookup1 substFormat 2', function() {
+        // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX3
+        var expectedData = testutil.unhexArray('0002 000E 0004 0131 0135 013E 0143   0001 0004 003C 0040 004B 004F');
+        assert.deepEqual(makeLookup(1, {
+            substFormat: 2,
+            coverage: {
+                format: 1,
+                glyphs: [0x3c, 0x40, 0x4b, 0x4f]
+            },
+            substitute: [0x131, 0x135, 0x13E, 0x143]
+        }), expectedData);
+    });
+
+    //// Lookup type 3 ////////////////////////////////////////////////////////
+    it('can write lookup3', function() {
+        // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX5
+        var expectedData = testutil.unhexArray('0001 0008 0001 000E   0001 0001 003A   0002 00C9 00CA');
+        assert.deepEqual(makeLookup(3, {
+            substFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0x3a]
+            },
+            alternateSets: [
+                [0xc9, 0xca]
+            ]
+        }), expectedData);
     });
 });
