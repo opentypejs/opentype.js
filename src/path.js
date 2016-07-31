@@ -66,7 +66,6 @@ Path.prototype.lineTo = function(x, y) {
  * @param  {number} y - y of path point
  * @see curveTo
  */
-
 Path.prototype.curveTo = Path.prototype.bezierCurveTo = function(x1, y1, x2, y2, x, y) {
     this.commands.push({
         type: 'C',
@@ -89,7 +88,6 @@ Path.prototype.curveTo = Path.prototype.bezierCurveTo = function(x1, y1, x2, y2,
  * @param  {number} x - x of path point
  * @param  {number} y - y of path point
  */
-
 
 /**
  * Draws quadratic curve
@@ -115,9 +113,7 @@ Path.prototype.quadTo = Path.prototype.quadraticCurveTo = function(x1, y1, x, y)
  * Closes the path
  * @function closePath
  * @memberof opentype.Path.prototype
- * 
  */
-
 
 /**
  * Close the path

@@ -42,7 +42,6 @@ var post = require('./tables/post');
 /**
  * Loads a font from a file. The callback throws an error message as the first parameter if it fails
  * and the font as an ArrayBuffer in the second parameter if it succeeds.
- * 
  * @param  {string} path - The path of the file
  * @param  {Function} callback - The function to call when the font load completes
  */
@@ -59,7 +58,6 @@ function loadFromFile(path, callback) {
 /**
  * Loads a font from a URL. The callback throws an error message as the first parameter if it fails
  * and the font as an ArrayBuffer in the second parameter if it succeeds.
- * 
  * @param  {string} url - The URL of the font file.
  * @param  {Function} callback - The function to call when the font load completes
  */

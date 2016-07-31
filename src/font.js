@@ -205,7 +205,6 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
  * @type Object
  * @property {boolean} [kerning] - whether to include kerning values
  */
-
  
 /**
  * Helper function that invokes the given callback for each glyph in the given text.
@@ -257,17 +256,8 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
     return fullPath;
 };
 
-// Create an array of Path objects that represent the glyps of a given text.
-//
-// text - The text to create.
-// x - Horizontal position of the beginning of the text. (default: 0)
-// y - Vertical position of the *baseline* of the text. (default: 0)
-// fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
-// Options is an optional object that contains:
-// - kerning - Whether to take kerning information into account. (default: true)
-//
-// Returns an array of Path objects.
 /**
+ * Create an array of Path objects that represent the glyps of a given text.
  * @param  {string} text - The text to create.
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
