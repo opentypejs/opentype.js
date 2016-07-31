@@ -373,7 +373,7 @@ encode.UTF16 = function(v) {
     for (var i = 0; i < v.length; i += 1) {
         var codepoint = v.charCodeAt(i);
         b[b.length] = (codepoint >> 8) & 0xFF;
-        b[b.length] = codepoint & 0xFF
+        b[b.length] = codepoint & 0xFF;
         // b.push((codepoint >> 8) & 0xFF);
         // b.push(codepoint & 0xFF);
     }
