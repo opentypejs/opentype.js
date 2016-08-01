@@ -129,12 +129,25 @@ function parseGlyph(glyph, data, start) {
             };
             if ((flags & 1) > 0) {
                 // The arguments are words
-                component.dx = p.parseShort();
-                component.dy = p.parseShort();
+                if ((flags & 2) > 0) {
+                    // values are offset
+                    component.dx = p.parseShort();
+                    component.dy = p.parseShort();
+                } else {
+                    // values are matched points
+                    component.matchedPoints = [p.parseShort(), p.parseShort()];
+                }
+
             } else {
                 // The arguments are bytes
-                component.dx = p.parseChar();
-                component.dy = p.parseChar();
+                if ((flags & 2) > 0) {
+                    // values are offset
+                    component.dx = p.parseChar();
+                    component.dy = p.parseChar();
+                } else {
+                    // values are matched points
+                    component.matchedPoints = [p.parseChar(), p.parseChar()];
+                }
             }
 
             if ((flags & 8) > 0) {
@@ -270,7 +283,24 @@ function buildPath(glyphs, glyph) {
             // Force the ttfGlyphLoader to parse the glyph.
             componentGlyph.getPath();
             if (componentGlyph.points) {
-                var transformedPoints = transformPoints(componentGlyph.points, component);
+                var transformedPoints;
+                if (component.matchedPoints === undefined) {
+                    // component positioned by offset
+                    transformedPoints = transformPoints(componentGlyph.points, component);
+                } else {
+                    // component positioned by matched points
+                    var firstPt = glyph.points[component.matchedPoints[0]];
+                    var secondPt = componentGlyph.points[component.matchedPoints[1]];
+                    var transform = {
+                        xScale: component.xScale, scale01: component.scale01,
+                        scale10: component.scale10, yScale: component.yScale,
+                        dx: 0, dy: 0
+                    };
+                    secondPt = transformPoints([secondPt], transform)[0];
+                    transform.dx = firstPt.x - secondPt.x;
+                    transform.dy = firstPt.y - secondPt.y;
+                    transformedPoints = transformPoints(componentGlyph.points, transform);
+                }
                 glyph.points = glyph.points.concat(transformedPoints);
             }
         }
