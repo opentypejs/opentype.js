@@ -9,6 +9,7 @@ var Layout = require('./layout');
 /**
  * @exports opentype.Substitution
  * @class
+ * @extends opentype.Layout
  * @param {opentype.Font}
  * @constructor
  */

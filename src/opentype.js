@@ -333,7 +333,7 @@ function parseBuffer(buffer) {
  * the `font` is a Font object.
  * We use the node.js callback convention so that
  * opentype.js can integrate with frameworks like async.js.
- * @alias external:opentype.load
+ * @alias opentype.load
  * @param  {string} url - The URL of the font to load.
  * @param  {Function} callback - The callback.
  */
@@ -357,7 +357,7 @@ function load(url, callback) {
 /**
  * Synchronously load the font from a URL or file.
  * When done, returns the font object or throws an error.
- * @alias external:opentype.loadSync
+ * @alias opentype.loadSync
  * @param  {string} url - The URL of the font to load.
  * @return {opentype.Font}
  */
