@@ -5,7 +5,39 @@
 
 var check = require('./check');
 
+function searchTag(arr, tag) {
+    /* jshint bitwise: false */
+    var imin = 0;
+    var imax = arr.length - 1;
+    while (imin <= imax) {
+        var imid = (imin + imax) >>> 1;
+        var val = arr[imid].tag;
+        if (val === tag) {
+            return imid;
+        } else if (val < tag) {
+            imin = imid + 1;
+        } else { imax = imid - 1; }
+    }
+    // Not found: return -1-insertion point
+    return -imin - 1;
+};
 
+function binSearch(arr, value) {
+    /* jshint bitwise: false */
+    var imin = 0;
+    var imax = arr.length - 1;
+    while (imin <= imax) {
+        var imid = (imin + imax) >>> 1;
+        var val = arr[imid];
+        if (val === value) {
+            return imid;
+        } else if (val < value) {
+            imin = imid + 1;
+        } else { imax = imid - 1; }
+    }
+    // Not found: return -1-insertion point
+    return -imin - 1;
+};
 
 /**
  * @exports opentype.Layout
@@ -16,49 +48,23 @@ var Layout = {
     /**
      * Binary search an object by "tag" property
      * @instance
+     * @function searchTag
+     * @memberof opentype.Layout
      * @param  {Array} arr
      * @param  {string} tag
      * @return {number}
      */
-    searchTag: function searchTag(arr, tag) {
-        /* jshint bitwise: false */
-        var imin = 0;
-        var imax = arr.length - 1;
-        while (imin <= imax) {
-            var imid = (imin + imax) >>> 1;
-            var val = arr[imid].tag;
-            if (val === tag) {
-                return imid;
-            } else if (val < tag) {
-                imin = imid + 1;
-            } else { imax = imid - 1; }
-        }
-        // Not found: return -1-insertion point
-        return -imin - 1;
-    },
+    searchTag: searchTag,
     /**
      * Binary search in a list of numbers
      * @instance
+     * @function binSearch
+     * @memberof opentype.Layout
      * @param  {Array} arr
      * @param  {number} value
      * @return {number}
      */
-    binSearch: function binSearch(arr, value) {
-        /* jshint bitwise: false */
-        var imin = 0;
-        var imax = arr.length - 1;
-        while (imin <= imax) {
-            var imid = (imin + imax) >>> 1;
-            var val = arr[imid];
-            if (val === value) {
-                return imid;
-            } else if (val < value) {
-                imin = imid + 1;
-            } else { imax = imid - 1; }
-        }
-        // Not found: return -1-insertion point
-        return -imin - 1;
-    },
+    binSearch: binSearch,
 
     /**
      * Returns all scripts in the substitution table.
