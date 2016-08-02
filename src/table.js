@@ -10,7 +10,7 @@ var sizeOf = require('./types').sizeOf;
  * @class
  * @param {string} tableName
  * @param {Array} fields
- * @param {object} options
+ * @param {Object} options
  * @constructor
  */
 function Table(tableName, fields, options) {

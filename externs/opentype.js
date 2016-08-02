@@ -377,6 +377,7 @@ opentype.Layout.prototype.getScriptNames = function() {};
      * @instance
      * @param {string} script - Use 'DFLT' for default script
      * @param {boolean} create - forces the creation of this script table if it doesn't exist.
+     * @return {Array} Array on names
      */
 opentype.Layout.prototype.getScriptTable = function(script, create) {};
 
@@ -386,6 +387,7 @@ opentype.Layout.prototype.getScriptTable = function(script, create) {};
      * @param {string} script - Use 'DFLT' for default script
      * @param {string} language - Use 'DFLT' for default language
      * @param {boolean} create - forces the creation of this langSysTable if it doesn't exist.
+     * @return {Object} An object with tag and script properties.
      */
 opentype.Layout.prototype.getLangSysTable = function(script, language, create) {};
 
@@ -396,6 +398,7 @@ opentype.Layout.prototype.getLangSysTable = function(script, language, create) {
      * @param {string} language - Use 'DFLT' for default language
      * @param {string} feature - One of the codes listed at https://www.microsoft.com/typography/OTSPEC/featurelist.htm
      * @param {boolean} create - forces the creation of the feature table if it doesn't exist.
+     * @return {Object}
      */
 opentype.Layout.prototype.getFeatureTable = function(script, language, feature, create) {};
 
@@ -407,6 +410,7 @@ opentype.Layout.prototype.getFeatureTable = function(script, language, feature, 
      * @param {string} feature - 4-letter feature code
      * @param {number} lookupType - 1 to 8
      * @param {boolean} create - forces the creation of the lookup table if it doesn't exist, with no subtables.
+     * @return {Object}
      */
 opentype.Layout.prototype.getLookupTable = function(script, language, feature, lookupType, create) {};
 
@@ -439,6 +443,7 @@ opentype.Substitution.prototype.getGsubTable = function(create) {};
  * @param {string} script
  * @param {string} language
  * @param {string} feature - 4-character feature name ('aalt', 'salt', 'ss01'...)
+ * @return {Array} substitutions - The list of substitutions.
  */
 opentype.Substitution.prototype.getSingle = function(feature, script, language) {};
 
@@ -447,6 +452,7 @@ opentype.Substitution.prototype.getSingle = function(feature, script, language) 
  * @param {string} script
  * @param {string} language
  * @param {string} feature - 4-character feature name ('aalt', 'salt'...)
+ * @return {Array} alternates - The list of alternates
  */
 opentype.Substitution.prototype.getAlternates = function(feature, script, language) {};
 
@@ -456,6 +462,7 @@ opentype.Substitution.prototype.getAlternates = function(feature, script, langua
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {string} script
  * @param {string} language
+ * @return {Array} ligatures - The list of ligatures.
  */
 opentype.Substitution.prototype.getLigatures = function(feature, script, language) {};
 
@@ -481,17 +488,20 @@ opentype.Substitution.prototype.addAlternate = function(feature, substitution, s
 /**
  * Add a ligature (lookup type 4)
  * Ligatures with more components must be stored ahead of those with fewer components in order to be found
+ * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} ligature - { sub: [ids], by: id }
  * @param {string} [script='DFLT']
  * @param {string} [language='DFLT']
  */
-opentype.Substitution.prototype.addLigature = function(ligature, script, language) {};
+opentype.Substitution.prototype.addLigature = function(feature, ligature, script, language) {};
 
 /**
  * List all feature data for a given script and language.
  * @param {string} feature - 4-letter feature name
  * @param {string} [script='DFLT']
  * @param {string} [language='DFLT']
+ * @return {[type]} [description]
+ * @return {Array} substitutions - The list of substitutions.
  */
 opentype.Substitution.prototype.getFeature = function(feature, script, language) {};
 

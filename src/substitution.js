@@ -44,7 +44,11 @@ function getSubstFormat(lookupTable, format, defaultSubtable) {
 
 Substitution.prototype = Layout;
 
-// Get or create the GSUB table.
+/**
+ * Get or create the GSUB table.
+ * @param  {boolean} create - Whether to create a new one.
+ * @return {Object} gsub - The GSUB table.
+ */
 Substitution.prototype.getGsubTable = function(create) {
     var gsub = this.font.tables.gsub;
     if (!gsub && create) {
@@ -70,6 +74,7 @@ Substitution.prototype.getGsubTable = function(create) {
  * @param {string} script
  * @param {string} language
  * @param {string} feature - 4-character feature name ('aalt', 'salt', 'ss01'...)
+ * @return {Array} substitutions - The list of substitutions.
  */
 Substitution.prototype.getSingle = function(feature, script, language) {
     var substitutions = [];
@@ -101,6 +106,7 @@ Substitution.prototype.getSingle = function(feature, script, language) {
  * @param {string} script
  * @param {string} language
  * @param {string} feature - 4-character feature name ('aalt', 'salt'...)
+ * @return {Array} alternates - The list of alternates
  */
 Substitution.prototype.getAlternates = function(feature, script, language) {
     var alternates = [];
@@ -124,6 +130,7 @@ Substitution.prototype.getAlternates = function(feature, script, language) {
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {string} script
  * @param {string} language
+ * @return {Array} ligatures - The list of ligatures.
  */
 Substitution.prototype.getLigatures = function(feature, script, language) {
     var ligatures = [];
@@ -153,7 +160,7 @@ Substitution.prototype.getLigatures = function(feature, script, language) {
  * Add or modify a single substitution (lookup type 1)
  * Format 2, more flexible, is always used.
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
- * @param {object} substitution - { sub: id, delta: number } for format 1 or { sub: id, by: id } for format 2.
+ * @param {Object} substitution - { sub: id, delta: number } for format 1 or { sub: id, by: id } for format 2.
  * @param {string} [script='DFLT']
  * @param {string} [language='DFLT']
  */
@@ -178,7 +185,7 @@ Substitution.prototype.addSingle = function(feature, substitution, script, langu
 /**
  * Add or modify an alternate substitution (lookup type 1)
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
- * @param {object} substitution - { sub: id, by: [ids] }
+ * @param {Object} substitution - { sub: id, by: [ids] }
  * @param {string} [script='DFLT']
  * @param {string} [language='DFLT']
  */
@@ -203,11 +210,12 @@ Substitution.prototype.addAlternate = function(feature, substitution, script, la
 /**
  * Add a ligature (lookup type 4)
  * Ligatures with more components must be stored ahead of those with fewer components in order to be found
- * @param {object} ligature - { sub: [ids], by: id }
+ * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
+ * @param {Object} ligature - { sub: [ids], by: id }
  * @param {string} [script='DFLT']
  * @param {string} [language='DFLT']
  */
-Substitution.prototype.addLigature = function(ligature, script, language) {
+Substitution.prototype.addLigature = function(feature, ligature, script, language) {
     script = script || 'DFLT';
     language = language || 'DFLT';
     var lookupTable = this.getLookupTable(script, language, feature, 4, true);
@@ -252,6 +260,7 @@ Substitution.prototype.addLigature = function(ligature, script, language) {
  * @param {string} feature - 4-letter feature name
  * @param {string} [script='DFLT']
  * @param {string} [language='DFLT']
+ * @return {Array} substitutions - The list of substitutions.
  */
 Substitution.prototype.getFeature = function(feature, script, language) {
     script = script || 'DFLT';
@@ -273,7 +282,7 @@ Substitution.prototype.getFeature = function(feature, script, language) {
 /**
  * Add a substitution to a feature for a given script and language.
  * @param {string} feature - 4-letter feature name
- * @param {object} sub - the substitution to add (an object like { sub: id or [ids], by: id or [ids] })
+ * @param {Object} sub - the substitution to add (an object like { sub: id or [ids], by: id or [ids] })
  * @param {string} [script='DFLT']
  * @param {string} [language='DFLT']
  */

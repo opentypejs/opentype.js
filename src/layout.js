@@ -84,6 +84,7 @@ var Layout = {
      * @instance
      * @param {string} script - Use 'DFLT' for default script
      * @param {boolean} create - forces the creation of this script table if it doesn't exist.
+     * @return {Object} An object with tag and script properties.
      */
     getScriptTable: function(script, create) {
         var gsub = this.getGsubTable(create);
@@ -112,6 +113,7 @@ var Layout = {
      * @param {string} script - Use 'DFLT' for default script
      * @param {string} language - Use 'DFLT' for default language
      * @param {boolean} create - forces the creation of this langSysTable if it doesn't exist.
+     * @return {Object}
      */
     getLangSysTable: function(script, language, create) {
         var scriptTable = this.getScriptTable(script, create);
@@ -140,6 +142,7 @@ var Layout = {
      * @param {string} language - Use 'DFLT' for default language
      * @param {string} feature - One of the codes listed at https://www.microsoft.com/typography/OTSPEC/featurelist.htm
      * @param {boolean} create - forces the creation of the feature table if it doesn't exist.
+     * @return {Object}
      */
     getFeatureTable: function(script, language, feature, create) {
         var langSysTable = this.getLangSysTable(script, language, create);
@@ -178,6 +181,7 @@ var Layout = {
      * @param {string} feature - 4-letter feature code
      * @param {number} lookupType - 1 to 8
      * @param {boolean} create - forces the creation of the lookup table if it doesn't exist, with no subtables.
+     * @return {Object}
      */
     getLookupTable: function(script, language, feature, lookupType, create) {
         var featureTable = this.getFeatureTable(script, language, feature, create);
