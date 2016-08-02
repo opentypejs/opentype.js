@@ -359,6 +359,7 @@ opentype.Layout = function(){}
  * @return {number}
  */
 opentype.Layout.prototype.searchTag = function(arr, tag){};
+
 /**
  * Binary search in a list of numbers
  * @param  {Array} arr
