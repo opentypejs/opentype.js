@@ -79,7 +79,6 @@ opentype.Font.prototype.glyphIndexToName = function(gid) {};
  */
 opentype.Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {};
 
-
 /**
  * Helper function that invokes the given callback for each glyph in the given text.
  * The callback gets `(glyph, x, y, fontSize, options)`.* @param  {string} text
@@ -191,7 +190,7 @@ opentype.Font.prototype.download = function() {};
  * @param {GlyphOptions}
  * @constructor
  */
-opentype.Glyph = function(options) {}
+opentype.Glyph = function(options) {};
 
 /**
  * @param {number}
@@ -259,7 +258,7 @@ opentype.Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {};
  * Paths can be drawn on a context using `draw`.
  * @constructor
  */
-opentype.Path = function() {}
+opentype.Path = function() {};
 
 /**
  * @param  {number} x
@@ -294,7 +293,6 @@ opentype.Path.prototype.curveTo = function(x1, y1, x2, y2, x, y) {};
  * @param  {number} y - y of path point
  */
 opentype.Path.prototype.bezierCurveTo = function(x1, y1, x2, y2, x, y) {};
-
 
 /**
  * Draws quadratic curve
@@ -350,7 +348,7 @@ opentype.Path.prototype.toSVG = function(decimalPlaces) {};
 /**
  * @constructor
  */
-opentype.Layout = function(){}
+opentype.Layout = function(){};
 
 /**
  * Binary search an object by "tag" property
@@ -452,9 +450,9 @@ opentype.Substitution.prototype.getSingle = function(feature, script, language) 
 
 /**
  * List all alternates (lookup type 3) for a given script, language, and feature.
+ * @param {string} feature - 4-character feature name ('aalt', 'salt'...)
  * @param {string} script
  * @param {string} language
- * @param {string} feature - 4-character feature name ('aalt', 'salt'...)
  * @return {Array} alternates - The list of alternates
  */
 opentype.Substitution.prototype.getAlternates = function(feature, script, language) {};
