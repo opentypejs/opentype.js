@@ -20,7 +20,7 @@ function searchTag(arr, tag) {
     }
     // Not found: return -1-insertion point
     return -imin - 1;
-};
+}
 
 function binSearch(arr, value) {
     /* jshint bitwise: false */
@@ -37,7 +37,7 @@ function binSearch(arr, value) {
     }
     // Not found: return -1-insertion point
     return -imin - 1;
-};
+}
 
 /**
  * @exports opentype.Layout
