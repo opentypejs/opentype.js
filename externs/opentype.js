@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Closure Compiler externs for opentype.js version.
+ * @see http://opentype.js.org/
+ * @externs
+ */
+
 /** @const */
 var opentype = {};
 /**
@@ -7,7 +13,7 @@ var opentype = {};
  * @param {FontOptions}
  * @constructor
  */
-opentype.Font = function(options) {}
+opentype.Font = function(options) {};
 
 /**
  * Check if the font has a glyph for the given character.
@@ -309,17 +315,14 @@ opentype.Path.prototype.quadTo = function(x1, y1, x, y) {};
 opentype.Path.prototype.quadraticCurveTo = function(x1, y1, x, y) {};
 
 /**
- * Closes the path
- * @function closePath
- * @memberof opentype.Path.prototype
+ * Close the path
  */
+opentype.Path.prototype.close = function() {};
 
 /**
- * Close the path
- * @function close
- * @memberof opentype.Path.prototype
+ * Closes the path
  */
-opentype.Path.prototype.close = opentype.Path.prototype.closePath = function() {};
+opentype.Path.prototype.closePath = function() {};
 
 /**
  * Add the given path or list of commands to the commands of this path.
@@ -344,7 +347,6 @@ opentype.Path.prototype.toPathData = function(decimalPlaces) {};
  */
 opentype.Path.prototype.toSVG = function(decimalPlaces) {};
 
-
 /**
  * @constructor
  */
@@ -365,63 +367,63 @@ opentype.Layout.prototype.searchTag = function(arr, tag){};
  */
 opentype.Layout.prototype.binSearch = function (arr, value) {};
 
-    /**
-     * Returns all scripts in the substitution table.
-     * @instance
-     * @return {Array}
-     */
+/**
+ * Returns all scripts in the substitution table.
+ * @instance
+ * @return {Array}
+ */
 opentype.Layout.prototype.getScriptNames = function() {};
 
-    /**
-     * Returns all LangSysRecords in the given script.
-     * @instance
-     * @param {string} script - Use 'DFLT' for default script
-     * @param {boolean} create - forces the creation of this script table if it doesn't exist.
-     * @return {Array} Array on names
-     */
+/**
+ * Returns all LangSysRecords in the given script.
+ * @instance
+ * @param {string} script - Use 'DFLT' for default script
+ * @param {boolean} create - forces the creation of this script table if it doesn't exist.
+ * @return {Array} Array on names
+ */
 opentype.Layout.prototype.getScriptTable = function(script, create) {};
 
-    /**
-     * Returns a language system table
-     * @instance
-     * @param {string} script - Use 'DFLT' for default script
-     * @param {string} language - Use 'DFLT' for default language
-     * @param {boolean} create - forces the creation of this langSysTable if it doesn't exist.
-     * @return {Object} An object with tag and script properties.
-     */
+/**
+ * Returns a language system table
+ * @instance
+ * @param {string} script - Use 'DFLT' for default script
+ * @param {string} language - Use 'DFLT' for default language
+ * @param {boolean} create - forces the creation of this langSysTable if it doesn't exist.
+ * @return {Object} An object with tag and script properties.
+ */
 opentype.Layout.prototype.getLangSysTable = function(script, language, create) {};
 
-    /**
-     * Get a specific feature table.
-     * @instance
-     * @param {string} script - Use 'DFLT' for default script
-     * @param {string} language - Use 'DFLT' for default language
-     * @param {string} feature - One of the codes listed at https://www.microsoft.com/typography/OTSPEC/featurelist.htm
-     * @param {boolean} create - forces the creation of the feature table if it doesn't exist.
-     * @return {Object}
-     */
+/**
+ * Get a specific feature table.
+ * @instance
+ * @param {string} script - Use 'DFLT' for default script
+ * @param {string} language - Use 'DFLT' for default language
+ * @param {string} feature - One of the codes listed at https://www.microsoft.com/typography/OTSPEC/featurelist.htm
+ * @param {boolean} create - forces the creation of the feature table if it doesn't exist.
+ * @return {Object}
+ */
 opentype.Layout.prototype.getFeatureTable = function(script, language, feature, create) {};
 
-    /**
-     * Get the first lookup table of a given type for a script/language/feature.
-     * @instance
-     * @param {string} script - Use 'DFLT' for default script
-     * @param {string} language - Use 'DFLT' for default language
-     * @param {string} feature - 4-letter feature code
-     * @param {number} lookupType - 1 to 8
-     * @param {boolean} create - forces the creation of the lookup table if it doesn't exist, with no subtables.
-     * @return {Object}
-     */
+/**
+ * Get the first lookup table of a given type for a script/language/feature.
+ * @instance
+ * @param {string} script - Use 'DFLT' for default script
+ * @param {string} language - Use 'DFLT' for default language
+ * @param {string} feature - 4-letter feature code
+ * @param {number} lookupType - 1 to 8
+ * @param {boolean} create - forces the creation of the lookup table if it doesn't exist, with no subtables.
+ * @return {Object}
+ */
 opentype.Layout.prototype.getLookupTable = function(script, language, feature, lookupType, create) {};
 
-    /**
-     * Returns the list of glyph indexes of a coverage table.
-     * Format 1: the list is stored raw
-     * Format 2: compact list as range records.
-     * @instance
-     * @param  {Object} coverageTable
-     * @return {Array}
-     */
+/**
+ * Returns the list of glyph indexes of a coverage table.
+ * Format 1: the list is stored raw
+ * Format 2: compact list as range records.
+ * @instance
+ * @param  {Object} coverageTable
+ * @return {Array}
+ */
 opentype.Layout.prototype.expandCoverage = function(coverageTable) {};
 
 /**
@@ -514,7 +516,6 @@ opentype.Substitution.prototype.getFeature = function(feature, script, language)
  */
 opentype.Substitution.prototype.add = function(feature, sub, script, language) {};
 
-
 /**
  * @param {string} tableName
  * @param {Array} fields
@@ -544,7 +545,6 @@ opentype.Table.prototype.tableName;
  * @type {Array}
  */
 opentype.Table.prototype.fields;
-
 
 /**
  * @extends {opentype.Table}
