@@ -348,7 +348,7 @@ opentype.Path.prototype.toSVG = function(decimalPlaces) {};
 /**
  * @constructor
  */
-opentype.Layout = function(){};
+opentype.Layout = function() {};
 
 /**
  * Binary search an object by "tag" property
@@ -356,7 +356,7 @@ opentype.Layout = function(){};
  * @param  {string} tag
  * @return {number}
  */
-opentype.Layout.prototype.searchTag = function(arr, tag){};
+opentype.Layout.prototype.searchTag = function(arr, tag) {};
 
 /**
  * Binary search in a list of numbers
