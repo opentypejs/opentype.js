@@ -6,6 +6,13 @@
 var check = require('./check');
 var Layout = require('./layout');
 
+/**
+ * @exports opentype.Substitution
+ * @class
+ * @extends opentype.Layout
+ * @param {opentype.Font}
+ * @constructor
+ */
 var Substitution = function(font) {
     this.font = font;
 };

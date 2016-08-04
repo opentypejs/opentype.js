@@ -20,9 +20,15 @@ function defineDependentProperty(glyph, externalName, internalName) {
     });
 }
 
-// A GlyphSet represents all glyphs available in the font, but modelled using
-// a deferred glyph loader, for retrieving glyphs only once they are absolutely
-// necessary, to keep the memory footprint down.
+/**
+ * A GlyphSet represents all glyphs available in the font, but modelled using
+ * a deferred glyph loader, for retrieving glyphs only once they are absolutely
+ * necessary, to keep the memory footprint down.
+ * @exports opentype.GlyphSet
+ * @class
+ * @param {opentype.Font}
+ * @param {Array}
+ */
 function GlyphSet(font, glyphs) {
     this.font = font;
     this.glyphs = {};
@@ -35,6 +41,10 @@ function GlyphSet(font, glyphs) {
     this.length = (glyphs && glyphs.length) || 0;
 }
 
+/**
+ * @param  {number} index
+ * @return {opentype.Glyph}
+ */
 GlyphSet.prototype.get = function(index) {
     if (typeof this.glyphs[index] === 'function') {
         this.glyphs[index] = this.glyphs[index]();
@@ -43,11 +53,21 @@ GlyphSet.prototype.get = function(index) {
     return this.glyphs[index];
 };
 
+/**
+ * @param  {number} index
+ * @param  {Object}
+ */
 GlyphSet.prototype.push = function(index, loader) {
     this.glyphs[index] = loader;
     this.length++;
 };
 
+/**
+ * @alias opentype.glyphLoader
+ * @param  {opentype.Font} font
+ * @param  {number} index
+ * @return {opentype.Glyph}
+ */
 function glyphLoader(font, index) {
     return new _glyph.Glyph({index: index, font: font});
 }
@@ -56,8 +76,15 @@ function glyphLoader(font, index) {
  * Generate a stub glyph that can be filled with all metadata *except*
  * the "points" and "path" properties, which must be loaded only once
  * the glyph's path is actually requested for text shaping.
+ * @alias opentype.ttfGlyphLoader
+ * @param  {opentype.Font} font
+ * @param  {number} index
+ * @param  {Function} parseGlyph
+ * @param  {Object} data
+ * @param  {number} position
+ * @param  {Function} buildPath
+ * @return {opentype.Glyph}
  */
-
 function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
     return function() {
         var glyph = new _glyph.Glyph({index: index, font: font});
@@ -77,7 +104,14 @@ function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
         return glyph;
     };
 }
-
+/**
+ * @alias opentype.cffGlyphLoader
+ * @param  {opentype.Font} font
+ * @param  {number} index
+ * @param  {Function} parseCFFCharstring
+ * @param  {string} charstring
+ * @return {opentype.Glyph}
+ */
 function cffGlyphLoader(font, index, parseCFFCharstring, charstring) {
     return function() {
         var glyph = new _glyph.Glyph({index: index, font: font});
