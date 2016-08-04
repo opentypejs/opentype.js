@@ -149,7 +149,7 @@ Path.prototype.toSVG = function(decimalPlaces) {
     var svg = '<path d="';
     svg += this.toPathData(decimalPlaces);
     svg += '"';
-    if (this.fill & this.fill !== 'black') {
+    if (this.fill && this.fill !== 'black') {
         if (this.fill === null) {
             svg += ' fill="none"';
         } else {
