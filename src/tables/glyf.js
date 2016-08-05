@@ -289,6 +289,10 @@ function buildPath(glyphs, glyph) {
                     transformedPoints = transformPoints(componentGlyph.points, component);
                 } else {
                     // component positioned by matched points
+                    if ((component.matchedPoints[0] > glyph.points.length - 1) ||
+                        (component.matchedPoints[1] > componentGlyph.points.length - 1)) {
+                        throw Error('Matched points out of range in ' + glyph.name);
+                    }
                     var firstPt = glyph.points[component.matchedPoints[0]];
                     var secondPt = componentGlyph.points[component.matchedPoints[1]];
                     var transform = {
