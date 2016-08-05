@@ -32,6 +32,7 @@ var maxp = require('./tables/maxp');
 var _name = require('./tables/name');
 var os2 = require('./tables/os2');
 var post = require('./tables/post');
+var meta = require('./tables/meta');
 
 /**
  * The opentype library.
@@ -211,6 +212,7 @@ function parseBuffer(buffer) {
     var kernTableEntry;
     var locaTableEntry;
     var nameTableEntry;
+    var metaTableEntry;
 
     for (var i = 0; i < numTables; i += 1) {
         var tableEntry = tableEntries[i];
@@ -279,6 +281,9 @@ function parseBuffer(buffer) {
             case 'GSUB':
                 gsubTableEntry = tableEntry;
                 break;
+            case 'meta':
+                metaTableEntry = tableEntry;
+                break;
         }
     }
 
@@ -314,6 +319,7 @@ function parseBuffer(buffer) {
         var gposTable = uncompressTable(data, gposTableEntry);
         gpos.parse(gposTable.data, gposTable.offset, font);
     }
+
     if (gsubTableEntry) {
         var gsubTable = uncompressTable(data, gsubTableEntry);
         font.tables.gsub = gsub.parse(gsubTable.data, gsubTable.offset);
@@ -322,6 +328,12 @@ function parseBuffer(buffer) {
     if (fvarTableEntry) {
         var fvarTable = uncompressTable(data, fvarTableEntry);
         font.tables.fvar = fvar.parse(fvarTable.data, fvarTable.offset, font.names);
+    }
+
+    if (metaTableEntry) {
+        var metaTable = uncompressTable(data, metaTableEntry);
+        font.tables.meta = meta.parse(metaTable.data, metaTable.offset);
+        font.metas = font.tables.meta;
     }
 
     return font;

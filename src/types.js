@@ -181,7 +181,6 @@ sizeOf.FWORD = sizeOf.SHORT;
 encode.UFWORD = encode.USHORT;
 sizeOf.UFWORD = sizeOf.USHORT;
 
-// FIXME Implement LONGDATETIME
 /**
  * Convert a 32-bit Apple Mac timestamp integer to a list of 8 bytes, 64-bit timestamp.
  * @param {number}
@@ -353,6 +352,22 @@ sizeOf.STRING = sizeOf.CHARARRAY;
  * @param {number} numBytes
  * @returns {string}
  */
+decode.UTF8 = function(data, offset, numBytes) {
+    var codePoints = [];
+    var numChars = numBytes;
+    for (var j = 0; j < numChars; j++, offset += 1) {
+        codePoints[j] = data.getUint8(offset);
+    }
+
+    return String.fromCharCode.apply(null, codePoints);
+};
+
+/**
+ * @param {DataView} data
+ * @param {number} offset
+ * @param {number} numBytes
+ * @returns {string}
+ */
 decode.UTF16 = function(data, offset, numBytes) {
     var codePoints = [];
     var numChars = numBytes / 2;
@@ -374,8 +389,6 @@ encode.UTF16 = function(v) {
         var codepoint = v.charCodeAt(i);
         b[b.length] = (codepoint >> 8) & 0xFF;
         b[b.length] = codepoint & 0xFF;
-        // b.push((codepoint >> 8) & 0xFF);
-        // b.push(codepoint & 0xFF);
     }
 
     return b;
