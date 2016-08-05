@@ -28,8 +28,7 @@ function parseCoverageTable(data, start) {
     var count =  p.parseUShort();
     if (format === 1) {
         return p.parseUShortList(count);
-    }
-    else if (format === 2) {
+    } else if (format === 2) {
         var coverage = [];
         for (; count--;) {
             var begin = p.parseUShort();
@@ -57,8 +56,7 @@ function parseClassDefTable(data, start) {
         return function(glyphID) {
             return classes[glyphID - startGlyph] || 0;
         };
-    }
-    else if (format === 2) {
+    } else if (format === 2) {
         // Format 2 defines multiple groups of glyph indices that belong to the same class.
         var rangeCount = p.parseUShort();
         var startGlyphs = [];
@@ -138,8 +136,7 @@ function parsePairPosSubTable(data, start) {
             var pairs = pairSet[leftGlyph];
             if (pairs) return pairs[rightGlyph];
         };
-    }
-    else if (format === 2) {
+    } else if (format === 2) {
         // Pair Positioning Adjustment: Format 2
         var classDef1Offset = p.parseUShort();
         var classDef2Offset = p.parseUShort();

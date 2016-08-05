@@ -2,8 +2,13 @@
 
 'use strict';
 
-// A bézier path containing a set of path commands similar to a SVG path.
-// Paths can be drawn on a context using `draw`.
+/**
+ * A bézier path containing a set of path commands similar to a SVG path.
+ * Paths can be drawn on a context using `draw`.
+ * @exports opentype.Path
+ * @class
+ * @constructor
+ */
 function Path() {
     this.commands = [];
     this.fill = 'black';
@@ -11,6 +16,10 @@ function Path() {
     this.strokeWidth = 1;
 }
 
+/**
+ * @param  {number} x
+ * @param  {number} y
+ */
 Path.prototype.moveTo = function(x, y) {
     this.commands.push({
         type: 'M',
@@ -19,6 +28,10 @@ Path.prototype.moveTo = function(x, y) {
     });
 };
 
+/**
+ * @param  {number} x
+ * @param  {number} y
+ */
 Path.prototype.lineTo = function(x, y) {
     this.commands.push({
         type: 'L',
@@ -27,6 +40,32 @@ Path.prototype.lineTo = function(x, y) {
     });
 };
 
+/**
+ * Draws cubic curve
+ * @function
+ * curveTo
+ * @memberof opentype.Path.prototype
+ * @param  {number} x1 - x of control 1
+ * @param  {number} y1 - y of control 1
+ * @param  {number} x2 - x of control 2
+ * @param  {number} y2 - y of control 2
+ * @param  {number} x - x of path point
+ * @param  {number} y - y of path point
+ */
+
+/**
+ * Draws cubic curve
+ * @function
+ * bezierCurveTo
+ * @memberof opentype.Path.prototype
+ * @param  {number} x1 - x of control 1
+ * @param  {number} y1 - y of control 1
+ * @param  {number} x2 - x of control 2
+ * @param  {number} y2 - y of control 2
+ * @param  {number} x - x of path point
+ * @param  {number} y - y of path point
+ * @see curveTo
+ */
 Path.prototype.curveTo = Path.prototype.bezierCurveTo = function(x1, y1, x2, y2, x, y) {
     this.commands.push({
         type: 'C',
@@ -39,6 +78,27 @@ Path.prototype.curveTo = Path.prototype.bezierCurveTo = function(x1, y1, x2, y2,
     });
 };
 
+/**
+ * Draws quadratic curve
+ * @function
+ * quadraticCurveTo
+ * @memberof opentype.Path.prototype
+ * @param  {number} x1 - x of control
+ * @param  {number} y1 - y of control
+ * @param  {number} x - x of path point
+ * @param  {number} y - y of path point
+ */
+
+/**
+ * Draws quadratic curve
+ * @function
+ * quadTo
+ * @memberof opentype.Path.prototype
+ * @param  {number} x1 - x of control
+ * @param  {number} y1 - y of control
+ * @param  {number} x - x of path point
+ * @param  {number} y - y of path point
+ */
 Path.prototype.quadTo = Path.prototype.quadraticCurveTo = function(x1, y1, x, y) {
     this.commands.push({
         type: 'Q',
@@ -49,13 +109,27 @@ Path.prototype.quadTo = Path.prototype.quadraticCurveTo = function(x1, y1, x, y)
     });
 };
 
+/**
+ * Closes the path
+ * @function closePath
+ * @memberof opentype.Path.prototype
+ */
+
+/**
+ * Close the path
+ * @function close
+ * @memberof opentype.Path.prototype
+ */
 Path.prototype.close = Path.prototype.closePath = function() {
     this.commands.push({
         type: 'Z'
     });
 };
 
-// Add the given path or list of commands to the commands of this path.
+/**
+ * Add the given path or list of commands to the commands of this path.
+ * @param  {Array}
+ */
 Path.prototype.extend = function(pathOrCommands) {
     if (pathOrCommands.commands) {
         pathOrCommands = pathOrCommands.commands;
@@ -64,7 +138,10 @@ Path.prototype.extend = function(pathOrCommands) {
     Array.prototype.push.apply(this.commands, pathOrCommands);
 };
 
-// Draw the path to a 2D context.
+/**
+ * Draw the path to a 2D context.
+ * @param {CanvasRenderingContext2D} ctx - A 2D drawing context.
+ */
 Path.prototype.draw = function(ctx) {
     ctx.beginPath();
     for (var i = 0; i < this.commands.length; i += 1) {
@@ -94,10 +171,12 @@ Path.prototype.draw = function(ctx) {
     }
 };
 
-// Convert the Path to a string of path data instructions
-// See http://www.w3.org/TR/SVG/paths.html#PathData
-// Parameters:
-// - decimalPlaces: The amount of decimal places for floating-point values (default: 2)
+/**
+ * Convert the Path to a string of path data instructions
+ * See http://www.w3.org/TR/SVG/paths.html#PathData
+ * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @return {string}
+ */
 Path.prototype.toPathData = function(decimalPlaces) {
     decimalPlaces = decimalPlaces !== undefined ? decimalPlaces : 2;
 
@@ -142,14 +221,16 @@ Path.prototype.toPathData = function(decimalPlaces) {
     return d;
 };
 
-// Convert the path to a SVG <path> element, as a string.
-// Parameters:
-// - decimalPlaces: The amount of decimal places for floating-point values (default: 2)
+/**
+ * Convert the path to an SVG <path> element, as a string.
+ * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @return {string}
+ */
 Path.prototype.toSVG = function(decimalPlaces) {
     var svg = '<path d="';
     svg += this.toPathData(decimalPlaces);
     svg += '"';
-    if (this.fill & this.fill !== 'black') {
+    if (this.fill && this.fill !== 'black') {
         if (this.fill === null) {
             svg += ' fill="none"';
         } else {

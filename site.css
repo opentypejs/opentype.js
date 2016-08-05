@@ -189,6 +189,9 @@ a {
 
 #font-data dd {
     margin-left: 12em;
+    word-break: break-all;
+    max-height: 100px;
+    overflow-y: auto;
 }
 
 #font-data .langtag {

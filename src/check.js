@@ -2,11 +2,15 @@
 
 'use strict';
 
+exports.fail = function(message) {
+    throw new Error(message);
+};
+
 // Precondition function that checks if the given predicate is true.
 // If not, it will throw an error.
 exports.argument = function(predicate, message) {
     if (!predicate) {
-        throw new Error(message);
+        exports.fail(message);
     }
 };
 

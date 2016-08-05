@@ -38,10 +38,10 @@ function parseGlyphCoordinate(p, flag, previousValue, shortVectorBitMask, sameBi
 function parseGlyph(glyph, data, start) {
     var p = new parse.Parser(data, start);
     glyph.numberOfContours = p.parseShort();
-    glyph.xMin = p.parseShort();
-    glyph.yMin = p.parseShort();
-    glyph.xMax = p.parseShort();
-    glyph.yMax = p.parseShort();
+    glyph._xMin = p.parseShort();
+    glyph._yMin = p.parseShort();
+    glyph._xMax = p.parseShort();
+    glyph._yMax = p.parseShort();
     var flags;
     var flag;
     if (glyph.numberOfContours > 0) {

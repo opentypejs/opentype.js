@@ -6,11 +6,45 @@ var path = require('./path');
 var sfnt = require('./tables/sfnt');
 var encoding = require('./encoding');
 var glyphset = require('./glyphset');
+var Substitution = require('./substitution');
 var util = require('./util');
 
-// A Font represents a loaded OpenType font file.
-// It contains a set of glyphs and methods to draw text on a drawing context,
-// or to get a path representing the text.
+/**
+ * @typedef FontOptions
+ * @type Object
+ * @property {Boolean} empty - whether to create a new empty font
+ * @property {string} familyName
+ * @property {string} styleName
+ * @property {string=} fullName
+ * @property {string=} postScriptName
+ * @property {string=} designer
+ * @property {string=} designerURL
+ * @property {string=} manufacturer
+ * @property {string=} manufacturerURL
+ * @property {string=} license
+ * @property {string=} licenseURL
+ * @property {string=} version
+ * @property {string=} description
+ * @property {string=} copyright
+ * @property {string=} trademark
+ * @property {Number} unitsPerEm
+ * @property {Number} ascender
+ * @property {Number} descender
+ * @property {Boolean=} createdTimestamp
+ * @property {string=} weightClass
+ * @property {string=} widthClass
+ * @property {string=} fsSelection
+ */
+
+/**
+ * A Font represents a loaded OpenType font file.
+ * It contains a set of glyphs and methods to draw text on a drawing context,
+ * or to get a path representing the text.
+ * @exports opentype.Font
+ * @class
+ * @param {FontOptions}
+ * @constructor
+ */
 function Font(options) {
     options = options || {};
 
@@ -43,29 +77,48 @@ function Font(options) {
         this.unitsPerEm = options.unitsPerEm || 1000;
         this.ascender = options.ascender;
         this.descender = options.descender;
+        this.createdTimestamp = options.createdTimestamp;
+        this.tables = { os2: {
+            usWeightClass: options.weightClass || this.usWeightClasses.MEDIUM,
+            usWidthClass: options.widthClass || this.usWidthClasses.MEDIUM,
+            fsSelection: options.fsSelection || this.fsSelectionValues.REGULAR
+        } };
     }
 
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
     this.glyphs = new glyphset.GlyphSet(this, options.glyphs || []);
     this.encoding = new encoding.DefaultEncoding(this);
-    this.tables = {};
+    this.substitution = new Substitution(this);
+    this.tables = this.tables || {};
 }
 
-// Check if the font has a glyph for the given character.
+/**
+ * Check if the font has a glyph for the given character.
+ * @param  {string}
+ * @return {Boolean}
+ */
 Font.prototype.hasChar = function(c) {
     return this.encoding.charToGlyphIndex(c) !== null;
 };
 
-// Convert the given character to a single glyph index.
-// Note that this function assumes that there is a one-to-one mapping between
-// the given character and a glyph; for complex scripts this might not be the case.
+/**
+ * Convert the given character to a single glyph index.
+ * Note that this function assumes that there is a one-to-one mapping between
+ * the given character and a glyph; for complex scripts this might not be the case.
+ * @param  {string}
+ * @return {Number}
+ */
 Font.prototype.charToGlyphIndex = function(s) {
     return this.encoding.charToGlyphIndex(s);
 };
 
-// Convert the given character to a single Glyph object.
-// Note that this function assumes that there is a one-to-one mapping between
-// the given character and a glyph; for complex scripts this might not be the case.
+/**
+ * Convert the given character to a single Glyph object.
+ * Note that this function assumes that there is a one-to-one mapping between
+ * the given character and a glyph; for complex scripts this might not be the case.
+ * @param  {string}
+ * @return {opentype.Glyph}
+ */
 Font.prototype.charToGlyph = function(c) {
     var glyphIndex = this.charToGlyphIndex(c);
     var glyph = this.glyphs.get(glyphIndex);
@@ -77,10 +130,14 @@ Font.prototype.charToGlyph = function(c) {
     return glyph;
 };
 
-// Convert the given text to a list of Glyph objects.
-// Note that there is no strict one-to-one mapping between characters and
-// glyphs, so the list of returned glyphs can be larger or smaller than the
-// length of the given string.
+/**
+ * Convert the given text to a list of Glyph objects.
+ * Note that there is no strict one-to-one mapping between characters and
+ * glyphs, so the list of returned glyphs can be larger or smaller than the
+ * length of the given string.
+ * @param  {string}
+ * @return {opentype.Glyph[]}
+ */
 Font.prototype.stringToGlyphs = function(s) {
     var glyphs = [];
     for (var i = 0; i < s.length; i += 1) {
@@ -91,10 +148,18 @@ Font.prototype.stringToGlyphs = function(s) {
     return glyphs;
 };
 
+/**
+ * @param  {string}
+ * @return {Number}
+ */
 Font.prototype.nameToGlyphIndex = function(name) {
     return this.glyphNames.nameToGlyphIndex(name);
 };
 
+/**
+ * @param  {string}
+ * @return {opentype.Glyph}
+ */
 Font.prototype.nameToGlyph = function(name) {
     var glyphIndex = this.nametoGlyphIndex(name);
     var glyph = this.glyphs.get(glyphIndex);
@@ -106,6 +171,10 @@ Font.prototype.nameToGlyph = function(name) {
     return glyph;
 };
 
+/**
+ * @param  {Number}
+ * @return {String}
+ */
 Font.prototype.glyphIndexToName = function(gid) {
     if (!this.glyphNames.glyphIndexToName) {
         return '';
@@ -114,10 +183,15 @@ Font.prototype.glyphIndexToName = function(gid) {
     return this.glyphNames.glyphIndexToName(gid);
 };
 
-// Retrieve the value of the kerning pair between the left glyph (or its index)
-// and the right glyph (or its index). If no kerning pair is found, return 0.
-// The kerning value gets added to the advance width when calculating the spacing
-// between glyphs.
+/**
+ * Retrieve the value of the kerning pair between the left glyph (or its index)
+ * and the right glyph (or its index). If no kerning pair is found, return 0.
+ * The kerning value gets added to the advance width when calculating the spacing
+ * between glyphs.
+ * @param  {opentype.Glyph} leftGlyph
+ * @param  {opentype.Glyph} rightGlyph
+ * @return {Number}
+ */
 Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
     leftGlyph = leftGlyph.index || leftGlyph;
     rightGlyph = rightGlyph.index || rightGlyph;
@@ -126,8 +200,21 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
         (this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0);
 };
 
-// Helper function that invokes the given callback for each glyph in the given text.
-// The callback gets `(glyph, x, y, fontSize, options)`.
+/**
+ * @typedef GlyphRenderOptions
+ * @type Object
+ * @property {boolean} [kerning] - whether to include kerning values
+ */
+
+/**
+ * Helper function that invokes the given callback for each glyph in the given text.
+ * The callback gets `(glyph, x, y, fontSize, options)`.* @param  {string} text
+ * @param  {number} [x=0] - Horizontal position of the beginning of the text.
+ * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
+ * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+ * @param  {GlyphRenderOptions=} options
+ * @param  {Function} callback
+ */
 Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
@@ -150,16 +237,15 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     }
 };
 
-// Create a Path object that represents the given text.
-//
-// text - The text to create.
-// x - Horizontal position of the beginning of the text. (default: 0)
-// y - Vertical position of the *baseline* of the text. (default: 0)
-// fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
-// Options is an optional object that contains:
-// - kerning - Whether to take kerning information into account. (default: true)
-//
-// Returns a Path object.
+/**
+ * Create a Path object that represents the given text.
+ * @param  {string} text - The text to create.
+ * @param  {number} [x=0] - Horizontal position of the beginning of the text.
+ * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
+ * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+ * @param  {GlyphRenderOptions=} options
+ * @return {opentype.Path}
+ */
 Font.prototype.getPath = function(text, x, y, fontSize, options) {
     var fullPath = new path.Path();
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
@@ -170,16 +256,15 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
     return fullPath;
 };
 
-// Create an array of Path objects that represent the glyps of a given text.
-//
-// text - The text to create.
-// x - Horizontal position of the beginning of the text. (default: 0)
-// y - Vertical position of the *baseline* of the text. (default: 0)
-// fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
-// Options is an optional object that contains:
-// - kerning - Whether to take kerning information into account. (default: true)
-//
-// Returns an array of Path objects.
+/**
+ * Create an array of Path objects that represent the glyps of a given text.
+ * @param  {string} text - The text to create.
+ * @param  {number} [x=0] - Horizontal position of the beginning of the text.
+ * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
+ * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+ * @param  {GlyphRenderOptions=} options
+ * @return {opentype.Path[]}
+ */
 Font.prototype.getPaths = function(text, x, y, fontSize, options) {
     var glyphPaths = [];
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
@@ -190,53 +275,57 @@ Font.prototype.getPaths = function(text, x, y, fontSize, options) {
     return glyphPaths;
 };
 
-// Draw the text on the given drawing context.
-//
-// ctx - A 2D drawing context, like Canvas.
-// text - The text to create.
-// x - Horizontal position of the beginning of the text. (default: 0)
-// y - Vertical position of the *baseline* of the text. (default: 0)
-// fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
-// Options is an optional object that contains:
-// - kerning - Whether to take kerning information into account. (default: true)
+/**
+ * Draw the text on the given drawing context.
+ * @param  {CanvasRenderingContext2D} ctx - A 2D drawing context, like Canvas.
+ * @param  {string} text - The text to create.
+ * @param  {number} [x=0] - Horizontal position of the beginning of the text.
+ * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
+ * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+ * @param  {GlyphRenderOptions=} options
+ */
 Font.prototype.draw = function(ctx, text, x, y, fontSize, options) {
     this.getPath(text, x, y, fontSize, options).draw(ctx);
 };
 
-// Draw the points of all glyphs in the text.
-// On-curve points will be drawn in blue, off-curve points will be drawn in red.
-//
-// ctx - A 2D drawing context, like Canvas.
-// text - The text to create.
-// x - Horizontal position of the beginning of the text. (default: 0)
-// y - Vertical position of the *baseline* of the text. (default: 0)
-// fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
-// Options is an optional object that contains:
-// - kerning - Whether to take kerning information into account. (default: true)
+/**
+ * Draw the points of all glyphs in the text.
+ * On-curve points will be drawn in blue, off-curve points will be drawn in red.
+ * @param {CanvasRenderingContext2D} ctx - A 2D drawing context, like Canvas.
+ * @param {string} text - The text to create.
+ * @param {number} [x=0] - Horizontal position of the beginning of the text.
+ * @param {number} [y=0] - Vertical position of the *baseline* of the text.
+ * @param {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+ * @param {GlyphRenderOptions=} options
+ */
 Font.prototype.drawPoints = function(ctx, text, x, y, fontSize, options) {
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         glyph.drawPoints(ctx, gX, gY, gFontSize);
     });
 };
 
-// Draw lines indicating important font measurements for all glyphs in the text.
-// Black lines indicate the origin of the coordinate system (point 0,0).
-// Blue lines indicate the glyph bounding box.
-// Green line indicates the advance width of the glyph.
-//
-// ctx - A 2D drawing context, like Canvas.
-// text - The text to create.
-// x - Horizontal position of the beginning of the text. (default: 0)
-// y - Vertical position of the *baseline* of the text. (default: 0)
-// fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`. (default: 72)
-// Options is an optional object that contains:
-// - kerning - Whether to take kerning information into account. (default: true)
+/**
+ * Draw lines indicating important font measurements for all glyphs in the text.
+ * Black lines indicate the origin of the coordinate system (point 0,0).
+ * Blue lines indicate the glyph bounding box.
+ * Green line indicates the advance width of the glyph.
+ * @param {CanvasRenderingContext2D} ctx - A 2D drawing context, like Canvas.
+ * @param {string} text - The text to create.
+ * @param {number} [x=0] - Horizontal position of the beginning of the text.
+ * @param {number} [y=0] - Vertical position of the *baseline* of the text.
+ * @param {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+ * @param {GlyphRenderOptions=} options
+ */
 Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         glyph.drawMetrics(ctx, gX, gY, gFontSize);
     });
 };
 
+/**
+ * @param  {string}
+ * @return {string}
+ */
 Font.prototype.getEnglishName = function(name) {
     var translations = this.names[name];
     if (translations) {
@@ -244,7 +333,9 @@ Font.prototype.getEnglishName = function(name) {
     }
 };
 
-// Validate
+/**
+ * Validate
+ */
 Font.prototype.validate = function() {
     var warnings = [];
     var _this = this;
@@ -272,17 +363,25 @@ Font.prototype.validate = function() {
     assert(this.unitsPerEm > 0, 'No unitsPerEm specified.');
 };
 
-// Convert the font object to a SFNT data structure.
-// This structure contains all the necessary tables and metadata to create a binary OTF file.
+/**
+ * Convert the font object to a SFNT data structure.
+ * This structure contains all the necessary tables and metadata to create a binary OTF file.
+ * @return {opentype.Table}
+ */
 Font.prototype.toTables = function() {
     return sfnt.fontToTable(this);
 };
-
+/**
+ * @deprecated Font.toBuffer is deprecated. Use Font.toArrayBuffer instead.
+ */
 Font.prototype.toBuffer = function() {
     console.warn('Font.toBuffer is deprecated. Use Font.toArrayBuffer instead.');
     return this.toArrayBuffer();
 };
-
+/**
+ * Converts a `opentype.Font` into an `ArrayBuffer`
+ * @return {ArrayBuffer}
+ */
 Font.prototype.toArrayBuffer = function() {
     var sfntTable = this.toTables();
     var bytes = sfntTable.encode();
@@ -295,7 +394,9 @@ Font.prototype.toArrayBuffer = function() {
     return buffer;
 };
 
-// Initiate a download of the OpenType font.
+/**
+ * Initiate a download of the OpenType font.
+ */
 Font.prototype.download = function() {
     var familyName = this.getEnglishName('fontFamily');
     var styleName = this.getEnglishName('fontSubfamily');
@@ -319,13 +420,58 @@ Font.prototype.download = function() {
             });
         },
         function(err) {
-            throw err;
+            throw new Error(err.name + ': ' + err.message);
         });
     } else {
         var fs = require('fs');
         var buffer = util.arrayBufferToNodeBuffer(arrayBuffer);
         fs.writeFileSync(fileName, buffer);
     }
+};
+/**
+ * @private
+ */
+Font.prototype.fsSelectionValues = {
+    ITALIC:              0x001, //1
+    UNDERSCORE:          0x002, //2
+    NEGATIVE:            0x004, //4
+    OUTLINED:            0x008, //8
+    STRIKEOUT:           0x010, //16
+    BOLD:                0x020, //32
+    REGULAR:             0x040, //64
+    USER_TYPO_METRICS:   0x080, //128
+    WWS:                 0x100, //256
+    OBLIQUE:             0x200  //512
+};
+
+/**
+ * @private
+ */
+Font.prototype.usWidthClasses = {
+    ULTRA_CONDENSED: 1,
+    EXTRA_CONDENSED: 2,
+    CONDENSED: 3,
+    SEMI_CONDENSED: 4,
+    MEDIUM: 5,
+    SEMI_EXPANDED: 6,
+    EXPANDED: 7,
+    EXTRA_EXPANDED: 8,
+    ULTRA_EXPANDED: 9
+};
+
+/**
+ * @private
+ */
+Font.prototype.usWeightClasses = {
+    THIN: 100,
+    EXTRA_LIGHT: 200,
+    LIGHT: 300,
+    NORMAL: 400,
+    MEDIUM: 500,
+    SEMI_BOLD: 600,
+    BOLD: 700,
+    EXTRA_BOLD: 800,
+    BLACK:    900
 };
 
 exports.Font = Font;

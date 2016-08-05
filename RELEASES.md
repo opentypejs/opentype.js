@@ -1,3 +1,15 @@
+0.6.4 (June 30, 2016)
+=========================
+* Add X/Y scale options to compute a streched path of a glyph.
+* Correct reading/writing of font timestamps.
+* examples/generate-font-node.js now generates "full" Latin font.
+* Add OS/2 value options for weight, width and fsSelection.
+
+0.6.3 (May 10, 2016)
+=========================
+* Wrapped parseBuffer in a try/catch so it doesn't throw exceptions. Thanks @rBurgett!
+* Fix a leaking global variable. Thanks @cuixiping!
+
 0.6.2 (March 11, 2016)
 =========================
 * Improve table writing to support nested subtables. Thanks @fpirsch!

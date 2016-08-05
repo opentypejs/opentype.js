@@ -40,6 +40,14 @@ describe('OpenType.js', function() {
         assert.equal(aGlyph.path.commands.length, 14);
     });
 
+    it('handles a parseBuffer error', function(done) {
+        opentype.load('./fonts/badfont.ttf', function(err) {
+            if (err) {
+                done();
+            }
+        });
+    });
+
     it('throws an error when advanceWidth is not set', function() {
         var notdefGlyph = new opentype.Glyph({
             name: '.notdef',
@@ -54,7 +62,7 @@ describe('OpenType.js', function() {
             descender: -200,
             glyphs: [notdefGlyph]
         });
-        assert.throws(function() { font.toArrayBuffer(); }, /advanceWidth is required/);
+        assert.throws(function() { font.toArrayBuffer(); }, /advanceWidth is not a number/);
     });
 
 });

@@ -10,8 +10,20 @@ var check = require('./check');
 var LIMIT16 = 32768; // The limit at which a 16-bit number switches signs == 2^15
 var LIMIT32 = 2147483648; // The limit at which a 32-bit number switches signs == 2 ^ 31
 
+/**
+ * @exports opentype.decode
+ * @class
+ */
 var decode = {};
+/**
+ * @exports opentype.encode
+ * @class
+ */
 var encode = {};
+/**
+ * @exports opentype.sizeOf
+ * @class
+ */
 var sizeOf = {};
 
 // Return a function that always returns the same value.
@@ -23,43 +35,78 @@ function constant(v) {
 
 // OpenType data types //////////////////////////////////////////////////////
 
-// Convert an 8-bit unsigned integer to a list of 1 byte.
+/**
+ * Convert an 8-bit unsigned integer to a list of 1 byte.
+ * @param {number}
+ * @returns {Array}
+ */
 encode.BYTE = function(v) {
     check.argument(v >= 0 && v <= 255, 'Byte value should be between 0 and 255.');
     return [v];
 };
-
+/**
+ * @constant
+ * @type {number}
+ */
 sizeOf.BYTE = constant(1);
 
-// Convert a 8-bit signed integer to a list of 1 byte.
+/**
+ * Convert a 8-bit signed integer to a list of 1 byte.
+ * @param {string}
+ * @returns {Array}
+ */
 encode.CHAR = function(v) {
     return [v.charCodeAt(0)];
 };
 
+/**
+ * @constant
+ * @type {number}
+ */
 sizeOf.CHAR = constant(1);
 
-// Convert an ASCII string to a list of bytes.
+/**
+ * Convert an ASCII string to a list of bytes.
+ * @param {string}
+ * @returns {Array}
+ */
 encode.CHARARRAY = function(v) {
     var b = [];
     for (var i = 0; i < v.length; i += 1) {
-        b.push(v.charCodeAt(i));
+        b[i] = v.charCodeAt(i);
     }
 
     return b;
 };
 
+/**
+ * @param {Array}
+ * @returns {number}
+ */
 sizeOf.CHARARRAY = function(v) {
     return v.length;
 };
 
-// Convert a 16-bit unsigned integer to a list of 2 bytes.
+/**
+ * Convert a 16-bit unsigned integer to a list of 2 bytes.
+ * @param {number}
+ * @returns {Array}
+ */
 encode.USHORT = function(v) {
     return [(v >> 8) & 0xFF, v & 0xFF];
 };
 
+/**
+ * @constant
+ * @type {number}
+ */
 sizeOf.USHORT = constant(2);
 
-// Convert a 16-bit signed integer to a list of 2 bytes.
+/**
+ * Convert a 16-bit signed integer to a list of 2 bytes.
+ * @param {number}
+ * @returns {Array}
+ */
 encode.SHORT = function(v) {
     // Two's complement
     if (v >= LIMIT16) {
@@ -69,23 +116,47 @@ encode.SHORT = function(v) {
     return [(v >> 8) & 0xFF, v & 0xFF];
 };
 
+/**
+ * @constant
+ * @type {number}
+ */
 sizeOf.SHORT = constant(2);
 
-// Convert a 24-bit unsigned integer to a list of 3 bytes.
+/**
+ * Convert a 24-bit unsigned integer to a list of 3 bytes.
+ * @param {number}
+ * @returns {Array}
+ */
 encode.UINT24 = function(v) {
     return [(v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
+/**
+ * @constant
+ * @type {number}
+ */
 sizeOf.UINT24 = constant(3);
 
-// Convert a 32-bit unsigned integer to a list of 4 bytes.
+/**
+ * Convert a 32-bit unsigned integer to a list of 4 bytes.
+ * @param {number}
+ * @returns {Array}
+ */
 encode.ULONG = function(v) {
     return [(v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
+/**
+ * @constant
+ * @type {number}
+ */
 sizeOf.ULONG = constant(4);
 
-// Convert a 32-bit unsigned integer to a list of 4 bytes.
+/**
+ * Convert a 32-bit unsigned integer to a list of 4 bytes.
+ * @param {number}
+ * @returns {Array}
+ */
 encode.LONG = function(v) {
     // Two's complement
     if (v >= LIMIT32) {
@@ -95,6 +166,10 @@ encode.LONG = function(v) {
     return [(v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
+/**
+ * @constant
+ * @type {number}
+ */
 sizeOf.LONG = constant(4);
 
 encode.FIXED = encode.ULONG;
@@ -106,14 +181,26 @@ sizeOf.FWORD = sizeOf.SHORT;
 encode.UFWORD = encode.USHORT;
 sizeOf.UFWORD = sizeOf.USHORT;
 
-// FIXME Implement LONGDATETIME
-encode.LONGDATETIME = function() {
-    return [0, 0, 0, 0, 0, 0, 0, 0];
+/**
+ * Convert a 32-bit Apple Mac timestamp integer to a list of 8 bytes, 64-bit timestamp.
+ * @param {number}
+ * @returns {Array}
+ */
+encode.LONGDATETIME = function(v) {
+    return [0, 0, 0, 0, (v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
+/**
+ * @constant
+ * @type {number}
+ */
 sizeOf.LONGDATETIME = constant(8);
 
-// Convert a 4-char tag to a list of 4 bytes.
+/**
+ * Convert a 4-char tag to a list of 4 bytes.
+ * @param {string}
+ * @returns {Array}
+ */
 encode.TAG = function(v) {
     check.argument(v.length === 4, 'Tag should be exactly 4 ASCII characters.');
     return [v.charCodeAt(0),
@@ -122,6 +209,10 @@ encode.TAG = function(v) {
             v.charCodeAt(3)];
 };
 
+/**
+ * @constant
+ * @type {number}
+ */
 sizeOf.TAG = constant(4);
 
 // CFF data types ///////////////////////////////////////////////////////////
@@ -139,6 +230,11 @@ encode.SID = encode.USHORT;
 sizeOf.SID = sizeOf.USHORT;
 
 // Convert a numeric operand or charstring number to a variable-size list of bytes.
+/**
+ * Convert a numeric operand or charstring number to a variable-size list of bytes.
+ * @param {number}
+ * @returns {Array}
+ */
 encode.NUMBER = function(v) {
     if (v >= -107 && v <= 107) {
         return [v + 139];
@@ -155,27 +251,51 @@ encode.NUMBER = function(v) {
     }
 };
 
+/**
+ * @param {number}
+ * @returns {number}
+ */
 sizeOf.NUMBER = function(v) {
     return encode.NUMBER(v).length;
 };
 
-// Convert a signed number between -32768 and +32767 to a three-byte value.
-// This ensures we always use three bytes, but is not the most compact format.
+/**
+ * Convert a signed number between -32768 and +32767 to a three-byte value.
+ * This ensures we always use three bytes, but is not the most compact format.
+ * @param {number}
+ * @returns {Array}
+ */
 encode.NUMBER16 = function(v) {
     return [28, (v >> 8) & 0xFF, v & 0xFF];
 };
 
+/**
+ * @constant
+ * @type {number}
+ */
 sizeOf.NUMBER16 = constant(3);
 
-// Convert a signed number between -(2^31) and +(2^31-1) to a five-byte value.
-// This is useful if you want to be sure you always use four bytes,
-// at the expense of wasting a few bytes for smaller numbers.
+/**
+ * Convert a signed number between -(2^31) and +(2^31-1) to a five-byte value.
+ * This is useful if you want to be sure you always use four bytes,
+ * at the expense of wasting a few bytes for smaller numbers.
+ * @param {number}
+ * @returns {Array}
+ */
 encode.NUMBER32 = function(v) {
     return [29, (v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
+/**
+ * @constant
+ * @type {number}
+ */
 sizeOf.NUMBER32 = constant(5);
 
+/**
+ * @param {number}
+ * @returns {Array}
+ */
 encode.REAL = function(v) {
     var value = v.toString();
 
@@ -212,6 +332,10 @@ encode.REAL = function(v) {
     return out;
 };
 
+/**
+ * @param {number}
+ * @returns {number}
+ */
 sizeOf.REAL = function(v) {
     return encode.REAL(v).length;
 };
@@ -222,6 +346,12 @@ sizeOf.NAME = sizeOf.CHARARRAY;
 encode.STRING = encode.CHARARRAY;
 sizeOf.STRING = sizeOf.CHARARRAY;
 
+/**
+ * @param {DataView} data
+ * @param {number} offset
+ * @param {number} numBytes
+ * @returns {string}
+ */
 decode.UTF8 = function(data, offset, numBytes) {
     var codePoints = [];
     var numChars = numBytes;
@@ -232,6 +362,12 @@ decode.UTF8 = function(data, offset, numBytes) {
     return String.fromCharCode.apply(null, codePoints);
 };
 
+/**
+ * @param {DataView} data
+ * @param {number} offset
+ * @param {number} numBytes
+ * @returns {string}
+ */
 decode.UTF16 = function(data, offset, numBytes) {
     var codePoints = [];
     var numChars = numBytes / 2;
@@ -242,18 +378,26 @@ decode.UTF16 = function(data, offset, numBytes) {
     return String.fromCharCode.apply(null, codePoints);
 };
 
-// Convert a JavaScript string to UTF16-BE.
+/**
+ * Convert a JavaScript string to UTF16-BE.
+ * @param {string}
+ * @returns {Array}
+ */
 encode.UTF16 = function(v) {
     var b = [];
     for (var i = 0; i < v.length; i += 1) {
         var codepoint = v.charCodeAt(i);
-        b.push((codepoint >> 8) & 0xFF);
-        b.push(codepoint & 0xFF);
+        b[b.length] = (codepoint >> 8) & 0xFF;
+        b[b.length] = codepoint & 0xFF;
     }
 
     return b;
 };
 
+/**
+ * @param {string}
+ * @returns {number}
+ */
 sizeOf.UTF16 = function(v) {
     return v.length * 2;
 };
@@ -268,6 +412,9 @@ sizeOf.UTF16 = function(v) {
 //
 //     s = u''.join([chr(c).decode('mac_greek') for c in range(128, 256)])
 //     print(s.encode('utf-8'))
+/**
+ * @private
+ */
 var eightBitMacEncodings = {
     'x-mac-croatian':  // Python: 'mac_croatian'
         'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®Š™´¨≠ŽØ∞±≤≥∆µ∂∑∏š∫ªºΩžø' +
@@ -303,10 +450,17 @@ var eightBitMacEncodings = {
         '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸĞğİıŞş‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙˆ˜¯˘˙˚¸˝˛ˇ'
 };
 
-// Decodes an old-style Macintosh string. Returns either a Unicode JavaScript
-// string, or 'undefined' if the encoding is unsupported. For example, we do
-// not support Chinese, Japanese or Korean because these would need large
-// mapping tables.
+/**
+ * Decodes an old-style Macintosh string. Returns either a Unicode JavaScript
+ * string, or 'undefined' if the encoding is unsupported. For example, we do
+ * not support Chinese, Japanese or Korean because these would need large
+ * mapping tables.
+ * @param {DataView} dataView
+ * @param {number} offset
+ * @param {number} dataLength
+ * @param {string} encoding
+ * @returns {string}
+ */
 decode.MACSTRING = function(dataView, offset, dataLength, encoding) {
     var table = eightBitMacEncodings[encoding];
     if (table === undefined) {
@@ -379,10 +533,15 @@ var getMacEncodingTable = function(encoding) {
     return encodingTable;
 };
 
-// Encodes an old-style Macintosh string. Returns a byte array upon success.
-// If the requested encoding is unsupported, or if the input string contains
-// a character that cannot be expressed in the encoding, the function returns
-// 'undefined'.
+/**
+ * Encodes an old-style Macintosh string. Returns a byte array upon success.
+ * If the requested encoding is unsupported, or if the input string contains
+ * a character that cannot be expressed in the encoding, the function returns
+ * 'undefined'.
+ * @param {string} str
+ * @param {string} encoding
+ * @returns {Array}
+ */
 encode.MACSTRING = function(str, encoding) {
     var table = getMacEncodingTable(encoding);
     if (table === undefined) {
@@ -403,13 +562,18 @@ encode.MACSTRING = function(str, encoding) {
                 return undefined;
             }
         }
-
-        result.push(c);
+        result[i] = c;
+        // result.push(c);
     }
 
     return result;
 };
 
+/**
+ * @param {string} str
+ * @param {string} encoding
+ * @returns {number}
+ */
 sizeOf.MACSTRING = function(str, encoding) {
     var b = encode.MACSTRING(str, encoding);
     if (b !== undefined) {
@@ -421,21 +585,23 @@ sizeOf.MACSTRING = function(str, encoding) {
 
 // Convert a list of values to a CFF INDEX structure.
 // The values should be objects containing name / type / value.
+/**
+ * @param {Array} l
+ * @returns {Array}
+ */
 encode.INDEX = function(l) {
     var i;
     //var offset, offsets, offsetEncoder, encodedOffsets, encodedOffset, data,
-    //    dataSize, i, v;
+    //    i, v;
     // Because we have to know which data type to use to encode the offsets,
     // we have to go through the values twice: once to encode the data and
     // calculate the offets, then again to encode the offsets using the fitting data type.
     var offset = 1; // First offset is always 1.
     var offsets = [offset];
     var data = [];
-    var dataSize = 0;
     for (i = 0; i < l.length; i += 1) {
         var v = encode.OBJECT(l[i]);
         Array.prototype.push.apply(data, v);
-        dataSize += v.length;
         offset += v.length;
         offsets.push(offset);
     }
@@ -445,7 +611,7 @@ encode.INDEX = function(l) {
     }
 
     var encodedOffsets = [];
-    var offSize = (1 + Math.floor(Math.log(dataSize) / Math.log(2)) / 8) | 0;
+    var offSize = (1 + Math.floor(Math.log(offset) / Math.log(2)) / 8) | 0;
     var offsetEncoder = [undefined, encode.BYTE, encode.USHORT, encode.UINT24, encode.ULONG][offSize];
     for (i = 0; i < offsets.length; i += 1) {
         var encodedOffset = offsetEncoder(offsets[i]);
@@ -458,13 +624,21 @@ encode.INDEX = function(l) {
                            data);
 };
 
+/**
+ * @param {Array}
+ * @returns {number}
+ */
 sizeOf.INDEX = function(v) {
     return encode.INDEX(v).length;
 };
 
-// Convert an object to a CFF DICT structure.
-// The keys should be numeric.
-// The values should be objects containing name / type / value.
+/**
+ * Convert an object to a CFF DICT structure.
+ * The keys should be numeric.
+ * The values should be objects containing name / type / value.
+ * @param {Object} m
+ * @returns {Array}
+ */
 encode.DICT = function(m) {
     var d = [];
     var keys = Object.keys(m);
@@ -482,10 +656,18 @@ encode.DICT = function(m) {
     return d;
 };
 
+/**
+ * @param {Object}
+ * @returns {number}
+ */
 sizeOf.DICT = function(m) {
     return encode.DICT(m).length;
 };
 
+/**
+ * @param {number}
+ * @returns {Array}
+ */
 encode.OPERATOR = function(v) {
     if (v < 1200) {
         return [v];
@@ -494,6 +676,11 @@ encode.OPERATOR = function(v) {
     }
 };
 
+/**
+ * @param {Array} v
+ * @param {string}
+ * @returns {Array}
+ */
 encode.OPERAND = function(v, type) {
     var d = [];
     if (Array.isArray(type)) {
@@ -526,7 +713,12 @@ sizeOf.OP = sizeOf.BYTE;
 
 // memoize charstring encoding using WeakMap if available
 var wmm = typeof WeakMap === 'function' && new WeakMap();
-// Convert a list of CharString operations to bytes.
+
+/**
+ * Convert a list of CharString operations to bytes.
+ * @param {Array}
+ * @returns {Array}
+ */
 encode.CHARSTRING = function(ops) {
     // See encode.MACSTRING for why we don't do "if (wmm && wmm.has(ops))".
     if (wmm) {
@@ -551,28 +743,44 @@ encode.CHARSTRING = function(ops) {
     return d;
 };
 
+/**
+ * @param {Array}
+ * @returns {number}
+ */
 sizeOf.CHARSTRING = function(ops) {
     return encode.CHARSTRING(ops).length;
 };
 
 // Utility functions ////////////////////////////////////////////////////////
 
-// Convert an object containing name / type / value to bytes.
+/**
+ * Convert an object containing name / type / value to bytes.
+ * @param {Object}
+ * @returns {Array}
+ */
 encode.OBJECT = function(v) {
     var encodingFunction = encode[v.type];
     check.argument(encodingFunction !== undefined, 'No encoding function for type ' + v.type);
     return encodingFunction(v.value);
 };
 
+/**
+ * @param {Object}
+ * @returns {number}
+ */
 sizeOf.OBJECT = function(v) {
     var sizeOfFunction = sizeOf[v.type];
     check.argument(sizeOfFunction !== undefined, 'No sizeOf function for type ' + v.type);
     return sizeOfFunction(v.value);
 };
 
-// Convert a table object to bytes.
-// A table contains a list of fields containing the metadata (name, type and default value).
-// The table itself has the field values set as attributes.
+/**
+ * Convert a table object to bytes.
+ * A table contains a list of fields containing the metadata (name, type and default value).
+ * The table itself has the field values set as attributes.
+ * @param {opentype.Table}
+ * @returns {Array}
+ */
 encode.TABLE = function(table) {
     var d = [];
     var length = table.fields.length;
@@ -612,6 +820,10 @@ encode.TABLE = function(table) {
     return d;
 };
 
+/**
+ * @param {opentype.Table}
+ * @returns {number}
+ */
 sizeOf.TABLE = function(table) {
     var numBytes = 0;
     var length = table.fields.length;

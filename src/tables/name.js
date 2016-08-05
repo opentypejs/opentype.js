@@ -529,20 +529,20 @@ var windowsLanguages = {
 // for 'Chinese in the traditional script'.
 function getLanguageCode(platformID, languageID, ltag) {
     switch (platformID) {
-    case 0:  // Unicode
-        if (languageID === 0xFFFF) {
-            return 'und';
-        } else if (ltag) {
-            return ltag[languageID];
-        }
+        case 0:  // Unicode
+            if (languageID === 0xFFFF) {
+                return 'und';
+            } else if (ltag) {
+                return ltag[languageID];
+            }
 
-        break;
+            break;
 
-    case 1:  // Macintosh
-        return macLanguages[languageID];
+        case 1:  // Macintosh
+            return macLanguages[languageID];
 
-    case 3:  // Windows
-        return windowsLanguages[languageID];
+        case 3:  // Windows
+            return windowsLanguages[languageID];
     }
 
     return undefined;
@@ -610,18 +610,18 @@ var macLanguageEncodings = {
 
 function getEncoding(platformID, encodingID, languageID) {
     switch (platformID) {
-    case 0:  // Unicode
-        return utf16;
-
-    case 1:  // Apple Macintosh
-        return macLanguageEncodings[languageID] || macScriptEncodings[encodingID];
-
-    case 3:  // Microsoft Windows
-        if (encodingID === 1 || encodingID === 10) {
+        case 0:  // Unicode
             return utf16;
-        }
 
-        break;
+        case 1:  // Apple Macintosh
+            return macLanguageEncodings[languageID] || macScriptEncodings[encodingID];
+
+        case 3:  // Microsoft Windows
+            if (encodingID === 1 || encodingID === 10) {
+                return utf16;
+            }
+
+            break;
     }
 
     return undefined;
@@ -744,6 +744,11 @@ function makeNameTable(names, ltag) {
         }
 
         nameID = parseInt(id);
+
+        if (isNaN(nameID)) {
+            throw new Error('Name table entry "' + key + '" does not exist, see nameTableNames for complete list.');
+        }
+
         namesWithNumericKeys[nameID] = names[key];
         nameIDs.push(nameID);
     }
