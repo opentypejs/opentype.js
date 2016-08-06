@@ -151,7 +151,11 @@ function displayGlyphData(glyphIndex) {
     } else if (glyph.isComposite) {
         html += '<br>This composite glyph is a combination of :<ul><li>' +
             glyph.components.map(function(component) {
-                return 'glyph '+component.glyphIndex+' at dx='+component.dx+', dy='+component.dy;
+                if (component.matchedPoints === undefined) {
+                    return 'glyph '+component.glyphIndex+' at dx='+component.dx+', dy='+component.dy;
+                } else {
+                    return 'glyph '+component.glyphIndex+' at matchedPoints=['+component.matchedPoints+']';
+                }
             }).join('</li><li>') + '</li></ul>';
     } else if (glyph.path) {
         html += 'path:<br><pre>  ' + glyph.path.commands.map(pathCommandToString).join('\n  ') + '\n</pre>';
