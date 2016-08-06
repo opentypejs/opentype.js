@@ -135,7 +135,7 @@ function parseGlyph(glyph, data, start) {
                     component.dy = p.parseShort();
                 } else {
                     // values are matched points
-                    component.matchedPoints = [p.parseShort(), p.parseShort()];
+                    component.matchedPoints = [p.parseUShort(), p.parseUShort()];
                 }
 
             } else {
@@ -146,7 +146,7 @@ function parseGlyph(glyph, data, start) {
                     component.dy = p.parseChar();
                 } else {
                     // values are matched points
-                    component.matchedPoints = [p.parseChar(), p.parseChar()];
+                    component.matchedPoints = [p.parseByte(), p.parseByte()];
                 }
             }
 
