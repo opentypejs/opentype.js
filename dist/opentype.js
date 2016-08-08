@@ -727,7 +727,7 @@ var util = require('./util');
  * @property {Number} unitsPerEm
  * @property {Number} ascender
  * @property {Number} descender
- * @property {Boolean=} createdTimestamp
+ * @property {Number} createdTimestamp
  * @property {string=} weightClass
  * @property {string=} widthClass
  * @property {string=} fsSelection
@@ -906,6 +906,7 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
 /**
  * Helper function that invokes the given callback for each glyph in the given text.
  * The callback gets `(glyph, x, y, fontSize, options)`.* @param  {string} text
+ * @param {string} text - The text to apply.
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
@@ -1729,6 +1730,7 @@ var Layout = {
      * @instance
      * @param {string} script - Use 'DFLT' for default script
      * @param {boolean} create - forces the creation of this script table if it doesn't exist.
+     * @return {Object} An object with tag and script properties.
      */
     getScriptTable: function(script, create) {
         var gsub = this.getGsubTable(create);
@@ -1757,6 +1759,7 @@ var Layout = {
      * @param {string} script - Use 'DFLT' for default script
      * @param {string} language - Use 'DFLT' for default language
      * @param {boolean} create - forces the creation of this langSysTable if it doesn't exist.
+     * @return {Object}
      */
     getLangSysTable: function(script, language, create) {
         var scriptTable = this.getScriptTable(script, create);
@@ -1785,6 +1788,7 @@ var Layout = {
      * @param {string} language - Use 'DFLT' for default language
      * @param {string} feature - One of the codes listed at https://www.microsoft.com/typography/OTSPEC/featurelist.htm
      * @param {boolean} create - forces the creation of the feature table if it doesn't exist.
+     * @return {Object}
      */
     getFeatureTable: function(script, language, feature, create) {
         var langSysTable = this.getLangSysTable(script, language, create);
@@ -1823,6 +1827,7 @@ var Layout = {
      * @param {string} feature - 4-letter feature code
      * @param {number} lookupType - 1 to 8
      * @param {boolean} create - forces the creation of the lookup table if it doesn't exist, with no subtables.
+     * @return {Object}
      */
     getLookupTable: function(script, language, feature, lookupType, create) {
         var featureTable = this.getFeatureTable(script, language, feature, create);
@@ -3021,7 +3026,11 @@ function getSubstFormat(lookupTable, format, defaultSubtable) {
 
 Substitution.prototype = Layout;
 
-// Get or create the GSUB table.
+/**
+ * Get or create the GSUB table.
+ * @param  {boolean} create - Whether to create a new one.
+ * @return {Object} gsub - The GSUB table.
+ */
 Substitution.prototype.getGsubTable = function(create) {
     var gsub = this.font.tables.gsub;
     if (!gsub && create) {
@@ -3047,8 +3056,9 @@ Substitution.prototype.getGsubTable = function(create) {
  * @param {string} script
  * @param {string} language
  * @param {string} feature - 4-character feature name ('aalt', 'salt', 'ss01'...)
+ * @return {Array} substitutions - The list of substitutions.
  */
-Substitution.prototype.getSingle = function(script, language, feature) {
+Substitution.prototype.getSingle = function(feature, script, language) {
     var substitutions = [];
     var lookupTable = this.getLookupTable(script, language, feature, 1);
     if (!lookupTable) { return substitutions; }
@@ -3078,8 +3088,9 @@ Substitution.prototype.getSingle = function(script, language, feature) {
  * @param {string} script
  * @param {string} language
  * @param {string} feature - 4-character feature name ('aalt', 'salt'...)
+ * @return {Array} alternates - The list of alternates
  */
-Substitution.prototype.getAlternates = function(script, language, feature) {
+Substitution.prototype.getAlternates = function(feature, script, language) {
     var alternates = [];
     var lookupTable = this.getLookupTable(script, language, feature, 3);
     if (!lookupTable) { return alternates; }
@@ -3098,11 +3109,12 @@ Substitution.prototype.getAlternates = function(script, language, feature) {
 /**
  * List all ligatures (lookup type 4) for a given script, language, and feature.
  * The result is an array of ligature objects like { sub: [ids], by: id }
+ * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {string} script
  * @param {string} language
- * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
+ * @return {Array} ligatures - The list of ligatures.
  */
-Substitution.prototype.getLigatures = function(script, language, feature) {
+Substitution.prototype.getLigatures = function(feature, script, language) {
     var ligatures = [];
     var lookupTable = this.getLookupTable(script, language, feature, 4);
     if (!lookupTable) { return []; }
@@ -3129,11 +3141,12 @@ Substitution.prototype.getLigatures = function(script, language, feature) {
 /**
  * Add or modify a single substitution (lookup type 1)
  * Format 2, more flexible, is always used.
+ * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
+ * @param {Object} substitution - { sub: id, delta: number } for format 1 or { sub: id, by: id } for format 2.
  * @param {string} [script='DFLT']
  * @param {string} [language='DFLT']
- * @param {object} substitution - { sub: id, delta: number } for format 1 or { sub: id, by: id } for format 2.
  */
-Substitution.prototype.addSingle = function(script, language, feature, substitution) {
+Substitution.prototype.addSingle = function(feature, substitution, script, language) {
     var lookupTable = this.getLookupTable(script, language, feature, 1, true);
     var subtable = getSubstFormat(lookupTable, 2, {                // lookup type 1 subtable, format 2, coverage format 1
         substFormat: 2,
@@ -3153,11 +3166,12 @@ Substitution.prototype.addSingle = function(script, language, feature, substitut
 
 /**
  * Add or modify an alternate substitution (lookup type 1)
+ * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
+ * @param {Object} substitution - { sub: id, by: [ids] }
  * @param {string} [script='DFLT']
  * @param {string} [language='DFLT']
- * @param {object} substitution - { sub: id, by: [ids] }
  */
-Substitution.prototype.addAlternate = function(script, language, feature, substitution) {
+Substitution.prototype.addAlternate = function(feature, substitution, script, language) {
     var lookupTable = this.getLookupTable(script, language, feature, 3, true);
     var subtable = getSubstFormat(lookupTable, 1, {                // lookup type 3 subtable, format 1, coverage format 1
         substFormat: 1,
@@ -3178,11 +3192,14 @@ Substitution.prototype.addAlternate = function(script, language, feature, substi
 /**
  * Add a ligature (lookup type 4)
  * Ligatures with more components must be stored ahead of those with fewer components in order to be found
+ * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
+ * @param {Object} ligature - { sub: [ids], by: id }
  * @param {string} [script='DFLT']
  * @param {string} [language='DFLT']
- * @param {object} ligature - { sub: [ids], by: id }
  */
-Substitution.prototype.addLigature = function(script, language, feature, ligature) {
+Substitution.prototype.addLigature = function(feature, ligature, script, language) {
+    script = script || 'DFLT';
+    language = language || 'DFLT';
     var lookupTable = this.getLookupTable(script, language, feature, 4, true);
     var subtable = lookupTable.subtables[0];
     if (!subtable) {
@@ -3222,57 +3239,52 @@ Substitution.prototype.addLigature = function(script, language, feature, ligatur
 
 /**
  * List all feature data for a given script and language.
+ * @param {string} feature - 4-letter feature name
  * @param {string} [script='DFLT']
  * @param {string} [language='DFLT']
- * @param {string} feature - 4-letter feature name
+ * @return {Array} substitutions - The list of substitutions.
  */
-Substitution.prototype.getFeature = function(script, language, feature) {
-    if (arguments.length === 1) {
-        feature = arguments[0];
-        script = language = 'DFLT';
-    }
+Substitution.prototype.getFeature = function(feature, script, language) {
+    script = script || 'DFLT';
+    language = language || 'DFLT';
     if (/ss\d\d/.test(feature)) {               // ss01 - ss20
-        return this.getSingle(script, language, feature);
+        return this.getSingle(feature, script, language);
     }
     switch (feature) {
         case 'aalt':
         case 'salt':
-            return this.getSingle(script, language, feature)
-                    .concat(this.getAlternates(script, language, feature));
+            return this.getSingle(feature, script, language)
+                    .concat(this.getAlternates(feature, script, language));
         case 'dlig':
         case 'liga':
-        case 'rlig': return this.getLigatures(script, language, feature);
+        case 'rlig': return this.getLigatures(feature, script, language);
     }
 };
 
 /**
  * Add a substitution to a feature for a given script and language.
- *
+ * @param {string} feature - 4-letter feature name
+ * @param {Object} sub - the substitution to add (an object like { sub: id or [ids], by: id or [ids] })
  * @param {string} [script='DFLT']
  * @param {string} [language='DFLT']
- * @param {string} feature - 4-letter feature name
- * @param {object} sub - the substitution to add (an object like { sub: id or [ids], by: id or [ids] })
  */
-Substitution.prototype.add = function(script, language, feature, sub) {
-    if (arguments.length === 2) {
-        feature = arguments[0];
-        sub = arguments[1];
-        script = language = 'DFLT';
-    }
+Substitution.prototype.add = function(feature, sub, script, language) {
+    script = script || 'DFLT';
+    language = language || 'DFLT';
     if (/ss\d\d/.test(feature)) {               // ss01 - ss20
-        return this.addSingle(script, language, feature, sub);
+        return this.addSingle(feature, sub, script, language);
     }
     switch (feature) {
         case 'aalt':
         case 'salt':
             if (typeof sub.by === 'number') {
-                return this.addSingle(script, language, feature, sub);
+                return this.addSingle(feature, sub, script, language);
             }
-            return this.addAlternate(script, language, feature, sub);
+            return this.addAlternate(feature, sub, script, language);
         case 'dlig':
         case 'liga':
         case 'rlig':
-            return this.addLigature(script, language, feature, sub);
+            return this.addLigature(feature, sub, script, language);
     }
 };
 
@@ -3291,7 +3303,7 @@ var sizeOf = require('./types').sizeOf;
  * @class
  * @param {string} tableName
  * @param {Array} fields
- * @param {object} options
+ * @param {Object} options
  * @constructor
  */
 function Table(tableName, fields, options) {
@@ -5091,12 +5103,25 @@ function parseGlyph(glyph, data, start) {
             };
             if ((flags & 1) > 0) {
                 // The arguments are words
-                component.dx = p.parseShort();
-                component.dy = p.parseShort();
+                if ((flags & 2) > 0) {
+                    // values are offset
+                    component.dx = p.parseShort();
+                    component.dy = p.parseShort();
+                } else {
+                    // values are matched points
+                    component.matchedPoints = [p.parseUShort(), p.parseUShort()];
+                }
+
             } else {
                 // The arguments are bytes
-                component.dx = p.parseChar();
-                component.dy = p.parseChar();
+                if ((flags & 2) > 0) {
+                    // values are offset
+                    component.dx = p.parseChar();
+                    component.dy = p.parseChar();
+                } else {
+                    // values are matched points
+                    component.matchedPoints = [p.parseByte(), p.parseByte()];
+                }
             }
 
             if ((flags & 8) > 0) {
@@ -5232,7 +5257,28 @@ function buildPath(glyphs, glyph) {
             // Force the ttfGlyphLoader to parse the glyph.
             componentGlyph.getPath();
             if (componentGlyph.points) {
-                var transformedPoints = transformPoints(componentGlyph.points, component);
+                var transformedPoints;
+                if (component.matchedPoints === undefined) {
+                    // component positioned by offset
+                    transformedPoints = transformPoints(componentGlyph.points, component);
+                } else {
+                    // component positioned by matched points
+                    if ((component.matchedPoints[0] > glyph.points.length - 1) ||
+                        (component.matchedPoints[1] > componentGlyph.points.length - 1)) {
+                        throw Error('Matched points out of range in ' + glyph.name);
+                    }
+                    var firstPt = glyph.points[component.matchedPoints[0]];
+                    var secondPt = componentGlyph.points[component.matchedPoints[1]];
+                    var transform = {
+                        xScale: component.xScale, scale01: component.scale01,
+                        scale10: component.scale10, yScale: component.yScale,
+                        dx: 0, dy: 0
+                    };
+                    secondPt = transformPoints([secondPt], transform)[0];
+                    transform.dx = firstPt.x - secondPt.x;
+                    transform.dy = firstPt.y - secondPt.y;
+                    transformedPoints = transformPoints(componentGlyph.points, transform);
+                }
                 glyph.points = glyph.points.concat(transformedPoints);
             }
         }
