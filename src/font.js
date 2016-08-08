@@ -30,7 +30,7 @@ var util = require('./util');
  * @property {Number} unitsPerEm
  * @property {Number} ascender
  * @property {Number} descender
- * @property {Boolean=} createdTimestamp
+ * @property {Number} createdTimestamp
  * @property {string=} weightClass
  * @property {string=} widthClass
  * @property {string=} fsSelection
@@ -209,6 +209,7 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
 /**
  * Helper function that invokes the given callback for each glyph in the given text.
  * The callback gets `(glyph, x, y, fontSize, options)`.* @param  {string} text
+ * @param {string} text - The text to apply.
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
