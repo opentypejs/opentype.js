@@ -238,8 +238,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
 
         if (options.letterSpacing) {
             x += options.letterSpacing * fontSize;
-        }
-        else if (options.tracking) {
+        } else if (options.tracking) {
             x += (options.tracking / 1000) * fontSize;
         }
     }
