@@ -398,10 +398,10 @@ Font.prototype.toArrayBuffer = function() {
 /**
  * Initiate a download of the OpenType font.
  */
-Font.prototype.download = function() {
+Font.prototype.download = function(fileName) {
     var familyName = this.getEnglishName('fontFamily');
     var styleName = this.getEnglishName('fontSubfamily');
-    var fileName = familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
+    fileName = fileName || familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
     var arrayBuffer = this.toArrayBuffer();
 
     if (util.isBrowser()) {
