@@ -235,6 +235,12 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
             var kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
             x += kerningValue * fontScale;
         }
+
+        if (options.letterSpacing) {
+            x += options.letterSpacing * fontSize;
+        } else if (options.tracking) {
+            x += (options.tracking / 1000) * fontSize;
+        }
     }
 };
 
