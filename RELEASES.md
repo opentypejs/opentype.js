@@ -1,3 +1,10 @@
+0.6.5 (September 9, 2016)
+=========================
+* GSUB reading and writing by @fpirsch. This is still missing a user-friendly API.
+* Add support for cmap table format 12, which enables support for Unicode characters outside of the 0x0 - 0xFFFF range.
+* Better API documentation using [JSDoc](http://usejsdoc.org/).
+* Accessing xMin/... metrics works before path load. 
+
 0.6.4 (June 30, 2016)
 =========================
 * Add X/Y scale options to compute a streched path of a glyph.

@@ -5,7 +5,7 @@
  * opentype.js:
  *   license: MIT (http://opensource.org/licenses/MIT)
  *   author: Frederik De Bleser <frederik@debleser.be>
- *   version: 0.6.4
+ *   version: 0.6.5
  *
  * tiny-inflate:
  *   license: MIT (http://opensource.org/licenses/MIT)
