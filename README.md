@@ -1,5 +1,7 @@
 opentype.js
 ===========
+
+[![Join the chat at https://gitter.im/nodebox/opentype.js](https://badges.gitter.im/nodebox/opentype.js.svg)](https://gitter.im/nodebox/opentype.js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 opentype.js is a JavaScript parser and writer for TrueType and OpenType fonts.
 
 It gives you access to the <strong>letterforms</strong> of text from the browser or node.js.
@@ -96,7 +98,7 @@ on the font name.
         name: '.notdef',
         unicode: 0,
         advanceWidth: 650,
-        path: new opentype.Path();
+        path: new opentype.Path()
     });
 
     var aPath = new opentype.Path();
