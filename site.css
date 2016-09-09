@@ -44,6 +44,26 @@ body {
     background: #ddd;
 }
 
+.header nav.right {
+    float: right;
+    position: relative;
+    line-height: 40px;
+    text-decoration: none;
+    color: #44d;
+}
+
+.header nav.right a {
+    display: inline-block;
+    padding: 0 10px;
+    font-weight: 500;
+    border-left: 1px solid #ccc;
+    margin: 0;
+}
+
+.header nav.right a:first-child {
+    border-left: none;
+}
+
 .container {
     width: 940px;
     margin-left: auto;
@@ -139,14 +159,6 @@ label {
 
 label input[type="range"] {
     vertical-align: middle;
-}
-
-a.github {
-    float: right;
-    position: relative;
-    line-height: 40px;
-    text-decoration: none;
-    color: #44d;
 }
 
 a {
