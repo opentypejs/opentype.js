@@ -1,6 +1,7 @@
 opentype.js
 ===========
-[![Join the chat at https://gitter.im/nodebox/opentype.js](https://badges.gitter.im/nodebox/opentype.js.svg)](https://gitter.im/nodebox/opentype.js)
+[![npm](https://img.shields.io/npm/v/opentype.js.svg)](https://www.npmjs.com/package/opentype.js)
+[![Gitter](https://badges.gitter.im/nodebox/opentype.js.svg)](https://gitter.im/nodebox/opentype.js)
 
 opentype.js is a JavaScript parser and writer for TrueType and OpenType fonts.
 
