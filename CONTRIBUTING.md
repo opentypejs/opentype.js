@@ -61,4 +61,4 @@ We use a set of [npm scripts](https://www.npmjs.org/doc/misc/npm-scripts.html) t
 2. Add information about the new release in `RELEASES.md`.
 3. Run `npm run dist` to update the files in the `dist` folder.
 4. Commit (`git commit -a`) and create a tag (e.g. `git tag 1.2.1`). Push and push tags (`git push && git push --tags`).
-5. Run `npm publish` to publish the package to npm. Bower updates automatically.
+5. Once published, [Travis](https://travis-ci.org/) will push the new tagged release to npm. Bower updates automatically.
