@@ -161,7 +161,7 @@ Font.prototype.nameToGlyphIndex = function(name) {
  * @return {opentype.Glyph}
  */
 Font.prototype.nameToGlyph = function(name) {
-    var glyphIndex = this.nametoGlyphIndex(name);
+    var glyphIndex = this.nameToGlyphIndex(name);
     var glyph = this.glyphs.get(glyphIndex);
     if (!glyph) {
         // .notdef
