@@ -74,6 +74,11 @@ function loadFromUrl(url, callback) {
         return callback(null, request.response);
     };
 
+	// Ho: fixes font loading errors with Chrome.
+	request.onerror = function () {
+		return callback('Font could not be loaded: error');
+	}; 
+
     request.send();
 }
 
