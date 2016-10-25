@@ -1,3 +1,8 @@
+0.6.6 (October 25, 2016)
+=========================
+* Add support for letter-spacing and tracking (thanks @lachmanski!).
+* Fixed a bug in the nameToGlyph function.
+
 0.6.5 (September 9, 2016)
 =========================
 * GSUB reading and writing by @fpirsch. This is still missing a user-friendly API.

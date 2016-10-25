@@ -5,7 +5,7 @@
  * opentype.js:
  *   license: MIT (http://opensource.org/licenses/MIT)
  *   author: Frederik De Bleser <frederik@debleser.be>
- *   version: 0.6.5
+ *   version: 0.6.6
  *
  * tiny-inflate:
  *   license: MIT (http://opensource.org/licenses/MIT)
@@ -876,7 +876,7 @@ Font.prototype.nameToGlyphIndex = function(name) {
  * @return {opentype.Glyph}
  */
 Font.prototype.nameToGlyph = function(name) {
-    var glyphIndex = this.nametoGlyphIndex(name);
+    var glyphIndex = this.nameToGlyphIndex(name);
     var glyph = this.glyphs.get(glyphIndex);
     if (!glyph) {
         // .notdef
@@ -949,6 +949,12 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
         if (kerning && i < glyphs.length - 1) {
             var kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
             x += kerningValue * fontScale;
+        }
+
+        if (options.letterSpacing) {
+            x += options.letterSpacing * fontSize;
+        } else if (options.tracking) {
+            x += (options.tracking / 1000) * fontSize;
         }
     }
 };
@@ -1113,10 +1119,10 @@ Font.prototype.toArrayBuffer = function() {
 /**
  * Initiate a download of the OpenType font.
  */
-Font.prototype.download = function() {
+Font.prototype.download = function(fileName) {
     var familyName = this.getEnglishName('fontFamily');
     var styleName = this.getEnglishName('fontSubfamily');
-    var fileName = familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
+    fileName = fileName || familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
     var arrayBuffer = this.toArrayBuffer();
 
     if (util.isBrowser()) {
