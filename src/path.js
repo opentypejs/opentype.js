@@ -246,4 +246,13 @@ Path.prototype.toSVG = function(decimalPlaces) {
     return svg;
 };
 
+Path.prototype.toHTML = function(decimalPlaces) {
+  var temporaryPath = this.toPathData(decimalPlaces);
+  var newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+
+  newPath.setAttribute('d', temporaryPath);
+
+  return newPath;
+};
+
 exports.Path = Path;
