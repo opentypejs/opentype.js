@@ -1,3 +1,7 @@
+0.6.7 (Jan 5, 2017)
+=========================
+* Add basic support for Mac OS X format kern tables.
+
 0.6.6 (October 25, 2016)
 =========================
 * Add support for letter-spacing and tracking (thanks @lachmanski!).
