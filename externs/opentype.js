@@ -348,7 +348,7 @@ opentype.Path.prototype.toSVG = function(decimalPlaces) {};
 /**
  * @constructor
  */
-opentype.Layout = function() {};
+opentype.Layout = function(font, tableName) {};
 
 /**
  * Binary search an object by "tag" property
@@ -365,6 +365,13 @@ opentype.Layout.prototype.searchTag = function(arr, tag) {};
  * @return {number}
  */
 opentype.Layout.prototype.binSearch = function (arr, value) {};
+
+/**
+ * Get or create the Layout table (GSUB, GPOS etc).
+ * @param  {boolean} create - Whether to create a new one.
+ * @return {Object} The GSUB or GPOS table.
+ */
+opentype.Layout.prototype.getTable = function(create) {};
 
 /**
  * Returns all scripts in the substitution table.
@@ -386,7 +393,7 @@ opentype.Layout.prototype.getScriptTable = function(script, create) {};
  * Returns a language system table
  * @instance
  * @param {string} script - Use 'DFLT' for default script
- * @param {string} language - Use 'DFLT' for default language
+ * @param {string} language - Use 'dlft' for default language
  * @param {boolean} create - forces the creation of this langSysTable if it doesn't exist.
  * @return {Object} An object with tag and script properties.
  */
@@ -396,7 +403,7 @@ opentype.Layout.prototype.getLangSysTable = function(script, language, create) {
  * Get a specific feature table.
  * @instance
  * @param {string} script - Use 'DFLT' for default script
- * @param {string} language - Use 'DFLT' for default language
+ * @param {string} language - Use 'dlft' for default language
  * @param {string} feature - One of the codes listed at https://www.microsoft.com/typography/OTSPEC/featurelist.htm
  * @param {boolean} create - forces the creation of the feature table if it doesn't exist.
  * @return {Object}
@@ -404,16 +411,16 @@ opentype.Layout.prototype.getLangSysTable = function(script, language, create) {
 opentype.Layout.prototype.getFeatureTable = function(script, language, feature, create) {};
 
 /**
- * Get the first lookup table of a given type for a script/language/feature.
+ * Get the lookup tables of a given type for a script/language/feature.
  * @instance
- * @param {string} script - Use 'DFLT' for default script
- * @param {string} language - Use 'DFLT' for default language
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dlft']
  * @param {string} feature - 4-letter feature code
  * @param {number} lookupType - 1 to 8
  * @param {boolean} create - forces the creation of the lookup table if it doesn't exist, with no subtables.
- * @return {Object}
+ * @return {Object[]}
  */
-opentype.Layout.prototype.getLookupTable = function(script, language, feature, lookupType, create) {};
+opentype.Layout.prototype.getLookupTables = function(script, language, feature, lookupType, create) {};
 
 /**
  * Returns the list of glyph indexes of a coverage table.
@@ -433,11 +440,10 @@ opentype.Layout.prototype.expandCoverage = function(coverageTable) {};
 opentype.Substitution = function(font) {};
 
 /**
- * Get or create the GSUB table.
- * @param  {Boolean} create
- * @return {Object}
+ * Create a default GSUB table.
+ * @return {Object} gsub - The GSUB table.
  */
-opentype.Substitution.prototype.getGsubTable = function(create) {};
+Substitution.prototype.createDefaultTable = function() {};
 
 /**
  * List all single substitutions (lookup type 1) for a given script, language, and feature.
@@ -473,7 +479,7 @@ opentype.Substitution.prototype.getLigatures = function(feature, script, languag
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} substitution - { sub: id, delta: number } for format 1 or { sub: id, by: id } for format 2.
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  */
 opentype.Substitution.prototype.addSingle = function(feature, substitution, script, language) {};
 
@@ -482,7 +488,7 @@ opentype.Substitution.prototype.addSingle = function(feature, substitution, scri
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} substitution - { sub: id, by: [ids] }
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  */
 opentype.Substitution.prototype.addAlternate = function(feature, substitution, script, language) {};
 
@@ -492,7 +498,7 @@ opentype.Substitution.prototype.addAlternate = function(feature, substitution, s
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} ligature - { sub: [ids], by: id }
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  */
 opentype.Substitution.prototype.addLigature = function(feature, ligature, script, language) {};
 
@@ -500,7 +506,7 @@ opentype.Substitution.prototype.addLigature = function(feature, ligature, script
  * List all feature data for a given script and language.
  * @param {string} feature - 4-letter feature name
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  * @return {[type]} [description]
  * @return {Array} substitutions - The list of substitutions.
  */
@@ -511,7 +517,7 @@ opentype.Substitution.prototype.getFeature = function(feature, script, language)
  * @param {string} feature - 4-letter feature name
  * @param {Object} sub - the substitution to add (an Object like { sub: id or [ids], by: id or [ids] })
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  */
 opentype.Substitution.prototype.add = function(feature, sub, script, language) {};
 

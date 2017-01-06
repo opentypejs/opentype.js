@@ -41,6 +41,7 @@
     <label><input type="checkbox" onchange="drawPointsChanged(this)" checked="checked">Draw Points</label>
     <label><input type="checkbox" onchange="drawMetricsChanged(this)">Draw Metrics</label>
     <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked">Kerning</label>
+    <label><input type="checkbox" onchange="ligaturesChanged(this)" checked="checked">Ligatures</label>
 
     <hr>
 
@@ -84,6 +85,7 @@ var textToRender = "Hello, World!";
 var drawPoints = true;
 var drawMetrics = false;
 var kerning = true;
+var ligatures = true;
 var previewPath = null;
 var snapPath = null;
 var snapStrength = 80;
@@ -104,6 +106,11 @@ function drawMetricsChanged(e) {
 
 function kerningChanged(e) {
     kerning = e.checked;
+    renderText();
+}
+
+function ligaturesChanged(e) {
+    ligatures = e.checked;
     renderText();
 }
 
@@ -166,16 +173,23 @@ function renderText() {
     if (!font) return;
     textToRender = document.getElementById('textField').value;
     var previewCtx = document.getElementById('preview').getContext('2d');
+    var options = {
+        kerning: kerning,
+        features: {
+            liga: ligatures,
+            rlig: ligatures
+        }
+    };
     previewCtx.clearRect(0, 0, 940, 300);
-    font.draw(previewCtx, textToRender, 0, 200, fontSize, {kerning: kerning});
+    font.draw(previewCtx, textToRender, 0, 200, fontSize, options);
     if (drawPoints) {
-        font.drawPoints(previewCtx, textToRender, 0, 200, fontSize, {kerning: kerning});
+        font.drawPoints(previewCtx, textToRender, 0, 200, fontSize, options);
     }
     if (drawMetrics) {
-        font.drawMetrics(previewCtx, textToRender, 0, 200, fontSize, {kerning: kerning});
+        font.drawMetrics(previewCtx, textToRender, 0, 200, fontSize, options);
     }
 
-    snapPath = font.getPath(textToRender, 0, 200, fontSize, {kerning: kerning});
+    snapPath = font.getPath(textToRender, 0, 200, fontSize, options);
     doSnap(snapPath);
     var snapCtx = document.getElementById('snap').getContext('2d');
     snapCtx.clearRect(0, 0, 940, 300);
