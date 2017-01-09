@@ -105,6 +105,14 @@ Glyph.prototype.addUnicode = function(unicode) {
 };
 
 /**
+ * Calculate the minimum bounding box for this glyph.
+ * @return {opentype.BoundingBox}
+ */
+Glyph.prototype.getBoundingBox = function() {
+    return this.path.getBoundingBox();
+};
+
+/**
  * Convert the glyph to a Path we can draw on a drawing context.
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.

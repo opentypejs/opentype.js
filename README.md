@@ -195,6 +195,10 @@ Get a scaled glyph Path object we can draw on a drawing context.
 * `y`: Vertical position of the *baseline* of the glyph. (default: 0)
 * `fontSize`: Font size in pixels (default: 72).
 
+##### `Glyph.getBoundingBox()`
+Calculate the minimum bounding box for the unscaled path of the given glyph. Returns an `opentype.BoundingBox` object that contains x1/y1/x2/y2.
+If the glyph has no points (e.g. a space character), all coordinates will be zero.
+
 ##### `Glyph.draw(ctx, x, y, fontSize)`
 Draw the glyph on the given context.
 * `ctx`: The drawing context.
@@ -225,6 +229,10 @@ Once you have a path through `Font.getPath` or `Glyph.getPath`, you can use it.
 ##### `Path.draw(ctx)`
 Draw the path on the given 2D context. This uses the `fill`, `stroke` and `strokeWidth` properties of the `Path` object.
 * `ctx`: The drawing context.
+
+##### `Path.getBoundingBox()`
+Calculate the minimum bounding box for the given path. Returns an `opentype.BoundingBox` object that contains x1/y1/x2/y2.
+If the path is empty (e.g. a space character), all coordinates will be zero.
 
 ##### `Path.toPathData(decimalPlaces)`
 Convert the Path to a string of path data instructions.

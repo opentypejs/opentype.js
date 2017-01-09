@@ -13,6 +13,7 @@ var encoding = require('./encoding');
 var _font = require('./font');
 var glyph = require('./glyph');
 var parse = require('./parse');
+var bbox = require('./bbox');
 var path = require('./path');
 var util = require('./util');
 
@@ -383,6 +384,7 @@ exports._parse = parse;
 exports.Font = _font.Font;
 exports.Glyph = glyph.Glyph;
 exports.Path = path.Path;
+exports.BoundingBox = bbox.BoundingBox;
 exports.parse = parseBuffer;
 exports.load = load;
 exports.loadSync = loadSync;
