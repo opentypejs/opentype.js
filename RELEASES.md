@@ -1,3 +1,7 @@
+0.6.8 (Jan 9, 2017)
+=========================
+* Add a `getBoundingBox` method to the `Path` and `Glyph` objects.
+
 0.6.7 (Jan 5, 2017)
 =========================
 * Add basic support for Mac OS X format kern tables.

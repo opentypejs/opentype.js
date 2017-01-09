@@ -5,7 +5,7 @@
  * opentype.js:
  *   license: MIT (http://opensource.org/licenses/MIT)
  *   author: Frederik De Bleser <frederik@debleser.be>
- *   version: 0.6.7
+ *   version: 0.6.8
  *
  * tiny-inflate:
  *   license: MIT (http://opensource.org/licenses/MIT)
@@ -394,6 +394,168 @@ length_base[28] = 258;
 module.exports = tinf_uncompress;
 
 },{}],2:[function(require,module,exports){
+// The Bounding Box object
+
+'use strict';
+
+function derive(v0, v1, v2, v3, t) {
+    return Math.pow(1 - t, 3) * v0 +
+        3 * Math.pow(1 - t, 2) * t * v1 +
+        3 * (1 - t) * Math.pow(t, 2) * v2 +
+        Math.pow(t, 3) * v3;
+}
+/**
+ * A bounding box is an enclosing box that describes the smallest measure within which all the points lie.
+ * It is used to calculate the bounding box of a glyph or text path.
+ *
+ * On initialization, x1/y1/x2/y2 will be NaN. Check if the bounding box is empty using `isEmpty()`.
+ *
+ * @exports opentype.BoundingBox
+ * @class
+ * @constructor
+ */
+function BoundingBox() {
+    this.x1 = Number.NaN;
+    this.y1 = Number.NaN;
+    this.x2 = Number.NaN;
+    this.y2 = Number.NaN;
+}
+
+/**
+ * Returns true if the bounding box is empty, that is, no points have been added to the box yet.
+ */
+BoundingBox.prototype.isEmpty = function() {
+    return isNaN(this.x1) || isNaN(this.y1) || isNaN(this.x2) || isNaN(this.y2);
+};
+
+/**
+ * Add the point to the bounding box.
+ * The x1/y1/x2/y2 coordinates of the bounding box will now encompass the given point.
+ * @param {number} x - The X coordinate of the point.
+ * @param {number} y - The Y coordinate of the point.
+ */
+BoundingBox.prototype.addPoint = function(x, y) {
+    if (typeof x === 'number') {
+        if (isNaN(this.x1) || isNaN(this.x2)) {
+            this.x1 = x;
+            this.x2 = x;
+        }
+        if (x < this.x1) {
+            this.x1 = x;
+        }
+        if (x > this.x2) {
+            this.x2 = x;
+        }
+    }
+    if (typeof y === 'number') {
+        if (isNaN(this.y1) || isNaN(this.y2)) {
+            this.y1 = y;
+            this.y2 = y;
+        }
+        if (y < this.y1) {
+            this.y1 = y;
+        }
+        if (y > this.y2) {
+            this.y2 = y;
+        }
+    }
+};
+
+/**
+ * Add a X coordinate to the bounding box.
+ * This extends the bounding box to include the X coordinate.
+ * This function is used internally inside of addBezier.
+ * @param {number} x - The X coordinate of the point.
+ */
+BoundingBox.prototype.addX = function(x) {
+    this.addPoint(x, null);
+};
+
+/**
+ * Add a Y coordinate to the bounding box.
+ * This extends the bounding box to include the Y coordinate.
+ * This function is used internally inside of addBezier.
+ * @param {number} y - The Y coordinate of the point.
+ */
+BoundingBox.prototype.addY = function(y) {
+    this.addPoint(null, y);
+};
+
+/**
+ * Add a Bézier curve to the bounding box.
+ * This extends the bounding box to include the entire Bézier.
+ * @param {number} x0 - The starting X coordinate.
+ * @param {number} y0 - The starting Y coordinate.
+ * @param {number} x1 - The X coordinate of the first control point.
+ * @param {number} y1 - The Y coordinate of the first control point.
+ * @param {number} x2 - The X coordinate of the second control point.
+ * @param {number} y2 - The Y coordinate of the second control point.
+ * @param {number} x - The ending X coordinate.
+ * @param {number} y - The ending Y coordinate.
+ */
+BoundingBox.prototype.addBezier = function(x0, y0, x1, y1, x2, y2, x, y) {
+    // This code is based on http://nishiohirokazu.blogspot.com/2009/06/how-to-calculate-bezier-curves-bounding.html
+    // and https://github.com/icons8/svg-path-bounding-box
+
+    var p0 = [x0, y0];
+    var p1 = [x1, y1];
+    var p2 = [x2, y2];
+    var p3 = [x, y];
+
+    this.addPoint(x0, y0);
+    this.addPoint(x, y);
+
+    for (var i = 0; i <= 1; i++) {
+        var b = 6 * p0[i] - 12 * p1[i] + 6 * p2[i];
+        var a = -3 * p0[i] + 9 * p1[i] - 9 * p2[i] + 3 * p3[i];
+        var c = 3 * p1[i] - 3 * p0[i];
+
+        if (a === 0) {
+            if (b === 0) continue;
+            var t = -c / b;
+            if (0 < t && t < 1) {
+                if (i === 0) this.addX(derive(p0[i], p1[i], p2[i], p3[i], t));
+                if (i === 1) this.addY(derive(p0[i], p1[i], p2[i], p3[i], t));
+            }
+            continue;
+        }
+
+        var b2ac = Math.pow(b, 2) - 4 * c * a;
+        if (b2ac < 0) continue;
+        var t1 = (-b + Math.sqrt(b2ac)) / (2 * a);
+        if (0 < t1 && t1 < 1) {
+            if (i === 0) this.addX(derive(p0[i], p1[i], p2[i], p3[i], t1));
+            if (i === 1) this.addY(derive(p0[i], p1[i], p2[i], p3[i], t1));
+        }
+        var t2 = (-b - Math.sqrt(b2ac)) / (2 * a);
+        if (0 < t2 && t2 < 1) {
+            if (i === 0) this.addX(derive(p0[i], p1[i], p2[i], p3[i], t2));
+            if (i === 1) this.addY(derive(p0[i], p1[i], p2[i], p3[i], t2));
+        }
+    }
+};
+
+/**
+ * Add a quadratic curve to the bounding box.
+ * This extends the bounding box to include the entire quadratic curve.
+ * @param {number} x0 - The starting X coordinate.
+ * @param {number} y0 - The starting Y coordinate.
+ * @param {number} x1 - The X coordinate of the control point.
+ * @param {number} y1 - The Y coordinate of the control point.
+ * @param {number} x - The ending X coordinate.
+ * @param {number} y - The ending Y coordinate.
+ */
+BoundingBox.prototype.addQuad = function(x0, y0, x1, y1, x, y) {
+    var cp1x = x0 + 2 / 3 * (x1 - x0);
+    var cp1y = y0 + 2 / 3 * (y1 - y0);
+    var cp2x = cp1x + 1 / 3 * (x - x0);
+    var cp2y = cp1y + 1 / 3 * (y - y0);
+    this.addBezier(x0, y0, cp1x, cp1y, cp2x, cp2y, x, y);
+};
+
+exports.BoundingBox = BoundingBox;
+
+},{}],3:[function(require,module,exports){
 // Run-time checking of preconditions.
 
 'use strict';
@@ -414,7 +576,7 @@ exports.argument = function(predicate, message) {
 // If not, it will throw an error.
 exports.assert = exports.argument;
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 // Drawing utility functions.
 
 'use strict';
@@ -429,7 +591,7 @@ function line(ctx, x1, y1, x2, y2) {
 
 exports.line = line;
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 // Glyph encoding
 
 'use strict';
@@ -712,7 +874,7 @@ exports.CffEncoding = CffEncoding;
 exports.GlyphNames = GlyphNames;
 exports.addGlyphNames = addGlyphNames;
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 // The Font object
 
 'use strict';
@@ -1198,7 +1360,7 @@ Font.prototype.usWeightClasses = {
 
 exports.Font = Font;
 
-},{"./encoding":4,"./glyphset":7,"./path":11,"./substitution":12,"./tables/sfnt":31,"./util":33,"fs":undefined}],6:[function(require,module,exports){
+},{"./encoding":5,"./glyphset":8,"./path":12,"./substitution":13,"./tables/sfnt":32,"./util":34,"fs":undefined}],7:[function(require,module,exports){
 // The Glyph object
 
 'use strict';
@@ -1303,6 +1465,14 @@ Glyph.prototype.addUnicode = function(unicode) {
     }
 
     this.unicodes.push(unicode);
+};
+
+/**
+ * Calculate the minimum bounding box for this glyph.
+ * @return {opentype.BoundingBox}
+ */
+Glyph.prototype.getBoundingBox = function() {
+    return this.path.getBoundingBox();
 };
 
 /**
@@ -1533,7 +1703,7 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
 
 exports.Glyph = Glyph;
 
-},{"./check":2,"./draw":3,"./path":11}],7:[function(require,module,exports){
+},{"./check":3,"./draw":4,"./path":12}],8:[function(require,module,exports){
 // The GlyphSet object
 
 'use strict';
@@ -1667,7 +1837,7 @@ exports.glyphLoader = glyphLoader;
 exports.ttfGlyphLoader = ttfGlyphLoader;
 exports.cffGlyphLoader = cffGlyphLoader;
 
-},{"./glyph":6}],8:[function(require,module,exports){
+},{"./glyph":7}],9:[function(require,module,exports){
 // The Layout object is the prototype of Substition objects, and provides utility methods to manipulate
 // common layout tables (GPOS, GSUB, GDEF...)
 
@@ -1911,7 +2081,7 @@ var Layout = {
 
 module.exports = Layout;
 
-},{"./check":2}],9:[function(require,module,exports){
+},{"./check":3}],10:[function(require,module,exports){
 // opentype.js
 // https://github.com/nodebox/opentype.js
 // (c) 2015 Frederik De Bleser
@@ -1927,6 +2097,7 @@ var encoding = require('./encoding');
 var _font = require('./font');
 var glyph = require('./glyph');
 var parse = require('./parse');
+var bbox = require('./bbox');
 var path = require('./path');
 var util = require('./util');
 
@@ -2297,11 +2468,12 @@ exports._parse = parse;
 exports.Font = _font.Font;
 exports.Glyph = glyph.Glyph;
 exports.Path = path.Path;
+exports.BoundingBox = bbox.BoundingBox;
 exports.parse = parseBuffer;
 exports.load = load;
 exports.loadSync = loadSync;
 
-},{"./encoding":4,"./font":5,"./glyph":6,"./parse":10,"./path":11,"./tables/cff":14,"./tables/cmap":15,"./tables/fvar":16,"./tables/glyf":17,"./tables/gpos":18,"./tables/gsub":19,"./tables/head":20,"./tables/hhea":21,"./tables/hmtx":22,"./tables/kern":23,"./tables/loca":24,"./tables/ltag":25,"./tables/maxp":26,"./tables/meta":27,"./tables/name":28,"./tables/os2":29,"./tables/post":30,"./util":33,"fs":undefined,"tiny-inflate":1}],10:[function(require,module,exports){
+},{"./bbox":2,"./encoding":5,"./font":6,"./glyph":7,"./parse":11,"./path":12,"./tables/cff":15,"./tables/cmap":16,"./tables/fvar":17,"./tables/glyf":18,"./tables/gpos":19,"./tables/gsub":20,"./tables/head":21,"./tables/hhea":22,"./tables/hmtx":23,"./tables/kern":24,"./tables/loca":25,"./tables/ltag":26,"./tables/maxp":27,"./tables/meta":28,"./tables/name":29,"./tables/os2":30,"./tables/post":31,"./util":34,"fs":undefined,"tiny-inflate":1}],11:[function(require,module,exports){
 // Parsing utility functions
 
 'use strict';
@@ -2752,10 +2924,12 @@ Parser.prototype.parseLookupList = function(lookupTableParsers) {
 
 exports.Parser = Parser;
 
-},{"./check":2}],11:[function(require,module,exports){
+},{"./check":3}],12:[function(require,module,exports){
 // Geometric objects
 
 'use strict';
+
+var bbox = require('./bbox');
 
 /**
  * A bézier path containing a set of path commands similar to a SVG path.
@@ -2883,14 +3057,70 @@ Path.prototype.close = Path.prototype.closePath = function() {
 
 /**
  * Add the given path or list of commands to the commands of this path.
- * @param  {Array}
+ * @param  {Array} pathOrCommands - another opentype.Path, an opentype.BoundingBox, or an array of commands.
  */
 Path.prototype.extend = function(pathOrCommands) {
     if (pathOrCommands.commands) {
         pathOrCommands = pathOrCommands.commands;
+    } else if (pathOrCommands instanceof bbox.BoundingBox) {
+        var box = pathOrCommands;
+        this.moveTo(box.x1, box.y1);
+        this.lineTo(box.x2, box.y1);
+        this.lineTo(box.x2, box.y2);
+        this.lineTo(box.x1, box.y2);
+        this.close();
+        return;
     }
 
     Array.prototype.push.apply(this.commands, pathOrCommands);
+};
+
+/**
+ * Calculate the bounding box of the path.
+ * @returns {opentype.BoundingBox}
+ */
+Path.prototype.getBoundingBox = function() {
+    var box = new bbox.BoundingBox();
+
+    var startX = 0;
+    var startY = 0;
+    var prevX = 0;
+    var prevY = 0;
+    for (var i = 0; i < this.commands.length; i++) {
+        var cmd = this.commands[i];
+        switch (cmd.type) {
+            case 'M':
+                box.addPoint(cmd.x, cmd.y);
+                startX = prevX = cmd.x;
+                startY = prevY = cmd.y;
+                break;
+            case 'L':
+                box.addPoint(cmd.x, cmd.y);
+                prevX = cmd.x;
+                prevY = cmd.y;
+                break;
+            case 'Q':
+                box.addQuad(prevX, prevY, cmd.x1, cmd.y1, cmd.x, cmd.y);
+                prevX = cmd.x;
+                prevY = cmd.y;
+                break;
+            case 'C':
+                box.addBezier(prevX, prevY, cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
+                prevX = cmd.x;
+                prevY = cmd.y;
+                break;
+            case 'Z':
+                prevX = startX;
+                prevY = startY;
+                break;
+            default:
+                throw new Error('Unexpected path commmand ' + cmd.type);
+        }
+    }
+    if (box.isEmpty()) {
+        box.addPoint(0, 0);
+    }
+    return box;
 };
 
 /**
@@ -3001,9 +3231,18 @@ Path.prototype.toSVG = function(decimalPlaces) {
     return svg;
 };
 
+Path.prototype.toDOMElement = function(decimalPlaces) {
+    var temporaryPath = this.toPathData(decimalPlaces);
+    var newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+
+    newPath.setAttribute('d', temporaryPath);
+
+    return newPath;
+};
+
 exports.Path = Path;
 
-},{}],12:[function(require,module,exports){
+},{"./bbox":2}],13:[function(require,module,exports){
 // The Substitution object provides utility methods to manipulate
 // the GSUB substitution table.
 
@@ -3314,7 +3553,7 @@ Substitution.prototype.add = function(feature, sub, script, language) {
 
 module.exports = Substitution;
 
-},{"./check":2,"./layout":8}],13:[function(require,module,exports){
+},{"./check":3,"./layout":9}],14:[function(require,module,exports){
 // Table metadata
 
 'use strict';
@@ -3516,7 +3755,7 @@ exports.ushortList = ushortList;
 exports.tableList = tableList;
 exports.recordList = recordList;
 
-},{"./check":2,"./types":32}],14:[function(require,module,exports){
+},{"./check":3,"./types":33}],15:[function(require,module,exports){
 // The `CFF` table contains the glyph outlines in PostScript format.
 // https://www.microsoft.com/typography/OTSPEC/cff.htm
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf
@@ -4630,7 +4869,7 @@ function makeCFFTable(glyphs, options) {
 exports.parse = parseCFFTable;
 exports.make = makeCFFTable;
 
-},{"../encoding":4,"../glyphset":7,"../parse":10,"../path":11,"../table":13}],15:[function(require,module,exports){
+},{"../encoding":5,"../glyphset":8,"../parse":11,"../path":12,"../table":14}],16:[function(require,module,exports){
 // The `cmap` table stores the mappings from characters to glyphs.
 // https://www.microsoft.com/typography/OTSPEC/cmap.htm
 
@@ -4854,7 +5093,7 @@ function makeCmapTable(glyphs) {
 exports.parse = parseCmapTable;
 exports.make = makeCmapTable;
 
-},{"../check":2,"../parse":10,"../table":13}],16:[function(require,module,exports){
+},{"../check":3,"../parse":11,"../table":14}],17:[function(require,module,exports){
 // The `fvar` table stores font variation axes and instances.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6fvar.html
 
@@ -4995,7 +5234,7 @@ function parseFvarTable(data, start, names) {
 exports.make = makeFvarTable;
 exports.parse = parseFvarTable;
 
-},{"../check":2,"../parse":10,"../table":13}],17:[function(require,module,exports){
+},{"../check":3,"../parse":11,"../table":14}],18:[function(require,module,exports){
 // The `glyf` table describes the glyphs in TrueType outline format.
 // http://www.microsoft.com/typography/otspec/glyf.htm
 
@@ -5332,7 +5571,7 @@ function parseGlyfTable(data, start, loca, font) {
 
 exports.parse = parseGlyfTable;
 
-},{"../check":2,"../glyphset":7,"../parse":10,"../path":11}],18:[function(require,module,exports){
+},{"../check":3,"../glyphset":8,"../parse":11,"../path":12}],19:[function(require,module,exports){
 // The `GPOS` table contains kerning pairs, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 
@@ -5570,7 +5809,7 @@ function parseGposTable(data, start, font) {
 
 exports.parse = parseGposTable;
 
-},{"../check":2,"../parse":10}],19:[function(require,module,exports){
+},{"../check":3,"../parse":11}],20:[function(require,module,exports){
 // The `GSUB` table contains ligatures, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gsub.htm
 
@@ -5830,7 +6069,7 @@ function makeGsubTable(gsub) {
 exports.parse = parseGsubTable;
 exports.make = makeGsubTable;
 
-},{"../check":2,"../parse":10,"../table":13}],20:[function(require,module,exports){
+},{"../check":3,"../parse":11,"../table":14}],21:[function(require,module,exports){
 // The `head` table contains global information about the font.
 // https://www.microsoft.com/typography/OTSPEC/head.htm
 
@@ -5898,7 +6137,7 @@ function makeHeadTable(options) {
 exports.parse = parseHeadTable;
 exports.make = makeHeadTable;
 
-},{"../check":2,"../parse":10,"../table":13}],21:[function(require,module,exports){
+},{"../check":3,"../parse":11,"../table":14}],22:[function(require,module,exports){
 // The `hhea` table contains information for horizontal layout.
 // https://www.microsoft.com/typography/OTSPEC/hhea.htm
 
@@ -5953,7 +6192,7 @@ function makeHheaTable(options) {
 exports.parse = parseHheaTable;
 exports.make = makeHheaTable;
 
-},{"../parse":10,"../table":13}],22:[function(require,module,exports){
+},{"../parse":11,"../table":14}],23:[function(require,module,exports){
 // The `hmtx` table contains the horizontal metrics for all glyphs.
 // https://www.microsoft.com/typography/OTSPEC/hmtx.htm
 
@@ -5997,7 +6236,7 @@ function makeHmtxTable(glyphs) {
 exports.parse = parseHmtxTable;
 exports.make = makeHmtxTable;
 
-},{"../parse":10,"../table":13}],23:[function(require,module,exports){
+},{"../parse":11,"../table":14}],24:[function(require,module,exports){
 // The `kern` table contains kerning pairs.
 // Note that some fonts use the GPOS OpenType layout table to specify kerning.
 // https://www.microsoft.com/typography/OTSPEC/kern.htm
@@ -6070,7 +6309,7 @@ function parseKernTable(data, start) {
 
 exports.parse = parseKernTable;
 
-},{"../check":2,"../parse":10}],24:[function(require,module,exports){
+},{"../check":3,"../parse":11}],25:[function(require,module,exports){
 // The `loca` table stores the offsets to the locations of the glyphs in the font.
 // https://www.microsoft.com/typography/OTSPEC/loca.htm
 
@@ -6105,7 +6344,7 @@ function parseLocaTable(data, start, numGlyphs, shortVersion) {
 
 exports.parse = parseLocaTable;
 
-},{"../parse":10}],25:[function(require,module,exports){
+},{"../parse":11}],26:[function(require,module,exports){
 // The `ltag` table stores IETF BCP-47 language tags. It allows supporting
 // languages for which TrueType does not assign a numeric code.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6ltag.html
@@ -6168,7 +6407,7 @@ function parseLtagTable(data, start) {
 exports.make = makeLtagTable;
 exports.parse = parseLtagTable;
 
-},{"../check":2,"../parse":10,"../table":13}],26:[function(require,module,exports){
+},{"../check":3,"../parse":11,"../table":14}],27:[function(require,module,exports){
 // The `maxp` table establishes the memory requirements for the font.
 // We need it just to get the number of glyphs in the font.
 // https://www.microsoft.com/typography/OTSPEC/maxp.htm
@@ -6213,7 +6452,7 @@ function makeMaxpTable(numGlyphs) {
 exports.parse = parseMaxpTable;
 exports.make = makeMaxpTable;
 
-},{"../parse":10,"../table":13}],27:[function(require,module,exports){
+},{"../parse":11,"../table":14}],28:[function(require,module,exports){
 // The `GPOS` table contains kerning pairs, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 
@@ -6276,7 +6515,7 @@ function makeMetaTable(tags) {
 exports.parse = parseMetaTable;
 exports.make = makeMetaTable;
 
-},{"../check":2,"../parse":10,"../table":13,"../types":32}],28:[function(require,module,exports){
+},{"../check":3,"../parse":11,"../table":14,"../types":33}],29:[function(require,module,exports){
 // The `name` naming table.
 // https://www.microsoft.com/typography/OTSPEC/name.htm
 
@@ -7113,7 +7352,7 @@ function makeNameTable(names, ltag) {
 exports.parse = parseNameTable;
 exports.make = makeNameTable;
 
-},{"../parse":10,"../table":13,"../types":32}],29:[function(require,module,exports){
+},{"../parse":11,"../table":14,"../types":33}],30:[function(require,module,exports){
 // The `OS/2` table contains metrics required in OpenType fonts.
 // https://www.microsoft.com/typography/OTSPEC/os2.htm
 
@@ -7369,7 +7608,7 @@ exports.getUnicodeRange = getUnicodeRange;
 exports.parse = parseOS2Table;
 exports.make = makeOS2Table;
 
-},{"../parse":10,"../table":13}],30:[function(require,module,exports){
+},{"../parse":11,"../table":14}],31:[function(require,module,exports){
 // The `post` table stores additional PostScript information, such as glyph names.
 // https://www.microsoft.com/typography/OTSPEC/post.htm
 
@@ -7442,7 +7681,7 @@ function makePostTable() {
 exports.parse = parsePostTable;
 exports.make = makePostTable;
 
-},{"../encoding":4,"../parse":10,"../table":13}],31:[function(require,module,exports){
+},{"../encoding":5,"../parse":11,"../table":14}],32:[function(require,module,exports){
 // The `sfnt` wrapper provides organization for the tables in the font.
 // It is the top-level data structure in a font.
 // https://www.microsoft.com/typography/OTSPEC/otff.htm
@@ -7786,7 +8025,7 @@ exports.computeCheckSum = computeCheckSum;
 exports.make = makeSfntTable;
 exports.fontToTable = fontToSfntTable;
 
-},{"../check":2,"../table":13,"./cff":14,"./cmap":15,"./gsub":19,"./head":20,"./hhea":21,"./hmtx":22,"./ltag":25,"./maxp":26,"./meta":27,"./name":28,"./os2":29,"./post":30}],32:[function(require,module,exports){
+},{"../check":3,"../table":14,"./cff":15,"./cmap":16,"./gsub":20,"./head":21,"./hhea":22,"./hmtx":23,"./ltag":26,"./maxp":27,"./meta":28,"./name":29,"./os2":30,"./post":31}],33:[function(require,module,exports){
 // Data types used in the OpenType font file.
 // All OpenType fonts use Motorola-style byte ordering (Big Endian)
 
@@ -8653,7 +8892,7 @@ exports.decode = decode;
 exports.encode = encode;
 exports.sizeOf = sizeOf;
 
-},{"./check":2}],33:[function(require,module,exports){
+},{"./check":3}],34:[function(require,module,exports){
 'use strict';
 
 exports.isBrowser = function() {
@@ -8690,5 +8929,5 @@ exports.checkArgument = function(expression, message) {
     }
 };
 
-},{}]},{},[9])(9)
+},{}]},{},[10])(10)
 });
