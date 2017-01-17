@@ -129,13 +129,13 @@ function displayGlyphData(glyphIndex) {
         return;
     }
     var glyph = font.glyphs.get(glyphIndex),
-        html;
-    html = '<dt>name</dt><dd>'+glyph.name+'</dd>';
+        html = '<dl>';
+    html += '<dt>name</dt><dd>'+glyph.name+'</dd>';
 
     if (glyph.unicodes.length > 0) {
         html += '<dt>unicode</dt><dd>'+ glyph.unicodes.map(formatUnicode).join(', ') +'</dd>';
     }
-    html += '<dl><dt>index</dt><dd>'+glyph.index+'</dd>';
+    html += '<dt>index</dt><dd>'+glyph.index+'</dd>';
 
     if (glyph.xMin !== 0 || glyph.xMax !== 0 || glyph.yMin !== 0 || glyph.yMax !== 0) {
         html += '<dt>xMin</dt><dd>'+glyph.xMin+'</dd>' +
@@ -150,7 +150,7 @@ function displayGlyphData(glyphIndex) {
     html += '</dl>';
     if (glyph.numberOfContours > 0) {
         var contours = glyph.getContours();
-        html += 'contours:<br>' + contours.map(contourToString).join('\n');
+        html += 'contours:<div id="glyph-contours">' + contours.map(contourToString).join('\n') + '</div>';
     } else if (glyph.isComposite) {
         html += '<br>This composite glyph is a combination of :<ul><li>' +
             glyph.components.map(function(component) {

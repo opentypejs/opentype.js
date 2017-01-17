@@ -144,6 +144,8 @@ Create a Path that represents the given text.
 
 Options is an optional object containing:
 * `kerning`: if true takes kerning information into account (default: true)
+* `features`: an object with [OpenType feature tags](https://www.microsoft.com/typography/otspec/featuretags.htm) as keys, and a boolean value to enable each feature.
+Currently only ligature features "liga" and "rlig" are supported (default: true).
 
 _Note: there is also `Font.getPaths` with the same arguments which returns a list of Paths._
 
@@ -252,7 +254,7 @@ Convert the path to a SVG &lt;path&gt; element, as a string.
 
 Planned
 =======
-* Support for ligatures and contextual alternates.
+* Support for contextual alternates.
 
 Thanks
 ======
