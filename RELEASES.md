@@ -1,3 +1,7 @@
+0.6.9 (Jan 17, 2017)
+====================
+* Add ligature rendering (thanks @fpirsch!)
+
 0.6.8 (Jan 9, 2017)
 =========================
 * Add a `getBoundingBox` method to the `Path` and `Glyph` objects.

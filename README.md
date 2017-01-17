@@ -34,6 +34,7 @@ Features
 * Support for composite glyphs (accented letters).
 * Support for WOFF, OTF, TTF (both with TrueType `glyf` and PostScript `cff` outlines)
 * Support for kerning (Using GPOS or the kern table).
+* Support for ligatures.
 * Very efficient.
 * Runs in the browser and node.js.
 

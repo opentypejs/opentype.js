@@ -5,7 +5,7 @@
  * opentype.js:
  *   license: MIT (http://opensource.org/licenses/MIT)
  *   author: Frederik De Bleser <frederik@debleser.be>
- *   version: 0.6.8
+ *   version: 0.6.9
  *
  * tiny-inflate:
  *   license: MIT (http://opensource.org/licenses/MIT)
@@ -1013,15 +1013,47 @@ Font.prototype.charToGlyph = function(c) {
  * glyphs, so the list of returned glyphs can be larger or smaller than the
  * length of the given string.
  * @param  {string}
+ * @param  {GlyphRenderOptions} [options]
  * @return {opentype.Glyph[]}
  */
-Font.prototype.stringToGlyphs = function(s) {
-    var glyphs = [];
-    for (var i = 0; i < s.length; i += 1) {
+Font.prototype.stringToGlyphs = function(s, options) {
+    options = options || this.defaultRenderOptions;
+    var i;
+    // Get glyph indexes
+    var indexes = [];
+    for (i = 0; i < s.length; i += 1) {
         var c = s[i];
-        glyphs.push(this.charToGlyph(c));
+        indexes.push(this.charToGlyphIndex(c));
+    }
+    var length = indexes.length;
+
+    // Apply substitutions on glyph indexes
+    if (options.features) {
+        var script = options.script || this.substitution.getDefaultScriptName();
+        var manyToOne = [];
+        if (options.features.liga) manyToOne = manyToOne.concat(this.substitution.getFeature('liga', script, options.language));
+        if (options.features.rlig) manyToOne = manyToOne.concat(this.substitution.getFeature('rlig', script, options.language));
+        for (i = 0; i < length; i += 1) {
+            for (var j = 0; j < manyToOne.length; j++) {
+                var ligature = manyToOne[j];
+                var components = ligature.sub;
+                var compCount = components.length;
+                var k = 0;
+                while (k < compCount && components[k] === indexes[i + k]) k++;
+                if (k === compCount) {
+                    indexes.splice(i, compCount, ligature.by);
+                    length = length - compCount + 1;
+                }
+            }
+        }
     }
 
+    // convert glyph indexes to glyph objects
+    var glyphs = new Array(length);
+    var notdef = this.glyphs.get(0);
+    for (i = 0; i < length; i += 1) {
+        glyphs[i] = this.glyphs.get(indexes[i]) || notdef;
+    }
     return glyphs;
 };
 
@@ -1080,8 +1112,21 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
 /**
  * @typedef GlyphRenderOptions
  * @type Object
- * @property {boolean} [kerning] - whether to include kerning values
+ * @property {string} [script] - script used to determine which features to apply. By default, 'DFLT' or 'latn' is used.
+ *                               See https://www.microsoft.com/typography/otspec/scripttags.htm
+ * @property {string} [language='dflt'] - language system used to determine which features to apply.
+ *                                        See https://www.microsoft.com/typography/developers/opentype/languagetags.aspx
+ * @property {boolean} [kerning=true] - whether to include kerning values
+ * @property {object} [features] - OpenType Layout feature tags. Used to enable or disable the features of the given script/language system.
+ *                                 See https://www.microsoft.com/typography/otspec/featuretags.htm
  */
+Font.prototype.defaultRenderOptions = {
+    kerning: true,
+    features: {
+        liga: true,
+        rlig: true
+    }
+};
 
 /**
  * Helper function that invokes the given callback for each glyph in the given text.
@@ -1097,10 +1142,9 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
-    options = options || {};
-    var kerning = options.kerning === undefined ? true : options.kerning;
+    options = options || this.defaultRenderOptions;
     var fontScale = 1 / this.unitsPerEm * fontSize;
-    var glyphs = this.stringToGlyphs(text);
+    var glyphs = this.stringToGlyphs(text, options);
     for (var i = 0; i < glyphs.length; i += 1) {
         var glyph = glyphs[i];
         callback(glyph, x, y, fontSize, options);
@@ -1108,7 +1152,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
             x += glyph.advanceWidth * fontScale;
         }
 
-        if (kerning && i < glyphs.length - 1) {
+        if (options.kerning && i < glyphs.length - 1) {
             var kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
             x += kerningValue * fontScale;
         }
@@ -1883,7 +1927,12 @@ function binSearch(arr, value) {
  * @exports opentype.Layout
  * @class
  */
-var Layout = {
+function Layout(font, tableName) {
+    this.font = font;
+    this.tableName = tableName;
+}
+
+Layout.prototype = {
 
     /**
      * Binary search an object by "tag" property
@@ -1895,6 +1944,7 @@ var Layout = {
      * @return {number}
      */
     searchTag: searchTag,
+
     /**
      * Binary search in a list of numbers
      * @instance
@@ -1907,33 +1957,65 @@ var Layout = {
     binSearch: binSearch,
 
     /**
+     * Get or create the Layout table (GSUB, GPOS etc).
+     * @param  {boolean} create - Whether to create a new one.
+     * @return {Object} The GSUB or GPOS table.
+     */
+    getTable: function(create) {
+        var layout = this.font.tables[this.tableName];
+        if (!layout && create) {
+            layout = this.font.tables[this.tableName] = this.createDefaultTable();
+        }
+        return layout;
+    },
+
+    /**
      * Returns all scripts in the substitution table.
      * @instance
      * @return {Array}
      */
     getScriptNames: function() {
-        var gsub = this.getGsubTable();
-        if (!gsub) { return []; }
-        return gsub.scripts.map(function(script) {
+        var layout = this.getTable();
+        if (!layout) { return []; }
+        return layout.scripts.map(function(script) {
             return script.tag;
         });
     },
 
     /**
+     * Returns the best bet for a script name.
+     * Returns 'DFLT' if it exists.
+     * If not, returns 'latn' if it exists.
+     * If neither exist, returns undefined.
+     */
+    getDefaultScriptName: function() {
+        var layout = this.getTable();
+        if (!layout) { return; }
+        var hasLatn = false;
+        for (var i = 0; i < layout.scripts.length; i++) {
+            var name = layout.scripts[i].tag;
+            if (name === 'DFLT') return name;
+            if (name === 'latn') hasLatn = true;
+        }
+        if (hasLatn) return 'latn';
+    },
+
+    /**
      * Returns all LangSysRecords in the given script.
      * @instance
-     * @param {string} script - Use 'DFLT' for default script
+     * @param {string} [script='DFLT']
      * @param {boolean} create - forces the creation of this script table if it doesn't exist.
      * @return {Object} An object with tag and script properties.
      */
     getScriptTable: function(script, create) {
-        var gsub = this.getGsubTable(create);
-        if (gsub) {
-            var scripts = gsub.scripts;
-            var pos = searchTag(gsub.scripts, script);
+        var layout = this.getTable(create);
+        if (layout) {
+            script = script || 'DFLT';
+            var scripts = layout.scripts;
+            var pos = searchTag(layout.scripts, script);
             if (pos >= 0) {
                 return scripts[pos].script;
-            } else {
+            } else if (create) {
                 var scr = {
                     tag: script,
                     script: {
@@ -1941,8 +2023,8 @@ var Layout = {
                         langSysRecords: []
                     }
                 };
-                scripts.splice(-1 - pos, 0, scr.script);
-                return scr;
+                scripts.splice(-1 - pos, 0, scr);
+                return scr.script;
             }
         }
     },
@@ -1950,15 +2032,15 @@ var Layout = {
     /**
      * Returns a language system table
      * @instance
-     * @param {string} script - Use 'DFLT' for default script
-     * @param {string} language - Use 'DFLT' for default language
+     * @param {string} [script='DFLT']
+     * @param {string} [language='dlft']
      * @param {boolean} create - forces the creation of this langSysTable if it doesn't exist.
      * @return {Object}
      */
     getLangSysTable: function(script, language, create) {
         var scriptTable = this.getScriptTable(script, create);
         if (scriptTable) {
-            if (language === 'DFLT') {
+            if (!language || language === 'dflt' || language === 'DFLT') {
                 return scriptTable.defaultLangSys;
             }
             var pos = searchTag(scriptTable.langSysRecords, language);
@@ -1978,8 +2060,8 @@ var Layout = {
     /**
      * Get a specific feature table.
      * @instance
-     * @param {string} script - Use 'DFLT' for default script
-     * @param {string} language - Use 'DFLT' for default language
+     * @param {string} [script='DFLT']
+     * @param {string} [language='dlft']
      * @param {string} feature - One of the codes listed at https://www.microsoft.com/typography/OTSPEC/featurelist.htm
      * @param {boolean} create - forces the creation of the feature table if it doesn't exist.
      * @return {Object}
@@ -1989,7 +2071,7 @@ var Layout = {
         if (langSysTable) {
             var featureRecord;
             var featIndexes = langSysTable.featureIndexes;
-            var allFeatures = this.font.tables.gsub.features;
+            var allFeatures = this.font.tables[this.tableName].features;
             // The FeatureIndex array of indices is in arbitrary order,
             // even if allFeatures is sorted alphabetically by feature tag.
             for (var i = 0; i < featIndexes.length; i++) {
@@ -2014,29 +2096,30 @@ var Layout = {
     },
 
     /**
-     * Get the first lookup table of a given type for a script/language/feature.
+     * Get the lookup tables of a given type for a script/language/feature.
      * @instance
-     * @param {string} script - Use 'DFLT' for default script
-     * @param {string} language - Use 'DFLT' for default language
+     * @param {string} [script='DFLT']
+     * @param {string} [language='dlft']
      * @param {string} feature - 4-letter feature code
      * @param {number} lookupType - 1 to 8
      * @param {boolean} create - forces the creation of the lookup table if it doesn't exist, with no subtables.
-     * @return {Object}
+     * @return {Object[]}
      */
-    getLookupTable: function(script, language, feature, lookupType, create) {
+    getLookupTables: function(script, language, feature, lookupType, create) {
         var featureTable = this.getFeatureTable(script, language, feature, create);
+        var tables = [];
         if (featureTable) {
             var lookupTable;
             var lookupListIndexes = featureTable.lookupListIndexes;
-            var allLookups = this.font.tables.gsub.lookups;
+            var allLookups = this.font.tables[this.tableName].lookups;
             // lookupListIndexes are in no particular order, so use naïve search.
             for (var i = 0; i < lookupListIndexes.length; i++) {
                 lookupTable = allLookups[lookupListIndexes[i]];
                 if (lookupTable.lookupType === lookupType) {
-                    return lookupTable;
+                    tables.push(lookupTable);
                 }
             }
-            if (create) {
+            if (tables.length === 0 && create) {
                 lookupTable = {
                     lookupType: lookupType,
                     lookupFlag: 0,
@@ -2046,9 +2129,10 @@ var Layout = {
                 var index = allLookups.length;
                 allLookups.push(lookupTable);
                 lookupListIndexes.push(index);
-                return lookupTable;
+                return [lookupTable];
             }
         }
+        return tables;
     },
 
     /**
@@ -3259,7 +3343,7 @@ var Layout = require('./layout');
  * @constructor
  */
 var Substitution = function(font) {
-    this.font = font;
+    Layout.call(this, font, 'gsub');
 };
 
 // Check if 2 arrays of primitives are equal.
@@ -3287,59 +3371,55 @@ function getSubstFormat(lookupTable, format, defaultSubtable) {
     }
 }
 
-Substitution.prototype = Layout;
+Substitution.prototype = Layout.prototype;
 
 /**
- * Get or create the GSUB table.
- * @param  {boolean} create - Whether to create a new one.
+ * Create a default GSUB table.
  * @return {Object} gsub - The GSUB table.
  */
-Substitution.prototype.getGsubTable = function(create) {
-    var gsub = this.font.tables.gsub;
-    if (!gsub && create) {
-        // Generate a default empty GSUB table with just a DFLT script and dflt lang sys.
-        this.font.tables.gsub = gsub = {
-            version: 1,
-            scripts: [{
-                tag: 'DFLT',
-                script: {
-                    defaultLangSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [] },
-                    langSysRecords: []
-                }
-            }],
-            features: [],
-            lookups: []
-        };
-    }
-    return gsub;
+Substitution.prototype.createDefaultTable = function() {
+    // Generate a default empty GSUB table with just a DFLT script and dflt lang sys.
+    return {
+        version: 1,
+        scripts: [{
+            tag: 'DFLT',
+            script: {
+                defaultLangSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [] },
+                langSysRecords: []
+            }
+        }],
+        features: [],
+        lookups: []
+    };
 };
 
 /**
  * List all single substitutions (lookup type 1) for a given script, language, and feature.
- * @param {string} script
- * @param {string} language
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dflt']
  * @param {string} feature - 4-character feature name ('aalt', 'salt', 'ss01'...)
  * @return {Array} substitutions - The list of substitutions.
  */
 Substitution.prototype.getSingle = function(feature, script, language) {
     var substitutions = [];
-    var lookupTable = this.getLookupTable(script, language, feature, 1);
-    if (!lookupTable) { return substitutions; }
-    var subtables = lookupTable.subtables;
-    for (var i = 0; i < subtables.length; i++) {
-        var subtable = subtables[i];
-        var glyphs = this.expandCoverage(subtable.coverage);
-        var j;
-        if (subtable.substFormat === 1) {
-            var delta = subtable.deltaGlyphId;
-            for (j = 0; j < glyphs.length; j++) {
-                var glyph = glyphs[j];
-                substitutions.push({ sub: glyph, by: glyph + delta });
-            }
-        } else {
-            var substitute = subtable.substitute;
-            for (j = 0; j < glyphs.length; j++) {
-                substitutions.push({ sub: glyphs[j], by: substitute[j] });
+    var lookupTables = this.getLookupTables(script, language, feature, 1);
+    for (var idx = 0; idx < lookupTables.length; idx++) {
+        var subtables = lookupTables[idx].subtables;
+        for (var i = 0; i < subtables.length; i++) {
+            var subtable = subtables[i];
+            var glyphs = this.expandCoverage(subtable.coverage);
+            var j;
+            if (subtable.substFormat === 1) {
+                var delta = subtable.deltaGlyphId;
+                for (j = 0; j < glyphs.length; j++) {
+                    var glyph = glyphs[j];
+                    substitutions.push({ sub: glyph, by: glyph + delta });
+                }
+            } else {
+                var substitute = subtable.substitute;
+                for (j = 0; j < glyphs.length; j++) {
+                    substitutions.push({ sub: glyphs[j], by: substitute[j] });
+                }
             }
         }
     }
@@ -3348,22 +3428,23 @@ Substitution.prototype.getSingle = function(feature, script, language) {
 
 /**
  * List all alternates (lookup type 3) for a given script, language, and feature.
- * @param {string} script
- * @param {string} language
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dflt']
  * @param {string} feature - 4-character feature name ('aalt', 'salt'...)
  * @return {Array} alternates - The list of alternates
  */
 Substitution.prototype.getAlternates = function(feature, script, language) {
     var alternates = [];
-    var lookupTable = this.getLookupTable(script, language, feature, 3);
-    if (!lookupTable) { return alternates; }
-    var subtables = lookupTable.subtables;
-    for (var i = 0; i < subtables.length; i++) {
-        var subtable = subtables[i];
-        var glyphs = this.expandCoverage(subtable.coverage);
-        var alternateSets = subtable.alternateSets;
-        for (var j = 0; j < glyphs.length; j++) {
-            alternates.push({ sub: glyphs[j], by: alternateSets[j] });
+    var lookupTables = this.getLookupTables(script, language, feature, 3);
+    for (var idx = 0; idx < lookupTables.length; idx++) {
+        var subtables = lookupTables[idx].subtables;
+        for (var i = 0; i < subtables.length; i++) {
+            var subtable = subtables[i];
+            var glyphs = this.expandCoverage(subtable.coverage);
+            var alternateSets = subtable.alternateSets;
+            for (var j = 0; j < glyphs.length; j++) {
+                alternates.push({ sub: glyphs[j], by: alternateSets[j] });
+            }
         }
     }
     return alternates;
@@ -3373,28 +3454,29 @@ Substitution.prototype.getAlternates = function(feature, script, language) {
  * List all ligatures (lookup type 4) for a given script, language, and feature.
  * The result is an array of ligature objects like { sub: [ids], by: id }
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
- * @param {string} script
- * @param {string} language
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dflt']
  * @return {Array} ligatures - The list of ligatures.
  */
 Substitution.prototype.getLigatures = function(feature, script, language) {
     var ligatures = [];
-    var lookupTable = this.getLookupTable(script, language, feature, 4);
-    if (!lookupTable) { return []; }
-    var subtables = lookupTable.subtables;
-    for (var i = 0; i < subtables.length; i++) {
-        var subtable = subtables[i];
-        var glyphs = this.expandCoverage(subtable.coverage);
-        var ligatureSets = subtable.ligatureSets;
-        for (var j = 0; j < glyphs.length; j++) {
-            var startGlyph = glyphs[j];
-            var ligSet = ligatureSets[j];
-            for (var k = 0; k < ligSet.length; k++) {
-                var lig = ligSet[k];
-                ligatures.push({
-                    sub: [startGlyph].concat(lig.components),
-                    by: lig.ligGlyph
-                });
+    var lookupTables = this.getLookupTables(script, language, feature, 4);
+    for (var idx = 0; idx < lookupTables.length; idx++) {
+        var subtables = lookupTables[idx].subtables;
+        for (var i = 0; i < subtables.length; i++) {
+            var subtable = subtables[i];
+            var glyphs = this.expandCoverage(subtable.coverage);
+            var ligatureSets = subtable.ligatureSets;
+            for (var j = 0; j < glyphs.length; j++) {
+                var startGlyph = glyphs[j];
+                var ligSet = ligatureSets[j];
+                for (var k = 0; k < ligSet.length; k++) {
+                    var lig = ligSet[k];
+                    ligatures.push({
+                        sub: [startGlyph].concat(lig.components),
+                        by: lig.ligGlyph
+                    });
+                }
             }
         }
     }
@@ -3407,10 +3489,10 @@ Substitution.prototype.getLigatures = function(feature, script, language) {
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} substitution - { sub: id, delta: number } for format 1 or { sub: id, by: id } for format 2.
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  */
 Substitution.prototype.addSingle = function(feature, substitution, script, language) {
-    var lookupTable = this.getLookupTable(script, language, feature, 1, true);
+    var lookupTable = this.getLookupTables(script, language, feature, 1, true)[0];
     var subtable = getSubstFormat(lookupTable, 2, {                // lookup type 1 subtable, format 2, coverage format 1
         substFormat: 2,
         coverage: { format: 1, glyphs: [] },
@@ -3432,10 +3514,10 @@ Substitution.prototype.addSingle = function(feature, substitution, script, langu
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} substitution - { sub: id, by: [ids] }
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  */
 Substitution.prototype.addAlternate = function(feature, substitution, script, language) {
-    var lookupTable = this.getLookupTable(script, language, feature, 3, true);
+    var lookupTable = this.getLookupTables(script, language, feature, 3, true)[0];
     var subtable = getSubstFormat(lookupTable, 1, {                // lookup type 3 subtable, format 1, coverage format 1
         substFormat: 1,
         coverage: { format: 1, glyphs: [] },
@@ -3458,12 +3540,10 @@ Substitution.prototype.addAlternate = function(feature, substitution, script, la
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} ligature - { sub: [ids], by: id }
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  */
 Substitution.prototype.addLigature = function(feature, ligature, script, language) {
-    script = script || 'DFLT';
-    language = language || 'DFLT';
-    var lookupTable = this.getLookupTable(script, language, feature, 4, true);
+    var lookupTable = this.getLookupTables(script, language, feature, 4, true)[0];
     var subtable = lookupTable.subtables[0];
     if (!subtable) {
         subtable = {                // lookup type 4 subtable, format 1, coverage format 1
@@ -3504,12 +3584,10 @@ Substitution.prototype.addLigature = function(feature, ligature, script, languag
  * List all feature data for a given script and language.
  * @param {string} feature - 4-letter feature name
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  * @return {Array} substitutions - The list of substitutions.
  */
 Substitution.prototype.getFeature = function(feature, script, language) {
-    script = script || 'DFLT';
-    language = language || 'DFLT';
     if (/ss\d\d/.test(feature)) {               // ss01 - ss20
         return this.getSingle(feature, script, language);
     }
@@ -3529,11 +3607,9 @@ Substitution.prototype.getFeature = function(feature, script, language) {
  * @param {string} feature - 4-letter feature name
  * @param {Object} sub - the substitution to add (an object like { sub: id or [ids], by: id or [ids] })
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  */
 Substitution.prototype.add = function(feature, sub, script, language) {
-    script = script || 'DFLT';
-    language = language || 'DFLT';
     if (/ss\d\d/.test(feature)) {               // ss01 - ss20
         return this.addSingle(feature, sub, script, language);
     }
@@ -5767,7 +5843,8 @@ function parseLookupTable(data, start) {
     if (lookupType === 2) {
         var subtables = [];
         for (var i = 0; i < subTableCount; i++) {
-            subtables.push(parsePairPosSubTable(data, start + subTableOffsets[i]));
+            var pairPosSubTable = parsePairPosSubTable(data, start + subTableOffsets[i]);
+            if (pairPosSubTable) subtables.push(pairPosSubTable);
         }
         // Return a function which finds the kerning values in the subtables.
         table.getKerningValue = function(leftGlyph, rightGlyph) {
