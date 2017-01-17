@@ -583,6 +583,122 @@ sizeOf.MACSTRING = function(str, encoding) {
     }
 };
 
+// Helper for encode.VARDELTAS
+function isByteEncodable(value) {
+    return value >= -128 && value <= 127;
+}
+
+// Helper for encode.VARDELTAS
+function encodeVarDeltaRunAsZeroes(deltas, pos, result) {
+    var runLength = 0;
+    var numDeltas = deltas.length;
+    while (pos < numDeltas && runLength < 64 && deltas[pos] === 0) {
+        ++pos;
+        ++runLength;
+    }
+    result.push(0x80 | (runLength - 1));
+    return pos;
+}
+
+// Helper for encode.VARDELTAS
+function encodeVarDeltaRunAsBytes(deltas, offset, result) {
+    var runLength = 0;
+    var numDeltas = deltas.length;
+    var pos = offset;
+    while (pos < numDeltas && runLength < 64) {
+        var value = deltas[pos];
+        if (!isByteEncodable(value)) {
+            break;
+        }
+
+        // Within a byte-encoded run of deltas, a single zero is best
+        // stored literally as 0x00 value. However, if we have two or
+        // more zeroes in a sequence, it is better to start a new run.
+        // Fore example, the sequence of deltas [15, 15, 0, 15, 15]
+        // becomes 6 bytes (04 0F 0F 00 0F 0F) when storing the zero
+        // within the current run, but 7 bytes (01 0F 0F 80 01 0F 0F)
+        // when starting a new run.
+        if (value === 0 && pos + 1 < numDeltas && deltas[pos + 1] === 0) {
+            break;
+        }
+
+        ++pos;
+        ++runLength;
+    }
+    result.push(runLength - 1);
+    for (var i = offset; i < pos; ++i) {
+        result.push((deltas[i] + 256) & 0xff);
+    }
+    return pos;
+}
+
+// Helper for encode.VARDELTAS
+function encodeVarDeltaRunAsWords(deltas, offset, result) {
+    var runLength = 0;
+    var numDeltas = deltas.length;
+    var pos = offset;
+    while (pos < numDeltas && runLength < 64) {
+        var value = deltas[pos];
+
+        // Within a word-encoded run of deltas, it is easiest to start
+        // a new run (with a different encoding) whenever we encounter
+        // a zero value. For example, the sequence [0x6666, 0, 0x7777]
+        // needs 7 bytes when storing the zero inside the current run
+        // (42 66 66 00 00 77 77), and equally 7 bytes when starting a
+        // new run (40 66 66 80 40 77 77).
+        if (value === 0) {
+            break;
+        }
+
+        // Within a word-encoded run of deltas, a single value in the
+        // range (-128..127) should be encoded within the current run
+        // because it is more compact. For example, the sequence
+        // [0x6666, 2, 0x7777] becomes 7 bytes when storing the value
+        // literally (42 66 66 00 02 77 77), but 8 bytes when starting
+        // a new run (40 66 66 00 02 40 77 77).
+        if (isByteEncodable(value) && pos + 1 < numDeltas && isByteEncodable(deltas[pos + 1])) {
+            break;
+        }
+
+        ++pos;
+        ++runLength;
+    }
+    result.push(0x40 | (runLength - 1));
+    for (var i = offset; i < pos; ++i) {
+        var val = deltas[i];
+        result.push(((val + 0x10000) >> 8) & 0xff, (val + 0x100) & 0xff);
+    }
+    return pos;
+}
+
+/**
+ * Encode a list of variation adjustment deltas.
+ *
+ * Variation adjustment deltas are used in ‘gvar’ and ‘cvar’ tables.
+ * They indicate how points (in ‘gvar’) or values (in ‘cvar’) get adjusted
+ * when generating instances of variation fonts.
+ *
+ * @see https://www.microsoft.com/typography/otspec/gvar.htm
+ * @see https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6gvar.html
+ * @param {Array}
+ * @return {Array}
+ */
+encode.VARDELTAS = function(deltas) {
+    var pos = 0;
+    var result = [];
+    while (pos < deltas.length) {
+        var value = deltas[pos];
+        if (value === 0) {
+            pos = encodeVarDeltaRunAsZeroes(deltas, pos, result);
+        } else if (value >= -128 && value <= 127) {
+            pos = encodeVarDeltaRunAsBytes(deltas, pos, result);
+        } else {
+            pos = encodeVarDeltaRunAsWords(deltas, pos, result);
+        }
+    }
+    return result;
+};
+
 // Convert a list of values to a CFF INDEX structure.
 // The values should be objects containing name / type / value.
 /**

@@ -545,4 +545,64 @@ describe('types.js', function() {
         assert.equal(hex(encode.LITERAL([0xff, 0x23, 0xA7])), 'FF 23 A7');
         assert.equal(sizeOf.LITERAL([0xff, 0x23, 0xA7]), 3);
     });
+
+    it('can encode VARDELTAS', function() {
+        var e = function(deltas) { return hex(encode.VARDELTAS(deltas)); };
+        assert.equal(e([]), '');
+
+        // zeroes
+        assert.equal(e([0]), '80');
+        assert.equal(e(new Array(64).fill(0)), 'BF');
+        assert.equal(e(new Array(65).fill(0)), 'BF 80');
+        assert.equal(e(new Array(100).fill(0)), 'BF A3');
+        assert.equal(e(new Array(256).fill(0)), 'BF BF BF BF');
+
+        // bytes
+        assert.equal(e([1]), '00 01');
+        assert.equal(e([1, 2, 3, 127, -128, -1, -2]), '06 01 02 03 7F 80 FF FE');
+        assert.equal(e(new Array(64).fill(127)),
+                     '3F ' + (new Array(64).fill('7F')).join(' '));
+        assert.equal(e(new Array(65).fill(127)),
+                     '3F ' + (new Array(64).fill('7F')).join(' ') + ' 00 7F');
+
+        // words
+        assert.equal(e([0x6666]), '40 66 66');
+        assert.equal(e([0x6666, 32767, -1, -32768]), '43 66 66 7F FF FF FF 80 00');
+        assert.equal(e(new Array(64).fill(0x1122)),
+                     '7F ' + (new Array(64).fill('11 22')).join(' '));
+        assert.equal(e(new Array(65).fill(0x1122)),
+                     '7F ' + (new Array(64).fill('11 22')).join(' ') + ' 40 11 22');
+
+        // bytes, zeroes
+        assert.equal(e([1, 0]), '01 01 00');
+        assert.equal(e([1, 0, 0]), '00 01 81');
+
+        // bytes, zeroes, bytes:
+        // a single zero is more compact when encoded within the bytes run
+        assert.equal(e([127, 127, 0, 127, 127]), '04 7F 7F 00 7F 7F');
+        // multiple zeroes are more compact when encoded into their own run
+        assert.equal(e([127, 127, 0, 0, 127, 127]), '01 7F 7F 81 01 7F 7F');
+        assert.equal(e([127, 127, 0, 0, 0, 127, 127]), '01 7F 7F 82 01 7F 7F');
+        assert.equal(e([127, 127, 0, 0, 0, 0, 127, 127]), '01 7F 7F 83 01 7F 7F');
+
+        // words, zeroes
+        assert.equal(e([0x6789, 0]), '40 67 89 80');
+        assert.equal(e([0x6666, 0, 0]), '40 66 66 81');
+
+        // words, zeroes, bytes
+        assert.equal(e([0x6666, 0, 1, 2, 3]), '40 66 66 80 02 01 02 03');
+        assert.equal(e([0x6666, 0, 0, 1, 2, 3]), '40 66 66 81 02 01 02 03');
+        assert.equal(e([0x6666, 0, 0, 0, 1, 2, 3]), '40 66 66 82 02 01 02 03');
+
+        // words, zeroes, words
+        assert.equal(e([0x6666, 0, 0x7777]), '40 66 66 80 40 77 77');
+        assert.equal(e([0x6666, 0, 0, 0x7777]), '40 66 66 81 40 77 77');
+        assert.equal(e([0x6666, 0, 0, 0, 0x7777]), '40 66 66 82 40 77 77');
+
+        // words, bytes, words:
+        // a single byte-encodable word is more compact when encoded within the words run
+        assert.equal(e([0x6666, 2, 0x7777]), '42 66 66 00 02 77 77');
+        // multiple byte-encodable words are more compated when forming their own run
+        assert.equal(e([0x6666, 2, 2, 0x7777]), '40 66 66 01 02 02 40 77 77');
+    });
 });
