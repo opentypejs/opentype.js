@@ -136,15 +136,47 @@ Font.prototype.charToGlyph = function(c) {
  * glyphs, so the list of returned glyphs can be larger or smaller than the
  * length of the given string.
  * @param  {string}
+ * @param  {GlyphRenderOptions} [options]
  * @return {opentype.Glyph[]}
  */
-Font.prototype.stringToGlyphs = function(s) {
-    var glyphs = [];
-    for (var i = 0; i < s.length; i += 1) {
+Font.prototype.stringToGlyphs = function(s, options) {
+    options = options || this.defaultRenderOptions;
+    var i;
+    // Get glyph indexes
+    var indexes = [];
+    for (i = 0; i < s.length; i += 1) {
         var c = s[i];
-        glyphs.push(this.charToGlyph(c));
+        indexes.push(this.charToGlyphIndex(c));
+    }
+    var length = indexes.length;
+
+    // Apply substitutions on glyph indexes
+    if (options.features) {
+        var script = options.script || this.substitution.getDefaultScriptName();
+        var manyToOne = [];
+        if (options.features.liga) manyToOne = manyToOne.concat(this.substitution.getFeature('liga', script, options.language));
+        if (options.features.rlig) manyToOne = manyToOne.concat(this.substitution.getFeature('rlig', script, options.language));
+        for (i = 0; i < length; i += 1) {
+            for (var j = 0; j < manyToOne.length; j++) {
+                var ligature = manyToOne[j];
+                var components = ligature.sub;
+                var compCount = components.length;
+                var k = 0;
+                while (k < compCount && components[k] === indexes[i + k]) k++;
+                if (k === compCount) {
+                    indexes.splice(i, compCount, ligature.by);
+                    length = length - compCount + 1;
+                }
+            }
+        }
     }
 
+    // convert glyph indexes to glyph objects
+    var glyphs = new Array(length);
+    var notdef = this.glyphs.get(0);
+    for (i = 0; i < length; i += 1) {
+        glyphs[i] = this.glyphs.get(indexes[i]) || notdef;
+    }
     return glyphs;
 };
 
@@ -203,8 +235,21 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
 /**
  * @typedef GlyphRenderOptions
  * @type Object
- * @property {boolean} [kerning] - whether to include kerning values
+ * @property {string} [script] - script used to determine which features to apply. By default, 'DFLT' or 'latn' is used.
+ *                               See https://www.microsoft.com/typography/otspec/scripttags.htm
+ * @property {string} [language='dflt'] - language system used to determine which features to apply.
+ *                                        See https://www.microsoft.com/typography/developers/opentype/languagetags.aspx
+ * @property {boolean} [kerning=true] - whether to include kerning values
+ * @property {object} [features] - OpenType Layout feature tags. Used to enable or disable the features of the given script/language system.
+ *                                 See https://www.microsoft.com/typography/otspec/featuretags.htm
  */
+Font.prototype.defaultRenderOptions = {
+    kerning: true,
+    features: {
+        liga: true,
+        rlig: true
+    }
+};
 
 /**
  * Helper function that invokes the given callback for each glyph in the given text.
@@ -220,10 +265,9 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
-    options = options || {};
-    var kerning = options.kerning === undefined ? true : options.kerning;
+    options = options || this.defaultRenderOptions;
     var fontScale = 1 / this.unitsPerEm * fontSize;
-    var glyphs = this.stringToGlyphs(text);
+    var glyphs = this.stringToGlyphs(text, options);
     for (var i = 0; i < glyphs.length; i += 1) {
         var glyph = glyphs[i];
         callback(glyph, x, y, fontSize, options);
@@ -231,7 +275,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
             x += glyph.advanceWidth * fontScale;
         }
 
-        if (kerning && i < glyphs.length - 1) {
+        if (options.kerning && i < glyphs.length - 1) {
             var kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
             x += kerningValue * fontScale;
         }

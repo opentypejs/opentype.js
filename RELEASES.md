@@ -1,3 +1,20 @@
+0.6.9 (Jan 17, 2017)
+====================
+* Add ligature rendering (thanks @fpirsch!)
+
+0.6.8 (Jan 9, 2017)
+=========================
+* Add a `getBoundingBox` method to the `Path` and `Glyph` objects.
+
+0.6.7 (Jan 5, 2017)
+=========================
+* Add basic support for Mac OS X format kern tables.
+
+0.6.6 (October 25, 2016)
+=========================
+* Add support for letter-spacing and tracking (thanks @lachmanski!).
+* Fixed a bug in the nameToGlyph function.
+
 0.6.5 (September 9, 2016)
 =========================
 * GSUB reading and writing by @fpirsch. This is still missing a user-friendly API.

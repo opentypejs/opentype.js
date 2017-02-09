@@ -44,14 +44,9 @@ describe('substitution.js', function() {
         substitution = new Substitution(font);
     });
 
-    describe('getGsubTable', function() {
-        it('must not create an empty default GSUB table', function() {
-            assert.equal(substitution.getGsubTable(), undefined);
-            assert.equal(substitution.getGsubTable(false), undefined);
-        });
-
-        it('can create an empty default GSUB table', function() {
-            assert.deepEqual(substitution.getGsubTable(true), {
+    describe('createDefaultTable', function() {
+        it('must return an empty default GSUB table', function() {
+            assert.deepEqual(substitution.createDefaultTable(), {
                 version: 1,
                 scripts: [{
                     tag: 'DFLT',

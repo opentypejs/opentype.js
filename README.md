@@ -34,6 +34,7 @@ Features
 * Support for composite glyphs (accented letters).
 * Support for WOFF, OTF, TTF (both with TrueType `glyf` and PostScript `cff` outlines)
 * Support for kerning (Using GPOS or the kern table).
+* Support for ligatures.
 * Very efficient.
 * Runs in the browser and node.js.
 
@@ -144,6 +145,8 @@ Create a Path that represents the given text.
 
 Options is an optional object containing:
 * `kerning`: if true takes kerning information into account (default: true)
+* `features`: an object with [OpenType feature tags](https://www.microsoft.com/typography/otspec/featuretags.htm) as keys, and a boolean value to enable each feature.
+Currently only ligature features "liga" and "rlig" are supported (default: true).
 
 _Note: there is also `Font.getPaths` with the same arguments which returns a list of Paths._
 
@@ -195,6 +198,10 @@ Get a scaled glyph Path object we can draw on a drawing context.
 * `y`: Vertical position of the *baseline* of the glyph. (default: 0)
 * `fontSize`: Font size in pixels (default: 72).
 
+##### `Glyph.getBoundingBox()`
+Calculate the minimum bounding box for the unscaled path of the given glyph. Returns an `opentype.BoundingBox` object that contains x1/y1/x2/y2.
+If the glyph has no points (e.g. a space character), all coordinates will be zero.
+
 ##### `Glyph.draw(ctx, x, y, fontSize)`
 Draw the glyph on the given context.
 * `ctx`: The drawing context.
@@ -226,6 +233,10 @@ Once you have a path through `Font.getPath` or `Glyph.getPath`, you can use it.
 Draw the path on the given 2D context. This uses the `fill`, `stroke` and `strokeWidth` properties of the `Path` object.
 * `ctx`: The drawing context.
 
+##### `Path.getBoundingBox()`
+Calculate the minimum bounding box for the given path. Returns an `opentype.BoundingBox` object that contains x1/y1/x2/y2.
+If the path is empty (e.g. a space character), all coordinates will be zero.
+
 ##### `Path.toPathData(decimalPlaces)`
 Convert the Path to a string of path data instructions.
 See http://www.w3.org/TR/SVG/paths.html#PathData
@@ -244,7 +255,7 @@ Convert the path to a SVG &lt;path&gt; element, as a string.
 
 Planned
 =======
-* Support for ligatures and contextual alternates.
+* Support for contextual alternates.
 
 Thanks
 ======

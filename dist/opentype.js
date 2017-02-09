@@ -5,7 +5,7 @@
  * opentype.js:
  *   license: MIT (http://opensource.org/licenses/MIT)
  *   author: Frederik De Bleser <frederik@debleser.be>
- *   version: 0.6.5
+ *   version: 0.6.9
  *
  * tiny-inflate:
  *   license: MIT (http://opensource.org/licenses/MIT)
@@ -394,6 +394,168 @@ length_base[28] = 258;
 module.exports = tinf_uncompress;
 
 },{}],2:[function(require,module,exports){
+// The Bounding Box object
+
+'use strict';
+
+function derive(v0, v1, v2, v3, t) {
+    return Math.pow(1 - t, 3) * v0 +
+        3 * Math.pow(1 - t, 2) * t * v1 +
+        3 * (1 - t) * Math.pow(t, 2) * v2 +
+        Math.pow(t, 3) * v3;
+}
+/**
+ * A bounding box is an enclosing box that describes the smallest measure within which all the points lie.
+ * It is used to calculate the bounding box of a glyph or text path.
+ *
+ * On initialization, x1/y1/x2/y2 will be NaN. Check if the bounding box is empty using `isEmpty()`.
+ *
+ * @exports opentype.BoundingBox
+ * @class
+ * @constructor
+ */
+function BoundingBox() {
+    this.x1 = Number.NaN;
+    this.y1 = Number.NaN;
+    this.x2 = Number.NaN;
+    this.y2 = Number.NaN;
+}
+
+/**
+ * Returns true if the bounding box is empty, that is, no points have been added to the box yet.
+ */
+BoundingBox.prototype.isEmpty = function() {
+    return isNaN(this.x1) || isNaN(this.y1) || isNaN(this.x2) || isNaN(this.y2);
+};
+
+/**
+ * Add the point to the bounding box.
+ * The x1/y1/x2/y2 coordinates of the bounding box will now encompass the given point.
+ * @param {number} x - The X coordinate of the point.
+ * @param {number} y - The Y coordinate of the point.
+ */
+BoundingBox.prototype.addPoint = function(x, y) {
+    if (typeof x === 'number') {
+        if (isNaN(this.x1) || isNaN(this.x2)) {
+            this.x1 = x;
+            this.x2 = x;
+        }
+        if (x < this.x1) {
+            this.x1 = x;
+        }
+        if (x > this.x2) {
+            this.x2 = x;
+        }
+    }
+    if (typeof y === 'number') {
+        if (isNaN(this.y1) || isNaN(this.y2)) {
+            this.y1 = y;
+            this.y2 = y;
+        }
+        if (y < this.y1) {
+            this.y1 = y;
+        }
+        if (y > this.y2) {
+            this.y2 = y;
+        }
+    }
+};
+
+/**
+ * Add a X coordinate to the bounding box.
+ * This extends the bounding box to include the X coordinate.
+ * This function is used internally inside of addBezier.
+ * @param {number} x - The X coordinate of the point.
+ */
+BoundingBox.prototype.addX = function(x) {
+    this.addPoint(x, null);
+};
+
+/**
+ * Add a Y coordinate to the bounding box.
+ * This extends the bounding box to include the Y coordinate.
+ * This function is used internally inside of addBezier.
+ * @param {number} y - The Y coordinate of the point.
+ */
+BoundingBox.prototype.addY = function(y) {
+    this.addPoint(null, y);
+};
+
+/**
+ * Add a Bézier curve to the bounding box.
+ * This extends the bounding box to include the entire Bézier.
+ * @param {number} x0 - The starting X coordinate.
+ * @param {number} y0 - The starting Y coordinate.
+ * @param {number} x1 - The X coordinate of the first control point.
+ * @param {number} y1 - The Y coordinate of the first control point.
+ * @param {number} x2 - The X coordinate of the second control point.
+ * @param {number} y2 - The Y coordinate of the second control point.
+ * @param {number} x - The ending X coordinate.
+ * @param {number} y - The ending Y coordinate.
+ */
+BoundingBox.prototype.addBezier = function(x0, y0, x1, y1, x2, y2, x, y) {
+    // This code is based on http://nishiohirokazu.blogspot.com/2009/06/how-to-calculate-bezier-curves-bounding.html
+    // and https://github.com/icons8/svg-path-bounding-box
+
+    var p0 = [x0, y0];
+    var p1 = [x1, y1];
+    var p2 = [x2, y2];
+    var p3 = [x, y];
+
+    this.addPoint(x0, y0);
+    this.addPoint(x, y);
+
+    for (var i = 0; i <= 1; i++) {
+        var b = 6 * p0[i] - 12 * p1[i] + 6 * p2[i];
+        var a = -3 * p0[i] + 9 * p1[i] - 9 * p2[i] + 3 * p3[i];
+        var c = 3 * p1[i] - 3 * p0[i];
+
+        if (a === 0) {
+            if (b === 0) continue;
+            var t = -c / b;
+            if (0 < t && t < 1) {
+                if (i === 0) this.addX(derive(p0[i], p1[i], p2[i], p3[i], t));
+                if (i === 1) this.addY(derive(p0[i], p1[i], p2[i], p3[i], t));
+            }
+            continue;
+        }
+
+        var b2ac = Math.pow(b, 2) - 4 * c * a;
+        if (b2ac < 0) continue;
+        var t1 = (-b + Math.sqrt(b2ac)) / (2 * a);
+        if (0 < t1 && t1 < 1) {
+            if (i === 0) this.addX(derive(p0[i], p1[i], p2[i], p3[i], t1));
+            if (i === 1) this.addY(derive(p0[i], p1[i], p2[i], p3[i], t1));
+        }
+        var t2 = (-b - Math.sqrt(b2ac)) / (2 * a);
+        if (0 < t2 && t2 < 1) {
+            if (i === 0) this.addX(derive(p0[i], p1[i], p2[i], p3[i], t2));
+            if (i === 1) this.addY(derive(p0[i], p1[i], p2[i], p3[i], t2));
+        }
+    }
+};
+
+/**
+ * Add a quadratic curve to the bounding box.
+ * This extends the bounding box to include the entire quadratic curve.
+ * @param {number} x0 - The starting X coordinate.
+ * @param {number} y0 - The starting Y coordinate.
+ * @param {number} x1 - The X coordinate of the control point.
+ * @param {number} y1 - The Y coordinate of the control point.
+ * @param {number} x - The ending X coordinate.
+ * @param {number} y - The ending Y coordinate.
+ */
+BoundingBox.prototype.addQuad = function(x0, y0, x1, y1, x, y) {
+    var cp1x = x0 + 2 / 3 * (x1 - x0);
+    var cp1y = y0 + 2 / 3 * (y1 - y0);
+    var cp2x = cp1x + 1 / 3 * (x - x0);
+    var cp2y = cp1y + 1 / 3 * (y - y0);
+    this.addBezier(x0, y0, cp1x, cp1y, cp2x, cp2y, x, y);
+};
+
+exports.BoundingBox = BoundingBox;
+
+},{}],3:[function(require,module,exports){
 // Run-time checking of preconditions.
 
 'use strict';
@@ -414,7 +576,7 @@ exports.argument = function(predicate, message) {
 // If not, it will throw an error.
 exports.assert = exports.argument;
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 // Drawing utility functions.
 
 'use strict';
@@ -429,7 +591,7 @@ function line(ctx, x1, y1, x2, y2) {
 
 exports.line = line;
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 // Glyph encoding
 
 'use strict';
@@ -712,7 +874,7 @@ exports.CffEncoding = CffEncoding;
 exports.GlyphNames = GlyphNames;
 exports.addGlyphNames = addGlyphNames;
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 // The Font object
 
 'use strict';
@@ -851,15 +1013,47 @@ Font.prototype.charToGlyph = function(c) {
  * glyphs, so the list of returned glyphs can be larger or smaller than the
  * length of the given string.
  * @param  {string}
+ * @param  {GlyphRenderOptions} [options]
  * @return {opentype.Glyph[]}
  */
-Font.prototype.stringToGlyphs = function(s) {
-    var glyphs = [];
-    for (var i = 0; i < s.length; i += 1) {
+Font.prototype.stringToGlyphs = function(s, options) {
+    options = options || this.defaultRenderOptions;
+    var i;
+    // Get glyph indexes
+    var indexes = [];
+    for (i = 0; i < s.length; i += 1) {
         var c = s[i];
-        glyphs.push(this.charToGlyph(c));
+        indexes.push(this.charToGlyphIndex(c));
+    }
+    var length = indexes.length;
+
+    // Apply substitutions on glyph indexes
+    if (options.features) {
+        var script = options.script || this.substitution.getDefaultScriptName();
+        var manyToOne = [];
+        if (options.features.liga) manyToOne = manyToOne.concat(this.substitution.getFeature('liga', script, options.language));
+        if (options.features.rlig) manyToOne = manyToOne.concat(this.substitution.getFeature('rlig', script, options.language));
+        for (i = 0; i < length; i += 1) {
+            for (var j = 0; j < manyToOne.length; j++) {
+                var ligature = manyToOne[j];
+                var components = ligature.sub;
+                var compCount = components.length;
+                var k = 0;
+                while (k < compCount && components[k] === indexes[i + k]) k++;
+                if (k === compCount) {
+                    indexes.splice(i, compCount, ligature.by);
+                    length = length - compCount + 1;
+                }
+            }
+        }
     }
 
+    // convert glyph indexes to glyph objects
+    var glyphs = new Array(length);
+    var notdef = this.glyphs.get(0);
+    for (i = 0; i < length; i += 1) {
+        glyphs[i] = this.glyphs.get(indexes[i]) || notdef;
+    }
     return glyphs;
 };
 
@@ -876,7 +1070,7 @@ Font.prototype.nameToGlyphIndex = function(name) {
  * @return {opentype.Glyph}
  */
 Font.prototype.nameToGlyph = function(name) {
-    var glyphIndex = this.nametoGlyphIndex(name);
+    var glyphIndex = this.nameToGlyphIndex(name);
     var glyph = this.glyphs.get(glyphIndex);
     if (!glyph) {
         // .notdef
@@ -918,8 +1112,21 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
 /**
  * @typedef GlyphRenderOptions
  * @type Object
- * @property {boolean} [kerning] - whether to include kerning values
+ * @property {string} [script] - script used to determine which features to apply. By default, 'DFLT' or 'latn' is used.
+ *                               See https://www.microsoft.com/typography/otspec/scripttags.htm
+ * @property {string} [language='dflt'] - language system used to determine which features to apply.
+ *                                        See https://www.microsoft.com/typography/developers/opentype/languagetags.aspx
+ * @property {boolean} [kerning=true] - whether to include kerning values
+ * @property {object} [features] - OpenType Layout feature tags. Used to enable or disable the features of the given script/language system.
+ *                                 See https://www.microsoft.com/typography/otspec/featuretags.htm
  */
+Font.prototype.defaultRenderOptions = {
+    kerning: true,
+    features: {
+        liga: true,
+        rlig: true
+    }
+};
 
 /**
  * Helper function that invokes the given callback for each glyph in the given text.
@@ -935,10 +1142,9 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
-    options = options || {};
-    var kerning = options.kerning === undefined ? true : options.kerning;
+    options = options || this.defaultRenderOptions;
     var fontScale = 1 / this.unitsPerEm * fontSize;
-    var glyphs = this.stringToGlyphs(text);
+    var glyphs = this.stringToGlyphs(text, options);
     for (var i = 0; i < glyphs.length; i += 1) {
         var glyph = glyphs[i];
         callback(glyph, x, y, fontSize, options);
@@ -946,9 +1152,15 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
             x += glyph.advanceWidth * fontScale;
         }
 
-        if (kerning && i < glyphs.length - 1) {
+        if (options.kerning && i < glyphs.length - 1) {
             var kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
             x += kerningValue * fontScale;
+        }
+
+        if (options.letterSpacing) {
+            x += options.letterSpacing * fontSize;
+        } else if (options.tracking) {
+            x += (options.tracking / 1000) * fontSize;
         }
     }
 };
@@ -1113,10 +1325,10 @@ Font.prototype.toArrayBuffer = function() {
 /**
  * Initiate a download of the OpenType font.
  */
-Font.prototype.download = function() {
+Font.prototype.download = function(fileName) {
     var familyName = this.getEnglishName('fontFamily');
     var styleName = this.getEnglishName('fontSubfamily');
-    var fileName = familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
+    fileName = fileName || familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
     var arrayBuffer = this.toArrayBuffer();
 
     if (util.isBrowser()) {
@@ -1192,7 +1404,7 @@ Font.prototype.usWeightClasses = {
 
 exports.Font = Font;
 
-},{"./encoding":4,"./glyphset":7,"./path":11,"./substitution":12,"./tables/sfnt":31,"./util":33,"fs":undefined}],6:[function(require,module,exports){
+},{"./encoding":5,"./glyphset":8,"./path":12,"./substitution":13,"./tables/sfnt":32,"./util":34,"fs":undefined}],7:[function(require,module,exports){
 // The Glyph object
 
 'use strict';
@@ -1297,6 +1509,14 @@ Glyph.prototype.addUnicode = function(unicode) {
     }
 
     this.unicodes.push(unicode);
+};
+
+/**
+ * Calculate the minimum bounding box for this glyph.
+ * @return {opentype.BoundingBox}
+ */
+Glyph.prototype.getBoundingBox = function() {
+    return this.path.getBoundingBox();
 };
 
 /**
@@ -1527,7 +1747,7 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
 
 exports.Glyph = Glyph;
 
-},{"./check":2,"./draw":3,"./path":11}],7:[function(require,module,exports){
+},{"./check":3,"./draw":4,"./path":12}],8:[function(require,module,exports){
 // The GlyphSet object
 
 'use strict';
@@ -1661,7 +1881,7 @@ exports.glyphLoader = glyphLoader;
 exports.ttfGlyphLoader = ttfGlyphLoader;
 exports.cffGlyphLoader = cffGlyphLoader;
 
-},{"./glyph":6}],8:[function(require,module,exports){
+},{"./glyph":7}],9:[function(require,module,exports){
 // The Layout object is the prototype of Substition objects, and provides utility methods to manipulate
 // common layout tables (GPOS, GSUB, GDEF...)
 
@@ -1707,7 +1927,12 @@ function binSearch(arr, value) {
  * @exports opentype.Layout
  * @class
  */
-var Layout = {
+function Layout(font, tableName) {
+    this.font = font;
+    this.tableName = tableName;
+}
+
+Layout.prototype = {
 
     /**
      * Binary search an object by "tag" property
@@ -1719,6 +1944,7 @@ var Layout = {
      * @return {number}
      */
     searchTag: searchTag,
+
     /**
      * Binary search in a list of numbers
      * @instance
@@ -1731,33 +1957,65 @@ var Layout = {
     binSearch: binSearch,
 
     /**
+     * Get or create the Layout table (GSUB, GPOS etc).
+     * @param  {boolean} create - Whether to create a new one.
+     * @return {Object} The GSUB or GPOS table.
+     */
+    getTable: function(create) {
+        var layout = this.font.tables[this.tableName];
+        if (!layout && create) {
+            layout = this.font.tables[this.tableName] = this.createDefaultTable();
+        }
+        return layout;
+    },
+
+    /**
      * Returns all scripts in the substitution table.
      * @instance
      * @return {Array}
      */
     getScriptNames: function() {
-        var gsub = this.getGsubTable();
-        if (!gsub) { return []; }
-        return gsub.scripts.map(function(script) {
+        var layout = this.getTable();
+        if (!layout) { return []; }
+        return layout.scripts.map(function(script) {
             return script.tag;
         });
     },
 
     /**
+     * Returns the best bet for a script name.
+     * Returns 'DFLT' if it exists.
+     * If not, returns 'latn' if it exists.
+     * If neither exist, returns undefined.
+     */
+    getDefaultScriptName: function() {
+        var layout = this.getTable();
+        if (!layout) { return; }
+        var hasLatn = false;
+        for (var i = 0; i < layout.scripts.length; i++) {
+            var name = layout.scripts[i].tag;
+            if (name === 'DFLT') return name;
+            if (name === 'latn') hasLatn = true;
+        }
+        if (hasLatn) return 'latn';
+    },
+
+    /**
      * Returns all LangSysRecords in the given script.
      * @instance
-     * @param {string} script - Use 'DFLT' for default script
+     * @param {string} [script='DFLT']
      * @param {boolean} create - forces the creation of this script table if it doesn't exist.
      * @return {Object} An object with tag and script properties.
      */
     getScriptTable: function(script, create) {
-        var gsub = this.getGsubTable(create);
-        if (gsub) {
-            var scripts = gsub.scripts;
-            var pos = searchTag(gsub.scripts, script);
+        var layout = this.getTable(create);
+        if (layout) {
+            script = script || 'DFLT';
+            var scripts = layout.scripts;
+            var pos = searchTag(layout.scripts, script);
             if (pos >= 0) {
                 return scripts[pos].script;
-            } else {
+            } else if (create) {
                 var scr = {
                     tag: script,
                     script: {
@@ -1765,8 +2023,8 @@ var Layout = {
                         langSysRecords: []
                     }
                 };
-                scripts.splice(-1 - pos, 0, scr.script);
-                return scr;
+                scripts.splice(-1 - pos, 0, scr);
+                return scr.script;
             }
         }
     },
@@ -1774,15 +2032,15 @@ var Layout = {
     /**
      * Returns a language system table
      * @instance
-     * @param {string} script - Use 'DFLT' for default script
-     * @param {string} language - Use 'DFLT' for default language
+     * @param {string} [script='DFLT']
+     * @param {string} [language='dlft']
      * @param {boolean} create - forces the creation of this langSysTable if it doesn't exist.
      * @return {Object}
      */
     getLangSysTable: function(script, language, create) {
         var scriptTable = this.getScriptTable(script, create);
         if (scriptTable) {
-            if (language === 'DFLT') {
+            if (!language || language === 'dflt' || language === 'DFLT') {
                 return scriptTable.defaultLangSys;
             }
             var pos = searchTag(scriptTable.langSysRecords, language);
@@ -1802,8 +2060,8 @@ var Layout = {
     /**
      * Get a specific feature table.
      * @instance
-     * @param {string} script - Use 'DFLT' for default script
-     * @param {string} language - Use 'DFLT' for default language
+     * @param {string} [script='DFLT']
+     * @param {string} [language='dlft']
      * @param {string} feature - One of the codes listed at https://www.microsoft.com/typography/OTSPEC/featurelist.htm
      * @param {boolean} create - forces the creation of the feature table if it doesn't exist.
      * @return {Object}
@@ -1813,7 +2071,7 @@ var Layout = {
         if (langSysTable) {
             var featureRecord;
             var featIndexes = langSysTable.featureIndexes;
-            var allFeatures = this.font.tables.gsub.features;
+            var allFeatures = this.font.tables[this.tableName].features;
             // The FeatureIndex array of indices is in arbitrary order,
             // even if allFeatures is sorted alphabetically by feature tag.
             for (var i = 0; i < featIndexes.length; i++) {
@@ -1838,29 +2096,30 @@ var Layout = {
     },
 
     /**
-     * Get the first lookup table of a given type for a script/language/feature.
+     * Get the lookup tables of a given type for a script/language/feature.
      * @instance
-     * @param {string} script - Use 'DFLT' for default script
-     * @param {string} language - Use 'DFLT' for default language
+     * @param {string} [script='DFLT']
+     * @param {string} [language='dlft']
      * @param {string} feature - 4-letter feature code
      * @param {number} lookupType - 1 to 8
      * @param {boolean} create - forces the creation of the lookup table if it doesn't exist, with no subtables.
-     * @return {Object}
+     * @return {Object[]}
      */
-    getLookupTable: function(script, language, feature, lookupType, create) {
+    getLookupTables: function(script, language, feature, lookupType, create) {
         var featureTable = this.getFeatureTable(script, language, feature, create);
+        var tables = [];
         if (featureTable) {
             var lookupTable;
             var lookupListIndexes = featureTable.lookupListIndexes;
-            var allLookups = this.font.tables.gsub.lookups;
+            var allLookups = this.font.tables[this.tableName].lookups;
             // lookupListIndexes are in no particular order, so use naïve search.
             for (var i = 0; i < lookupListIndexes.length; i++) {
                 lookupTable = allLookups[lookupListIndexes[i]];
                 if (lookupTable.lookupType === lookupType) {
-                    return lookupTable;
+                    tables.push(lookupTable);
                 }
             }
-            if (create) {
+            if (tables.length === 0 && create) {
                 lookupTable = {
                     lookupType: lookupType,
                     lookupFlag: 0,
@@ -1870,9 +2129,10 @@ var Layout = {
                 var index = allLookups.length;
                 allLookups.push(lookupTable);
                 lookupListIndexes.push(index);
-                return lookupTable;
+                return [lookupTable];
             }
         }
+        return tables;
     },
 
     /**
@@ -1905,7 +2165,7 @@ var Layout = {
 
 module.exports = Layout;
 
-},{"./check":2}],9:[function(require,module,exports){
+},{"./check":3}],10:[function(require,module,exports){
 // opentype.js
 // https://github.com/nodebox/opentype.js
 // (c) 2015 Frederik De Bleser
@@ -1921,6 +2181,7 @@ var encoding = require('./encoding');
 var _font = require('./font');
 var glyph = require('./glyph');
 var parse = require('./parse');
+var bbox = require('./bbox');
 var path = require('./path');
 var util = require('./util');
 
@@ -2291,11 +2552,12 @@ exports._parse = parse;
 exports.Font = _font.Font;
 exports.Glyph = glyph.Glyph;
 exports.Path = path.Path;
+exports.BoundingBox = bbox.BoundingBox;
 exports.parse = parseBuffer;
 exports.load = load;
 exports.loadSync = loadSync;
 
-},{"./encoding":4,"./font":5,"./glyph":6,"./parse":10,"./path":11,"./tables/cff":14,"./tables/cmap":15,"./tables/fvar":16,"./tables/glyf":17,"./tables/gpos":18,"./tables/gsub":19,"./tables/head":20,"./tables/hhea":21,"./tables/hmtx":22,"./tables/kern":23,"./tables/loca":24,"./tables/ltag":25,"./tables/maxp":26,"./tables/meta":27,"./tables/name":28,"./tables/os2":29,"./tables/post":30,"./util":33,"fs":undefined,"tiny-inflate":1}],10:[function(require,module,exports){
+},{"./bbox":2,"./encoding":5,"./font":6,"./glyph":7,"./parse":11,"./path":12,"./tables/cff":15,"./tables/cmap":16,"./tables/fvar":17,"./tables/glyf":18,"./tables/gpos":19,"./tables/gsub":20,"./tables/head":21,"./tables/hhea":22,"./tables/hmtx":23,"./tables/kern":24,"./tables/loca":25,"./tables/ltag":26,"./tables/maxp":27,"./tables/meta":28,"./tables/name":29,"./tables/os2":30,"./tables/post":31,"./util":34,"fs":undefined,"tiny-inflate":1}],11:[function(require,module,exports){
 // Parsing utility functions
 
 'use strict';
@@ -2746,10 +3008,12 @@ Parser.prototype.parseLookupList = function(lookupTableParsers) {
 
 exports.Parser = Parser;
 
-},{"./check":2}],11:[function(require,module,exports){
+},{"./check":3}],12:[function(require,module,exports){
 // Geometric objects
 
 'use strict';
+
+var bbox = require('./bbox');
 
 /**
  * A bézier path containing a set of path commands similar to a SVG path.
@@ -2877,14 +3141,70 @@ Path.prototype.close = Path.prototype.closePath = function() {
 
 /**
  * Add the given path or list of commands to the commands of this path.
- * @param  {Array}
+ * @param  {Array} pathOrCommands - another opentype.Path, an opentype.BoundingBox, or an array of commands.
  */
 Path.prototype.extend = function(pathOrCommands) {
     if (pathOrCommands.commands) {
         pathOrCommands = pathOrCommands.commands;
+    } else if (pathOrCommands instanceof bbox.BoundingBox) {
+        var box = pathOrCommands;
+        this.moveTo(box.x1, box.y1);
+        this.lineTo(box.x2, box.y1);
+        this.lineTo(box.x2, box.y2);
+        this.lineTo(box.x1, box.y2);
+        this.close();
+        return;
     }
 
     Array.prototype.push.apply(this.commands, pathOrCommands);
+};
+
+/**
+ * Calculate the bounding box of the path.
+ * @returns {opentype.BoundingBox}
+ */
+Path.prototype.getBoundingBox = function() {
+    var box = new bbox.BoundingBox();
+
+    var startX = 0;
+    var startY = 0;
+    var prevX = 0;
+    var prevY = 0;
+    for (var i = 0; i < this.commands.length; i++) {
+        var cmd = this.commands[i];
+        switch (cmd.type) {
+            case 'M':
+                box.addPoint(cmd.x, cmd.y);
+                startX = prevX = cmd.x;
+                startY = prevY = cmd.y;
+                break;
+            case 'L':
+                box.addPoint(cmd.x, cmd.y);
+                prevX = cmd.x;
+                prevY = cmd.y;
+                break;
+            case 'Q':
+                box.addQuad(prevX, prevY, cmd.x1, cmd.y1, cmd.x, cmd.y);
+                prevX = cmd.x;
+                prevY = cmd.y;
+                break;
+            case 'C':
+                box.addBezier(prevX, prevY, cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
+                prevX = cmd.x;
+                prevY = cmd.y;
+                break;
+            case 'Z':
+                prevX = startX;
+                prevY = startY;
+                break;
+            default:
+                throw new Error('Unexpected path commmand ' + cmd.type);
+        }
+    }
+    if (box.isEmpty()) {
+        box.addPoint(0, 0);
+    }
+    return box;
 };
 
 /**
@@ -2995,9 +3315,18 @@ Path.prototype.toSVG = function(decimalPlaces) {
     return svg;
 };
 
+Path.prototype.toDOMElement = function(decimalPlaces) {
+    var temporaryPath = this.toPathData(decimalPlaces);
+    var newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+
+    newPath.setAttribute('d', temporaryPath);
+
+    return newPath;
+};
+
 exports.Path = Path;
 
-},{}],12:[function(require,module,exports){
+},{"./bbox":2}],13:[function(require,module,exports){
 // The Substitution object provides utility methods to manipulate
 // the GSUB substitution table.
 
@@ -3014,7 +3343,7 @@ var Layout = require('./layout');
  * @constructor
  */
 var Substitution = function(font) {
-    this.font = font;
+    Layout.call(this, font, 'gsub');
 };
 
 // Check if 2 arrays of primitives are equal.
@@ -3042,59 +3371,55 @@ function getSubstFormat(lookupTable, format, defaultSubtable) {
     }
 }
 
-Substitution.prototype = Layout;
+Substitution.prototype = Layout.prototype;
 
 /**
- * Get or create the GSUB table.
- * @param  {boolean} create - Whether to create a new one.
+ * Create a default GSUB table.
  * @return {Object} gsub - The GSUB table.
  */
-Substitution.prototype.getGsubTable = function(create) {
-    var gsub = this.font.tables.gsub;
-    if (!gsub && create) {
-        // Generate a default empty GSUB table with just a DFLT script and dflt lang sys.
-        this.font.tables.gsub = gsub = {
-            version: 1,
-            scripts: [{
-                tag: 'DFLT',
-                script: {
-                    defaultLangSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [] },
-                    langSysRecords: []
-                }
-            }],
-            features: [],
-            lookups: []
-        };
-    }
-    return gsub;
+Substitution.prototype.createDefaultTable = function() {
+    // Generate a default empty GSUB table with just a DFLT script and dflt lang sys.
+    return {
+        version: 1,
+        scripts: [{
+            tag: 'DFLT',
+            script: {
+                defaultLangSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [] },
+                langSysRecords: []
+            }
+        }],
+        features: [],
+        lookups: []
+    };
 };
 
 /**
  * List all single substitutions (lookup type 1) for a given script, language, and feature.
- * @param {string} script
- * @param {string} language
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dflt']
  * @param {string} feature - 4-character feature name ('aalt', 'salt', 'ss01'...)
  * @return {Array} substitutions - The list of substitutions.
  */
 Substitution.prototype.getSingle = function(feature, script, language) {
     var substitutions = [];
-    var lookupTable = this.getLookupTable(script, language, feature, 1);
-    if (!lookupTable) { return substitutions; }
-    var subtables = lookupTable.subtables;
-    for (var i = 0; i < subtables.length; i++) {
-        var subtable = subtables[i];
-        var glyphs = this.expandCoverage(subtable.coverage);
-        var j;
-        if (subtable.substFormat === 1) {
-            var delta = subtable.deltaGlyphId;
-            for (j = 0; j < glyphs.length; j++) {
-                var glyph = glyphs[j];
-                substitutions.push({ sub: glyph, by: glyph + delta });
-            }
-        } else {
-            var substitute = subtable.substitute;
-            for (j = 0; j < glyphs.length; j++) {
-                substitutions.push({ sub: glyphs[j], by: substitute[j] });
+    var lookupTables = this.getLookupTables(script, language, feature, 1);
+    for (var idx = 0; idx < lookupTables.length; idx++) {
+        var subtables = lookupTables[idx].subtables;
+        for (var i = 0; i < subtables.length; i++) {
+            var subtable = subtables[i];
+            var glyphs = this.expandCoverage(subtable.coverage);
+            var j;
+            if (subtable.substFormat === 1) {
+                var delta = subtable.deltaGlyphId;
+                for (j = 0; j < glyphs.length; j++) {
+                    var glyph = glyphs[j];
+                    substitutions.push({ sub: glyph, by: glyph + delta });
+                }
+            } else {
+                var substitute = subtable.substitute;
+                for (j = 0; j < glyphs.length; j++) {
+                    substitutions.push({ sub: glyphs[j], by: substitute[j] });
+                }
             }
         }
     }
@@ -3103,22 +3428,23 @@ Substitution.prototype.getSingle = function(feature, script, language) {
 
 /**
  * List all alternates (lookup type 3) for a given script, language, and feature.
- * @param {string} script
- * @param {string} language
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dflt']
  * @param {string} feature - 4-character feature name ('aalt', 'salt'...)
  * @return {Array} alternates - The list of alternates
  */
 Substitution.prototype.getAlternates = function(feature, script, language) {
     var alternates = [];
-    var lookupTable = this.getLookupTable(script, language, feature, 3);
-    if (!lookupTable) { return alternates; }
-    var subtables = lookupTable.subtables;
-    for (var i = 0; i < subtables.length; i++) {
-        var subtable = subtables[i];
-        var glyphs = this.expandCoverage(subtable.coverage);
-        var alternateSets = subtable.alternateSets;
-        for (var j = 0; j < glyphs.length; j++) {
-            alternates.push({ sub: glyphs[j], by: alternateSets[j] });
+    var lookupTables = this.getLookupTables(script, language, feature, 3);
+    for (var idx = 0; idx < lookupTables.length; idx++) {
+        var subtables = lookupTables[idx].subtables;
+        for (var i = 0; i < subtables.length; i++) {
+            var subtable = subtables[i];
+            var glyphs = this.expandCoverage(subtable.coverage);
+            var alternateSets = subtable.alternateSets;
+            for (var j = 0; j < glyphs.length; j++) {
+                alternates.push({ sub: glyphs[j], by: alternateSets[j] });
+            }
         }
     }
     return alternates;
@@ -3128,28 +3454,29 @@ Substitution.prototype.getAlternates = function(feature, script, language) {
  * List all ligatures (lookup type 4) for a given script, language, and feature.
  * The result is an array of ligature objects like { sub: [ids], by: id }
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
- * @param {string} script
- * @param {string} language
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dflt']
  * @return {Array} ligatures - The list of ligatures.
  */
 Substitution.prototype.getLigatures = function(feature, script, language) {
     var ligatures = [];
-    var lookupTable = this.getLookupTable(script, language, feature, 4);
-    if (!lookupTable) { return []; }
-    var subtables = lookupTable.subtables;
-    for (var i = 0; i < subtables.length; i++) {
-        var subtable = subtables[i];
-        var glyphs = this.expandCoverage(subtable.coverage);
-        var ligatureSets = subtable.ligatureSets;
-        for (var j = 0; j < glyphs.length; j++) {
-            var startGlyph = glyphs[j];
-            var ligSet = ligatureSets[j];
-            for (var k = 0; k < ligSet.length; k++) {
-                var lig = ligSet[k];
-                ligatures.push({
-                    sub: [startGlyph].concat(lig.components),
-                    by: lig.ligGlyph
-                });
+    var lookupTables = this.getLookupTables(script, language, feature, 4);
+    for (var idx = 0; idx < lookupTables.length; idx++) {
+        var subtables = lookupTables[idx].subtables;
+        for (var i = 0; i < subtables.length; i++) {
+            var subtable = subtables[i];
+            var glyphs = this.expandCoverage(subtable.coverage);
+            var ligatureSets = subtable.ligatureSets;
+            for (var j = 0; j < glyphs.length; j++) {
+                var startGlyph = glyphs[j];
+                var ligSet = ligatureSets[j];
+                for (var k = 0; k < ligSet.length; k++) {
+                    var lig = ligSet[k];
+                    ligatures.push({
+                        sub: [startGlyph].concat(lig.components),
+                        by: lig.ligGlyph
+                    });
+                }
             }
         }
     }
@@ -3162,10 +3489,10 @@ Substitution.prototype.getLigatures = function(feature, script, language) {
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} substitution - { sub: id, delta: number } for format 1 or { sub: id, by: id } for format 2.
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  */
 Substitution.prototype.addSingle = function(feature, substitution, script, language) {
-    var lookupTable = this.getLookupTable(script, language, feature, 1, true);
+    var lookupTable = this.getLookupTables(script, language, feature, 1, true)[0];
     var subtable = getSubstFormat(lookupTable, 2, {                // lookup type 1 subtable, format 2, coverage format 1
         substFormat: 2,
         coverage: { format: 1, glyphs: [] },
@@ -3187,10 +3514,10 @@ Substitution.prototype.addSingle = function(feature, substitution, script, langu
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} substitution - { sub: id, by: [ids] }
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  */
 Substitution.prototype.addAlternate = function(feature, substitution, script, language) {
-    var lookupTable = this.getLookupTable(script, language, feature, 3, true);
+    var lookupTable = this.getLookupTables(script, language, feature, 3, true)[0];
     var subtable = getSubstFormat(lookupTable, 1, {                // lookup type 3 subtable, format 1, coverage format 1
         substFormat: 1,
         coverage: { format: 1, glyphs: [] },
@@ -3213,12 +3540,10 @@ Substitution.prototype.addAlternate = function(feature, substitution, script, la
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} ligature - { sub: [ids], by: id }
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  */
 Substitution.prototype.addLigature = function(feature, ligature, script, language) {
-    script = script || 'DFLT';
-    language = language || 'DFLT';
-    var lookupTable = this.getLookupTable(script, language, feature, 4, true);
+    var lookupTable = this.getLookupTables(script, language, feature, 4, true)[0];
     var subtable = lookupTable.subtables[0];
     if (!subtable) {
         subtable = {                // lookup type 4 subtable, format 1, coverage format 1
@@ -3259,12 +3584,10 @@ Substitution.prototype.addLigature = function(feature, ligature, script, languag
  * List all feature data for a given script and language.
  * @param {string} feature - 4-letter feature name
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  * @return {Array} substitutions - The list of substitutions.
  */
 Substitution.prototype.getFeature = function(feature, script, language) {
-    script = script || 'DFLT';
-    language = language || 'DFLT';
     if (/ss\d\d/.test(feature)) {               // ss01 - ss20
         return this.getSingle(feature, script, language);
     }
@@ -3284,11 +3607,9 @@ Substitution.prototype.getFeature = function(feature, script, language) {
  * @param {string} feature - 4-letter feature name
  * @param {Object} sub - the substitution to add (an object like { sub: id or [ids], by: id or [ids] })
  * @param {string} [script='DFLT']
- * @param {string} [language='DFLT']
+ * @param {string} [language='dflt']
  */
 Substitution.prototype.add = function(feature, sub, script, language) {
-    script = script || 'DFLT';
-    language = language || 'DFLT';
     if (/ss\d\d/.test(feature)) {               // ss01 - ss20
         return this.addSingle(feature, sub, script, language);
     }
@@ -3308,7 +3629,7 @@ Substitution.prototype.add = function(feature, sub, script, language) {
 
 module.exports = Substitution;
 
-},{"./check":2,"./layout":8}],13:[function(require,module,exports){
+},{"./check":3,"./layout":9}],14:[function(require,module,exports){
 // Table metadata
 
 'use strict';
@@ -3510,7 +3831,7 @@ exports.ushortList = ushortList;
 exports.tableList = tableList;
 exports.recordList = recordList;
 
-},{"./check":2,"./types":32}],14:[function(require,module,exports){
+},{"./check":3,"./types":33}],15:[function(require,module,exports){
 // The `CFF` table contains the glyph outlines in PostScript format.
 // https://www.microsoft.com/typography/OTSPEC/cff.htm
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf
@@ -4624,7 +4945,7 @@ function makeCFFTable(glyphs, options) {
 exports.parse = parseCFFTable;
 exports.make = makeCFFTable;
 
-},{"../encoding":4,"../glyphset":7,"../parse":10,"../path":11,"../table":13}],15:[function(require,module,exports){
+},{"../encoding":5,"../glyphset":8,"../parse":11,"../path":12,"../table":14}],16:[function(require,module,exports){
 // The `cmap` table stores the mappings from characters to glyphs.
 // https://www.microsoft.com/typography/OTSPEC/cmap.htm
 
@@ -4848,7 +5169,7 @@ function makeCmapTable(glyphs) {
 exports.parse = parseCmapTable;
 exports.make = makeCmapTable;
 
-},{"../check":2,"../parse":10,"../table":13}],16:[function(require,module,exports){
+},{"../check":3,"../parse":11,"../table":14}],17:[function(require,module,exports){
 // The `fvar` table stores font variation axes and instances.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6fvar.html
 
@@ -4989,7 +5310,7 @@ function parseFvarTable(data, start, names) {
 exports.make = makeFvarTable;
 exports.parse = parseFvarTable;
 
-},{"../check":2,"../parse":10,"../table":13}],17:[function(require,module,exports){
+},{"../check":3,"../parse":11,"../table":14}],18:[function(require,module,exports){
 // The `glyf` table describes the glyphs in TrueType outline format.
 // http://www.microsoft.com/typography/otspec/glyf.htm
 
@@ -5326,7 +5647,7 @@ function parseGlyfTable(data, start, loca, font) {
 
 exports.parse = parseGlyfTable;
 
-},{"../check":2,"../glyphset":7,"../parse":10,"../path":11}],18:[function(require,module,exports){
+},{"../check":3,"../glyphset":8,"../parse":11,"../path":12}],19:[function(require,module,exports){
 // The `GPOS` table contains kerning pairs, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 
@@ -5522,7 +5843,8 @@ function parseLookupTable(data, start) {
     if (lookupType === 2) {
         var subtables = [];
         for (var i = 0; i < subTableCount; i++) {
-            subtables.push(parsePairPosSubTable(data, start + subTableOffsets[i]));
+            var pairPosSubTable = parsePairPosSubTable(data, start + subTableOffsets[i]);
+            if (pairPosSubTable) subtables.push(pairPosSubTable);
         }
         // Return a function which finds the kerning values in the subtables.
         table.getKerningValue = function(leftGlyph, rightGlyph) {
@@ -5564,7 +5886,7 @@ function parseGposTable(data, start, font) {
 
 exports.parse = parseGposTable;
 
-},{"../check":2,"../parse":10}],19:[function(require,module,exports){
+},{"../check":3,"../parse":11}],20:[function(require,module,exports){
 // The `GSUB` table contains ligatures, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gsub.htm
 
@@ -5824,7 +6146,7 @@ function makeGsubTable(gsub) {
 exports.parse = parseGsubTable;
 exports.make = makeGsubTable;
 
-},{"../check":2,"../parse":10,"../table":13}],20:[function(require,module,exports){
+},{"../check":3,"../parse":11,"../table":14}],21:[function(require,module,exports){
 // The `head` table contains global information about the font.
 // https://www.microsoft.com/typography/OTSPEC/head.htm
 
@@ -5892,7 +6214,7 @@ function makeHeadTable(options) {
 exports.parse = parseHeadTable;
 exports.make = makeHeadTable;
 
-},{"../check":2,"../parse":10,"../table":13}],21:[function(require,module,exports){
+},{"../check":3,"../parse":11,"../table":14}],22:[function(require,module,exports){
 // The `hhea` table contains information for horizontal layout.
 // https://www.microsoft.com/typography/OTSPEC/hhea.htm
 
@@ -5947,7 +6269,7 @@ function makeHheaTable(options) {
 exports.parse = parseHheaTable;
 exports.make = makeHheaTable;
 
-},{"../parse":10,"../table":13}],22:[function(require,module,exports){
+},{"../parse":11,"../table":14}],23:[function(require,module,exports){
 // The `hmtx` table contains the horizontal metrics for all glyphs.
 // https://www.microsoft.com/typography/OTSPEC/hmtx.htm
 
@@ -5991,7 +6313,7 @@ function makeHmtxTable(glyphs) {
 exports.parse = parseHmtxTable;
 exports.make = makeHmtxTable;
 
-},{"../parse":10,"../table":13}],23:[function(require,module,exports){
+},{"../parse":11,"../table":14}],24:[function(require,module,exports){
 // The `kern` table contains kerning pairs.
 // Note that some fonts use the GPOS OpenType layout table to specify kerning.
 // https://www.microsoft.com/typography/OTSPEC/kern.htm
@@ -6001,17 +6323,13 @@ exports.make = makeHmtxTable;
 var check = require('../check');
 var parse = require('../parse');
 
-// Parse the `kern` table which contains kerning pairs.
-function parseKernTable(data, start) {
+function parseWindowsKernTable(p) {
     var pairs = {};
-    var p = new parse.Parser(data, start);
-    var tableVersion = p.parseUShort();
-    check.argument(tableVersion === 0, 'Unsupported kern table version.');
     // Skip nTables.
-    p.skip('uShort', 1);
-    var subTableVersion = p.parseUShort();
-    check.argument(subTableVersion === 0, 'Unsupported kern sub-table version.');
-    // Skip subTableLength, subTableCoverage
+    p.skip('uShort');
+    var subtableVersion = p.parseUShort();
+    check.argument(subtableVersion === 0, 'Unsupported kern sub-table version.');
+    // Skip subtableLength, subtableCoverage
     p.skip('uShort', 2);
     var nPairs = p.parseUShort();
     // Skip searchRange, entrySelector, rangeShift.
@@ -6022,13 +6340,53 @@ function parseKernTable(data, start) {
         var value = p.parseShort();
         pairs[leftIndex + ',' + rightIndex] = value;
     }
-
     return pairs;
+}
+
+function parseMacKernTable(p) {
+    var pairs = {};
+    // The Mac kern table stores the version as a fixed (32 bits) but we only loaded the first 16 bits.
+    // Skip the rest.
+    p.skip('uShort');
+    var nTables = p.parseULong();
+    //check.argument(nTables === 1, 'Only 1 subtable is supported (got ' + nTables + ').');
+    if (nTables > 1) {
+        console.warn('Only the first kern subtable is supported.');
+    }
+    p.skip('uLong');
+    var coverage = p.parseUShort();
+    var subtableVersion = coverage & 0xFF;
+    p.skip('uShort');
+    if (subtableVersion === 0) {
+        var nPairs = p.parseUShort();
+        // Skip searchRange, entrySelector, rangeShift.
+        p.skip('uShort', 3);
+        for (var i = 0; i < nPairs; i += 1) {
+            var leftIndex = p.parseUShort();
+            var rightIndex = p.parseUShort();
+            var value = p.parseShort();
+            pairs[leftIndex + ',' + rightIndex] = value;
+        }
+    }
+    return pairs;
+}
+
+// Parse the `kern` table which contains kerning pairs.
+function parseKernTable(data, start) {
+    var p = new parse.Parser(data, start);
+    var tableVersion = p.parseUShort();
+    if (tableVersion === 0) {
+        return parseWindowsKernTable(p);
+    } else if (tableVersion === 1) {
+        return parseMacKernTable(p);
+    } else {
+        throw new Error('Unsupported kern table version (' + tableVersion + ').');
+    }
 }
 
 exports.parse = parseKernTable;
 
-},{"../check":2,"../parse":10}],24:[function(require,module,exports){
+},{"../check":3,"../parse":11}],25:[function(require,module,exports){
 // The `loca` table stores the offsets to the locations of the glyphs in the font.
 // https://www.microsoft.com/typography/OTSPEC/loca.htm
 
@@ -6063,7 +6421,7 @@ function parseLocaTable(data, start, numGlyphs, shortVersion) {
 
 exports.parse = parseLocaTable;
 
-},{"../parse":10}],25:[function(require,module,exports){
+},{"../parse":11}],26:[function(require,module,exports){
 // The `ltag` table stores IETF BCP-47 language tags. It allows supporting
 // languages for which TrueType does not assign a numeric code.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6ltag.html
@@ -6126,7 +6484,7 @@ function parseLtagTable(data, start) {
 exports.make = makeLtagTable;
 exports.parse = parseLtagTable;
 
-},{"../check":2,"../parse":10,"../table":13}],26:[function(require,module,exports){
+},{"../check":3,"../parse":11,"../table":14}],27:[function(require,module,exports){
 // The `maxp` table establishes the memory requirements for the font.
 // We need it just to get the number of glyphs in the font.
 // https://www.microsoft.com/typography/OTSPEC/maxp.htm
@@ -6171,7 +6529,7 @@ function makeMaxpTable(numGlyphs) {
 exports.parse = parseMaxpTable;
 exports.make = makeMaxpTable;
 
-},{"../parse":10,"../table":13}],27:[function(require,module,exports){
+},{"../parse":11,"../table":14}],28:[function(require,module,exports){
 // The `GPOS` table contains kerning pairs, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 
@@ -6234,7 +6592,7 @@ function makeMetaTable(tags) {
 exports.parse = parseMetaTable;
 exports.make = makeMetaTable;
 
-},{"../check":2,"../parse":10,"../table":13,"../types":32}],28:[function(require,module,exports){
+},{"../check":3,"../parse":11,"../table":14,"../types":33}],29:[function(require,module,exports){
 // The `name` naming table.
 // https://www.microsoft.com/typography/OTSPEC/name.htm
 
@@ -7071,7 +7429,7 @@ function makeNameTable(names, ltag) {
 exports.parse = parseNameTable;
 exports.make = makeNameTable;
 
-},{"../parse":10,"../table":13,"../types":32}],29:[function(require,module,exports){
+},{"../parse":11,"../table":14,"../types":33}],30:[function(require,module,exports){
 // The `OS/2` table contains metrics required in OpenType fonts.
 // https://www.microsoft.com/typography/OTSPEC/os2.htm
 
@@ -7327,7 +7685,7 @@ exports.getUnicodeRange = getUnicodeRange;
 exports.parse = parseOS2Table;
 exports.make = makeOS2Table;
 
-},{"../parse":10,"../table":13}],30:[function(require,module,exports){
+},{"../parse":11,"../table":14}],31:[function(require,module,exports){
 // The `post` table stores additional PostScript information, such as glyph names.
 // https://www.microsoft.com/typography/OTSPEC/post.htm
 
@@ -7400,7 +7758,7 @@ function makePostTable() {
 exports.parse = parsePostTable;
 exports.make = makePostTable;
 
-},{"../encoding":4,"../parse":10,"../table":13}],31:[function(require,module,exports){
+},{"../encoding":5,"../parse":11,"../table":14}],32:[function(require,module,exports){
 // The `sfnt` wrapper provides organization for the tables in the font.
 // It is the top-level data structure in a font.
 // https://www.microsoft.com/typography/OTSPEC/otff.htm
@@ -7744,7 +8102,7 @@ exports.computeCheckSum = computeCheckSum;
 exports.make = makeSfntTable;
 exports.fontToTable = fontToSfntTable;
 
-},{"../check":2,"../table":13,"./cff":14,"./cmap":15,"./gsub":19,"./head":20,"./hhea":21,"./hmtx":22,"./ltag":25,"./maxp":26,"./meta":27,"./name":28,"./os2":29,"./post":30}],32:[function(require,module,exports){
+},{"../check":3,"../table":14,"./cff":15,"./cmap":16,"./gsub":20,"./head":21,"./hhea":22,"./hmtx":23,"./ltag":26,"./maxp":27,"./meta":28,"./name":29,"./os2":30,"./post":31}],33:[function(require,module,exports){
 // Data types used in the OpenType font file.
 // All OpenType fonts use Motorola-style byte ordering (Big Endian)
 
@@ -8611,7 +8969,7 @@ exports.decode = decode;
 exports.encode = encode;
 exports.sizeOf = sizeOf;
 
-},{"./check":2}],33:[function(require,module,exports){
+},{"./check":3}],34:[function(require,module,exports){
 'use strict';
 
 exports.isBrowser = function() {
@@ -8648,5 +9006,5 @@ exports.checkArgument = function(expression, message) {
     }
 };
 
-},{}]},{},[9])(9)
+},{}]},{},[10])(10)
 });
