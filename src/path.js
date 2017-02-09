@@ -304,6 +304,11 @@ Path.prototype.toSVG = function(decimalPlaces) {
     return svg;
 };
 
+/**
+ * Convert the path to a DOM element.
+ * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @return {SVGPathElement}
+ */
 Path.prototype.toDOMElement = function(decimalPlaces) {
     var temporaryPath = this.toPathData(decimalPlaces);
     var newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');

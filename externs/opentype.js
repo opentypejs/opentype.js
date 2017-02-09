@@ -46,9 +46,10 @@ opentype.Font.prototype.charToGlyph = function(c) {};
  * glyphs, so the list of returned glyphs can be larger or smaller than the
  * length of the given string.
  * @param  {string} s
+ * @param  {Object=} options
  * @return {opentype.Glyph[]}
  */
-opentype.Font.prototype.stringToGlyphs = function(s) {};
+opentype.Font.prototype.stringToGlyphs = function(s, options) {};
 
 /**
  * @param  {string}
@@ -178,8 +179,9 @@ opentype.Font.prototype.toArrayBuffer = function() {};
 
 /**
  * Initiate a download of the OpenType font.
+ * @param {string=} fileName
  */
-opentype.Font.prototype.download = function() {};
+opentype.Font.prototype.download = function(fileName) {};
 
 // A Glyph is an individual mark that often corresponds to a character.
 // Some glyphs, such as ligatures, are a combination of many characters.
@@ -196,6 +198,12 @@ opentype.Glyph = function(options) {};
  * @param {number}
  */
 opentype.Glyph.prototype.addUnicode = function(unicode) {};
+
+/**
+ * Calculate the minimum bounding box for this glyph.
+ * @return {opentype.BoundingBox}
+ */
+opentype.Glyph.prototype.getBoundingBox = function() {};
 
 /**
  * Convert the glyph to a Path we can draw on a drawing context.
@@ -324,9 +332,15 @@ opentype.Path.prototype.closePath = function() {};
 
 /**
  * Add the given path or list of commands to the commands of this path.
- * @param  {Array}
+ * @param  {Array} pathOrCommands - another opentype.Path, an opentype.BoundingBox, or an array of commands.
  */
 opentype.Path.prototype.extend = function(pathOrCommands) {};
+
+/**
+ * Calculate the bounding box of the path.
+ * @returns {opentype.BoundingBox}
+ */
+opentype.Path.prototype.getBoundingBox = function() {};
 
 /**
  * @param {CanvasRenderingContext2D} ctx - A 2D drawing context.
@@ -344,6 +358,13 @@ opentype.Path.prototype.toPathData = function(decimalPlaces) {};
  * @return {string}
  */
 opentype.Path.prototype.toSVG = function(decimalPlaces) {};
+
+/**
+ * Convert the path to a DOM element.
+ * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @return {SVGPathElement}
+ */
+opentype.Path.prototype.toDOMElement = function(decimalPlaces) {};
 
 /**
  * @constructor
@@ -443,7 +464,7 @@ opentype.Substitution = function(font) {};
  * Create a default GSUB table.
  * @return {Object} gsub - The GSUB table.
  */
-Substitution.prototype.createDefaultTable = function() {};
+opentype.Substitution.prototype.createDefaultTable = function() {};
 
 /**
  * List all single substitutions (lookup type 1) for a given script, language, and feature.
@@ -579,6 +600,11 @@ opentype.FeatureList = function(featureListTable) {};
  * @constructor
  */
 opentype.LookupList = function(lookupListTable, subtableMakers) {};
+
+/**
+ * @constructor
+ */
+opentype.BoundingBox = function() {};
 
 /**
  * @param  {string} url - The URL of the font to load.
