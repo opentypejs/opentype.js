@@ -37,7 +37,10 @@ http.createServer(function(req, res) {
             res.end('Error: ' + err);
         } else {
             var contentType = CONTENT_TYPES[path.extname(filePath)] || 'text/plain';
-            res.writeHead(200, {'Content-Type': contentType});
+            res.writeHead(200, {
+                'Content-Type': contentType,
+                'Cache-Control': 'max-age=0'
+            });
             res.end(data);
         }
     });
