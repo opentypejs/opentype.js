@@ -1216,7 +1216,7 @@ function ELSE(state) {
         }
     } while (nesting > 0);
 
-    state.i p = ip;
+    state.ip = ip;
 }
 
 // JMPR[] JuMP Relative
