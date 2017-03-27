@@ -8,7 +8,7 @@
 * This interpreter has been implemented according to this documentation:
 * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM05/Chap5.html
 *
-* According to the documentation -- and thus most other implementations -- 
+* According to the documentation -- and thus most other implementations --
 * use F24DOT6 values for pixels. That means it's 1/64 pixel accurate and
 * use integer operations. However, Javascript has floating point operations
 * by default and only that's is available here. One could make a case to
@@ -34,7 +34,9 @@
 var DEBUG = false;
 
 var instructionTable;
-var exec, execComponent, execGlyph;
+var exec;
+var execComponent,
+var execGlyph;
 
 /*
 * Creates a hinting object.
@@ -61,14 +63,12 @@ function Hinting(font) {
     this._errorState = 0;
 }
 
-
 /*
 * Not rounding.
 */
 function roundOff(v) {
     return v;
 }
-
 
 /*
 * Rounding to grid.
@@ -78,14 +78,12 @@ function roundToGrid(v) {
     return Math.sign(v) * Math.round(Math.abs(v));
 }
 
-
 /*
 * Rounding to double grid.
 */
 function roundToDoubleGrid(v) {
     return Math.sign(v) * Math.round(Math.abs(v / 2)) * 2;
 }
-
 
 /*
 * Rounding to half grid.
@@ -94,7 +92,6 @@ function roundToHalfGrid(v) {
     return Math.sign(v) * Math.round(Math.abs(v * 2)) / 2;
 }
 
-
 /*
 * Rounding to up to grid.
 */
@@ -102,14 +99,12 @@ function roundUpToGrid(v) {
     return Math.sign(v) * Math.ceil(Math.abs(v));
 }
 
-
 /*
 * Rounding to down to grid.
 */
 function roundDownToGrid(v) {
     return Math.sign(v) * Math.floor(Math.abs(v));
 }
-
 
 /*
 * Super rounding.
@@ -129,7 +124,6 @@ var roundSuper = function(v) {
     if (f >= threshold) return Math.ceil(v) * sign - phase;
     else return Math.floor(v) * sign - phase;
 };
-
 
 /*
 * Unit vector of x-axis.
@@ -225,7 +219,6 @@ var xUnitVector = {
     untouch : function(p) { p.xTouched = false; }
 };
 
-
 /*
 * Unit vector of y-axis.
 */
@@ -316,10 +309,8 @@ var yUnitVector = {
     untouch : function(p) { p.yTouched = false; }
 };
 
-
 Object.freeze(xUnitVector);
 Object.freeze(yUnitVector);
-
 
 /*
 * Creates a unit vector that is not x- or y-axis.
@@ -333,7 +324,6 @@ function UnitVector(x, y) {
     Object.freeze(this);
 }
 
-
 /*
 * Gets the projected distance between two points.
 * o1/o2 ... if true, use respective original pos.
@@ -345,7 +335,6 @@ UnitVector.prototype.distance = function(p1, p2, o1, o2) {
     );
 };
 
-    
 /*
 * Moves p so it has the moved position
 * has the same relative position to the moved
@@ -371,7 +360,6 @@ UnitVector.prototype.interpolate = function(p, rp1, rp2, pv) {
     this.setRelative(p, p, (dm1 * doa2 + dm2 * doa1 ) / dt, pv, true);
 };
 
-
 /*
 * Sets the point 'p' relative to point 'rp'
 * by the distance 'd'.
@@ -395,7 +383,6 @@ UnitVector.prototype.setRelative = function(p, rp, d, pv, org) {
     p.y = fvs * (p.x - px) + py;
 };
 
-
 /*
 * Touches the point p.
 */
@@ -403,7 +390,6 @@ UnitVector.prototype.touch = function(p) {
     p.xTouched = true;
     p.yTouched = true;
 };
-
 
 /*
 * Returns a unit vector with x/y coordinates.
@@ -418,7 +404,6 @@ function getUnitVector(x, y) {
     else if( x === 0 && y === 1) return yUnitVector;
     else return new UnitVector(x, y);
 }
-
 
 /*
 * Creates a point in the hinting engine.
@@ -444,7 +429,6 @@ function HPoint(
     Object.preventExtensions(this);
 }
 
-
 /*
 * Returns the next touched point on the contour.
 */
@@ -455,7 +439,6 @@ HPoint.prototype.nextTouched = function(v) {
 
     return p;
 };
-
 
 /*
 * Returns the previous touched point on the contour
@@ -468,12 +451,10 @@ HPoint.prototype.prevTouched = function(v) {
     return p;
 };
 
-
 /*
 * The zero point.
 */
 var HPZero = Object.freeze(new HPoint(0, 0));
-
 
 /*
 * The default state of the interpreter.
@@ -491,7 +472,6 @@ var defaultState = {
     minDis : 1,           // minimum distance
     autoFlip : true
 };
-
 
 /*
 * The current state of the interpreter.
@@ -518,7 +498,6 @@ function State(env, prog) {
             this.round = roundToGrid;
     }
 }
-
 
 /*
 * Executes a glyph program.
@@ -623,7 +602,6 @@ Hinting.prototype.exec = function(glyph, ppem) {
     }
 };
 
-
 /*
 * Executes the hinting program for a glyph.
 */
@@ -710,7 +688,6 @@ function execGlyph(glyph, prepState) {
     return gZone;
 }
 
-
 /*
 * Executes the hinting program for a componenet of a multi-component glyph
 * Or of the glyph itself by a non-component glyph
@@ -780,7 +757,6 @@ function execComponent(glyph, state, xScale, yScale)
     }
 }
 
-
 /*
 * Executes the program loaded in state.
 */
@@ -849,7 +825,6 @@ function exec(state) {
         */
     }
 }
-                
 
 /*
 * Initializes the twilight zone.
@@ -871,7 +846,6 @@ function initTZone(state)
 *          And then a lot of instructions...                *
 *----------------------------------------------------------*/
 
-
 // SVTCA[a] Set freedom and projection Vectors To Coordinate Axis
 // 0x00-0x01
 function SVTCA(v, state) {
@@ -888,7 +862,6 @@ function SPVTCA(v, state) {
     state.pv = state.dpv = v;
 }
 
-
 // SFVTCA[a] Set Freedom Vector to Coordinate Axis
 // 0x04-0x05
 function SFVTCA(v, state) {
@@ -896,7 +869,6 @@ function SFVTCA(v, state) {
 
     state.fv = v;
 }
-
 
 // SPVTL[a] Set Projection Vector To Line
 // 0x06-0x07
@@ -922,7 +894,6 @@ function SPVTL(a, state) {
     state.pv = state.dpv = getUnitVector(dx, dy);
 }
 
-
 // SFVTL[a] Set Freedom Vector To Line
 // 0x08-0x09
 function SFVTL(a, state) {
@@ -947,7 +918,6 @@ function SFVTL(a, state) {
     state.fv = getUnitVector(dx, dy);
 }
 
-
 // SPVFS[] Set Projection Vector From Stack
 // 0x0A
 function SPVFS(state) {
@@ -959,7 +929,6 @@ function SPVFS(state) {
 
     state.pv = state.dpv = getUnitVector(x, y);
 }
-
 
 // SFVFS[] Set Freedom Vector From Stack
 // 0x0B
@@ -973,7 +942,6 @@ function SFVFS(state) {
     state.fv = getUnitVector(x, y);
 }
 
-
 // GPV[] Get Projection Vector
 // 0x0C
 function GPV(state) {
@@ -985,7 +953,6 @@ function GPV(state) {
     stack.push(pv.x * 0x4000);
     stack.push(pv.y * 0x4000);
 }
-
 
 // GFV[] Get Freedom Vector
 // 0x0C
@@ -999,7 +966,6 @@ function GFV(state) {
     stack.push(fv.y * 0x4000);
 }
 
-
 // SFVTPV[] Set Freedom Vector To Projection Vector
 // 0x0E
 function SFVTPV(state) {
@@ -1007,7 +973,6 @@ function SFVTPV(state) {
 
     if (DEBUG) console.log(state.step, 'SFVTPV[]');
 }
-
 
 // ISECT[] moves point p to the InterSECTion of two lines
 // 0x0F
@@ -1059,7 +1024,6 @@ function ISECT(state)
     p.y = (f1*(y3 - y4) - f2*(y1 - y2)) / div;
 }
 
-
 // SRP0[] Set Reference Point 0
 // 0x10
 function SRP0(state) {
@@ -1067,7 +1031,6 @@ function SRP0(state) {
 
     if (DEBUG) console.log(state.step, 'SRP0[]', state.rp0);
 }
-
 
 // SRP1[] Set Reference Point 1
 // 0x11
@@ -1077,7 +1040,6 @@ function SRP1(state) {
     if (DEBUG) console.log(state.step, 'SRP1[]', state.rp1);
 }
 
-
 // SRP1[] Set Reference Point 2
 // 0x12
 function SRP2(state) {
@@ -1085,7 +1047,6 @@ function SRP2(state) {
 
     if (DEBUG) console.log(state.step, 'SRP2[]', state.rp2);
 }
-
 
 // SZP0[] Set Zone Pointer 0
 // 0x13
@@ -1109,7 +1070,6 @@ function SZP0(state) {
     }
 }
 
-
 // SZP1[] Set Zone Pointer 1
 // 0x14
 function SZP1(state) {
@@ -1131,7 +1091,6 @@ function SZP1(state) {
             throw new Error('Invalid zone pointer');
     }
 }
-
 
 // SZP2[] Set Zone Pointer 2
 // 0x15
@@ -1155,7 +1114,6 @@ function SZP2(state) {
     }
 }
 
-
 // SZPS[] Set Zone PointerS
 // 0x16
 function SZPS(state) {
@@ -1178,7 +1136,6 @@ function SZPS(state) {
     }
 }
 
-
 // SLOOP[] Set LOOP variable
 // 0x17
 function SLOOP(state) {
@@ -1186,7 +1143,6 @@ function SLOOP(state) {
 
     if (DEBUG) console.log(state.step, 'SLOOP[]', state.loop);
 }
-
 
 // RTG[] Round To Grid
 // 0x18
@@ -1196,7 +1152,6 @@ function RTG(state) {
     state.round = roundToGrid;
 }
 
-
 // RTHG[] Round To Half Grid
 // 0x19
 function RTHG(state) {
@@ -1204,7 +1159,6 @@ function RTHG(state) {
 
     state.round = roundToHalfGrid;
 }
-
 
 // SMD[] Set Minimum Distance
 // 0x1A
@@ -1215,7 +1169,6 @@ function SMD(state) {
     
     state.minDis = d / 0x40;
 }
-
 
 // ELSE[] ELSE clause
 // 0x1B
@@ -1245,7 +1198,6 @@ function ELSE(state) {
     state.ip = ip;
 }
 
-
 // JMPR[] JuMP Relative
 // 0x1C
 function JMPR(state) {
@@ -1268,7 +1220,6 @@ function SCVTCI(state) {
     state.cvCutIn = n / 0x40;
 }
 
-
 // DUP[] DUPlicate top stack element
 // 0x20
 function DUP(state) {
@@ -1279,7 +1230,6 @@ function DUP(state) {
     stack.push(stack[stack.length - 1]);
 }
 
-
 // POP[] POP top stack element
 // 0x21
 function POP(state) {
@@ -1288,7 +1238,6 @@ function POP(state) {
     state.stack.pop();
 }
 
-
 // CLEAR[] CLEAR the stack
 // 0x22
 function CLEAR(state) {
@@ -1296,7 +1245,6 @@ function CLEAR(state) {
 
     state.stack.length = 0;
 }
-
 
 // SWAP[] SWAP the top two elements on the stack
 // 0x23
@@ -1312,7 +1260,6 @@ function SWAP(state) {
     stack.push(b);
 }
 
-
 // DEPTH[] DEPTH of the stack
 // 0x24
 function DEPTH(state) {
@@ -1322,7 +1269,6 @@ function DEPTH(state) {
 
     stack.push( stack.length );
 }
-
 
 // LOOPCALL[] LOOPCALL function
 // 0x2A
@@ -1378,7 +1324,6 @@ function CALL(state) {
     if (DEBUG) console.log(++state.step, 'returning from', fn);
 }
 
-
 // CINDEX[] Copy the INDEXed element to the top of the stack
 // 0x25
 function CINDEX(state) {
@@ -1393,7 +1338,6 @@ function CINDEX(state) {
     // thus stack.length - k.
 }
 
-
 // MINDEX[] Move the INDEXed element to the top of the stack
 // 0x26
 function MINDEX(state) {
@@ -1404,7 +1348,6 @@ function MINDEX(state) {
 
     stack.push(stack.splice(stack.length - k, 1)[ 0 ]);
 }
-
 
 // FDEF[] Function DEFinition
 // 0x2C
@@ -1425,7 +1368,6 @@ function FDEF(state) {
     state.funcs[fn] = prog.slice(ipBegin + 1, ip);
 }
 
-
 // MDAP[a] Move Direct Absolute Point
 // 0x2E-0x2F
 function MDAP(round, state) {
@@ -1445,7 +1387,6 @@ function MDAP(round, state) {
 
     state.rp0 = state.rp1 = pi;
 }
-
 
 // IUP[a] Interpolate Untouched Points through the outline
 // 0x30
@@ -1481,7 +1422,6 @@ function IUP(v, state) {
     }
 }
 
-
 // SHP[] SHift Point using reference point
 // 0x32-0x33
 function SHP(a, state) {
@@ -1505,7 +1445,7 @@ function SHP(a, state) {
         if (DEBUG) {
             console.log(
                 state.step,
-                (  state.loop > 1 ? 
+                (  state.loop > 1 ?
                    'loop ' + (state.loop - loop) + ': ' :
                    ''
                 ) +
@@ -1516,7 +1456,6 @@ function SHP(a, state) {
 
     state.loop = 1;
 }
-
 
 // SHC[] SHift Contour using reference point
 // 0x36-0x37
@@ -1539,7 +1478,6 @@ function SHC(a, state) {
         p = p.nextPointOnContour;
     } while(p !== sp);
 }
-
 
 // SHZ[] SHift Zone using reference point
 // 0x36-0x37
@@ -1571,7 +1509,6 @@ function SHZ(a, state) {
     }
 }
 
-
 // SHPIX[] SHift point by a PIXel amount
 // 0x38
 function SHPIX(state) {
@@ -1597,7 +1534,6 @@ function SHPIX(state) {
 
     state.loop = 1;
 }
-
 
 // IP[] Interpolate Point
 // 0x39
@@ -1630,7 +1566,6 @@ function IP(state) {
     state.loop = 1;
 }
 
-
 // MSIRP[a] Move Stack Indirect Relative Point
 // 0x3A-0x3B
 function MSIRP(a, state) {
@@ -1651,8 +1586,6 @@ function MSIRP(a, state) {
     state.rp2 = pi;
     if (a) state.rp0 = pi;
 }
-
-
 
 // ALIGNRP[] Align to reference point.
 // 0x3C
@@ -1682,7 +1615,6 @@ function ALIGNRP(state) {
     state.loop = 1;
 }
 
-
 // RTG[] Round To Double Grid
 // 0x3D
 function RTDG(state) {
@@ -1690,7 +1622,6 @@ function RTDG(state) {
 
     state.round = roundToDoubleGrid;
 }
-
 
 // MIAP[a] Move Indirect Absolute Point
 // 0x3E-0x3F
@@ -1727,7 +1658,6 @@ function MIAP(round, state) {
     state.rp0 = state.rp1 = pi;
 }
 
-
 // NPUSB[] PUSH N Bytes
 // 0x40
 function NPUSHB(state) {
@@ -1743,7 +1673,6 @@ function NPUSHB(state) {
 
     state.ip = ip;
 }
-
 
 // NPUSHW[] PUSH N Words
 // 0x41
@@ -1764,7 +1693,6 @@ function NPUSHW(state) {
     state.ip = ip;
 }
 
-
 // WS[] Write Store
 // 0x42
 function WS(state) {
@@ -1781,7 +1709,6 @@ function WS(state) {
     store[l] = v;
 }
 
-
 // RS[] Read Store
 // 0x43
 function RS(state) {
@@ -1797,7 +1724,6 @@ function RS(state) {
     stack.push(v);
 }
 
-
 // WCVTP[] Write Control Value Table in Pixel units
 // 0x44
 function WCVTP(state) {
@@ -1811,7 +1737,6 @@ function WCVTP(state) {
     state.cvt[l] = v / 0x40;
 }
 
-
 // RCVT[] Read Control Value Table entry
 // 0x45
 function RCVT(state) {
@@ -1822,7 +1747,6 @@ function RCVT(state) {
 
     stack.push(state.cvt[cvte] * 0x40);
 }
-
 
 // GC[] Get Coordinate projected onto the projection vector
 // 0x46-0x47
@@ -1836,7 +1760,6 @@ function GC(a, state) {
     var d = state.dpv.distance(p, HPZero, a, false);
     stack.push(d * 0x40);
 }
-
 
 // MD[a] Measure Distance
 // 0x49-0x4A
@@ -1853,7 +1776,6 @@ function MD(a, state) {
     state.stack.push(Math.round(d * 64));
 }
 
-
 // MPPEM[] Measure Pixels Per EM
 // 0x4B
 function MPPEM(state) {
@@ -1861,14 +1783,12 @@ function MPPEM(state) {
     state.stack.push(state.ppem);
 }
 
-
 // FLIPON[] set the auto FLIP Boolean to ON
 // 0x4D
 function FLIPON(state) {
     if (DEBUG) console.log(state.step, 'FLIPON[]');
     state.autoFlip = true;
 }
-
 
 // LT[] Less Than
 // 0x50
@@ -1883,7 +1803,6 @@ function LT(state) {
     stack.push(e1 < e2 ? 1 : 0);
 }
 
-
 // LTEQ[] Less Than or EQual
 // 0x53
 function LTEQ(state) {
@@ -1895,7 +1814,6 @@ function LTEQ(state) {
 
     stack.push(e1 <= e2 ? 1 : 0);
 }
-
 
 // GTEQ[] Greater Than
 // 0x52
@@ -1909,7 +1827,6 @@ function GT(state) {
     stack.push(e1 > e2 ? 1 : 0);
 }
 
-
 // GTEQ[] Greater Than or EQual
 // 0x53
 function GTEQ(state) {
@@ -1921,7 +1838,6 @@ function GTEQ(state) {
 
     stack.push(e1 >= e2 ? 1 : 0);
 }
-
 
 // EQ[] EQual
 // 0x54
@@ -1935,7 +1851,6 @@ function EQ(state) {
     stack.push(e2 === e1 ? 1 : 0);
 }
 
-
 // NEQ[] Not EQual
 // 0x55
 function NEQ(state) {
@@ -1948,7 +1863,6 @@ function NEQ(state) {
     stack.push(e2 !== e1 ? 1 : 0);
 }
 
-
 // ODD[] ODD
 // 0x56
 function ODD(state) {
@@ -1960,7 +1874,6 @@ function ODD(state) {
     stack.push(Math.trunc(n) % 2 ? 1 : 0);
 }
 
-
 // EVEN[] EVEN
 // 0x57
 function EVEN(state) {
@@ -1971,7 +1884,6 @@ function EVEN(state) {
 
     stack.push(Math.trunc(n) % 2 ? 0 : 1);
 }
-
 
 // IF[] IF test
 // 0x58
@@ -2011,7 +1923,6 @@ function IF(state) {
     state.ip = ip;
 }
 
-
 // EIF[] End IF
 // 0x59
 function EIF(state) {
@@ -2021,7 +1932,6 @@ function EIF(state) {
     
     if (DEBUG) console.log(state.step, 'EIF[]');
 }
-
 
 // AND[] logical AND
 // 0x5A
@@ -2036,7 +1946,6 @@ function AND(state) {
     stack.push(e2 && e1 ? 1 : 0);
 }
 
-
 // OR[] logical OR
 // 0x5B
 function OR(state) {
@@ -2050,7 +1959,6 @@ function OR(state) {
     stack.push(e2 || e1 ? 1 : 0);
 }
 
-
 // NOT[] logical NOT
 // 0x5C
 function NOT(state) {
@@ -2062,7 +1970,6 @@ function NOT(state) {
 
     stack.push(e ? 0 : 1);
 }
-
 
 // DELTAP1[] DELTA exception P1
 // DELTAP2[] DELTA exception P2
@@ -2096,7 +2003,6 @@ function DELTAP123(b, state) {
     }
 }
 
-
 // SDB[] Set Delta Base in the graphics state
 // 0x5E
 function SDB(state) {
@@ -2109,7 +2015,6 @@ function SDB(state) {
     state.deltaBase = n;
 }
 
-
 // SDS[] Set Delta Shift in the graphics state
 // 0x5F
 function SDS(state) {
@@ -2121,7 +2026,6 @@ function SDS(state) {
 
     state.deltaShift = Math.pow(0.5, n);
 }
-
 
 // ADD[] ADD
 // 0x60
@@ -2136,7 +2040,6 @@ function ADD(state) {
     stack.push(n1 + n2);
 }
 
-
 // SUB[] SUB
 // 0x61
 function SUB(state) {
@@ -2149,7 +2052,6 @@ function SUB(state) {
 
     stack.push(n1 - n2);
 }
-
 
 // DIV[] DIV
 // 0x62
@@ -2164,7 +2066,6 @@ function DIV(state) {
     stack.push(n1 * 64 / n2);
 }
 
-
 // MUL[] MUL
 // 0x63
 function MUL(state) {
@@ -2178,7 +2079,6 @@ function MUL(state) {
     stack.push(n1 * n2 / 64);
 }
 
-
 // ABS[] ABSolute value
 // 0x64
 function ABS(state) {
@@ -2189,8 +2089,6 @@ function ABS(state) {
 
     stack.push(Math.abs(n));
 }
-
-
 
 // NEG[] NEGate
 // 0x65
@@ -2203,7 +2101,6 @@ function NEG(state) {
     stack.push(-n);
 }
 
-
 // FLOOR[] FLOOR
 // 0x66
 function FLOOR(state) {
@@ -2215,7 +2112,6 @@ function FLOOR(state) {
     stack.push(Math.floor(n / 0x40) * 0x40);
 }
 
-
 // CEILING[] CEILING
 // 0x67
 function CEILING(state) {
@@ -2226,7 +2122,6 @@ function CEILING(state) {
 
     stack.push(Math.ceil(n / 0x40) * 0x40);
 }
-
 
 // ROUND[ab] ROUND value
 // 0x68-0x6B
@@ -2240,7 +2135,6 @@ function ROUND(dt, state) {
     stack.push(state.round(n / 0x40) * 0x40);
 }
 
-
 // WCVTF[] Write Control Value Table in Funits
 // 0x70
 function WCVTF(state) {
@@ -2253,7 +2147,6 @@ function WCVTF(state) {
 
     state.cvt[l] = v * state.ppem / state.font.unitsPerEm;
 }
-
 
 // DELTAC1[] DELTA exception C1
 // DELTAC2[] DELTA exception C2
@@ -2285,7 +2178,6 @@ function DELTAC123(b, state) {
         state.cvt[c] += delta;
     }
 }
-
 
 // SROUND[] Super ROUND
 // 0x76
@@ -2323,7 +2215,6 @@ function SROUND(state) {
     else state.srThreshold = (n/8 - 0.5) * period;
 }
 
-
 // S45ROUND[] Super ROUND 45 degrees
 // 0x77
 function S45ROUND(state) {
@@ -2360,7 +2251,6 @@ function S45ROUND(state) {
     else state.srThreshold = (n/8 - 0.5) * period;
 }
 
-
 // ROFF[] Round Off
 // 0x7A
 function ROFF(state) {
@@ -2368,7 +2258,6 @@ function ROFF(state) {
 
     state.round = roundOff;
 }
-
 
 // RUTG[] Round Up To Grid
 // 0x7C
@@ -2378,7 +2267,6 @@ function RUTG(state) {
     state.round = roundUpToGrid;
 }
 
-
 // RDTG[] Round Down To Grid
 // 0x7D
 function RDTG(state) {
@@ -2386,7 +2274,6 @@ function RDTG(state) {
     
     state.round = roundDownToGrid;
 }
-
 
 // SCANCTRL[] SCAN conversion ConTRoL
 // 0x85
@@ -2397,8 +2284,6 @@ function SCANCTRL(state) {
 
     if (DEBUG) console.log(state.step, 'SCANCTRL[]', n);
 }
-
-
 
 // SDPVTL[a] Set Dual Projection Vector To Line
 // 0x86-0x87
@@ -2426,7 +2311,6 @@ function SDPVTL(a, state) {
     state.dpv = getUnitVector(dx, dy);
 }
 
-
 // GETINFO[] GET INFOrmation
 // 0x88
 function GETINFO(state) {
@@ -2448,7 +2332,6 @@ function GETINFO(state) {
     stack.push(r);
 }
 
-
 // ROLL[] ROLL the top three stack elements
 // 0x8A
 function ROLL(state) {
@@ -2465,7 +2348,6 @@ function ROLL(state) {
     stack.push(c);
 }
 
-
 // MAX[] MAXimum of top two stack elements
 // 0x8B
 function MAX(state) {
@@ -2478,7 +2360,6 @@ function MAX(state) {
 
     stack.push(Math.max(e1, e2));
 }
-
 
 // MIN[] MINimum of top two stack elements
 // 0x8C
@@ -2493,7 +2374,6 @@ function MIN(state) {
     stack.push(Math.min(e1, e2));
 }
 
-
 // SCANTYPE[] SCANTYPE
 // 0x8D
 function SCANTYPE(state) {
@@ -2503,7 +2383,6 @@ function SCANTYPE(state) {
 
     if (DEBUG) console.log(state.step, 'SCANTYPE[]', n);
 }
-
 
 // INSTCTRL[] INSTCTRL
 // 0x8D
@@ -2520,7 +2399,6 @@ function INSTCTRL(state) {
     }
 }
 
-
 // PUSHB[abc] PUSH Bytes
 // 0xB0-0xB7
 function PUSHB(n, state) {
@@ -2534,7 +2412,6 @@ function PUSHB(n, state) {
 
     state.ip = ip;
 }
-
 
 // PUSHW[abc] PUSH Words
 // 0xB8-0xBF
@@ -2553,7 +2430,6 @@ function PUSHW(n, state) {
     
     state.ip = ip;
 }
-
 
 // MDRP[abcde] Move Direct Relative Point
 // 0xD0-0xEF
@@ -2621,7 +2497,6 @@ function MDRP_MIRP(indirect, setRp0, keepD, ro, dt, state) {
     state.rp2 = pi;
     if (setRp0) state.rp0 = pi;
 }
-
 
 /*
 * The instruction table.
@@ -2885,9 +2760,7 @@ instructionTable = [
     /* 0xFF */ MDRP_MIRP.bind(undefined, 1, 1, 1, 1, 3)
 ];
 
-
 module.exports = Hinting;
-
 
 /*****************************
   Mathematical Considertions
@@ -3082,9 +2955,9 @@ arithmetic average of the movement of both refererence points.
          .         .                   .         .
          .    10   .          30       .         .
          |.........|.............................|
-                   .                   .         
+                   .                   .
                    . (+5)              .
-                po *--->* p            .         
+                po *--->* p            .
                    .    .              .
                    .    .   20         .
                    |....|..............|

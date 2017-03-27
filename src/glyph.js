@@ -126,7 +126,8 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
-    var commands, hPoints;
+    var commands;
+	var hPoints;
     if (!options) options = { };
     var xScale = options.xScale;
     var yScale = options.yScale;

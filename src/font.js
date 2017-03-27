@@ -8,7 +8,7 @@ var encoding = require('./encoding');
 var glyphset = require('./glyphset');
 var Substitution = require('./substitution');
 var util = require('./util');
-var HintingTrueType = require( './hintingtt' );
+var HintingTrueType = require('./hintingtt');
 
 /**
  * @typedef FontOptions
@@ -309,9 +309,9 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
  */
 Font.prototype.getPath = function(text, x, y, fontSize, options) {
     var fullPath = new path.Path();
-	var self = this;
+    var _this = this;
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        var glyphPath = glyph.getPath(gX, gY, gFontSize, options, self);
+        var glyphPath = glyph.getPath(gX, gY, gFontSize, options, _this);
         fullPath.extend(glyphPath);
     });
     return fullPath;
