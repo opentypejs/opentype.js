@@ -119,9 +119,10 @@ Glyph.prototype.getBoundingBox = function() {
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
  * @param  {Object=} options - xScale, yScale to strech the glyph.
+ * @param  {opentype.Font} if hinting is to be used, the font
  * @return {opentype.Path}
  */
-Glyph.prototype.getPath = function(x, y, fontSize, options) {
+Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
@@ -130,7 +131,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options) {
     var xScale = options.xScale;
     var yScale = options.yScale;
 
-    if (options.hinting && font.hinting) {
+    if (options.hinting && font && font.hinting) {
         // in case of hinting, the hinting engine takes care
         // of scaling the points (not the path) before hinting.
         hPoints = font.hinting.exec(this, fontSize);

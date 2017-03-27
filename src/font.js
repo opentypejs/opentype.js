@@ -309,8 +309,9 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
  */
 Font.prototype.getPath = function(text, x, y, fontSize, options) {
     var fullPath = new path.Path();
+	var self = this;
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        var glyphPath = glyph.getPath(gX, gY, gFontSize, options);
+        var glyphPath = glyph.getPath(gX, gY, gFontSize, options, self);
         fullPath.extend(glyphPath);
     });
     return fullPath;
