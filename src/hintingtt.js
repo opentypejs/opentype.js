@@ -529,7 +529,7 @@ function State(env, prog) {
 * ppem: the size the glyph is rendered for
 */
 Hinting.prototype.exec = function(glyph, ppem) {
-    if (typeof(ppem) !== 'number') {
+    if (typeof ppem !== 'number') {
         throw new Error('Point size is not a number!');
     }
 
@@ -703,7 +703,7 @@ function execGlyph(glyph, prepState) {
             gZone.length -= 2;
         }
     }
-    
+
     return gZone;
 }
 
@@ -732,7 +732,7 @@ function execComponent(glyph, state, xScale, yScale)
             cp.onCurve
         );
     }
-    
+
     // loops again to chain link the contours
     var sp; // start point
     var np; // next point
@@ -790,16 +790,16 @@ function exec(state) {
     for (state.ip = 0; state.ip < pLen; state.ip++) {
         if (DEBUG) state.step++;
         ins = instructionTable[prog[state.ip]];
-        
+
         if(!ins) {
             throw new Error(
                 'unknown instruction: 0x' +
                 Number(prog[state.ip]).toString(16)
             );
         }
-       
+
         ins(state);
-        
+
         // very extensive debugging for each step
         /*
         if (DEBUG) {
@@ -818,7 +818,7 @@ function exec(state) {
                 }
                 console.log('GZ', da);
             }
-            
+
             if (state.tZone) {
                 da = [];
                 for (i = 0; i < state.tZone.length; i++) {
@@ -898,9 +898,10 @@ function SPVTL(a, state) {
     var p2 = state.z2[p2i];
     var p1 = state.z1[p1i];
 
-    if (DEBUG) console.log( 'SPVTL[' + a + ']', p2i, p1i );
+    if (DEBUG) console.log('SPVTL[' + a + ']', p2i, p1i);
 
-    var dx, dy;
+    var dx;
+    var dy;
 
     if (!a) {
         dx = p1.x - p2.x;
@@ -922,9 +923,10 @@ function SFVTL(a, state) {
     var p2 = state.z2[p2i];
     var p1 = state.z1[p1i];
 
-    if (DEBUG) console.log( 'SFVTL[' + a + ']', p2i, p1i );
+    if (DEBUG) console.log('SFVTL[' + a + ']', p2i, p1i );
 
-    var dx, dy;
+    var dx;
+    var dy;
 
     if (!a) {
         dx = p1.x - p2.x;
@@ -1034,13 +1036,13 @@ function ISECT(state)
     var x4 = pb1.x;
     var y4 = pb1.y;
 
-    var div = (x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4);
-    var f1 = x1*y2 - y1*x2;
-    var f2 = x3*y4 - y3*x4; 
+    var div = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    var f1 = x1 * y2 - y1 * x2;
+    var f2 = x3 * y4 - y3 * x4;
 
-    p.x = (f1*(x3 - x4) - f2*(x1 - x2)) / div;
+    p.x = (f1 * (x3 - x4) - f2 * (x1 - x2)) / div;
 
-    p.y = (f1*(y3 - y4) - f2*(y1 - y2)) / div;
+    p.y = (f1 * (y3 - y4) - f2 * (y1 - y2)) / div;
 }
 
 // SRP0[] Set Reference Point 0
@@ -1073,10 +1075,10 @@ function SZP0(state) {
     var n = state.stack.pop();
 
     if (DEBUG) console.log(state.step, 'SZP0[]', n);
- 
+
     state.zp0 = n;
 
-    switch(n) {
+    switch (n) {
         case 0:
             if (!state.tZone) initTZone(state);
             state.z0 = state.tZone;
@@ -1095,7 +1097,7 @@ function SZP1(state) {
     var n = state.stack.pop();
 
     if (DEBUG) console.log(state.step, 'SZP1[]', n);
- 
+
     state.zp1 = n;
 
     switch(n) {
@@ -1185,7 +1187,7 @@ function SMD(state) {
     var d = state.stack.pop();
 
     if (DEBUG) console.log(state.step, 'SMD[]', d);
-    
+
     state.minDis = d / 0x40;
 }
 
@@ -1202,9 +1204,9 @@ function ELSE(state) {
     // otherwise skip forward until matching else or endif
     var nesting = 1;
     var ins;
-    do{
+    do {
         ins = prog[++ip];
-        switch(ins) {
+        switch (ins) {
             case 0x59: // EIF
                 nesting--;
                 break;
@@ -1212,9 +1214,9 @@ function ELSE(state) {
                 nesting++;
                 break;
         }
-    } while(nesting > 0);
+    } while (nesting > 0);
 
-    state.ip = ip;
+    state.i p = ip;
 }
 
 // JMPR[] JuMP Relative
@@ -1286,7 +1288,7 @@ function DEPTH(state) {
 
     if (DEBUG) console.log(state.step, 'DEPTH[]');
 
-    stack.push( stack.length );
+    stack.push(stack.length);
 }
 
 // LOOPCALL[] LOOPCALL function
