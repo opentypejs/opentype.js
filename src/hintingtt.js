@@ -791,7 +791,7 @@ function exec(state) {
         if (DEBUG) state.step++;
         ins = instructionTable[prog[state.ip]];
 
-        if(!ins) {
+        if (!ins) {
             throw new Error(
                 'unknown instruction: 0x' +
                 Number(prog[state.ip]).toString(16)
@@ -923,7 +923,7 @@ function SFVTL(a, state) {
     var p2 = state.z2[p2i];
     var p1 = state.z1[p1i];
 
-    if (DEBUG) console.log('SFVTL[' + a + ']', p2i, p1i );
+    if (DEBUG) console.log('SFVTL[' + a + ']', p2i, p1i);
 
     var dx;
     var dy;
@@ -1012,7 +1012,7 @@ function ISECT(state)
     var pb0 = z1[pb0i];
     var pb1 = z1[pb1i];
     var p = state.z2[pi];
-    
+ 
     if (DEBUG) {
         console.log(
             'ISECT[], ',
@@ -1100,7 +1100,7 @@ function SZP1(state) {
 
     state.zp1 = n;
 
-    switch(n) {
+    switch (n) {
         case 0:
             if (!state.tZone) initTZone(state);
             state.z1 = state.tZone;
@@ -1141,10 +1141,10 @@ function SZPS(state) {
     var n = state.stack.pop();
 
     if (DEBUG) console.log(state.step, 'SZPS[]', n);
- 
+
     state.zp0 = state.zp1 = state.zp2 = n;
 
-    switch(n) {
+    switch (n) {
         case 0:
             if (!state.tZone) initTZone(state);
             state.z0 = state.z1 = state.z2 = state.tZone;
@@ -1367,7 +1367,7 @@ function MINDEX(state) {
 
     if (DEBUG) console.log(state.step, 'MINDEX[]', k);
 
-    stack.push(stack.splice(stack.length - k, 1)[ 0 ]);
+    stack.push(stack.splice(stack.length - k, 1)[0]);
 }
 
 // FDEF[] Function DEFinition
@@ -1396,7 +1396,7 @@ function MDAP(round, state) {
     var p = state.z0[pi];
     var fv = state.fv;
     var pv = state.pv;
-    
+
     if (DEBUG) console.log(state.step, 'MDAP[' + round + ']', pi);
 
     var d = pv.distance(p, HPZero);
@@ -1415,7 +1415,8 @@ function IUP(v, state) {
     var z2 = state.z2;
     var pLen = z2.length - 2;
     var cp;
-    var pp, np;
+    var pp;
+    var np;
 
     if (DEBUG) console.log(state.step, 'IUP[' + v.axis + ']');
 
@@ -1424,7 +1425,7 @@ function IUP(v, state) {
 
         // if this point has been touched go on
         if (v.touched(cp)) continue;
-    
+
         pp = cp.prevTouched(v);
 
         // no point on the contour has been touched?
@@ -1466,7 +1467,7 @@ function SHP(a, state) {
         if (DEBUG) {
             console.log(
                 state.step,
-                (  state.loop > 1 ?
+                (state.loop > 1 ?
                    'loop ' + (state.loop - loop) + ': ' :
                    ''
                 ) +
@@ -1494,10 +1495,10 @@ function SHC(a, state) {
 
     var d = pv.distance(rp, rp, false, true);
 
-    do{
+    do {
         if (p !== rp) fv.setRelative(p, p, d, pv);
         p = p.nextPointOnContour;
-    } while(p !== sp);
+    } while (p !== sp);
 }
 
 // SHZ[] SHift Zone using reference point
@@ -1519,7 +1520,7 @@ function SHZ(a, state) {
         case 1 : z = state.gZone; break;
         default : throw new Error('Invalid zone');
     }
-    
+
     var p;
     var d = pv.distance(rp, rp, false, true);
     var pLen = z.length - 2;
@@ -1568,7 +1569,7 @@ function IP(state) {
     var fv = state.fv;
     var pv = state.dpv;
     var z2 = state.z2;
-    
+
     while (loop--) {
         var pi = stack.pop();
         var p = z2[pi];
@@ -1597,7 +1598,7 @@ function MSIRP(a, state) {
     var rp0 = state.z0[state.rp0];
     var fv = state.fv;
     var pv = state.pv;
-    
+
     fv.setRelative(p, rp0, d, pv);
     fv.touch(p);
 
@@ -1621,7 +1622,7 @@ function ALIGNRP(state) {
 
     while (loop--) {
         var pi = stack.pop();
-        var p = z1[ pi ];
+        var p = z1[pi];
 
         if (DEBUG) console.log(
             state.step,
@@ -1658,7 +1659,7 @@ function MIAP(round, state) {
     // TODO cvtcutin should be considered here
 
     if (round) cv = state.round(cv);
-   
+
     if (DEBUG) {
         console.log(
             state.step,
@@ -1707,10 +1708,10 @@ function NPUSHW(state) {
 
     for (var i = 0; i < n; i++) {
         var w = (prog[++ip] << 8) | prog[++ip];
-        if (w & 0x8000) w = -((w^0xffff)+1);
+        if (w & 0x8000) w = -((w ^ 0xffff) + 1);
         stack.push(w);
     }
-    
+
     state.ip = ip;
 }
 
@@ -1830,7 +1831,7 @@ function LTEQ(state) {
     var stack = state.stack;
     var e2 = stack.pop();
     var e1 = stack.pop();
-    
+
     if (DEBUG) console.log(state.step, 'LTEQ[]', e2, e1);
 
     stack.push(e1 <= e2 ? 1 : 0);
@@ -1854,7 +1855,7 @@ function GTEQ(state) {
     var stack = state.stack;
     var e2 = stack.pop();
     var e1 = stack.pop();
-    
+
     if (DEBUG) console.log(state.step, 'GTEQ[]', e2, e1);
 
     stack.push(e1 >= e2 ? 1 : 0);
@@ -1868,7 +1869,7 @@ function EQ(state) {
     var e1 = stack.pop();
 
     if (DEBUG) console.log(state.step, 'EQ[]', e2, e1);
-    
+
     stack.push(e2 === e1 ? 1 : 0);
 }
 
@@ -1880,7 +1881,7 @@ function NEQ(state) {
     var e1 = stack.pop();
 
     if (DEBUG) console.log(state.step, 'NEQ[]', e2, e1);
-    
+
     stack.push(e2 !== e1 ? 1 : 0);
 }
 
@@ -1914,18 +1915,17 @@ function IF(state) {
 
     var test = state.stack.pop();
     var ins;
-    
+
     if (DEBUG) console.log(state.step, 'IF[]', test);
 
     // if test is true it just continues
     // if not the ip is skiped until matching ELSE or EIF
-    if (!test)
-    {
+    if (!test) {
         // otherwise skip forward until matching else or endif
         var nesting = 1;
-        do{
+        do {
             ins = prog[++ip];
-            switch(ins) {
+            switch (ins) {
                 case 0x1B: // ELSE
                     if (nesting === 1) nesting--;
                     break;
@@ -1936,8 +1936,8 @@ function IF(state) {
                     nesting++;
                     break;
             }
-        } while(nesting > 0);
-    
+        } while (nesting > 0);
+
         if (DEBUG) console.log(state.step, ins === 0x1B ? 'ELSE[]' : 'EIF[]');
     }
 
@@ -2005,20 +2005,20 @@ function DELTAP123(b, state) {
     var base = state.deltaBase + (b - 1) * 16;
     var ds = state.deltaShift;
     var z0 = state.z0;
-    
+
     if (DEBUG) console.log(state.step, 'DELTAP[' + b + ']', n, stack);
 
     for (var i = 0; i < n; i++)
     {
         var pi = stack.pop();
         var arg = stack.pop();
-        var appem = base + ((arg & 0xF0)>>4);
+        var appem = base + ((arg & 0xF0) >> 4);
         if (appem !== ppem) continue;
 
         var mag = (arg & 0x0F) - 8;
         if (mag >= 0) mag++;
         if (DEBUG) console.log(state.step, 'DELTAPFIX', pi, 'by', mag * ds);
-        
+
         var p = z0[pi];
         fv.setRelative(p, p, mag * ds, pv);
     }
@@ -2186,7 +2186,7 @@ function DELTAC123(b, state) {
     {
         var c = stack.pop();
         var arg = stack.pop();
-        var appem = base + ((arg & 0xF0)>>4);
+        var appem = base + ((arg & 0xF0) >> 4);
         if (appem !== ppem) continue;
 
         var mag = (arg & 0x0F) - 8;
@@ -2195,7 +2195,7 @@ function DELTAC123(b, state) {
         var delta = mag * ds;
 
         if (DEBUG) console.log(state.step, 'DELTACFIX', c, 'by', delta);
-       
+
         state.cvt[c] += delta;
     }
 }
@@ -2211,22 +2211,35 @@ function SROUND(state) {
 
     var period;
 
-    switch (n & 0xC0)
-    {
-        case 0x00: period = 0.5; break;
-        case 0x40: period = 1; break;
-        case 0x80: period = 2; break;
-        default: throw new Error('invalid SROUND value');
+    switch (n & 0xC0) {
+        case 0x00:
+            period = 0.5;
+            break;
+        case 0x40:
+            period = 1;
+            break;
+        case 0x80:
+            period = 2;
+            break;
+        default:
+            throw new Error('invalid SROUND value');
     }
 
     state.srPeriod = period;
 
-    switch (n & 0x30)
-    {
-        case 0x00: state.srPhase = 0; break;
-        case 0x10: state.srPhase = 0.25 * period; break;
-        case 0x20: state.srPhase = 0.5  * period; break;
-        case 0x30: state.srPhase = 0.75 * period; break;
+    switch (n & 0x30) {
+        case 0x00:
+            state.srPhase = 0;
+            break;
+        case 0x10:
+            state.srPhase = 0.25 * period;
+            break;
+        case 0x20:
+            state.srPhase = 0.5  * period;
+            break;
+        case 0x30:
+            state.srPhase = 0.75 * period;
+            break;
         default: throw new Error('invalid SROUND value');
     }
         
@@ -2249,21 +2262,37 @@ function S45ROUND(state) {
 
     switch (n & 0xC0)
     {
-        case 0x00: period = Math.sqrt(2) / 2; break;
-        case 0x40: period = Math.sqrt(2); break;
-        case 0x80: period = 2 * Math.sqrt(2); break;
-        default: throw new Error('invalid S45ROUND value');
+        case 0x00:
+            period = Math.sqrt(2) / 2;
+            break;
+        case 0x40:
+            period = Math.sqrt(2);
+            break;
+        case 0x80:
+            period = 2 * Math.sqrt(2);
+            break;
+        default:
+            throw new Error('invalid S45ROUND value');
     }
 
     state.srPeriod = period;
 
     switch (n & 0x30)
     {
-        case 0x00: state.srPhase = 0; break;
-        case 0x10: state.srPhase = 0.25 * period; break;
-        case 0x20: state.srPhase = 0.5  * period; break;
-        case 0x30: state.srPhase = 0.75 * period; break;
-        default: throw new Error('invalid S45ROUND value');
+        case 0x00:
+            state.srPhase = 0;
+            break;
+        case 0x10:
+            state.srPhase = 0.25 * period;
+            break;
+        case 0x20:
+            state.srPhase = 0.5  * period;
+            break;
+        case 0x30:
+            state.srPhase = 0.75 * period;
+            break;
+        default:
+            throw new Error('invalid S45ROUND value');
     }
         
     n &= 0x0F;
@@ -2292,7 +2321,7 @@ function RUTG(state) {
 // 0x7D
 function RDTG(state) {
     if (DEBUG) console.log(state.step, 'RDTG[]');
-    
+
     state.round = roundDownToGrid;
 }
 
@@ -2348,7 +2377,7 @@ function GETINFO(state) {
     // and thus those GETINFO are always 0.
 
     // opentype.js is always gray scaling
-    if (sel & 0x20) r |= 0x1000; 
+    if (sel & 0x20) r |= 0x1000;
 
     stack.push(r);
 }
