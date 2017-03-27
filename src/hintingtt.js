@@ -2603,15 +2603,15 @@ function MDRP_MIRP(indirect, setRp0, keepD, ro, dt, state) {
     if (DEBUG) {
         console.log(
             state.step,
-            ( indirect ? 'MIRP[' : 'MDRP[' )
-            + (setRp0 ? 'M' : 'm')
-            + (keepD ? '>' : '_')
-            + (ro ? 'R' : '_')
-            + (dt === 0 ? 'Gr' : (dt === 1 ? 'Bl' : (dt === 2 ? 'Wh' : '')))
-            + ']',
-            indirect
-                ?  cvte + '(' + state.cvt[cvte] + ',' +  cv + ')'
-                : '',
+            ( indirect ? 'MIRP[' : 'MDRP[' ) +
+            (setRp0 ? 'M' : 'm') +
+            (keepD ? '>' : '_') +
+            (ro ? 'R' : '_') +
+            (dt === 0 ? 'Gr' : (dt === 1 ? 'Bl' : (dt === 2 ? 'Wh' : ''))) +
+            ']',
+            indirect ?
+                cvte + '(' + state.cvt[cvte] + ',' +  cv + ')' :
+                '',
             pi,
             '(d =', od, '->', sign * d, ')'
         );
