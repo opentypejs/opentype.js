@@ -2342,7 +2342,7 @@ function SDPVTL(a, state) {
     var p2 = state.z2[p2i];
     var p1 = state.z1[p1i];
 
-    if (DEBUG) console.log('SDPVTL[' + a + ']', p2i, p1i );
+    if (DEBUG) console.log('SDPVTL[' + a + ']', p2i, p1i);
 
     var dx;
     var dy;
@@ -2364,7 +2364,7 @@ function GETINFO(state) {
     var stack = state.stack;
     var sel = stack.pop();
     var r = 0;
-   
+
     if (DEBUG) console.log(state.step, 'GETINFO[]', sel);
 
     // v35 as in no subpixel hinting
@@ -2439,7 +2439,7 @@ function INSTCTRL(state) {
 
     if (DEBUG) console.log(state.step, 'INSTCTRL[]', s, v);
 
-    switch(s) {
+    switch (s) {
         case 1 : state.inhibitGridFit = !!v; return;
         case 2 : state.ignoreCvt = !!v; return;
         default: throw new Error('invalid INSTCTRL[] selector');
@@ -2471,10 +2471,10 @@ function PUSHW(n, state) {
 
     for (var i = 0; i < n; i++) {
         var w = (prog[++ip] << 8) | prog[++ip];
-        if (w & 0x8000) w = -((w^0xffff)+1);
+        if (w & 0x8000) w = -((w ^ 0xffff) + 1);
         stack.push(w);
     }
-    
+
     state.ip = ip;
 }
 
@@ -2503,10 +2503,10 @@ function MDRP_MIRP(indirect, setRp0, keepD, ro, dt, state) {
     var d; // moving distance
     var sign; // sign of distance
     var cv;
-    
+
     d = od = pv.distance(p, rp, true, true);
     sign = d > 0 ? 1 : -1; // Math.sign would be 0 in case of 0
-    
+
     // TODO consider autoFlip
     d = Math.abs(d);
 
@@ -2515,9 +2515,9 @@ function MDRP_MIRP(indirect, setRp0, keepD, ro, dt, state) {
 
         if (ro && Math.abs(d - cv) < state.cvCutIn) d = cv;
     }
-    
+
     if (keepD && d < md) d = md;
-    
+
     if (ro) d = state.round(d);
 
     fv.setRelative(p, rp, sign * d, pv);
@@ -2526,7 +2526,7 @@ function MDRP_MIRP(indirect, setRp0, keepD, ro, dt, state) {
     if (DEBUG) {
         console.log(
             state.step,
-            ( indirect ? 'MIRP[' : 'MDRP[' ) +
+            (indirect ? 'MIRP[' : 'MDRP[') +
             (setRp0 ? 'M' : 'm') +
             (keepD ? '>' : '_') +
             (ro ? 'R' : '_') +
@@ -2555,10 +2555,10 @@ instructionTable = [
     /* 0x03 */ SPVTCA.bind(undefined, xUnitVector),
     /* 0x04 */ SFVTCA.bind(undefined, yUnitVector),
     /* 0x05 */ SFVTCA.bind(undefined, xUnitVector),
-    /* 0x06 */ SPVTL.bind(undefined, 0 ),
-    /* 0x07 */ SPVTL.bind(undefined, 1 ),
-    /* 0x08 */ SFVTL.bind(undefined, 0 ),
-    /* 0x09 */ SFVTL.bind(undefined, 1 ),
+    /* 0x06 */ SPVTL.bind(undefined, 0),
+    /* 0x07 */ SPVTL.bind(undefined, 1),
+    /* 0x08 */ SFVTL.bind(undefined, 0),
+    /* 0x09 */ SFVTL.bind(undefined, 1),
     /* 0x0A */ SPVFS,
     /* 0x0B */ SFVFS,
     /* 0x0C */ GPV,
@@ -2872,8 +2872,8 @@ freedom vector = y-axis:
     |           .-'* rpd
     |        .-'
     *     *-'  d
-    p     rp    
-                
+    p     rp
+
   rpdx = rpx + d * pv.x
   rpdy = rpy + d * pv.y
 
@@ -2891,7 +2891,7 @@ freedom vector = y-axis:
 generic case:
 -------------
 
-                        
+
                               .'(fv)
                             .'
                           .* pm
@@ -2908,7 +2908,7 @@ generic case:
          ...---'''   d
    *--'''
   rp
-  
+
     rpdx = rpx + d * pv.x
     rpdy = rpy + d * pv.y
 
@@ -2916,10 +2916,10 @@ generic case:
     pvns... normal slope to pv
 
     y - rpdy = pvns * (x - rpdx)
- 
+
  equation of freedom vector line:
     fvs ... slope of freedom vector (=fy/fx)
-  
+
     y - py = fvs * (x - px)
 
 
@@ -2933,7 +2933,7 @@ generic case:
 
     pvns * (x - rpdx) + rpdy = fvs * (x - px) + py
 
-  expand: 
+  expand:
     
     pvns * x - pvns * rpdx + rpdy = fvs * x - fvs * px + py
 
@@ -2973,7 +2973,7 @@ arithmetic average of the movement of both refererence points.
 
 
 
-           (+6)    
+           (+6)
     rp1o *---->*rp1
          .     .                          (+12)
          .     .                  rp2o *---------->* rp2
@@ -2989,12 +2989,12 @@ arithmetic average of the movement of both refererence points.
                |...........|.......................|
                                   36
 
-     
+
 -------
 
 
 
-           (+10)    
+           (+10)
     rp1o *-------->*rp1
          .         .                      (-10)
          .         .              rp2 *<---------* rpo2
@@ -3014,7 +3014,7 @@ arithmetic average of the movement of both refererence points.
 -------
 
 
-           (+10)    
+           (+10)
     rp1o *-------->*rp1
          .         .
          .         .
@@ -3027,7 +3027,7 @@ arithmetic average of the movement of both refererence points.
 -------
 
 
-           (+10)    
+           (+10)
     rp1o *-------->*rp1
          .         .
          .         .(+30)
