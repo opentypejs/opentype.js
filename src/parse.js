@@ -214,7 +214,6 @@ Parser.prototype.parseUShortList = function(count) {
     return offsets;
 };
 
-
 // Parses a list of 16 bit signed integers.
 Parser.prototype.parseShortList = function(count) {
     var list = new Array(count);

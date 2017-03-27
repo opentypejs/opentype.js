@@ -2881,7 +2881,7 @@ freedom vector = y-axis:
            pvns ... normal slope to pv
 
    y - rpdy = pvns * (x - rpdx)
-   
+
    x = p.x
 
    y = rpdy +  pvns * (p.x - rpdx)
@@ -2934,7 +2934,7 @@ generic case:
     pvns * (x - rpdx) + rpdy = fvs * (x - px) + py
 
   expand:
-    
+
     pvns * x - pvns * rpdx + rpdy = fvs * x - fvs * px + py
 
   switch:
@@ -3009,7 +3009,7 @@ arithmetic average of the movement of both refererence points.
                    .    .   20         .
                    |....|..............|
                      5        15
-     
+
 
 -------
 

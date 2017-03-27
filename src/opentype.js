@@ -278,7 +278,7 @@ function parseBuffer(buffer) {
             case 'prep' :
                 table = uncompressTable(data, tableEntry);
                 p = new parse.Parser(table.data, table.offset);
-                font.tables.prep = p.parseByteList( tableEntry.length );
+                font.tables.prep = p.parseByteList(tableEntry.length);
                 break;
             case 'glyf':
                 glyfTableEntry = tableEntry;
