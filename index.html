@@ -115,7 +115,7 @@ function ligaturesChanged(e) {
 }
 
 function fontSizeChanged() {
-    fontSize = fontSizeSlider.value;
+    fontSize = parseInt(fontSizeSlider.value, 10);
     document.getElementById('fontSize').innerHTML = '' + fontSize;
     renderText();
 }
