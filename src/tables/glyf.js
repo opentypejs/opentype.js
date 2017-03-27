@@ -44,8 +44,8 @@ function parseGlyph(glyph, data, start) {
     glyph._yMax = p.parseShort();
     var flags;
     var flag;
+    var i;
     if (glyph.numberOfContours > 0) {
-        var i;
         // This glyph is not a composite.
         var endPointIndices = glyph.endPointIndices = [];
         for (i = 0; i < glyph.numberOfContours; i += 1) {
