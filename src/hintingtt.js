@@ -1012,7 +1012,7 @@ function ISECT(state)
     var pb0 = z1[pb0i];
     var pb1 = z1[pb1i];
     var p = state.z2[pi];
- 
+
     if (DEBUG) {
         console.log(
             'ISECT[], ',
@@ -1119,10 +1119,10 @@ function SZP2(state) {
     var n = state.stack.pop();
 
     if (DEBUG) console.log(state.step, 'SZP2[]', n);
- 
+
     state.zp2 = n;
 
-    switch(n) {
+    switch (n) {
         case 0:
             if (!state.tZone) initTZone(state);
             state.z2 = state.tZone;
@@ -1515,7 +1515,7 @@ function SHZ(a, state) {
     if (DEBUG) console.log(state.step, 'SHZ[' + a + ']', e);
 
     var z;
-    switch(e) {
+    switch (e) {
         case 0 : z = state.tZone; break;
         case 1 : z = state.gZone; break;
         default : throw new Error('Invalid zone');
@@ -1950,7 +1950,7 @@ function EIF(state) {
     // this can be reached normally when
     // executing an else branch.
     // -> just ignore it
-    
+
     if (DEBUG) console.log(state.step, 'EIF[]');
 }
 
@@ -2242,11 +2242,11 @@ function SROUND(state) {
             break;
         default: throw new Error('invalid SROUND value');
     }
-        
+
     n &= 0x0F;
-    
-    if( n === 0 ) state.srThreshold = 0;
-    else state.srThreshold = (n/8 - 0.5) * period;
+
+    if (n === 0) state.srThreshold = 0;
+    else state.srThreshold = (n / 8 - 0.5) * period;
 }
 
 // S45ROUND[] Super ROUND 45 degrees
@@ -2260,8 +2260,7 @@ function S45ROUND(state) {
 
     var period;
 
-    switch (n & 0xC0)
-    {
+    switch (n & 0xC0) {
         case 0x00:
             period = Math.sqrt(2) / 2;
             break;
@@ -2277,8 +2276,7 @@ function S45ROUND(state) {
 
     state.srPeriod = period;
 
-    switch (n & 0x30)
-    {
+    switch (n & 0x30) {
         case 0x00:
             state.srPhase = 0;
             break;
@@ -2294,11 +2292,11 @@ function S45ROUND(state) {
         default:
             throw new Error('invalid S45ROUND value');
     }
-        
+
     n &= 0x0F;
-    
-    if( n === 0 ) state.srThreshold = 0;
-    else state.srThreshold = (n/8 - 0.5) * period;
+
+    if (n === 0) state.srThreshold = 0;
+    else state.srThreshold = (n / 8 - 0.5) * period;
 }
 
 // ROFF[] Round Off
@@ -2344,11 +2342,10 @@ function SDPVTL(a, state) {
     var p2 = state.z2[p2i];
     var p1 = state.z1[p1i];
 
-    if (DEBUG) {
-        console.log( 'SDPVTL[' + a + ']', p2i, p1i );
-    }
+    if (DEBUG) console.log('SDPVTL[' + a + ']', p2i, p1i );
 
-    var dx, dy;
+    var dx;
+    var dy;
 
     if (!a) {
         dx = p1.x - p2.x;
@@ -2369,7 +2366,7 @@ function GETINFO(state) {
     var r = 0;
    
     if (DEBUG) console.log(state.step, 'GETINFO[]', sel);
-    
+
     // v35 as in no subpixel hinting
     if (sel & 0x01) r = 35;
 
