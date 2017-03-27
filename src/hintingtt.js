@@ -115,7 +115,10 @@ var roundSuper = function(v) {
     var threshold = this.srThreshold;
     var sign = 1;
 
-    if (v < 0) { v = -v; sign = -1; }
+    if (v < 0) {
+        v = -v;
+        sign = -1;
+    }
 
     v += phase;
 
@@ -129,15 +132,15 @@ var roundSuper = function(v) {
 * Unit vector of x-axis.
 */
 var xUnitVector = {
-    x : 1,
+    x: 1,
 
-    y : 0,
+    y: 0,
 
-    axis : 'x',
+    axis: 'x',
 
     // Gets the projected distance between two points.
     // o1/o2 ... if true, use respective original pos.
-    distance : function(p1, p2, o1, o2) {
+    distance: function(p1, p2, o1, o2) {
         return (o1 ? p1.xo : p1.x) - (o2 ? p2.xo : p2.x);
     },
 
@@ -145,7 +148,7 @@ var xUnitVector = {
     // has the same relative position to the moved
     // positions of rp1 and rp2 than the original
     // positions had.
-    interpolate : function(p, rp1, rp2, pv) {
+    interpolate: function(p, rp1, rp2, pv) {
         var do1, do2, doa1, doa2, dm1, dm2, dt;
 
         if (!pv || pv === this) {
@@ -183,7 +186,7 @@ var xUnitVector = {
     },
 
     // slope of line normal to this
-    normalSlope : Number.NEGATIVE_INFINITY,
+    normalSlope: Number.NEGATIVE_INFINITY,
 
     // Sets the point 'p' relative to point 'rp'
     // by the distance 'd'
@@ -192,7 +195,7 @@ var xUnitVector = {
     // d   : distance on projection vector
     // pv  : projection vector (undefined = this)
     // org : if true, use original position of rp as reference.
-    setRelative : function(p, rp, d, pv, org) {
+    setRelative: function(p, rp, d, pv, org) {
         if (!pv || pv === this) {
             p.x = (org ? rp.xo : rp.x) + d;
             return;
@@ -207,31 +210,31 @@ var xUnitVector = {
     },
 
     // slope of vector line
-    slope : 0,
+    slope: 0,
 
     // Touches the point p.
-    touch : function(p) { p.xTouched = true; },
+    touch: function(p) { p.xTouched = true; },
 
     // Tests if a point p is touched.
-    touched : function(p) { return p.xTouched; },
+    touched: function(p) { return p.xTouched; },
 
     // Untouches the point p.
-    untouch : function(p) { p.xTouched = false; }
+    untouch: function(p) { p.xTouched = false; }
 };
 
 /*
 * Unit vector of y-axis.
 */
 var yUnitVector = {
-    x : 0,
+    x: 0,
 
-    y : 1,
+    y: 1,
 
-    axis : 'y',
+    axis: 'y',
 
     // Gets the projected distance between two points.
     // o1/o2 ... if true, use respective original position.
-    distance : function(p1, p2, o1, o2) {
+    distance: function(p1, p2, o1, o2) {
         return (o1 ? p1.yo : p1.y) - (o2 ? p2.yo : p2.y);
     },
     
@@ -239,7 +242,7 @@ var yUnitVector = {
     // has the same relative position to the moved
     // positions of rp1 and rp2 than the original
     // positions had.
-    interpolate : function(p, rp1, rp2, pv) {
+    interpolate: function(p, rp1, rp2, pv) {
         var do1, do2, doa1, doa2, dm1, dm2, dt;
 
         if (!pv || pv === this) {
@@ -277,12 +280,12 @@ var yUnitVector = {
     },
 
     // slope of line normal to this
-    normalSlope : 0,
+    normalSlope: 0,
 
     // Sets the point 'p' relative to point 'rp'
     // by the distance 'd'
     // org ... if true, use original position of rp as reference.
-    setRelative : function(p, rp, d, pv, org) {
+    setRelative: function(p, rp, d, pv, org) {
         if (!pv || pv === this) {
             p.y = (org ? rp.yo : rp.y) + d;
             return;
@@ -297,16 +300,16 @@ var yUnitVector = {
     },
 
     // slope of vector line
-    slope : Number.POSITIVE_INFINITY,
+    slope: Number.POSITIVE_INFINITY,
 
     // Touches the point p.
-    touch : function(p) { p.yTouched = true; },
+    touch: function(p) { p.yTouched = true; },
 
     // Tests if a point p is touched.
-    touched : function(p) { return p.yTouched; },
+    touched: function(p) { return p.yTouched; },
 
     // Untouches the point p.
-    untouch : function(p) { p.yTouched = false; }
+    untouch: function(p) { p.yTouched = false; }
 };
 
 Object.freeze(xUnitVector);
