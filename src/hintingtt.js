@@ -35,7 +35,7 @@ var DEBUG = false;
 
 var instructionTable;
 var exec;
-var execComponent,
+var execComponent;
 var execGlyph;
 
 /*
