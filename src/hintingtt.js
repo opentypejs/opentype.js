@@ -149,7 +149,13 @@ var xUnitVector = {
     // positions of rp1 and rp2 than the original
     // positions had.
     interpolate: function(p, rp1, rp2, pv) {
-        var do1, do2, doa1, doa2, dm1, dm2, dt;
+        var do1;
+        var do2;
+        var doa1;
+        var doa2;
+        var dm1;
+        var dm2;
+        var dt;
 
         if (!pv || pv === this) {
             do1 = p.xo - rp1.xo;
@@ -206,7 +212,7 @@ var xUnitVector = {
         var rpdx = rpx + d * pv.x;
         var rpdy = rpy + d * pv.y;
 
-        p.x = rpdx + ( p.y - rpdy ) / pv.normalSlope;
+        p.x = rpdx + (p.y - rpdy) / pv.normalSlope;
     },
 
     // slope of vector line
@@ -237,13 +243,19 @@ var yUnitVector = {
     distance: function(p1, p2, o1, o2) {
         return (o1 ? p1.yo : p1.y) - (o2 ? p2.yo : p2.y);
     },
-    
+
     // Moves p so it has the moved position
     // has the same relative position to the moved
     // positions of rp1 and rp2 than the original
     // positions had.
     interpolate: function(p, rp1, rp2, pv) {
-        var do1, do2, doa1, doa2, dm1, dm2, dt;
+        var do1;
+        var do2;
+        var doa1;
+        var doa2;
+        var dm1;
+        var dm2;
+        var dt;
 
         if (!pv || pv === this) {
             do1 = p.yo - rp1.yo;
@@ -323,7 +335,7 @@ function UnitVector(x, y) {
     this.y = y;
     this.axis = undefined;
     this.slope = y / x;
-    this.normalSlope = - x / y;
+    this.normalSlope = -x / y;
     Object.freeze(this);
 }
 
@@ -332,7 +344,7 @@ function UnitVector(x, y) {
 * o1/o2 ... if true, use respective original pos.
 */
 UnitVector.prototype.distance = function(p1, p2, o1, o2) {
-    return(
+    return (
         this.x * xUnitVector.distance(p1, p2, o1, o2) +
         this.y * yUnitVector.distance(p1, p2, o1, o2)
     );
@@ -345,8 +357,14 @@ UnitVector.prototype.distance = function(p1, p2, o1, o2) {
 * positions had.
 */
 UnitVector.prototype.interpolate = function(p, rp1, rp2, pv) {
-    var dm1, dm2, do1, do2, doa1, doa2, dt;
-        
+    var dm1;
+    var dm2;
+    var do1;
+    var do2;
+    var doa1;
+    var doa2;
+    var dt;
+
     do1 = pv.distance(p, rp1, true, true);
     do2 = pv.distance(p, rp2, true, true);
     dm1 = pv.distance(rp1, rp1, false, true);
@@ -360,7 +378,7 @@ UnitVector.prototype.interpolate = function(p, rp1, rp2, pv) {
         return;
     }
 
-    this.setRelative(p, p, (dm1 * doa2 + dm2 * doa1 ) / dt, pv, true);
+    this.setRelative(p, p, (dm1 * doa2 + dm2 * doa1) / dt, pv, true);
 };
 
 /*
@@ -369,7 +387,7 @@ UnitVector.prototype.interpolate = function(p, rp1, rp2, pv) {
 * org ... if true, use original position of rp as reference
 */
 UnitVector.prototype.setRelative = function(p, rp, d, pv, org) {
-    if (!pv) pv = this;
+    pv = pv || this;
 
     var rpx = org ? rp.xo : rp.x;
     var rpy = org ? rp.yo : rp.y;
@@ -403,8 +421,8 @@ function getUnitVector(x, y) {
     x /= d;
     y /= d;
 
-    if( x === 1 && y === 0) return xUnitVector;
-    else if( x === 0 && y === 1) return yUnitVector;
+    if (x === 1 && y === 0) return xUnitVector;
+    else if (x === 0 && y === 1) return yUnitVector;
     else return new UnitVector(x, y);
 }
 
@@ -417,10 +435,8 @@ function HPoint(
     lastPointOfContour,
     onCurve
 ) {
-    // possibly may add rounding to 1/64 pixel here to behave exactly like
-    // other font engines...
-    this.x = this.xo = Math.round(x*64)/64; // hinted x value and original x-value
-    this.y = this.yo = Math.round(y*64)/64; // hinted y value and original y-value
+    this.x = this.xo = Math.round(x * 64) / 64; // hinted x value and original x-value
+    this.y = this.yo = Math.round(y * 64) / 64; // hinted y value and original y-value
 
     this.lastPointOfContour = lastPointOfContour;
     this.onCurve = onCurve;
@@ -468,12 +484,12 @@ var HPZero = Object.freeze(new HPoint(0, 0));
 * ever change.
 */
 var defaultState = {
-    cvCutIn : 17 / 16,    // control value cut in
-    deltaBase : 9,
-    deltaShift : 0.125,
-    loop : 1,             // loops some instructions
-    minDis : 1,           // minimum distance
-    autoFlip : true
+    cvCutIn: 17 / 16,    // control value cut in
+    deltaBase: 9,
+    deltaShift: 0.125,
+    loop: 1,             // loops some instructions
+    minDis: 1,           // minimum distance
+    autoFlip: true
 };
 
 /*
@@ -487,7 +503,7 @@ function State(env, prog) {
     this.stack = [];
     this.prog = prog;
 
-    switch(env) {
+    switch (env) {
         case 'glyf' :
             this.zp0 = 1;
             this.zp1 = 1;
@@ -523,7 +539,7 @@ Hinting.prototype.exec = function(glyph, ppem) {
     var font = this.font;
     var prepState = this._prepState;
 
-    if(!prepState || prepState.ppem !== ppem) {
+    if (!prepState || prepState.ppem !== ppem) {
         var fpgmState = this._fpgmState;
 
         if (!fpgmState) {
@@ -543,9 +559,9 @@ Hinting.prototype.exec = function(glyph, ppem) {
                 fpgmState.step = -1;
             }
 
-            try{
+            try {
                 exec(fpgmState);
-            } catch(e) {
+            } catch (e) {
                 console.log('Hinting error in FPGM:' + e);
                 this._errorState = 3;
                 return;
@@ -570,7 +586,7 @@ Hinting.prototype.exec = function(glyph, ppem) {
             var cvt = prepState.cvt = new Array(oCvt.length);
             var scale = ppem / font.unitsPerEm;
             for (var c = 0; c < oCvt.length; c++) {
-               cvt[c] = oCvt[c] * scale;
+                cvt[c] = oCvt[c] * scale;
             }
         } else {
             prepState.cvt = [];
@@ -581,9 +597,9 @@ Hinting.prototype.exec = function(glyph, ppem) {
             prepState.step = -1;
         }
 
-        try{
+        try {
             exec(prepState);
-        } catch(e) {
+        } catch (e) {
             if (this._errorState < 2) {
                 console.log('Hinting error in PREP:' + e);
             }
@@ -593,9 +609,9 @@ Hinting.prototype.exec = function(glyph, ppem) {
 
     if (this._errorState > 1) return;
 
-    try{
+    try {
         return execGlyph(glyph, prepState);
-    } catch(e) {
+    } catch (e) {
         if (this._errorState < 1) {
             console.log('Hinting error:' + e);
             console.log('Note: further hinting errors are silenced');
@@ -630,7 +646,7 @@ function execGlyph(glyph, prepState) {
         var font = prepState.font;
         gZone = [];
         contours = [];
-        for(var i = 0; i < components.length; i++) {
+        for (var i = 0; i < components.length; i++) {
             var c = components[i];
             var cg = font.glyphs.get(c.glyphIndex);
 
@@ -648,7 +664,7 @@ function execGlyph(glyph, prepState) {
             var dy = Math.round(c.dy * yScale);
             var gz = state.gZone;
             var cc = state.contours;
-            for(var pi = 0; pi < gz.length; pi++) {
+            for (var pi = 0; pi < gz.length; pi++) {
                 var p = gz[pi];
                 p.xTouched = p.yTouched = false;
                 p.xo = p.x = p.x + dx;
@@ -657,7 +673,7 @@ function execGlyph(glyph, prepState) {
 
             var gLen = gZone.length;
             gZone.push.apply(gZone, gz);
-            for(var j = 0; j < cc.length; j++) {
+            for (var j = 0; j < cc.length; j++) {
                 contours.push(cc[j] + gLen);
             }
         }
@@ -771,7 +787,7 @@ function exec(state) {
     var pLen = prog.length;
     var ins;
 
-    for(state.ip = 0; state.ip < pLen; state.ip++) {
+    for (state.ip = 0; state.ip < pLen; state.ip++) {
         if (DEBUG) state.step++;
         ins = instructionTable[prog[state.ip]];
         
@@ -787,10 +803,11 @@ function exec(state) {
         // very extensive debugging for each step
         /*
         if (DEBUG) {
-            var da, i;
+            var da;
+            var i;
             if (state.gZone) {
                 da = [];
-                for(i = 0; i < state.gZone.length; i++)
+                for (i = 0; i < state.gZone.length; i++)
                 {
                     da.push(i + ' ' +
                         state.gZone[i].x * 64 + ' ' +
@@ -804,8 +821,7 @@ function exec(state) {
             
             if (state.tZone) {
                 da = [];
-                for(i = 0; i < state.tZone.length; i++)
-                {
+                for (i = 0; i < state.tZone.length; i++) {
                     da.push(i + ' ' +
                         state.tZone[i].x * 64 + ' ' +
                         state.tZone[i].y * 64 + ' ' +
@@ -839,7 +855,7 @@ function initTZone(state)
     var tZone = state.tZone = new Array(state.gZone.length);
 
     // no idea if this is actually correct...
-    for(var i = 0; i < tZone.length; i++)
+    for (var i = 0; i < tZone.length; i++)
     {
         tZone[i] = new HPoint(0, 0);
     }
@@ -1289,7 +1305,7 @@ function LOOPCALL(state) {
     state.prog = state.funcs[fn];
 
     // executes the function
-    for(var i = 0; i < c; i++) {
+    for (var i = 0; i < c; i++) {
         exec(state);
 
         if (DEBUG) console.log(
@@ -1990,7 +2006,7 @@ function DELTAP123(b, state) {
     
     if (DEBUG) console.log(state.step, 'DELTAP[' + b + ']', n, stack);
 
-    for(var i = 0; i < n; i++)
+    for (var i = 0; i < n; i++)
     {
         var pi = stack.pop();
         var arg = stack.pop();
@@ -2164,7 +2180,7 @@ function DELTAC123(b, state) {
 
     if (DEBUG) console.log(state.step, 'DELTAC[' + b + ']', n, stack);
 
-    for(var i = 0; i < n; i++)
+    for (var i = 0; i < n; i++)
     {
         var c = stack.pop();
         var arg = stack.pop();
