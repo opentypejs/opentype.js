@@ -8,6 +8,7 @@ var encoding = require('./encoding');
 var glyphset = require('./glyphset');
 var Substitution = require('./substitution');
 var util = require('./util');
+var HintingTrueType = require( './hintingtt' );
 
 /**
  * @typedef FontOptions
@@ -90,6 +91,15 @@ function Font(options) {
     this.encoding = new encoding.DefaultEncoding(this);
     this.substitution = new Substitution(this);
     this.tables = this.tables || {};
+
+    Object.defineProperty(this, 'hinting', {
+        get: function() {
+            if (this._hinting) return this._hinting;
+            if (this.outlinesFormat === 'truetype') {
+                return (this._hinting = new HintingTrueType(this));
+            }
+        }
+    });
 }
 
 /**
@@ -300,10 +310,9 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
 Font.prototype.getPath = function(text, x, y, fontSize, options) {
     var fullPath = new path.Path();
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        var glyphPath = glyph.getPath(gX, gY, gFontSize);
+        var glyphPath = glyph.getPath(gX, gY, gFontSize, options);
         fullPath.extend(glyphPath);
     });
-
     return fullPath;
 };
 

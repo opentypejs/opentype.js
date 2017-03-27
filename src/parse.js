@@ -197,7 +197,7 @@ Parser.prototype.skip = function(type, amount) {
 
 ///// Parsing lists and records ///////////////////////////////
 
-// Parse a list of 16 bit integers. The length of the list can be read on the stream
+// Parse a list of 16 bit unsigned integers. The length of the list can be read on the stream
 // or provided as an argument.
 Parser.prototype.parseOffset16List =
 Parser.prototype.parseUShortList = function(count) {
@@ -212,6 +212,34 @@ Parser.prototype.parseUShortList = function(count) {
 
     this.relativeOffset += count * 2;
     return offsets;
+};
+
+
+// Parses a list of 16 bit signed integers.
+Parser.prototype.parseShortList = function(count) {
+    var list = new Array(count);
+    var dataView = this.data;
+    var offset = this.offset + this.relativeOffset;
+    for (var i = 0; i < count; i++) {
+        list[i] = dataView.getInt16(offset);
+        offset += 2;
+    }
+
+    this.relativeOffset += count * 2;
+    return list;
+};
+
+// Parses a list of bytes.
+Parser.prototype.parseByteList = function(count) {
+    var list = new Array(count);
+    var dataView = this.data;
+    var offset = this.offset + this.relativeOffset;
+    for (var i = 0; i < count; i++) {
+        list[i] = dataView.getUint8(offset++);
+    }
+
+    this.relativeOffset += count;
+    return list;
 };
 
 /**

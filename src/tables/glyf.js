@@ -168,6 +168,14 @@ function parseGlyph(glyph, data, start) {
             glyph.components.push(component);
             moreComponents = !!(flags & 32);
         }
+        if (flags & 0x100) {
+            // We have instructions
+            glyph.instructionLength = p.parseUShort();
+            glyph.instructions = [];
+            for (i = 0; i < glyph.instructionLength; i += 1) {
+                glyph.instructions.push(p.parseByte());
+            }
+        }
     }
 }
 
@@ -331,5 +339,7 @@ function parseGlyfTable(data, start, loca, font) {
 
     return glyphs;
 }
+
+exports.getPath = getPath;
 
 exports.parse = parseGlyfTable;
