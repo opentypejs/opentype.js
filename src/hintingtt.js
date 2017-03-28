@@ -2,9 +2,6 @@
 *
 * (c) 2017 Axel Kittenberger
 *
-* This file is covered by the MIT (expat) License,
-* see the LICENSE file in the root of this project.
-*
 * This interpreter has been implemented according to this documentation:
 * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM05/Chap5.html
 *
