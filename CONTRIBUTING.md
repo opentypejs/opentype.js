@@ -15,7 +15,7 @@ When creating a pull request, you **don't** need to run `npm run dist` -- we'll 
 
 2. Clone your repository:
 
-    git clone git://github.com/nodebox/opentype.js.git
+    `git clone git://github.com/nodebox/opentype.js.git`
 
 3. Create a new branch for your feature. For example: `git checkout -b my-awesome-feature`.
     A dedicated branch for your pull request means you can develop multiple features at the same time, and ensures
@@ -23,12 +23,12 @@ When creating a pull request, you **don't** need to run `npm run dist` -- we'll 
 
 4. Install the development dependencies (browserify, watchify, jshint, ...):
 
-    cd opentype.js
-    npm install
+    `cd opentype.js`
+    `npm install`
 
 5. Start the development server. This watches file changes and compiles and serves the page at http://localhost:8080/
 
-    npm start
+    `npm start`
 
    Note that the compiled file ends up in the `build` folder, not the `dist` folder! The development server
    rewrites the JavaScript URL from `dist/opentype.min.js` to `build/opentype.js`.
@@ -37,11 +37,11 @@ When creating a pull request, you **don't** need to run `npm run dist` -- we'll 
 
 7. Check if tests pass
 
-    npm test
+    `npm test`
 
 8. Commit your changes
 
-    git add --all && git commit
+    `git add --all && git commit`
 
 9. Submit your pull request -- and thanks in advance!
 
@@ -49,7 +49,7 @@ When creating a pull request, you **don't** need to run `npm run dist` -- we'll 
 
 If you want to create your own self-contained version of opentype.js, run
 
-    npm run dist
+    `npm run dist`
 
 This compiles the source  and places `opentype.js` and `opentype.min.js` in the `dist` folder.
 
