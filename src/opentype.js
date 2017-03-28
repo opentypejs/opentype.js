@@ -75,6 +75,10 @@ function loadFromUrl(url, callback) {
         return callback(null, request.response);
     };
 
+    request.onerror = function () {
+        callback('Font could not be loaded');
+    };
+
     request.send();
 }
 
