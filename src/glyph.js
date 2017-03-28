@@ -5,6 +5,7 @@
 var check = require('./check');
 var draw = require('./draw');
 var path = require('./path');
+var glyf = require('./tables/glyf');
 
 function getPathDefinition(glyph, path) {
     var _path = path || { commands: [] };
@@ -118,19 +119,41 @@ Glyph.prototype.getBoundingBox = function() {
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
  * @param  {Object=} options - xScale, yScale to strech the glyph.
+ * @param  {opentype.Font} if hinting is to be used, the font
  * @return {opentype.Path}
  */
-Glyph.prototype.getPath = function(x, y, fontSize, options) {
+Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
-    options = options !== undefined ? options : {xScale: 1.0, yScale: 1.0};
     fontSize = fontSize !== undefined ? fontSize : 72;
-    var scale = 1 / this.path.unitsPerEm * fontSize;
-    var xScale = options.xScale * scale;
-    var yScale = options.yScale * scale;
+    var commands;
+    var hPoints;
+    if (!options) options = { };
+    var xScale = options.xScale;
+    var yScale = options.yScale;
+
+    if (options.hinting && font && font.hinting) {
+        // in case of hinting, the hinting engine takes care
+        // of scaling the points (not the path) before hinting.
+        hPoints = font.hinting.exec(this, fontSize);
+    }
+
+    if (hPoints) {
+        // in case the hinting engine failed revert to
+        // plain rending
+        commands = glyf.getPath(hPoints).commands;
+        x = Math.round(x);
+        y = Math.round(y);
+        // TODO in case of hinting xyScaling is not yet supported
+        xScale = yScale = 1;
+    } else {
+        commands = this.path.commands;
+        var scale = 1 / this.path.unitsPerEm * fontSize;
+        if (xScale === undefined) xScale = scale;
+        if (yScale === undefined) yScale = scale;
+    }
 
     var p = new path.Path();
-    var commands = this.path.commands;
     for (var i = 0; i < commands.length; i += 1) {
         var cmd = commands[i];
         if (cmd.type === 'M') {

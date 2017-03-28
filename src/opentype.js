@@ -214,6 +214,7 @@ function parseBuffer(buffer) {
     var locaTableEntry;
     var nameTableEntry;
     var metaTableEntry;
+    var p;
 
     for (var i = 0; i < numTables; i += 1) {
         var tableEntry = tableEntries[i];
@@ -224,8 +225,18 @@ function parseBuffer(buffer) {
                 font.tables.cmap = cmap.parse(table.data, table.offset);
                 font.encoding = new encoding.CmapEncoding(font.tables.cmap);
                 break;
+            case 'cvt ' :
+                table = uncompressTable(data, tableEntry);
+                p = new parse.Parser(table.data, table.offset);
+                font.tables.cvt = p.parseShortList(tableEntry.length / 2);
+                break;
             case 'fvar':
                 fvarTableEntry = tableEntry;
+                break;
+            case 'fpgm' :
+                table = uncompressTable(data, tableEntry);
+                p = new parse.Parser(table.data, table.offset);
+                font.tables.fpgm = p.parseByteList(tableEntry.length);
                 break;
             case 'head':
                 table = uncompressTable(data, tableEntry);
@@ -263,6 +274,11 @@ function parseBuffer(buffer) {
                 table = uncompressTable(data, tableEntry);
                 font.tables.post = post.parse(table.data, table.offset);
                 font.glyphNames = new encoding.GlyphNames(font.tables.post);
+                break;
+            case 'prep' :
+                table = uncompressTable(data, tableEntry);
+                p = new parse.Parser(table.data, table.offset);
+                font.tables.prep = p.parseByteList(tableEntry.length);
                 break;
             case 'glyf':
                 glyfTableEntry = tableEntry;
