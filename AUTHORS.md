@@ -30,5 +30,6 @@ Contributors
 * Amit Halberstam
 * Jacky Nguyen
 * Dominik Lessel
-* Ryan Burgett 
+* Ryan Burgett
 * 王集鹄
+* Axel Kittenberger
