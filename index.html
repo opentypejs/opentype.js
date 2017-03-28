@@ -42,6 +42,7 @@
     <label><input type="checkbox" onchange="drawMetricsChanged(this)">Draw Metrics</label>
     <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked">Kerning</label>
     <label><input type="checkbox" onchange="ligaturesChanged(this)" checked="checked">Ligatures</label>
+    <label><input type="checkbox" onchange="hintingChanged(this)">Hinting</label>
 
     <hr>
 
@@ -71,7 +72,7 @@
     <div class="explain">
         <h1>Free Software</h1>
         <p>opentype.js is available on <a href="https://github.com/nodebox/opentype.js">GitHub</a> under the <a href="https://raw.github.com/nodebox/opentype.js/master/LICENSE">MIT License</a>.</p>
-        <p>Copyright &copy; 2015 Frederik De Bleser.</p>
+        <p>Copyright &copy; 2017 Frederik De Bleser.</p>
     </div>
 
     <hr>
@@ -86,6 +87,7 @@ var drawPoints = true;
 var drawMetrics = false;
 var kerning = true;
 var ligatures = true;
+var hinting = false;
 var previewPath = null;
 var snapPath = null;
 var snapStrength = 80;
@@ -111,6 +113,11 @@ function kerningChanged(e) {
 
 function ligaturesChanged(e) {
     ligatures = e.checked;
+    renderText();
+}
+
+function hintingChanged(e) {
+    hinting = e.checked;
     renderText();
 }
 
@@ -175,6 +182,7 @@ function renderText() {
     var previewCtx = document.getElementById('preview').getContext('2d');
     var options = {
         kerning: kerning,
+        hinting: hinting,
         features: {
             liga: ligatures,
             rlig: ligatures
