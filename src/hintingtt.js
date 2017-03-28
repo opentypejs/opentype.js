@@ -10,7 +10,7 @@
 * use integer operations. However, Javascript has floating point operations
 * by default and only that's is available here. One could make a case to
 * simulate the 1/64 accuracy exactly by truncating after every division
-* operation (for example with << 0) to get pixel exacty results
+* operation (for example with << 0) to get pixel exactly results
 * as other TrueType implementations. It may make sense, since some fonts
 * are pixel optimized by hand using DELTAP instructions. The current
 * implementation doesn't and rather uses full floating point precission.
@@ -705,7 +705,7 @@ function execGlyph(glyph, prepState) {
 }
 
 /*
-* Executes the hinting program for a componenet of a multi-component glyph
+* Executes the hinting program for a component of a multi-component glyph
 * Or of the glyph itself by a non-component glyph
 */
 function execComponent(glyph, state, xScale, yScale)
