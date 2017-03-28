@@ -35,6 +35,7 @@ Features
 * Support for WOFF, OTF, TTF (both with TrueType `glyf` and PostScript `cff` outlines)
 * Support for kerning (Using GPOS or the kern table).
 * Support for ligatures.
+* Support for TrueType font hinting.
 * Very efficient.
 * Runs in the browser and node.js.
 
@@ -147,6 +148,7 @@ Options is an optional object containing:
 * `kerning`: if true takes kerning information into account (default: true)
 * `features`: an object with [OpenType feature tags](https://www.microsoft.com/typography/otspec/featuretags.htm) as keys, and a boolean value to enable each feature.
 Currently only ligature features "liga" and "rlig" are supported (default: true).
+* `hinting`: if true uses TrueType font hinting if available (default: false).
 
 _Note: there is also `Font.getPaths` with the same arguments which returns a list of Paths._
 
@@ -159,6 +161,9 @@ Create a Path that represents the given text.
 
 Options is an optional object containing:
 * `kerning`: if true takes kerning information into account (default: true)
+* `features`: an object with [OpenType feature tags](https://www.microsoft.com/typography/otspec/featuretags.htm) as keys, and a boolean value to enable each feature.
+Currently only ligature features "liga" and "rlig" are supported (default: true).
+* `hinting`: if true uses TrueType font hinting if available (default: false).
 
 #### `Font.drawPoints(ctx, text, x, y, fontSize, options)`
 Draw the points of all glyphs in the text. On-curve points will be drawn in blue, off-curve points will be drawn in red. The arguments are the same as `Font.draw`.
