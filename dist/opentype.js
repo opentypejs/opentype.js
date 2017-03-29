@@ -1553,11 +1553,11 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
         // in case of hinting, the hinting engine takes care
         // of scaling the points (not the path) before hinting.
         hPoints = font.hinting.exec(this, fontSize);
+        // in case the hinting engine failed hPoints is undefined
+        // and thus reverts to plain rending
     }
 
     if (hPoints) {
-        // in case the hinting engine failed revert to
-        // plain rending
         commands = glyf.getPath(hPoints).commands;
         x = Math.round(x);
         y = Math.round(y);
@@ -1922,23 +1922,23 @@ exports.cffGlyphLoader = cffGlyphLoader;
 * This interpreter has been implemented according to this documentation:
 * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM05/Chap5.html
 *
-* According to the documentation -- and thus most other implementations --
-* use F24DOT6 values for pixels. That means it's 1/64 pixel accurate and
-* use integer operations. However, Javascript has floating point operations
-* by default and only that's is available here. One could make a case to
-* simulate the 1/64 accuracy exactly by truncating after every division
-* operation (for example with << 0) to get pixel exactly results
-* as other TrueType implementations. It may make sense, since some fonts
-* are pixel optimized by hand using DELTAP instructions. The current
-* implementation doesn't and rather uses full floating point precission.
+* According to the documentation F24DOT6 values are used for pixels.
+* That means calculation is 1/64 pixel accurate and uses integer operations.
+* However, Javascript has floating point operations by default and only
+* those are available. One could make a case to simulate the 1/64 accuracy
+* exactly by truncating after every division operation
+* (for example with << 0) to get pixel exacty results as other TrueType
+* implementations. It may make sense since some fonts are pixel optimized
+* by hand using DELTAP instructions. The current implementation doesn't
+* and rather uses full floating point precission.
 *
 * xScale, yScale and rotation is currently ignored.
 *
 * A few non-trivial instructions are missing as I didn't encounter yet
 * a font that used them to test a possible implementation.
 *
-* Some fonts, seem to use undocumented features regarding the twilight zone.
-* Only some of them are implemented as encountered.
+* Some fonts seem to use undocumented features regarding the twilight zone.
+* Only some of them are implemented as they were encountered.
 *
 * The DEBUG statements can be removed, manually or for example with "uglify"
 * fixing DEBUG to false.
@@ -1988,7 +1988,7 @@ function roundOff(v) {
 * Rounding to grid.
 */
 function roundToGrid(v) {
-    //Rounding is in TT supposed to "symetrical around zero"
+    //Rounding in TT is supposed to "symmetrical around zero"
     return Math.sign(v) * Math.round(Math.abs(v));
 }
 
@@ -2053,15 +2053,16 @@ var xUnitVector = {
     axis: 'x',
 
     // Gets the projected distance between two points.
-    // o1/o2 ... if true, use respective original pos.
+    // o1/o2 ... if true, respective original position is used.
     distance: function(p1, p2, o1, o2) {
         return (o1 ? p1.xo : p1.x) - (o2 ? p2.xo : p2.x);
     },
 
-    // Moves p so it has the moved position
-    // has the same relative position to the moved
-    // positions of rp1 and rp2 than the original
-    // positions had.
+    // Moves point p so the moved position has the same relative
+    // position to the moved positions of rp1 and rp2 than the
+    // original positions had.
+    //
+    // See APPENDIX on INTERPOLATE at the bottom of this file.
     interpolate: function(p, rp1, rp2, pv) {
         var do1;
         var do2;
@@ -2105,16 +2106,19 @@ var xUnitVector = {
         xUnitVector.setRelative(p, p, (dm1 * doa2 + dm2 * doa1) / dt, pv, true);
     },
 
-    // slope of line normal to this
+    // Slope of line normal to this
     normalSlope: Number.NEGATIVE_INFINITY,
 
     // Sets the point 'p' relative to point 'rp'
-    // by the distance 'd'
-    // p   : point to set
-    // rp  : reference point
-    // d   : distance on projection vector
-    // pv  : projection vector (undefined = this)
-    // org : if true, use original position of rp as reference.
+    // by the distance 'd'.
+    //
+    // See APPENDIX on SETRELATIVE at the bottom of this file.
+    //
+    // p   ... point to set
+    // rp  ... reference point
+    // d   ... distance on projection vector
+    // pv  ... projection vector (undefined = this)
+    // org ... if true, uses the original position of rp as reference.
     setRelative: function(p, rp, d, pv, org) {
         if (!pv || pv === this) {
             p.x = (org ? rp.xo : rp.x) + d;
@@ -2129,7 +2133,7 @@ var xUnitVector = {
         p.x = rpdx + (p.y - rpdy) / pv.normalSlope;
     },
 
-    // slope of vector line
+    // Slope of vector line.
     slope: 0,
 
     // Touches the point p.
@@ -2153,15 +2157,16 @@ var yUnitVector = {
     axis: 'y',
 
     // Gets the projected distance between two points.
-    // o1/o2 ... if true, use respective original position.
+    // o1/o2 ... if true, respective original position is used.
     distance: function(p1, p2, o1, o2) {
         return (o1 ? p1.yo : p1.y) - (o2 ? p2.yo : p2.y);
     },
 
-    // Moves p so it has the moved position
-    // has the same relative position to the moved
-    // positions of rp1 and rp2 than the original
-    // positions had.
+    // Moves point p so the moved position has the same relative
+    // position to the moved positions of rp1 and rp2 than the
+    // original positions had.
+    //
+    // See APPENDIX on INTERPOLATE at the bottom of this file.
     interpolate: function(p, rp1, rp2, pv) {
         var do1;
         var do2;
@@ -2205,12 +2210,19 @@ var yUnitVector = {
         yUnitVector.setRelative(p, p, (dm1 * doa2 + dm2 * doa1) / dt, pv, true);
     },
 
-    // slope of line normal to this
+    // Slope of line normal to this.
     normalSlope: 0,
 
     // Sets the point 'p' relative to point 'rp'
     // by the distance 'd'
-    // org ... if true, use original position of rp as reference.
+    //
+    // See APPENDIX on SETRELATIVE at the bottom of this file.
+    //
+    // p   ... point to set
+    // rp  ... reference point
+    // d   ... distance on projection vector
+    // pv  ... projection vector (undefined = this)
+    // org ... if true, uses the original position of rp as reference.
     setRelative: function(p, rp, d, pv, org) {
         if (!pv || pv === this) {
             p.y = (org ? rp.yo : rp.y) + d;
@@ -2225,7 +2237,7 @@ var yUnitVector = {
         p.y = rpdy + pv.normalSlope * (p.x - rpdx);
     },
 
-    // slope of vector line
+    // Slope of vector line.
     slope: Number.POSITIVE_INFINITY,
 
     // Touches the point p.
@@ -2255,7 +2267,7 @@ function UnitVector(x, y) {
 
 /*
 * Gets the projected distance between two points.
-* o1/o2 ... if true, use respective original pos.
+* o1/o2 ... if true, respective original position is used.
 */
 UnitVector.prototype.distance = function(p1, p2, o1, o2) {
     return (
@@ -2265,10 +2277,11 @@ UnitVector.prototype.distance = function(p1, p2, o1, o2) {
 };
 
 /*
-* Moves p so it has the moved position
-* has the same relative position to the moved
-* positions of rp1 and rp2 than the original
-* positions had.
+* Moves point p so the moved position has the same relative
+* position to the moved positions of rp1 and rp2 than the
+* original positions had.
+*
+* See APPENDIX on INTERPOLATE at the bottom of this file.
 */
 UnitVector.prototype.interpolate = function(p, rp1, rp2, pv) {
     var dm1;
@@ -2297,8 +2310,15 @@ UnitVector.prototype.interpolate = function(p, rp1, rp2, pv) {
 
 /*
 * Sets the point 'p' relative to point 'rp'
-* by the distance 'd'.
-* org ... if true, use original position of rp as reference
+* by the distance 'd'
+*
+* See APPENDIX on SETRELATIVE at the bottom of this file.
+*
+* p   ...  point to set
+* rp  ... reference point
+* d   ... distance on projection vector
+* pv  ... projection vector (undefined = this)
+* org ... if true, uses the original position of rp as reference.
 */
 UnitVector.prototype.setRelative = function(p, rp, d, pv, org) {
     pv = pv || this;
@@ -2364,6 +2384,8 @@ function HPoint(
 
 /*
 * Returns the next touched point on the contour.
+*
+* v  ... unit vector to test touch axis.
 */
 HPoint.prototype.nextTouched = function(v) {
     var p = this.nextPointOnContour;
@@ -2375,6 +2397,8 @@ HPoint.prototype.nextTouched = function(v) {
 
 /*
 * Returns the previous touched point on the contour
+*
+* v  ... unit vector to test touch axis.
 */
 HPoint.prototype.prevTouched = function(v) {
     var p = this.prevPointOnContour;
@@ -2419,15 +2443,11 @@ function State(env, prog) {
 
     switch (env) {
         case 'glyf' :
-            this.zp0 = 1;
-            this.zp1 = 1;
-            this.zp2 = 1;
-            this.dpv = xUnitVector;
+            this.zp0 = this.zp1 = this.zp2 = 1;
             this.rp0 = this.rp1 = this.rp2 = 0;
             /* fall through */
         case 'prep' :
-            this.fv  = xUnitVector;
-            this.pv  = xUnitVector;
+            this.fv = this.pv = this.dpv = xUnitVector;
             this.round = roundToGrid;
     }
 }
@@ -2447,7 +2467,7 @@ Hinting.prototype.exec = function(glyph, ppem) {
         throw new Error('Point size is not a number!');
     }
 
-    // received a fatal error, don't do any hinting anymore
+    // Received a fatal error, don't do any hinting anymore.
     if (this._errorState > 2) return;
 
     var font = this.font;
@@ -2458,7 +2478,7 @@ Hinting.prototype.exec = function(glyph, ppem) {
 
         if (!fpgmState) {
             // Executes the fpgm state.
-            // This is used by fonts to define functions
+            // This is used by fonts to define functions.
             State.prototype = defaultState;
 
             fpgmState =
@@ -2493,8 +2513,8 @@ Hinting.prototype.exec = function(glyph, ppem) {
 
         prepState.ppem = ppem;
 
-        // creates a copy of the cvt table
-        // and scales it to the current ppem setting
+        // Creates a copy of the cvt table
+        // and scales it to the current ppem setting.
         var oCvt = font.tables.cvt;
         if (oCvt) {
             var cvt = prepState.cvt = new Array(oCvt.length);
@@ -2622,8 +2642,8 @@ function execGlyph(glyph, prepState) {
 }
 
 /*
-* Executes the hinting program for a component of a multi-component glyph
-* Or of the glyph itself by a non-component glyph
+* Executes the hinting program for a componenet of a multi-component glyph
+* or of the glyph itself by a non-component glyph.
 */
 function execComponent(glyph, state, xScale, yScale)
 {
@@ -2633,8 +2653,8 @@ function execComponent(glyph, state, xScale, yScale)
     var contours = state.contours = [];
     var i;
 
-    // scales the original points and
-    // makes copies for the hinted points
+    // Scales the original points and
+    // makes copies for the hinted points.
     var cp; // current point
     for (i = 0; i < pLen; i++) {
         cp = points[i];
@@ -2647,7 +2667,7 @@ function execComponent(glyph, state, xScale, yScale)
         );
     }
 
-    // loops again to chain link the contours
+    // Chain links the contours.
     var sp; // start point
     var np; // next point
 
@@ -2679,7 +2699,7 @@ function execComponent(glyph, state, xScale, yScale)
 
     exec(state);
 
-    // removes the extra points
+    // Removes the extra points.
     gZone.length -= 2;
 
     if (DEBUG) {
@@ -2761,6 +2781,7 @@ function exec(state) {
 
 /*
 * Initializes the twilight zone.
+*
 * This is only done if a SZPx instruction
 * refers to the twilight zone.
 */
@@ -2927,16 +2948,7 @@ function ISECT(state)
     var pb1 = z1[pb1i];
     var p = state.z2[pi];
 
-    if (DEBUG) {
-        console.log(
-            'ISECT[], ',
-            pa0i,
-            pa1i,
-            pb0i,
-            pb1i,
-            pi
-        );
-    }
+    if (DEBUG) console.log('ISECT[], ', pa0i, pa1i, pb0i, pb1i, pi);
 
     // math from
     // en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line
@@ -2955,7 +2967,6 @@ function ISECT(state)
     var f2 = x3 * y4 - y3 * x4;
 
     p.x = (f1 * (x3 - x4) - f2 * (x1 - x2)) / div;
-
     p.y = (f1 * (y3 - y4) - f2 * (y1 - y2)) / div;
 }
 
@@ -3108,14 +3119,16 @@ function SMD(state) {
 // ELSE[] ELSE clause
 // 0x1B
 function ELSE(state) {
-    // this instruction has been reached by executing a then branch
-    // so it just skips ahead until mathing EIF
+    // This instruction has been reached by executing a then branch
+    // so it just skips ahead until mathing EIF.
+    //
+    // In case the IF was negative the IF[] instruction already
+    // skipped forward over the ELSE[]
     var ip = state.ip;
     var prog = state.prog;
 
     if (DEBUG) console.log(state.step, 'ELSE[]');
 
-    // otherwise skip forward until matching else or endif
     var nesting = 1;
     var ins;
     do {
@@ -3140,8 +3153,7 @@ function JMPR(state) {
 
     if (DEBUG) console.log(state.step, 'JMPR[]', o);
 
-    // A jump by 1 would do nothing
-
+    // A jump by 1 would do nothing.
     state.ip += o - 1;
 }
 
@@ -3267,10 +3279,9 @@ function CINDEX(state) {
 
     if (DEBUG) console.log(state.step, 'CINDEX[]', k);
 
-    stack.push(stack[stack.length - k]);
-
     // In case of k == 1, it copies the last element after poping
     // thus stack.length - k.
+    stack.push(stack[stack.length - k]);
 }
 
 // MINDEX[] Move the INDEXed element to the top of the stack
@@ -3693,8 +3704,7 @@ function GC(a, state) {
 
     if (DEBUG) console.log(state.step, 'GC[' + a + ']', pi);
 
-    var d = state.dpv.distance(p, HPZero, a, false);
-    stack.push(d * 0x40);
+    stack.push(state.dpv.distance(p, HPZero, a, false) * 0x40);
 }
 
 // MD[a] Measure Distance
@@ -3730,7 +3740,6 @@ function FLIPON(state) {
 // 0x50
 function LT(state) {
     var stack = state.stack;
-
     var e2 = stack.pop();
     var e1 = stack.pop();
 
@@ -3872,7 +3881,6 @@ function EIF(state) {
 // 0x5A
 function AND(state) {
     var stack = state.stack;
-
     var e2 = stack.pop();
     var e1 = stack.pop();
 
@@ -3885,7 +3893,6 @@ function AND(state) {
 // 0x5B
 function OR(state) {
     var stack = state.stack;
-
     var e2 = stack.pop();
     var e1 = stack.pop();
 
@@ -3898,7 +3905,6 @@ function OR(state) {
 // 0x5C
 function NOT(state) {
     var stack = state.stack;
-
     var e = stack.pop();
 
     if (DEBUG) console.log(state.step, 'NOT[]', e);
@@ -3942,7 +3948,6 @@ function DELTAP123(b, state) {
 // 0x5E
 function SDB(state) {
     var stack = state.stack;
-
     var n = stack.pop();
 
     if (DEBUG) console.log(state.step, 'SDB[]', n);
@@ -3954,7 +3959,6 @@ function SDB(state) {
 // 0x5F
 function SDS(state) {
     var stack = state.stack;
-
     var n = stack.pop();
 
     if (DEBUG) console.log(state.step, 'SDS[]', n);
@@ -3966,7 +3970,6 @@ function SDS(state) {
 // 0x60
 function ADD(state) {
     var stack = state.stack;
-
     var n2 = stack.pop();
     var n1 = stack.pop();
 
@@ -3979,7 +3982,6 @@ function ADD(state) {
 // 0x61
 function SUB(state) {
     var stack = state.stack;
-
     var n2 = stack.pop();
     var n1 = stack.pop();
 
@@ -3992,7 +3994,6 @@ function SUB(state) {
 // 0x62
 function DIV(state) {
     var stack = state.stack;
-
     var n2 = stack.pop();
     var n1 = stack.pop();
 
@@ -4005,7 +4006,6 @@ function DIV(state) {
 // 0x63
 function MUL(state) {
     var stack = state.stack;
-
     var n2 = stack.pop();
     var n1 = stack.pop();
 
@@ -4062,7 +4062,6 @@ function CEILING(state) {
 // 0x68-0x6B
 function ROUND(dt, state) {
     var stack = state.stack;
-
     var n = stack.pop();
 
     if (DEBUG) console.log(state.step, 'ROUND[]');
@@ -4074,7 +4073,6 @@ function ROUND(dt, state) {
 // 0x70
 function WCVTF(state) {
     var stack = state.stack;
-
     var v = stack.pop();
     var l = stack.pop();
 
@@ -4096,8 +4094,7 @@ function DELTAC123(b, state) {
 
     if (DEBUG) console.log(state.step, 'DELTAC[' + b + ']', n, stack);
 
-    for (var i = 0; i < n; i++)
-    {
+    for (var i = 0; i < n; i++) {
         var c = stack.pop();
         var arg = stack.pop();
         var appem = base + ((arg & 0xF0) >> 4);
@@ -4297,7 +4294,6 @@ function GETINFO(state) {
 // 0x8A
 function ROLL(state) {
     var stack = state.stack;
-
     var a = stack.pop();
     var b = stack.pop();
     var c = stack.pop();
@@ -4313,7 +4309,6 @@ function ROLL(state) {
 // 0x8B
 function MAX(state) {
     var stack = state.stack;
-
     var e2 = stack.pop();
     var e1 = stack.pop();
 
@@ -4326,7 +4321,6 @@ function MAX(state) {
 // 0x8C
 function MIN(state) {
     var stack = state.stack;
-
     var e2 = stack.pop();
     var e1 = stack.pop();
 
@@ -4339,9 +4333,7 @@ function MIN(state) {
 // 0x8D
 function SCANTYPE(state) {
     var n = state.stack.pop();
-
     // ignored by opentype.js
-
     if (DEBUG) console.log(state.step, 'SCANTYPE[]', n);
 }
 
@@ -4736,8 +4728,8 @@ d  ... refers to distance
 SETRELATIVE:
 ============
 
-freedom vector = x-axis:
-------------------------
+case freedom vector == x-axis:
+------------------------------
 
                         (pv)
                      .-'
@@ -4765,8 +4757,8 @@ freedom vector = x-axis:
    x = rpdx + ( p.y - rpdy ) / pvns
 
 
-freedom vector = y-axis:
-------------------------
+case freedom vector == y-axis:
+------------------------------
 
     * pm
     |\
@@ -5316,6 +5308,10 @@ function loadFromUrl(url, callback) {
         }
 
         return callback(null, request.response);
+    };
+
+    request.onerror = function () {
+        callback('Font could not be loaded');
     };
 
     request.send();
@@ -8481,6 +8477,7 @@ function parseGlyph(glyph, data, start) {
     var flags;
     var flag;
     var i;
+
     if (glyph.numberOfContours > 0) {
         // This glyph is not a composite.
         var endPointIndices = glyph.endPointIndices = [];
@@ -8656,61 +8653,49 @@ function getPath(points) {
     }
 
     var contours = getContours(points);
-    for (var i = 0; i < contours.length; i += 1) {
-        var contour = contours[i];
-        var firstPt = contour[0];
-        var lastPt = contour[contour.length - 1];
-        var curvePt;
-        var realFirstPoint;
-        if (firstPt.onCurve) {
-            curvePt = null;
-            // The first point will be consumed by the moveTo command,
-            // so skip it in the loop.
-            realFirstPoint = true;
+
+    for (var contourIndex = 0; contourIndex < contours.length; ++contourIndex) {
+        var contour = contours[contourIndex];
+
+        var prev = null;
+        var curr = contour[contour.length - 1];
+        var next = contour[0];
+
+        if (curr.onCurve) {
+            p.moveTo(curr.x, curr.y);
         } else {
-            if (lastPt.onCurve) {
-                // If the first point is off-curve and the last point is on-curve,
-                // start at the last point.
-                firstPt = lastPt;
+            if (next.onCurve) {
+                p.moveTo(next.x, next.y);
             } else {
                 // If both first and last points are off-curve, start at their middle.
-                firstPt = { x: (firstPt.x + lastPt.x) / 2, y: (firstPt.y + lastPt.y) / 2 };
+                var start = { x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5 };
+                p.moveTo(start.x, start.y);
             }
-
-            curvePt = firstPt;
-            // The first point is synthesized, so don't skip the real first point.
-            realFirstPoint = false;
         }
 
-        p.moveTo(firstPt.x, firstPt.y);
+        for (var i = 0; i < contour.length; ++i) {
+            prev = curr;
+            curr = next;
+            next = contour[(i + 1) % contour.length];
 
-        for (var j = realFirstPoint ? 1 : 0; j < contour.length; j += 1) {
-            var pt = contour[j];
-            var prevPt = j === 0 ? firstPt : contour[j - 1];
-            if (prevPt.onCurve && pt.onCurve) {
+            if (curr.onCurve) {
                 // This is a straight line.
-                p.lineTo(pt.x, pt.y);
-            } else if (prevPt.onCurve && !pt.onCurve) {
-                curvePt = pt;
-            } else if (!prevPt.onCurve && !pt.onCurve) {
-                var midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                p.quadraticCurveTo(prevPt.x, prevPt.y, midPt.x, midPt.y);
-                curvePt = pt;
-            } else if (!prevPt.onCurve && pt.onCurve) {
-                // Previous point off-curve, this point on-curve.
-                p.quadraticCurveTo(curvePt.x, curvePt.y, pt.x, pt.y);
-                curvePt = null;
+                p.lineTo(curr.x, curr.y);
             } else {
-                throw new Error('Invalid state.');
-            }
-        }
+                var prev2 = prev;
+                var next2 = next;
 
-        if (firstPt !== lastPt) {
-            // Connect the last and first points
-            if (curvePt) {
-                p.quadraticCurveTo(curvePt.x, curvePt.y, firstPt.x, firstPt.y);
-            } else {
-                p.lineTo(firstPt.x, firstPt.y);
+                if (!prev.onCurve) {
+                    prev2 = { x: (curr.x + prev.x) * 0.5, y: (curr.y + prev.y) * 0.5 };
+                    p.lineTo(prev2.x, prev2.y);
+                }
+
+                if (!next.onCurve) {
+                    next2 = { x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5 };
+                }
+
+                p.lineTo(prev2.x, prev2.y);
+                p.quadraticCurveTo(curr.x, curr.y, next2.x, next2.y);
             }
         }
     }
