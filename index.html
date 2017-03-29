@@ -42,7 +42,7 @@
     <label><input type="checkbox" onchange="drawMetricsChanged(this)">Draw Metrics</label>
     <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked">Kerning</label>
     <label><input type="checkbox" onchange="ligaturesChanged(this)" checked="checked">Ligatures</label>
-    <label><input type="checkbox" onchange="hintingChanged(this)">Hinting</label>
+    <label id="hinting-label" class="disabled"><input id="hinting-checkbox" type="checkbox" onchange="hintingChanged(this)" disabled="true">Hinting</label>
 
     <hr>
 
@@ -95,6 +95,8 @@ var snapDistance = 53;
 var snapX = 0;
 var snapY = 0;
 var fontSizeSlider = document.getElementById("font-size-range");
+var hintingCheckbox = document.getElementById("hinting-checkbox");
+var hintingLabel = document.getElementById("hinting-label");
 
 function drawPointsChanged(e) {
     drawPoints = e.checked;
@@ -263,6 +265,15 @@ function onFontLoaded(font) {
         glyph.draw(ctx, x, y, fontSize);
         glyph.drawPoints(ctx, x, y, fontSize);
         glyph.drawMetrics(ctx, x, y, fontSize);
+    }
+
+    if (font.hinting) {
+        hintingCheckbox.disabled = false;
+        hintingLabel.className = '';
+    } else {
+        hintingCheckbox.disabled = true;
+        hintingCheckbox.checked = false;
+        hintingLabel.className = 'disabled';
     }
 
     renderText();
