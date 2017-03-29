@@ -45,6 +45,7 @@ function parseGlyph(glyph, data, start) {
     var flags;
     var flag;
     var i;
+
     if (glyph.numberOfContours > 0) {
         // This glyph is not a composite.
         var endPointIndices = glyph.endPointIndices = [];
@@ -220,61 +221,49 @@ function getPath(points) {
     }
 
     var contours = getContours(points);
-    for (var i = 0; i < contours.length; i += 1) {
-        var contour = contours[i];
-        var firstPt = contour[0];
-        var lastPt = contour[contour.length - 1];
-        var curvePt;
-        var realFirstPoint;
-        if (firstPt.onCurve) {
-            curvePt = null;
-            // The first point will be consumed by the moveTo command,
-            // so skip it in the loop.
-            realFirstPoint = true;
+
+    for (var contourIndex = 0; contourIndex < contours.length; ++contourIndex) {
+        var contour = contours[contourIndex];
+
+        var prev = null;
+        var curr = contour[contour.length - 1];
+        var next = contour[0];
+
+        if (curr.onCurve) {
+            p.moveTo(curr.x, curr.y);
         } else {
-            if (lastPt.onCurve) {
-                // If the first point is off-curve and the last point is on-curve,
-                // start at the last point.
-                firstPt = lastPt;
+            if (next.onCurve) {
+                p.moveTo(next.x, next.y);
             } else {
                 // If both first and last points are off-curve, start at their middle.
-                firstPt = { x: (firstPt.x + lastPt.x) / 2, y: (firstPt.y + lastPt.y) / 2 };
+                var start = { x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5 };
+                p.moveTo(start.x, start.y);
             }
-
-            curvePt = firstPt;
-            // The first point is synthesized, so don't skip the real first point.
-            realFirstPoint = false;
         }
 
-        p.moveTo(firstPt.x, firstPt.y);
+        for (var i = 0; i < contour.length; ++i) {
+            prev = curr;
+            curr = next;
+            next = contour[(i + 1) % contour.length];
 
-        for (var j = realFirstPoint ? 1 : 0; j < contour.length; j += 1) {
-            var pt = contour[j];
-            var prevPt = j === 0 ? firstPt : contour[j - 1];
-            if (prevPt.onCurve && pt.onCurve) {
+            if (curr.onCurve) {
                 // This is a straight line.
-                p.lineTo(pt.x, pt.y);
-            } else if (prevPt.onCurve && !pt.onCurve) {
-                curvePt = pt;
-            } else if (!prevPt.onCurve && !pt.onCurve) {
-                var midPt = { x: (prevPt.x + pt.x) / 2, y: (prevPt.y + pt.y) / 2 };
-                p.quadraticCurveTo(prevPt.x, prevPt.y, midPt.x, midPt.y);
-                curvePt = pt;
-            } else if (!prevPt.onCurve && pt.onCurve) {
-                // Previous point off-curve, this point on-curve.
-                p.quadraticCurveTo(curvePt.x, curvePt.y, pt.x, pt.y);
-                curvePt = null;
+                p.lineTo(curr.x, curr.y);
             } else {
-                throw new Error('Invalid state.');
-            }
-        }
+                var prev2 = prev;
+                var next2 = next;
 
-        if (firstPt !== lastPt) {
-            // Connect the last and first points
-            if (curvePt) {
-                p.quadraticCurveTo(curvePt.x, curvePt.y, firstPt.x, firstPt.y);
-            } else {
-                p.lineTo(firstPt.x, firstPt.y);
+                if (!prev.onCurve) {
+                    prev2 = { x: (curr.x + prev.x) * 0.5, y: (curr.y + prev.y) * 0.5 };
+                    p.lineTo(prev2.x, prev2.y);
+                }
+
+                if (!next.onCurve) {
+                    next2 = { x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5 };
+                }
+
+                p.lineTo(prev2.x, prev2.y);
+                p.quadraticCurveTo(curr.x, curr.y, next2.x, next2.y);
             }
         }
     }
