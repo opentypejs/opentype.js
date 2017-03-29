@@ -288,4 +288,6 @@ pre.contour { margin: 0 0 1em 2em; border-bottom: solid 1px #a0a0a0; }
 span.oncurve { color: blue; }
 span.offcurve { color: red; }
 
-
+.disabled {
+	color: gray;
+}
