@@ -73,6 +73,12 @@
 
         <h3 class="collapsed">Font program <a href="https://www.microsoft.com/typography/OTSPEC/fpgm.htm" target="_blank">fpgm</a></h3>
         <dl id="fpgm-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">Glyph Substitution Table <a href="https://www.microsoft.com/typography/OTSPEC/GSUB.htm" target="_blank">GSUB</a></h3>
+        <dl id="gsub-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">Kerning <a href="https://www.microsoft.com/typography/otspec/kern.htm" target="_blank">kern</a></h3>
+        <dl id="kern-table"><dt>Undefined</dt></dl>
     </div>
 
     <hr>
@@ -123,7 +129,13 @@ function renderText() {
     var previewCanvas = document.getElementById('preview');
     var previewCtx = previewCanvas.getContext("2d");
     previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-    font.draw(previewCtx, textToRender, 0, 32, fontSize, {kerning: true});
+    font.draw(previewCtx, textToRender, 0, 32, fontSize, {
+        kerning: true,
+        features: {
+            liga: true,
+            rlig: true
+        }
+    });
 }
 
 function showErrorMessage(message) {
@@ -168,6 +180,7 @@ function displayNames(names) {
 
 function displayFontData() {
     var html, tablename, table, property, value;
+
     for (tablename in font.tables) {
         table = font.tables[tablename];
         if (tablename == 'name') {
@@ -197,6 +210,13 @@ function displayFontData() {
         var element = document.getElementById(tablename+"-table");
         if (element) {
             element.innerHTML = html;
+        }
+    }
+
+    if(font.kerningPairs) {
+        var element = document.getElementById("kern-table");
+        if (element) {
+            element.innerHTML = '<dt>' + Object.keys(font.kerningPairs).length + ' Pairs</dt><dd>' + JSON.stringify(font.kerningPairs) + '</dd>';
         }
     }
 }
