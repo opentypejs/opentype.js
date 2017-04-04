@@ -185,6 +185,18 @@ Convert the character to a `Glyph` object. Returns null if the glyph could not b
 #### `Font.getKerningValue(leftGlyph, rightGlyph)`
 Retrieve the value of the [kerning pair](https://en.wikipedia.org/wiki/Kerning) between the left glyph (or its index) and the right glyph (or its index). If no kerning pair is found, return 0. The kerning value gets added to the advance width when calculating the spacing between glyphs.
 
+#### `Font.getAdvanceWidth(text, fontSize, options)`
+Returns the advance width of a text.
+
+This is something different than Path.getBoundingBox() as for example a
+suffixed whitespace increases the advancewidth but not the bounding box
+or an overhanging letter like a calligraphic 'f' might have a quite larger
+bounding box than its advance width.
+
+This corresponds to canvas2dContext.measureText(text).width
+* `fontSize`: Size of the text in pixels (default: 72).
+* `options`: See Font.getPath
+
 #### The Glyph object
 A Glyph is an individual mark that often corresponds to a character. Some glyphs, such as ligatures, are a combination of many characters. Glyphs are the basic building blocks of a font.
 
