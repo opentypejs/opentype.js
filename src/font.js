@@ -280,7 +280,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     var glyphs = this.stringToGlyphs(text, options);
     for (var i = 0; i < glyphs.length; i += 1) {
         var glyph = glyphs[i];
-        callback(glyph, x, y, fontSize, options);
+        callback.call(this, glyph, x, y, fontSize, options);
         if (glyph.advanceWidth) {
             x += glyph.advanceWidth * fontScale;
         }
@@ -296,6 +296,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
             x += (options.tracking / 1000) * fontSize;
         }
     }
+    return x;
 };
 
 /**
@@ -309,9 +310,8 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
  */
 Font.prototype.getPath = function(text, x, y, fontSize, options) {
     var fullPath = new path.Path();
-    var _this = this;
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        var glyphPath = glyph.getPath(gX, gY, gFontSize, options, _this);
+        var glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
         fullPath.extend(glyphPath);
     });
     return fullPath;
@@ -334,6 +334,25 @@ Font.prototype.getPaths = function(text, x, y, fontSize, options) {
     });
 
     return glyphPaths;
+};
+
+/**
+ * Returns the advance width of a text.
+ *
+ * This is something different than Path.getBoundingBox() as for example a
+ * suffixed whitespace increases the advancewidth but not the bounding box
+ * or an overhanging letter like a calligraphic 'f' might have a quite larger
+ * bounding box than it's advance width.
+ *
+ * This corrosponds to canvas2dContext.measureText(text).width
+ *
+ * @param  {string} text - The text to create.
+ * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+ * @param  {GlyphRenderOptions=} options
+ * @return advance width
+ */
+Font.prototype.getAdvanceWidth = function(text, fontSize, options) {
+    return this.forEachGlyph(text, 0, 0, fontSize, options, function() {});
 };
 
 /**
