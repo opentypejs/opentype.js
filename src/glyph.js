@@ -135,7 +135,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     if (options.hinting && font && font.hinting) {
         // in case of hinting, the hinting engine takes care
         // of scaling the points (not the path) before hinting.
-        hPoints = font.hinting.exec(this, fontSize);
+        hPoints = this.path && font.hinting.exec(this, fontSize);
         // in case the hinting engine failed hPoints is undefined
         // and thus reverts to plain rending
     }
