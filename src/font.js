@@ -342,9 +342,9 @@ Font.prototype.getPaths = function(text, x, y, fontSize, options) {
  * This is something different than Path.getBoundingBox() as for example a
  * suffixed whitespace increases the advancewidth but not the bounding box
  * or an overhanging letter like a calligraphic 'f' might have a quite larger
- * bounding box than it's advance width.
+ * bounding box than its advance width.
  *
- * This corrosponds to canvas2dContext.measureText(text).width
+ * This corresponds to canvas2dContext.measureText(text).width
  *
  * @param  {string} text - The text to create.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
