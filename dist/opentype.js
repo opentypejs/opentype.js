@@ -1157,7 +1157,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     var glyphs = this.stringToGlyphs(text, options);
     for (var i = 0; i < glyphs.length; i += 1) {
         var glyph = glyphs[i];
-        callback(glyph, x, y, fontSize, options);
+        callback.call(this, glyph, x, y, fontSize, options);
         if (glyph.advanceWidth) {
             x += glyph.advanceWidth * fontScale;
         }
@@ -1173,6 +1173,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
             x += (options.tracking / 1000) * fontSize;
         }
     }
+    return x;
 };
 
 /**
@@ -1186,9 +1187,8 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
  */
 Font.prototype.getPath = function(text, x, y, fontSize, options) {
     var fullPath = new path.Path();
-    var _this = this;
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        var glyphPath = glyph.getPath(gX, gY, gFontSize, options, _this);
+        var glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
         fullPath.extend(glyphPath);
     });
     return fullPath;
@@ -1211,6 +1211,25 @@ Font.prototype.getPaths = function(text, x, y, fontSize, options) {
     });
 
     return glyphPaths;
+};
+
+/**
+ * Returns the advance width of a text.
+ *
+ * This is something different than Path.getBoundingBox() as for example a
+ * suffixed whitespace increases the advancewidth but not the bounding box
+ * or an overhanging letter like a calligraphic 'f' might have a quite larger
+ * bounding box than its advance width.
+ *
+ * This corresponds to canvas2dContext.measureText(text).width
+ *
+ * @param  {string} text - The text to create.
+ * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+ * @param  {GlyphRenderOptions=} options
+ * @return advance width
+ */
+Font.prototype.getAdvanceWidth = function(text, fontSize, options) {
+    return this.forEachGlyph(text, 0, 0, fontSize, options, function() {});
 };
 
 /**
@@ -1552,7 +1571,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     if (options.hinting && font && font.hinting) {
         // in case of hinting, the hinting engine takes care
         // of scaling the points (not the path) before hinting.
-        hPoints = font.hinting.exec(this, fontSize);
+        hPoints = this.path && font.hinting.exec(this, fontSize);
         // in case the hinting engine failed hPoints is undefined
         // and thus reverts to plain rending
     }
@@ -2796,6 +2815,38 @@ function initTZone(state)
     }
 }
 
+/*
+* Skips the instruction pointer ahead over an IF/ELSE block.
+* handleElse .. if true breaks on mathing ELSE
+*/
+function skip(state, handleElse)
+{
+    var prog = state.prog;
+    var ip = state.ip;
+    var nesting = 1;
+    var ins;
+
+    do {
+        ins = prog[++ip];
+        if (ins === 0x58) // IF
+            nesting++;
+        else if (ins === 0x59) // EIF
+            nesting--;
+        else if (ins === 0x40) // NPUSHB
+            ip += prog[ip + 1] + 1;
+        else if (ins === 0x41) // NPUSHW
+            ip += 2 * prog[ip + 1] + 1;
+        else if (ins >= 0xB0 && ins <= 0xB7) // PUSHB
+            ip += ins - 0xB0 + 1;
+        else if (ins >= 0xB8 && ins <= 0xBF) // PUSHW
+            ip += (ins - 0xB8 + 1) * 2;
+        else if (handleElse && nesting === 1 && ins === 0x1B) // ELSE
+            break;
+    } while (nesting > 0);
+
+    state.ip = ip;
+}
+
 /*----------------------------------------------------------*
 *          And then a lot of instructions...                *
 *----------------------------------------------------------*/
@@ -3124,26 +3175,10 @@ function ELSE(state) {
     //
     // In case the IF was negative the IF[] instruction already
     // skipped forward over the ELSE[]
-    var ip = state.ip;
-    var prog = state.prog;
 
     if (DEBUG) console.log(state.step, 'ELSE[]');
 
-    var nesting = 1;
-    var ins;
-    do {
-        ins = prog[++ip];
-        switch (ins) {
-            case 0x59: // EIF
-                nesting--;
-                break;
-            case 0x58: // IF
-                nesting++;
-                break;
-        }
-    } while (nesting > 0);
-
-    state.ip = ip;
+    skip(state, false);
 }
 
 // JMPR[] JuMP Relative
@@ -3833,38 +3868,18 @@ function EVEN(state) {
 // IF[] IF test
 // 0x58
 function IF(state) {
-    var ip = state.ip;
-    var prog = state.prog;
-
     var test = state.stack.pop();
     var ins;
 
     if (DEBUG) console.log(state.step, 'IF[]', test);
 
     // if test is true it just continues
-    // if not the ip is skiped until matching ELSE or EIF
+    // if not the ip is skipped until matching ELSE or EIF
     if (!test) {
-        // otherwise skip forward until matching else or endif
-        var nesting = 1;
-        do {
-            ins = prog[++ip];
-            switch (ins) {
-                case 0x1B: // ELSE
-                    if (nesting === 1) nesting--;
-                    break;
-                case 0x59: // EIF
-                    nesting--;
-                    break;
-                case 0x58: // IF
-                    nesting++;
-                    break;
-            }
-        } while (nesting > 0);
+        skip(state, true);
 
         if (DEBUG) console.log(state.step, ins === 0x1B ? 'ELSE[]' : 'EIF[]');
     }
-
-    state.ip = ip;
 }
 
 // EIF[] End IF
@@ -5419,7 +5434,7 @@ function parseBuffer(buffer) {
     var numTables;
     var tableEntries = [];
     var signature = parse.getTag(data, 0);
-    if (signature === String.fromCharCode(0, 1, 0, 0)) {
+    if (signature === String.fromCharCode(0, 1, 0, 0) || signature === 'true' || signature === 'typ1') {
         font.outlinesFormat = 'truetype';
         numTables = parse.getUShort(data, 4);
         tableEntries = parseOpenTypeTableEntries(data, numTables);
