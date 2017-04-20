@@ -79,14 +79,14 @@ function roundToGrid(v) {
 * Rounding to double grid.
 */
 function roundToDoubleGrid(v) {
-    return Math.sign(v) * Math.round(Math.abs(v / 2)) * 2;
+    return Math.sign(v) * Math.round(Math.abs(v * 2)) / 2;
 }
 
 /*
 * Rounding to half grid.
 */
 function roundToHalfGrid(v) {
-    return Math.sign(v) * Math.round(Math.abs(v * 2)) / 2;
+    return Math.sign(v) * (Math.round(Math.abs(v) + 0.5) - 0.5);
 }
 
 /*
@@ -117,12 +117,17 @@ var roundSuper = function(v) {
         sign = -1;
     }
 
+    v += threshold - phase;
+
+    v = Math.trunc(v / period) * period;
+
     v += phase;
 
-    var f = v % period;
+    // according to http://xgridfit.sourceforge.net/round.html
+    if (sign > 0 && v < 0) return phase;
+    if (sign < 0 && v > 0) return -phase;
 
-    if (f >= threshold) return Math.ceil(v) * sign - phase;
-    else return Math.floor(v) * sign - phase;
+    return v * sign;
 };
 
 /*
@@ -1681,7 +1686,6 @@ function MIAP(round, state) {
     var cv = state.cvt[n];
 
     // TODO cvtcutin should be considered here
-
     if (round) cv = state.round(cv);
 
     if (DEBUG) {
@@ -2490,7 +2494,7 @@ function MDRP_MIRP(indirect, setRp0, keepD, ro, dt, state) {
     var cv;
 
     d = od = pv.distance(p, rp, true, true);
-    sign = d > 0 ? 1 : -1; // Math.sign would be 0 in case of 0
+    sign = d >= 0 ? 1 : -1; // Math.sign would be 0 in case of 0
 
     // TODO consider autoFlip
     d = Math.abs(d);
