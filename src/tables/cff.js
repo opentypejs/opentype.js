@@ -32,6 +32,21 @@ function equals(a, b) {
     }
 }
 
+// Subroutines are encoded using the negative half of the number space.
+// See type 2 chapter 4.7 "Subroutine operators".
+function calcCFFSubroutineBias(subrs) {
+    var bias;
+    if (subrs.length < 1240) {
+        bias = 107;
+    } else if (subrs.length < 33900) {
+        bias = 1131;
+    } else {
+        bias = 32768;
+    }
+
+    return bias;
+}
+
 // Parse a `CFF` INDEX array.
 // An index array consists of a list of offsets, then a list of objects at those offsets.
 function parseCFFIndex(data, start, conversionFn) {
@@ -208,21 +223,38 @@ function getCFFString(strings, index) {
 // This function takes `meta` which is a list of objects containing `operand`, `name` and `default`.
 function interpretDict(dict, meta, strings) {
     var newDict = {};
+    var value;
 
     // Because we also want to include missing values, we start out from the meta list
     // and lookup values in the dict.
     for (var i = 0; i < meta.length; i += 1) {
         var m = meta[i];
-        var value = dict[m.op];
-        if (value === undefined) {
-            value = m.value !== undefined ? m.value : null;
-        }
 
-        if (m.type === 'SID') {
-            value = getCFFString(strings, value);
-        }
+        if (Array.isArray(m.type)) {
+            var values = [];
+            values.length = m.type.length;
+            for (var j = 0; j < m.type.length; j++) {
+                value = dict[m.op] !== undefined ? dict[m.op][j] : undefined;
+                if (value === undefined) {
+                    value = m.value !== undefined && m.value[j] !== undefined ? m.value[j] : null;
+                }
+                if (m.type[j] === 'SID') {
+                    value = getCFFString(strings, value);
+                }
+                values[j] = value;
+            }
+            newDict[m.name] = values;
+        } else {
+            value = dict[m.op];
+            if (value === undefined) {
+                value = m.value !== undefined ? m.value : null;
+            }
 
-        newDict[m.name] = value;
+            if (m.type === 'SID') {
+                value = getCFFString(strings, value);
+            }
+            newDict[m.name] = value;
+        }
     }
 
     return newDict;
@@ -261,7 +293,16 @@ var TOP_DICT_META = [
     {name: 'charset', op: 15, type: 'offset', value: 0},
     {name: 'encoding', op: 16, type: 'offset', value: 0},
     {name: 'charStrings', op: 17, type: 'offset', value: 0},
-    {name: 'private', op: 18, type: ['number', 'offset'], value: [0, 0]}
+    {name: 'private', op: 18, type: ['number', 'offset'], value: [0, 0]},
+    {name: 'ros', op: 1230, type: ['SID', 'SID', 'number']},
+    {name: 'cidFontVersion', op: 1231, type: 'number', value: 0},
+    {name: 'cidFontRevision', op: 1232, type: 'number', value: 0},
+    {name: 'cidFontType', op: 1233, type: 'number', value: 0},
+    {name: 'cidCount', op: 1234, type: 'number', value: 8720},
+    {name: 'uidBase', op: 1235, type: 'number'},
+    {name: 'fdArray', op: 1236, type: 'offset'},
+    {name: 'fdSelect', op: 1237, type: 'offset'},
+    {name: 'fontName', op: 1238, type: 'SID'}
 ];
 
 var PRIVATE_DICT_META = [
@@ -281,6 +322,47 @@ function parseCFFTopDict(data, strings) {
 function parseCFFPrivateDict(data, start, size, strings) {
     var dict = parseCFFDict(data, start, size);
     return interpretDict(dict, PRIVATE_DICT_META, strings);
+}
+
+// Returns a list of "Top DICT"s found using an INDEX list.
+// Used to read both the usual high-level Top DICTs and also the FDArray
+// discovered inside CID-keyed fonts.  When a Top DICT has a reference to
+// a Private DICT that is read and saved into the Top DICT.
+//
+// In addition to the expected/optional values as outlined in TOP_DICT_META
+// the following values might be saved into the Top DICT.
+//
+//    _subrs []        array of local CFF subroutines from Private DICT
+//    _subrsBias       bias value computed from number of subroutines
+//                      (see calcCFFSubroutineBias() and parseCFFCharstring())
+//    _defaultWidthX   default widths for CFF characters
+//    _nominalWidthX   bias added to width embedded within glyph description
+//
+//    _privateDict     saved copy of parsed Private DICT from Top DICT
+function gatherCFFTopDicts(data, start, cffIndex, strings) {
+    var topDictArray = [];
+    for (var iTopDict = 0; iTopDict < cffIndex.length; iTopDict += 1) {
+        var topDictData = new DataView(new Uint8Array(cffIndex[iTopDict]).buffer);
+        var topDict = parseCFFTopDict(topDictData, strings);
+        topDict._subrs = [];
+        topDict._subrsBias = 0;
+        var privateSize = topDict.private[0];
+        var privateOffset = topDict.private[1];
+        if (privateSize !== 0 && privateOffset !== 0) {
+            var privateDict = parseCFFPrivateDict(data, privateOffset + start, privateSize, strings);
+            topDict._defaultWidthX = privateDict.defaultWidthX;
+            topDict._nominalWidthX = privateDict.nominalWidthX;
+            if (privateDict.subrs !== 0) {
+                var subrOffset = privateOffset + privateDict.subrs;
+                var subrIndex = parseCFFIndex(data, subrOffset + start);
+                topDict._subrs = subrIndex.objects;
+                topDict._subrsBias = calcCFFSubroutineBias(topDict._subrs);
+            }
+            topDict._privateDict = privateDict;
+        }
+        topDictArray.push(topDict);
+    }
+    return topDictArray;
 }
 
 // Parse the CFF charset table, which contains internal names for all the glyphs.
@@ -371,10 +453,27 @@ function parseCFFCharstring(font, glyph, code) {
     var stack = [];
     var nStems = 0;
     var haveWidth = false;
-    var width = font.defaultWidthX;
     var open = false;
     var x = 0;
     var y = 0;
+    var subrs;
+    var subrsBias;
+    var defaultWidthX;
+    var nominalWidthX;
+    if (font.isCIDFont) {
+        var fdIndex = font.tables.cff.topDict._fdSelect[glyph.index];
+        var fdDict = font.tables.cff.topDict._fdArray[fdIndex];
+        subrs = fdDict._subrs;
+        subrsBias = fdDict._subrsBias;
+        defaultWidthX = fdDict._defaultWidthX;
+        nominalWidthX = fdDict._nominalWidthX;
+    } else {
+        subrs = font.tables.cff.topDict._subrs;
+        subrsBias = font.tables.cff.topDict._subrsBias;
+        defaultWidthX = font.tables.cff.topDict._defaultWidthX;
+        nominalWidthX = font.tables.cff.topDict._nominalWidthX;
+    }
+    var width = defaultWidthX;
 
     function newContour(x, y) {
         if (open) {
@@ -392,7 +491,7 @@ function parseCFFCharstring(font, glyph, code) {
         // If the value is uneven, that means a width is specified.
         hasWidthArg = stack.length % 2 !== 0;
         if (hasWidthArg && !haveWidth) {
-            width = stack.shift() + font.nominalWidthX;
+            width = stack.shift() + nominalWidthX;
         }
 
         nStems += stack.length >> 1;
@@ -427,7 +526,7 @@ function parseCFFCharstring(font, glyph, code) {
                     break;
                 case 4: // vmoveto
                     if (stack.length > 1 && !haveWidth) {
-                        width = stack.shift() + font.nominalWidthX;
+                        width = stack.shift() + nominalWidthX;
                         haveWidth = true;
                     }
 
@@ -481,8 +580,8 @@ function parseCFFCharstring(font, glyph, code) {
 
                     break;
                 case 10: // callsubr
-                    codeIndex = stack.pop() + font.subrsBias;
-                    subrCode = font.subrs[codeIndex];
+                    codeIndex = stack.pop() + subrsBias;
+                    subrCode = subrs[codeIndex];
                     if (subrCode) {
                         parse(subrCode);
                     }
@@ -506,8 +605,8 @@ function parseCFFCharstring(font, glyph, code) {
                             c3y = jpy + stack.shift();    // dy4
                             c4x = c3x + stack.shift();    // dx5
                             c4y = c3y + stack.shift();    // dy5
-                            x = c4x + stack.shift();      // dx6
-                            y = c4y + stack.shift();      // dy6
+                            x = c4x   + stack.shift();    // dx6
+                            y = c4y   + stack.shift();    // dy6
                             stack.shift();                // flex depth
                             p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
                             p.curveTo(c3x, c3y, c4x, c4y, x, y);
@@ -572,7 +671,7 @@ function parseCFFCharstring(font, glyph, code) {
                     break;
                 case 14: // endchar
                     if (stack.length > 0 && !haveWidth) {
-                        width = stack.shift() + font.nominalWidthX;
+                        width = stack.shift() + nominalWidthX;
                         haveWidth = true;
                     }
 
@@ -592,7 +691,7 @@ function parseCFFCharstring(font, glyph, code) {
                     break;
                 case 21: // rmoveto
                     if (stack.length > 2 && !haveWidth) {
-                        width = stack.shift() + font.nominalWidthX;
+                        width = stack.shift() + nominalWidthX;
                         haveWidth = true;
                     }
 
@@ -602,7 +701,7 @@ function parseCFFCharstring(font, glyph, code) {
                     break;
                 case 22: // hmoveto
                     if (stack.length > 1 && !haveWidth) {
-                        width = stack.shift() + font.nominalWidthX;
+                        width = stack.shift() + nominalWidthX;
                         haveWidth = true;
                     }
 
@@ -765,19 +864,49 @@ function parseCFFCharstring(font, glyph, code) {
     return p;
 }
 
-// Subroutines are encoded using the negative half of the number space.
-// See type 2 chapter 4.7 "Subroutine operators".
-function calcCFFSubroutineBias(subrs) {
-    var bias;
-    if (subrs.length < 1240) {
-        bias = 107;
-    } else if (subrs.length < 33900) {
-        bias = 1131;
+function parseCFFFDSelect(data, start, nGlyphs, fdArrayCount) {
+    var fdSelect = [];
+    var fdIndex;
+    var parser = new parse.Parser(data, start);
+    var format = parser.parseCard8();
+    if (format === 0) {
+        // Simple list of nGlyphs elements
+        for (var iGid = 0; iGid < nGlyphs; iGid++) {
+            fdIndex = parser.parseCard8();
+            if (fdIndex >= fdArrayCount) {
+                throw new Error('CFF table CID Font FDSelect has bad FD index value ' + fdIndex + ' (FD count ' + fdArrayCount + ')');
+            }
+            fdSelect.push(fdIndex);
+        }
+    } else if (format === 3) {
+        // Ranges
+        var nRanges = parser.parseCard16();
+        var first = parser.parseCard16();
+        if (first !== 0) {
+            throw new Error('CFF Table CID Font FDSelect format 3 range has bad initial GID ' + first);
+        }
+        var next;
+        for (var iRange = 0; iRange < nRanges; iRange++) {
+            fdIndex = parser.parseCard8();
+            next = parser.parseCard16();
+            if (fdIndex >= fdArrayCount) {
+                throw new Error('CFF table CID Font FDSelect has bad FD index value ' + fdIndex + ' (FD count ' + fdArrayCount + ')');
+            }
+            if (next > nGlyphs) {
+                throw new Error('CFF Table CID Font FDSelect format 3 range has bad GID ' + next);
+            }
+            for (; first < next; first++) {
+                fdSelect.push(fdIndex);
+            }
+            first = next;
+        }
+        if (next !== nGlyphs) {
+            throw new Error('CFF Table CID Font FDSelect format 3 range has bad final GID ' + next);
+        }
     } else {
-        bias = 32768;
+        throw new Error('CFF Table CID Font FDSelect table has unsupported format ' + format);
     }
-
-    return bias;
+    return fdSelect;
 }
 
 // Parse the `CFF` table, which contains the glyph outlines in PostScript format.
@@ -791,9 +920,36 @@ function parseCFFTable(data, start, font) {
     font.gsubrs = globalSubrIndex.objects;
     font.gsubrsBias = calcCFFSubroutineBias(font.gsubrs);
 
-    var topDictData = new DataView(new Uint8Array(topDictIndex.objects[0]).buffer);
-    var topDict = parseCFFTopDict(topDictData, stringIndex.objects);
+    var topDictArray = gatherCFFTopDicts(data, start, topDictIndex.objects, stringIndex.objects);
+    if (topDictArray.length !== 1) {
+        throw new Error('CFF table has too many fonts in \'FontSet\' - ' + 'count of fonts NameIndex.length = ' + topDictArray.length);
+    }
+
+    var topDict = topDictArray[0];
     font.tables.cff.topDict = topDict;
+
+    if (topDict._privateDict) {
+        font.defaultWidthX = topDict._privateDict.defaultWidthX;
+        font.nominalWidthX = topDict._privateDict.nominalWidthX;
+    }
+
+    if (topDict.ros[0] !== undefined && topDict.ros[1] !== undefined) {
+        font.isCIDFont = true;
+    }
+
+    if (font.isCIDFont) {
+        var fdArrayOffset = topDict.fdArray;
+        var fdSelectOffset = topDict.fdSelect;
+        if (fdArrayOffset === 0 || fdSelectOffset === 0) {
+            throw new Error('Font is marked as a CID font, but FDArray and/or FDSelect information is missing');
+        }
+        fdArrayOffset += start;
+        var fdArrayIndex = parseCFFIndex(data, fdArrayOffset);
+        var fdArray = gatherCFFTopDicts(data, start, fdArrayIndex.objects, stringIndex.objects);
+        topDict._fdArray = fdArray;
+        fdSelectOffset += start;
+        topDict._fdSelect = parseCFFFDSelect(data, fdSelectOffset, font.numGlyphs, fdArray.length);
+    }
 
     var privateDictOffset = start + topDict['private'][1];
     var privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict['private'][0], stringIndex.objects);

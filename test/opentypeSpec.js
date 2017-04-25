@@ -29,6 +29,22 @@ describe('OpenType.js', function() {
         assert.equal(aGlyph.path.commands.length, 14);
     });
 
+    it('can load a CID-keyed font', function() {
+        var font = opentype.loadSync('./fonts/FDArrayTest257.otf');
+        assert.deepEqual(font.names.fontFamily, {en: 'FDArray Test 257'});
+        assert.deepEqual(font.tables.cff.topDict.ros, ['Adobe', 'Identity', 0]);
+        assert.equal(font.tables.cff.topDict._fdArray.length, 256);
+        assert.equal(font.tables.cff.topDict._fdSelect[0], 0);
+        assert.equal(font.tables.cff.topDict._fdSelect[42], 41);
+        assert.equal(font.tables.cff.topDict._fdSelect[256], 255);
+        assert.equal(font.unitsPerEm, 1000);
+        assert.equal(font.glyphs.length, 257);
+        var aGlyph = font.glyphs.get(2);
+        assert.equal(aGlyph.name, 'cid2');
+        assert.equal(aGlyph.unicode, 1);
+        assert.equal(aGlyph.path.commands.length, 24);
+    });
+
     it('can load a WOFF/CFF font', function() {
         var font = opentype.loadSync('./fonts/FiraSansMedium.woff');
         assert.deepEqual(font.names.fontFamily, {en: 'Fira Sans OT'});
