@@ -1,5 +1,5 @@
 {
-    "excludeFiles": ["node_modules/**", "build/**", "dist/**"],
+    "excludeFiles": ["node_modules/**", "build/**", "dist/**", "experiments/**"],
     "preset": "airbnb",
     "validateIndentation": 4,
     "requirePaddingNewLinesBeforeLineComments": null,
