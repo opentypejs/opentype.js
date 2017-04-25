@@ -33,3 +33,4 @@ Contributors
 * Ryan Burgett
 * 王集鹄
 * Axel Kittenberger
+* Tom Shinnick
