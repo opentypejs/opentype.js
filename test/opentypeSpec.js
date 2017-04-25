@@ -40,7 +40,7 @@ describe('OpenType.js', function() {
         assert.equal(font.unitsPerEm, 1000);
         assert.equal(font.glyphs.length, 257);
         var aGlyph = font.glyphs.get(2);
-        assert.equal(aGlyph.name, 'cid2');
+        assert.equal(aGlyph.name, 'gid2');
         assert.equal(aGlyph.unicode, 1);
         assert.equal(aGlyph.path.commands.length, 24);
     });

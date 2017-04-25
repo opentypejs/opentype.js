@@ -264,7 +264,7 @@ function addGlyphNames(font) {
         glyph = font.glyphs.get(i);
         if (font.cffEncoding) {
             if (font.isCIDFont) {
-                glyph.name = 'cid' + i;
+                glyph.name = 'gid' + i;
             } else {
                 glyph.name = font.cffEncoding.charset[i];
             }
