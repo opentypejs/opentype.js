@@ -263,7 +263,11 @@ function addGlyphNames(font) {
     for (i = 0; i < font.glyphs.length; i += 1) {
         glyph = font.glyphs.get(i);
         if (font.cffEncoding) {
-            glyph.name = font.cffEncoding.charset[i];
+            if (font.isCIDFont) {
+                glyph.name = 'cid' + i;
+            } else {
+                glyph.name = font.cffEncoding.charset[i];
+            }
         } else if (font.glyphNames.names) {
             glyph.name = font.glyphNames.glyphIndexToName(i);
         }
