@@ -265,7 +265,7 @@ Layout.prototype = {
         } else {
             var glyphs = [];
             var ranges = coverageTable.ranges;
-            for (var i = 0; i < ranges; i++) {
+            for (var i = 0; i < ranges.length; i++) {
                 var range = ranges[i];
                 var start = range.start;
                 var end = range.end;

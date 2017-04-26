@@ -42,6 +42,14 @@ describe('font.js', function() {
             assert.deepEqual(font.stringToGlyphs('ffi'), [ffiGlyph]);
             assert.deepEqual(font.stringToGlyphs('fffiffif'), [ffGlyph, fiGlyph, ffiGlyph, fGlyph]);
         });
+
+        it('works on fonts with coverage table format 2', function() {
+            var vibur = opentype.loadSync('./fonts/Vibur.woff');
+            var glyphs = vibur.stringToGlyphs('er');
+            assert.equal(glyphs.length, 1);
+            assert.equal(glyphs[0].name, 'er');
+        });
+
     });
 
 });
