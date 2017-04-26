@@ -5,7 +5,7 @@
  * opentype.js:
  *   license: MIT (http://opensource.org/licenses/MIT)
  *   author: Frederik De Bleser <frederik@debleser.be>
- *   version: 0.7.0
+ *   version: 0.7.1
  *
  * tiny-inflate:
  *   license: MIT (http://opensource.org/licenses/MIT)
@@ -858,7 +858,7 @@ function addGlyphNames(font) {
         glyph = font.glyphs.get(i);
         if (font.cffEncoding) {
             if (font.isCIDFont) {
-                glyph.name = 'cid' + i;
+                glyph.name = 'gid' + i;
             } else {
                 glyph.name = font.cffEncoding.charset[i];
             }
@@ -5239,7 +5239,7 @@ Layout.prototype = {
         } else {
             var glyphs = [];
             var ranges = coverageTable.ranges;
-            for (var i = 0; i < ranges; i++) {
+            for (var i = 0; i < ranges.length; i++) {
                 var range = ranges[i];
                 var start = range.start;
                 var end = range.end;
@@ -8353,9 +8353,8 @@ function parseCmapTable(data, start) {
     }
 
     if (offset === -1) {
-        // There is no cmap table in the font that we support, so return null.
-        // This font will be marked as unsupported.
-        return null;
+        // There is no cmap table in the font that we support.
+        throw new Error('No valid cmap sub-tables found.');
     }
 
     var p = new parse.Parser(data, start + offset);
@@ -8366,7 +8365,7 @@ function parseCmapTable(data, start) {
     } else if (cmap.format === 4) {
         parseCmapTableFormat4(cmap, p, data, start, offset);
     } else {
-        throw new Error('Only format 4 and 12 cmap tables are supported.');
+        throw new Error('Only format 4 and 12 cmap tables are supported (found format ' + cmap.format + ').');
     }
 
     return cmap;

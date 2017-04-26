@@ -1,3 +1,9 @@
+0.7.1 (Apr 25, 2017)
+====================
+* Auto-generated glyph IDs (CID-keyed fonts) are now prefixed with "gid", e.g. "gid42".
+* Fix ligature substitution for fonts with coverage table format 2.
+* Better error messages when no valid cmap is found.
+
 0.7.0 (Apr 25, 2017)
 ====================
 * Add font hinting (thanks @axkibe!)
