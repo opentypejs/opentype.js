@@ -7141,7 +7141,7 @@ function entriesToObject(entries) {
             value = values;
         }
 
-        if (o.hasOwnProperty(key)) {
+        if (o.hasOwnProperty(key) && !isNaN(o[key])) {
             throw new Error('Object ' + o + ' already has key ' + key);
         }
 
