@@ -1,3 +1,20 @@
+0.7.1 (Apr 25, 2017)
+====================
+* Auto-generated glyph IDs (CID-keyed fonts) are now prefixed with "gid", e.g. "gid42".
+* Fix ligature substitution for fonts with coverage table format 2.
+* Better error messages when no valid cmap is found.
+
+0.7.0 (Apr 25, 2017)
+====================
+* Add font hinting (thanks @axkibe!)
+* Add support for CID-keyed fonts, thanks to @tshinnic.
+* TrueType fonts with signature 'true' or 'typ1' are also supported.
+* Fixing rounding issues.
+* Add GSUB and kern output in font-inspector.
+* Add font loading error callback.
+* Dev server turns browser caching off.
+* Add encoding support for variation adjustment deltas (thanks @brawer!).
+
 0.6.9 (Jan 17, 2017)
 ====================
 * Add ligature rendering (thanks @fpirsch!)
