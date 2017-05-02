@@ -28,7 +28,7 @@
     "start": "mkdirp build && parallelshell \"npm run watch\" \"node ./bin/server.js\"",
     "test": "mocha --recursive && jshint . && jscs .",
     "browserify": "browserify src/opentype.js -p licensify --bare --standalone opentype > dist/opentype.js",
-    "uglify": "browserify src/opentype.js -p licensify --bare --standalone opentype -g uglifyify > dist/opentype.min.js",
+    "uglify": "browserify src/opentype.js -p licensify --bare --standalone opentype -g [ uglifyify --compress [ --dead_code --global_defs [ --exports.DEBUG 0 ] ] ] > dist/opentype.min.js ",
     "dist": "rimraf build && rimraf dist && mkdirp build && mkdirp dist && npm run test && npm run browserify && npm run uglify"
   },
   "devDependencies": {
