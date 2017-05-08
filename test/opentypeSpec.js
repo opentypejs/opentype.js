@@ -15,7 +15,7 @@ describe('OpenType.js', function() {
         var aGlyph = font.charToGlyph('A');
         assert.equal(aGlyph.name, 'A');
         assert.equal(aGlyph.unicode, 65);
-        assert.equal(aGlyph.path.commands.length, 18);
+        assert.equal(aGlyph.path.commands.length, 19);
     });
 
     it('can load a OpenType/CFF font', function() {

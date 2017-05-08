@@ -266,9 +266,9 @@ function getPath(points) {
                 p.quadraticCurveTo(curr.x, curr.y, next2.x, next2.y);
             }
         }
-    }
 
-    p.closePath();
+        p.closePath();
+    }
     return p;
 }
 
