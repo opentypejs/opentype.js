@@ -5,35 +5,31 @@
 
 /* global DataView, Uint8Array, XMLHttpRequest  */
 
-'use strict';
-
-var inflate = require('tiny-inflate');
-
-var encoding = require('./encoding');
-var _font = require('./font');
-var glyph = require('./glyph');
-var parse = require('./parse');
-var bbox = require('./bbox');
-var path = require('./path');
-var util = require('./util');
-
-var cmap = require('./tables/cmap');
-var cff = require('./tables/cff');
-var fvar = require('./tables/fvar');
-var glyf = require('./tables/glyf');
-var gpos = require('./tables/gpos');
-var gsub = require('./tables/gsub');
-var head = require('./tables/head');
-var hhea = require('./tables/hhea');
-var hmtx = require('./tables/hmtx');
-var kern = require('./tables/kern');
-var ltag = require('./tables/ltag');
-var loca = require('./tables/loca');
-var maxp = require('./tables/maxp');
-var _name = require('./tables/name');
-var os2 = require('./tables/os2');
-var post = require('./tables/post');
-var meta = require('./tables/meta');
+import inflate from 'tiny-inflate';
+import Font from './font';
+import Glyph from './glyph';
+import { CmapEncoding, GlyphNames, addGlyphNames } from './encoding';
+import parse from './parse';
+import BoundingBox from './bbox';
+import Path from './path';
+import { nodeBufferToArrayBuffer } from './util';
+import cmap from './tables/cmap';
+import cff from './tables/cff';
+import fvar from './tables/fvar';
+import glyf from './tables/glyf';
+import gpos from './tables/gpos';
+import gsub from './tables/gsub';
+import head from './tables/head';
+import hhea from './tables/hhea';
+import hmtx from './tables/hmtx';
+import kern from './tables/kern';
+import ltag from './tables/ltag';
+import loca from './tables/loca';
+import maxp from './tables/maxp';
+import _name from './tables/name';
+import os2 from './tables/os2';
+import post from './tables/post';
+import meta from './tables/meta';
 
 /**
  * The opentype library.
@@ -54,7 +50,7 @@ function loadFromFile(path, callback) {
             return callback(err.message);
         }
 
-        callback(null, util.nodeBufferToArrayBuffer(buffer));
+        callback(null, nodeBufferToArrayBuffer(buffer));
     });
 }
 /**
@@ -175,7 +171,7 @@ function parseBuffer(buffer) {
 
     // Since the constructor can also be called to create new fonts from scratch, we indicate this
     // should be an empty font that we'll fill with our own data.
-    var font = new _font.Font({empty: true});
+    var font = new Font({empty: true});
 
     // OpenType fonts use big endian byte ordering.
     // We can't rely on typed array view types, because they operate with the endianness of the host computer.
@@ -227,7 +223,7 @@ function parseBuffer(buffer) {
             case 'cmap':
                 table = uncompressTable(data, tableEntry);
                 font.tables.cmap = cmap.parse(table.data, table.offset);
-                font.encoding = new encoding.CmapEncoding(font.tables.cmap);
+                font.encoding = new CmapEncoding(font.tables.cmap);
                 break;
             case 'cvt ' :
                 table = uncompressTable(data, tableEntry);
@@ -277,7 +273,7 @@ function parseBuffer(buffer) {
             case 'post':
                 table = uncompressTable(data, tableEntry);
                 font.tables.post = post.parse(table.data, table.offset);
-                font.glyphNames = new encoding.GlyphNames(font.tables.post);
+                font.glyphNames = new GlyphNames(font.tables.post);
                 break;
             case 'prep' :
                 table = uncompressTable(data, tableEntry);
@@ -327,7 +323,7 @@ function parseBuffer(buffer) {
 
     var hmtxTable = uncompressTable(data, hmtxTableEntry);
     hmtx.parse(hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
-    encoding.addGlyphNames(font);
+    addGlyphNames(font);
 
     if (kernTableEntry) {
         var kernTable = uncompressTable(data, kernTableEntry);
@@ -397,14 +393,18 @@ function load(url, callback) {
 function loadSync(url) {
     var fs = require('fs');
     var buffer = fs.readFileSync(url);
-    return parseBuffer(util.nodeBufferToArrayBuffer(buffer));
+    return parseBuffer(nodeBufferToArrayBuffer(buffer));
 }
 
-exports._parse = parse;
-exports.Font = _font.Font;
-exports.Glyph = glyph.Glyph;
-exports.Path = path.Path;
-exports.BoundingBox = bbox.BoundingBox;
-exports.parse = parseBuffer;
-exports.load = load;
-exports.loadSync = loadSync;
+export {
+    Font,
+    Glyph,
+    Path,
+    BoundingBox,
+    parse as _parse,
+    parseBuffer as parse,
+    load,
+    loadSync
+};
+
+export default { Font, Glyph, Path, BoundingBox, _parse: parse, parse: parseBuffer, load, loadSync };

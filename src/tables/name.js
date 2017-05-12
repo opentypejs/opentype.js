@@ -1,13 +1,9 @@
 // The `name` naming table.
 // https://www.microsoft.com/typography/OTSPEC/name.htm
 
-'use strict';
-
-var types = require('../types');
-var decode = types.decode;
-var encode = types.encode;
-var parse = require('../parse');
-var table = require('../table');
+import { decode, encode } from '../types';
+import parse from '../parse';
+import table from '../table';
 
 // NameIDs for the name table.
 var nameTableNames = [
@@ -831,5 +827,4 @@ function makeNameTable(names, ltag) {
     return t;
 }
 
-exports.parse = parseNameTable;
-exports.make = makeNameTable;
+export default { parse: parseNameTable, make: makeNameTable };

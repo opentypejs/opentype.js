@@ -1,11 +1,9 @@
 // The `head` table contains global information about the font.
 // https://www.microsoft.com/typography/OTSPEC/head.htm
 
-'use strict';
-
-var check = require('../check');
-var parse = require('../parse');
-var table = require('../table');
+import check from '../check';
+import parse from '../parse';
+import table from '../table';
 
 // Parse the header `head` table
 function parseHeadTable(data, start) {
@@ -62,5 +60,4 @@ function makeHeadTable(options) {
     ], options);
 }
 
-exports.parse = parseHeadTable;
-exports.make = makeHeadTable;
+export default { parse: parseHeadTable, make: makeHeadTable };

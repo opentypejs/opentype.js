@@ -1,13 +1,10 @@
 // The `GPOS` table contains kerning pairs, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 
-'use strict';
-
-var types = require('../types');
-var decode = types.decode;
-var check = require('../check');
-var parse = require('../parse');
-var table = require('../table');
+import check from '../check';
+import { decode } from '../types';
+import parse from '../parse';
+import table from '../table';
 
 // Parse the metadata `meta` table.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6meta.html
@@ -57,5 +54,4 @@ function makeMetaTable(tags) {
     return result;
 }
 
-exports.parse = parseMetaTable;
-exports.make = makeMetaTable;
+export default { parse: parseMetaTable, make: makeMetaTable };

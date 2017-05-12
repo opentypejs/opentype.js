@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 
-'use strict';
-
-var fs = require('fs');
-var http = require('http');
-var path = require('path');
+import fs from 'fs';
+import http from 'http';
+import path from 'path';
 
 var CONTENT_TYPES = {
     '.html': 'text/html',

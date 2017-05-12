@@ -2,10 +2,8 @@
 // We need it just to get the number of glyphs in the font.
 // https://www.microsoft.com/typography/OTSPEC/maxp.htm
 
-'use strict';
-
-var parse = require('../parse');
-var table = require('../table');
+import parse from '../parse';
+import table from '../table';
 
 // Parse the maximum profile `maxp` table.
 function parseMaxpTable(data, start) {
@@ -39,5 +37,4 @@ function makeMaxpTable(numGlyphs) {
     ]);
 }
 
-exports.parse = parseMaxpTable;
-exports.make = makeMaxpTable;
+export default { parse: parseMaxpTable, make: makeMaxpTable };

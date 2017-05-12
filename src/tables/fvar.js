@@ -1,11 +1,9 @@
 // The `fvar` table stores font variation axes and instances.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6fvar.html
 
-'use strict';
-
-var check = require('../check');
-var parse = require('../parse');
-var table = require('../table');
+import check from '../check';
+import parse from '../parse';
+import table from '../table';
 
 function addName(name, names) {
     var nameString = JSON.stringify(name);
@@ -135,5 +133,4 @@ function parseFvarTable(data, start, names) {
     return {axes: axes, instances: instances};
 }
 
-exports.make = makeFvarTable;
-exports.parse = parseFvarTable;
+export default { make: makeFvarTable, parse: parseFvarTable };

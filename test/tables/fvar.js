@@ -1,11 +1,6 @@
-'use strict';
-
-var assert = require('assert');
-var mocha = require('mocha');
-var describe = mocha.describe;
-var it = mocha.it;
-var testutil = require('../testutil.js');
-var fvar = require('../../src/tables/fvar.js');
+import assert from 'assert';
+import { hex, unhex } from '../testutil';
+import fvar from '../../src/tables/fvar';
 
 describe('tables/fvar.js', function() {
     var data =
@@ -51,7 +46,7 @@ describe('tables/fvar.js', function() {
             259: {en: 'Regular', ja: 'レギュラー'},
             260: {en: 'Condensed', ja: 'コンデンス'}
         };
-        assert.deepEqual(table, fvar.parse(testutil.unhex(data), 0, names));
+        assert.deepEqual(table, fvar.parse(unhex(data), 0, names));
     });
 
     it('can make a font variations table', function() {
@@ -67,7 +62,7 @@ describe('tables/fvar.js', function() {
             // Existing names with ID 256 or higher should be re-used.
             257: {en: 'Weight', ja: 'ウエイト'}
         };
-        assert.deepEqual(data, testutil.hex(fvar.make(table, names).encode()));
+        assert.deepEqual(data, hex(fvar.make(table, names).encode()));
         assert.deepEqual(names, {
             111: {en: 'Name #111'},
             256: {en: 'Ligatures', ja: 'リガチャ'},

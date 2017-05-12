@@ -1,10 +1,8 @@
 // The Substitution object provides utility methods to manipulate
 // the GSUB substitution table.
 
-'use strict';
-
-var check = require('./check');
-var Layout = require('./layout');
+import check from './check';
+import Layout from './layout';
 
 /**
  * @exports opentype.Substitution
@@ -13,9 +11,9 @@ var Layout = require('./layout');
  * @param {opentype.Font}
  * @constructor
  */
-var Substitution = function(font) {
+function Substitution(font) {
     Layout.call(this, font, 'gsub');
-};
+}
 
 // Check if 2 arrays of primitives are equal.
 function arraysEqual(ar1, ar2) {
@@ -40,6 +38,7 @@ function getSubstFormat(lookupTable, format, defaultSubtable) {
         subtables.push(defaultSubtable);
         return defaultSubtable;
     }
+    return undefined;
 }
 
 Substitution.prototype = Layout.prototype;
@@ -271,6 +270,7 @@ Substitution.prototype.getFeature = function(feature, script, language) {
         case 'liga':
         case 'rlig': return this.getLigatures(feature, script, language);
     }
+    return undefined;
 };
 
 /**
@@ -296,6 +296,7 @@ Substitution.prototype.add = function(feature, sub, script, language) {
         case 'rlig':
             return this.addLigature(feature, sub, script, language);
     }
+    return undefined;
 };
 
-module.exports = Substitution;
+export default Substitution;

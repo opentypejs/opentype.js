@@ -1,9 +1,5 @@
-/* jshint mocha: true */
-
-'use strict';
-
-var assert = require('assert');
-var opentype = require('../src/opentype.js');
+import assert  from 'assert';
+import { loadSync } from '../src/opentype';
 
 describe('glyph.js', function() {
     describe('lazy loading', function() {
@@ -11,7 +7,7 @@ describe('glyph.js', function() {
         var glyph;
 
         before(function() {
-            font = opentype.loadSync('./fonts/Roboto-Black.ttf');
+            font = loadSync('./fonts/Roboto-Black.ttf');
             glyph = font.charToGlyph('A');
         });
 
@@ -41,8 +37,8 @@ describe('glyph.js', function() {
         var openTypeFont;
 
         before(function() {
-            trueTypeFont = opentype.loadSync('./fonts/Roboto-Black.ttf');
-            openTypeFont = opentype.loadSync('./fonts/FiraSansMedium.woff');
+            trueTypeFont = loadSync('./fonts/Roboto-Black.ttf');
+            openTypeFont = loadSync('./fonts/FiraSansMedium.woff');
         });
 
         it('calculates a box for a linear shape', function() {
@@ -71,6 +67,5 @@ describe('glyph.js', function() {
             assert.equal(box.x2, 688);
             assert.equal(box.y2, 701);
         });
-
     });
 });

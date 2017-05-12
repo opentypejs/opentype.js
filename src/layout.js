@@ -1,9 +1,7 @@
-// The Layout object is the prototype of Substition objects, and provides utility methods to manipulate
-// common layout tables (GPOS, GSUB, GDEF...)
+// The Layout object is the prototype of Substition objects, and provides
+// utility methods to manipulate common layout tables (GPOS, GSUB, GDEF...)
 
-'use strict';
-
-var check = require('./check');
+import check from './check';
 
 function searchTag(arr, tag) {
     /* jshint bitwise: false */

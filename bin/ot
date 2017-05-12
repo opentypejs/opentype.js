@@ -1,10 +1,9 @@
 #!/usr/bin/env node
+/* eslint no-console: off */
 
-'use strict';
-
-var fs = require('fs');
-var path = require('path');
-var opentype = require('../src/opentype.js');
+import fs from 'fs';
+import path from 'path';
+import { load } from '../src/opentype';
 
 // Print out information about the font on the console.
 function printFontInfo(font) {
@@ -40,24 +39,24 @@ function printUsage() {
 }
 
 function fileInfo(file) {
-	opentype.load(file, function(err, font) {
-		console.log(path.basename(file));
-		if (err) {
-			console.log('  (Error: ' + err + ')');
-		} else if (!font.supported) {
-			console.log('  (Unsupported)');
-		} else {
-			printFontInfo(font);
-		}
-	});
+    load(file, function(err, font) {
+        console.log(path.basename(file));
+        if (err) {
+            console.log('  (Error: ' + err + ')');
+        } else if (!font.supported) {
+            console.log('  (Unsupported)');
+        } else {
+            printFontInfo(font);
+        }
+    });
 }
 
 function recursiveInfo(fontDirectory) {
     walk(fontDirectory, function(file) {
         var ext = path.extname(file).toLowerCase();
         if (ext === '.ttf' || ext === '.otf') {
-			fileInfo(file);
-		}
+            fileInfo(file);
+        }
     });
 }
 
@@ -67,21 +66,18 @@ if (process.argv.length < 3) {
     var command = process.argv[2];
     if (command === 'info') {
         var fontpath = process.argv.length === 3 ? '.' : process.argv[3];
-		if(fs.existsSync(fontpath)) {
-			var ext = path.extname(fontpath).toLowerCase();
-			if(fs.statSync(fontpath).isDirectory()) {
-				recursiveInfo(fontpath);
-			}
-			else if(ext === '.ttf' || ext === '.otf') {
-				fileInfo(fontpath);
-			}
-			else {
-				printUsage();
-			}
-		}
-		else {
-			console.log('Path not found');
-		}
+        if (fs.existsSync(fontpath)) {
+            var ext = path.extname(fontpath).toLowerCase();
+            if (fs.statSync(fontpath).isDirectory()) {
+                recursiveInfo(fontpath);
+            } else if (ext === '.ttf' || ext === '.otf') {
+                fileInfo(fontpath);
+            } else {
+                printUsage();
+            }
+        } else {
+            console.log('Path not found');
+        }
     } else {
         printUsage();
     }

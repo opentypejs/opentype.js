@@ -1,10 +1,8 @@
 // Table metadata
 
-'use strict';
+import check from './check';
+import { encode, sizeOf } from './types';
 
-var check = require('./check');
-var encode = require('./types').encode;
-var sizeOf = require('./types').sizeOf;
 /**
  * @exports opentype.Table
  * @class
@@ -189,12 +187,14 @@ LookupList.prototype.constructor = LookupList;
 
 // Record = same as Table, but inlined (a Table has an offset and its data is further in the stream)
 // Don't use offsets inside Records (probable bug), only in Tables.
-exports.Record = exports.Table = Table;
-exports.Coverage = Coverage;
-exports.ScriptList = ScriptList;
-exports.FeatureList = FeatureList;
-exports.LookupList = LookupList;
-
-exports.ushortList = ushortList;
-exports.tableList = tableList;
-exports.recordList = recordList;
+export default {
+    Table,
+    Record: Table,
+    Coverage,
+    ScriptList,
+    FeatureList,
+    LookupList,
+    ushortList,
+    tableList,
+    recordList,
+};

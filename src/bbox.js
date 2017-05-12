@@ -1,7 +1,5 @@
 // The Bounding Box object
 
-'use strict';
-
 function derive(v0, v1, v2, v3, t) {
     return Math.pow(1 - t, 3) * v0 +
         3 * Math.pow(1 - t, 2) * t * v1 +
@@ -157,4 +155,4 @@ BoundingBox.prototype.addQuad = function(x0, y0, x1, y1, x, y) {
     this.addBezier(x0, y0, cp1x, cp1y, cp2x, cp2y, x, y);
 };
 
-exports.BoundingBox = BoundingBox;
+export default BoundingBox;

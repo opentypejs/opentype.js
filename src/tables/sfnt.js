@@ -4,23 +4,21 @@
 // Recommendations for creating OpenType Fonts:
 // http://www.microsoft.com/typography/otspec140/recom.htm
 
-'use strict';
+import check from '../check';
+import table from '../table';
 
-var check = require('../check');
-var table = require('../table');
-
-var cmap = require('./cmap');
-var cff = require('./cff');
-var head = require('./head');
-var hhea = require('./hhea');
-var hmtx = require('./hmtx');
-var ltag = require('./ltag');
-var maxp = require('./maxp');
-var _name = require('./name');
-var os2 = require('./os2');
-var post = require('./post');
-var gsub = require('./gsub');
-var meta = require('./meta');
+import cmap from './cmap';
+import cff from './cff';
+import head from './head';
+import hhea from './hhea';
+import hmtx from './hmtx';
+import ltag from './ltag';
+import maxp from './maxp';
+import _name from './name';
+import os2 from './os2';
+import post from './post';
+import gsub from './gsub';
+import meta from './meta';
 
 function log2(v) {
     return Math.log(v) / Math.log(2) | 0;
@@ -337,6 +335,4 @@ function fontToSfntTable(font) {
     return sfntTable;
 }
 
-exports.computeCheckSum = computeCheckSum;
-exports.make = makeSfntTable;
-exports.fontToTable = fontToSfntTable;
+export default { make: makeSfntTable, fontToTable: fontToSfntTable, computeCheckSum };

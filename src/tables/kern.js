@@ -2,10 +2,8 @@
 // Note that some fonts use the GPOS OpenType layout table to specify kerning.
 // https://www.microsoft.com/typography/OTSPEC/kern.htm
 
-'use strict';
-
-var check = require('../check');
-var parse = require('../parse');
+import check from '../check';
+import parse from '../parse';
 
 function parseWindowsKernTable(p) {
     var pairs = {};
@@ -68,4 +66,4 @@ function parseKernTable(data, start) {
     }
 }
 
-exports.parse = parseKernTable;
+export default { parse: parseKernTable };

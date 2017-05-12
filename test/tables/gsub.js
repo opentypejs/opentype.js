@@ -1,14 +1,10 @@
-/* jshint mocha: true */
-
-'use strict';
-
-var assert = require('assert');
-var testutil = require('../testutil');
-var gsub = require('../../src/tables/gsub');
+import assert from 'assert';
+import { unhex, unhexArray } from '../testutil';
+import gsub from '../../src/tables/gsub';
 
 // Helper that builds a minimal GSUB table to test a lookup subtable.
 function parseLookup(lookupType, subTableData) {
-    var data = testutil.unhex('00010000 000A 000C 000E' +   // header
+    var data = unhex('00010000 000A 000C 000E' +   // header
         '0000' +                                        // ScriptTable - 0 scripts
         '0000' +                                        // FeatureListTable - 0 features
         '0001 0004' +                                   // LookupListTable - 1 lookup table
@@ -31,10 +27,9 @@ function makeLookup(lookupType, data) {
 }
 
 describe('tables/gsub.js', function() {
-
     //// Header ///////////////////////////////////////////////////////////////
     it('can parse a GSUB header', function() {
-        var data = testutil.unhex(
+        var data = unhex(
             '00010000 000A 000C 000E' +     // header
             '0000' +                        // ScriptTable - 0 scripts
             '0000' +                        // FeatureListTable - 0 features
@@ -246,7 +241,7 @@ describe('tables/gsub.js', function() {
 
     /// Writing ///////////////////////////////////////////////////////////////
     it('should write a simple GSUB table + lookup type 4', function() {
-        var expectedData = testutil.unhexArray(
+        var expectedData = unhexArray(
             '00 01 00 00 00 0A 00 1E  00 2C 00 01 44 46 4C 54  00 08 00 04 00 00 00 00  FF FF 00 01 00 00 00 01' +
             '6C 69 67 61 00 08 00 00  00 01 00 00 00 01 00 04  00 04 00 00 00 01 00 08  00 01 00 0A 00 02 00 12' +
             '00 2E 00 01 00 02 00 18  00 1A 00 03 00 08 00 10  00 16 04 8A 00 03 00 34  00 34 04 84 00 02 00 18' +
@@ -287,7 +282,7 @@ describe('tables/gsub.js', function() {
 
     //// Lookup type 1 ////////////////////////////////////////////////////////
     it('can write lookup1 substFormat 1', function() {
-        var expectedData = testutil.unhexArray('0001 0006 00C0   0001 0004 003C 0040 004B 004F');
+        var expectedData = unhexArray('0001 0006 00C0   0001 0004 003C 0040 004B 004F');
         assert.deepEqual(makeLookup(1, {
             substFormat: 1,
             coverage: {
@@ -300,7 +295,7 @@ describe('tables/gsub.js', function() {
 
     it('can write lookup1 substFormat 2', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX3
-        var expectedData = testutil.unhexArray('0002 000E 0004 0131 0135 013E 0143   0001 0004 003C 0040 004B 004F');
+        var expectedData = unhexArray('0002 000E 0004 0131 0135 013E 0143   0001 0004 003C 0040 004B 004F');
         assert.deepEqual(makeLookup(1, {
             substFormat: 2,
             coverage: {
@@ -314,7 +309,7 @@ describe('tables/gsub.js', function() {
     //// Lookup type 3 ////////////////////////////////////////////////////////
     it('can write lookup3', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX5
-        var expectedData = testutil.unhexArray('0001 0008 0001 000E   0001 0001 003A   0002 00C9 00CA');
+        var expectedData = unhexArray('0001 0008 0001 000E   0001 0001 003A   0002 00C9 00CA');
         assert.deepEqual(makeLookup(3, {
             substFormat: 1,
             coverage: {

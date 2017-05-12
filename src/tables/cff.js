@@ -3,13 +3,11 @@
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/type2.pdf
 
-'use strict';
-
-var encoding = require('../encoding');
-var glyphset = require('../glyphset');
-var parse = require('../parse');
-var path = require('../path');
-var table = require('../table');
+import { CffEncoding, cffStandardEncoding, cffExpertEncoding, cffStandardStrings } from '../encoding';
+import glyphset from '../glyphset';
+import parse from '../parse';
+import Path from '../path';
+import table from '../table';
 
 // Custom equals function that can also check lists.
 function equals(a, b) {
@@ -50,7 +48,6 @@ function calcCFFSubroutineBias(subrs) {
 // Parse a `CFF` INDEX array.
 // An index array consists of a list of offsets, then a list of objects at those offsets.
 function parseCFFIndex(data, start, conversionFn) {
-    //var i, objectOffset, endOffset;
     var offsets = [];
     var objects = [];
     var count = parse.getCard16(data, start);
@@ -211,7 +208,7 @@ function parseCFFDict(data, start, size) {
 // Strings below index 392 are standard CFF strings and are not encoded in the font.
 function getCFFString(strings, index) {
     if (index <= 390) {
-        index = encoding.cffStandardStrings[index];
+        index = cffStandardStrings[index];
     } else {
         index = strings[index - 391];
     }
@@ -438,7 +435,7 @@ function parseCFFEncoding(data, start, charset) {
         throw new Error('Unknown encoding format ' + format);
     }
 
-    return new encoding.CffEncoding(enc, charset);
+    return new CffEncoding(enc, charset);
 }
 
 // Take in charstring code and return a Glyph object.
@@ -449,7 +446,7 @@ function parseCFFCharstring(font, glyph, code) {
     var c1y;
     var c2x;
     var c2y;
-    var p = new path.Path();
+    var p = new Path();
     var stack = [];
     var nStems = 0;
     var haveWidth = false;
@@ -922,7 +919,7 @@ function parseCFFTable(data, start, font) {
 
     var topDictArray = gatherCFFTopDicts(data, start, topDictIndex.objects, stringIndex.objects);
     if (topDictArray.length !== 1) {
-        throw new Error('CFF table has too many fonts in \'FontSet\' - ' + 'count of fonts NameIndex.length = ' + topDictArray.length);
+        throw new Error('CFF table has too many fonts in \'FontSet\' - count of fonts NameIndex.length = ' + topDictArray.length);
     }
 
     var topDict = topDictArray[0];
@@ -951,8 +948,8 @@ function parseCFFTable(data, start, font) {
         topDict._fdSelect = parseCFFFDSelect(data, fdSelectOffset, font.numGlyphs, fdArray.length);
     }
 
-    var privateDictOffset = start + topDict['private'][1];
-    var privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict['private'][0], stringIndex.objects);
+    var privateDictOffset = start + topDict.private[1];
+    var privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict.private[0], stringIndex.objects);
     font.defaultWidthX = privateDict.defaultWidthX;
     font.nominalWidthX = privateDict.nominalWidthX;
 
@@ -972,9 +969,9 @@ function parseCFFTable(data, start, font) {
 
     var charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
     if (topDict.encoding === 0) { // Standard encoding
-        font.cffEncoding = new encoding.CffEncoding(encoding.cffStandardEncoding, charset);
+        font.cffEncoding = new CffEncoding(cffStandardEncoding, charset);
     } else if (topDict.encoding === 1) { // Expert encoding
-        font.cffEncoding = new encoding.CffEncoding(encoding.cffExpertEncoding, charset);
+        font.cffEncoding = new CffEncoding(cffExpertEncoding, charset);
     } else {
         font.cffEncoding = parseCFFEncoding(data, start + topDict.encoding, charset);
     }
@@ -995,7 +992,7 @@ function encodeString(s, strings) {
     var sid;
 
     // Is the string in the CFF standard strings?
-    var i = encoding.cffStandardStrings.indexOf(s);
+    var i = cffStandardStrings.indexOf(s);
     if (i >= 0) {
         sid = i;
     }
@@ -1003,9 +1000,9 @@ function encodeString(s, strings) {
     // Is the string already in the string index?
     i = strings.indexOf(s);
     if (i >= 0) {
-        sid = i + encoding.cffStandardStrings.length;
+        sid = i + cffStandardStrings.length;
     } else {
-        sid = encoding.cffStandardStrings.length + strings.length;
+        sid = cffStandardStrings.length + strings.length;
         strings.push(s);
     }
 
@@ -1162,7 +1159,6 @@ function glyphToOps(glyph) {
         }
 
         // Contours are closed automatically.
-
     }
 
     ops.push({name: 'endchar', type: 'OP', value: 14});
@@ -1264,5 +1260,4 @@ function makeCFFTable(glyphs, options) {
     return t;
 }
 
-exports.parse = parseCFFTable;
-exports.make = makeCFFTable;
+export default { parse: parseCFFTable, make: makeCFFTable };

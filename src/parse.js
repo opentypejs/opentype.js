@@ -1,15 +1,11 @@
 // Parsing utility functions
 
-'use strict';
-
-var check = require('./check');
+import check from './check';
 
 // Retrieve an unsigned byte from the DataView.
-exports.getByte = function getByte(dataView, offset) {
+function getByte(dataView, offset) {
     return dataView.getUint8(offset);
-};
-
-exports.getCard8 = exports.getByte;
+}
 
 // Retrieve an unsigned 16-bit short from the DataView.
 // The value is stored in big endian.
@@ -17,42 +13,40 @@ function getUShort(dataView, offset) {
     return dataView.getUint16(offset, false);
 }
 
-exports.getUShort = exports.getCard16 = getUShort;
-
 // Retrieve a signed 16-bit short from the DataView.
 // The value is stored in big endian.
-exports.getShort = function(dataView, offset) {
+function getShort(dataView, offset) {
     return dataView.getInt16(offset, false);
-};
+}
 
 // Retrieve an unsigned 32-bit long from the DataView.
 // The value is stored in big endian.
-exports.getULong = function(dataView, offset) {
+function getULong(dataView, offset) {
     return dataView.getUint32(offset, false);
-};
+}
 
 // Retrieve a 32-bit signed fixed-point number (16.16) from the DataView.
 // The value is stored in big endian.
-exports.getFixed = function(dataView, offset) {
+function getFixed(dataView, offset) {
     var decimal = dataView.getInt16(offset, false);
     var fraction = dataView.getUint16(offset + 2, false);
     return decimal + fraction / 65535;
-};
+}
 
 // Retrieve a 4-character tag from the DataView.
 // Tags are used to identify tables.
-exports.getTag = function(dataView, offset) {
+function getTag(dataView, offset) {
     var tag = '';
     for (var i = offset; i < offset + 4; i += 1) {
         tag += String.fromCharCode(dataView.getInt8(i));
     }
 
     return tag;
-};
+}
 
 // Retrieve an offset from the DataView.
 // Offsets are 1 to 4 bytes in length, depending on the offSize argument.
-exports.getOffset = function(dataView, offset, offSize) {
+function getOffset(dataView, offset, offSize) {
     var v = 0;
     for (var i = 0; i < offSize; i += 1) {
         v <<= 8;
@@ -60,27 +54,27 @@ exports.getOffset = function(dataView, offset, offSize) {
     }
 
     return v;
-};
+}
 
 // Retrieve a number of bytes from start offset to the end offset from the DataView.
-exports.getBytes = function(dataView, startOffset, endOffset) {
+function getBytes(dataView, startOffset, endOffset) {
     var bytes = [];
     for (var i = startOffset; i < endOffset; i += 1) {
         bytes.push(dataView.getUint8(i));
     }
 
     return bytes;
-};
+}
 
 // Convert the list of bytes to a string.
-exports.bytesToString = function(bytes) {
+function bytesToString(bytes) {
     var s = '';
     for (var i = 0; i < bytes.length; i += 1) {
         s += String.fromCharCode(bytes[i]);
     }
 
     return s;
-};
+}
 
 var typeOffsets = {
     byte: 1,
@@ -137,13 +131,13 @@ Parser.prototype.parseF2Dot14 = function() {
 };
 
 Parser.prototype.parseULong = function() {
-    var v = exports.getULong(this.data, this.offset + this.relativeOffset);
+    var v = getULong(this.data, this.offset + this.relativeOffset);
     this.relativeOffset += 4;
     return v;
 };
 
 Parser.prototype.parseFixed = function() {
-    var v = exports.getFixed(this.data, this.offset + this.relativeOffset);
+    var v = getFixed(this.data, this.offset + this.relativeOffset);
     this.relativeOffset += 4;
     return v;
 };
@@ -169,7 +163,7 @@ Parser.prototype.parseTag = function() {
 // only take the last 32 bits.
 // + Since until 2038 those bits will be filled by zeros we can ignore them.
 Parser.prototype.parseLongDateTime = function() {
-    var v = exports.getULong(this.data, this.offset + this.relativeOffset + 4);
+    var v = getULong(this.data, this.offset + this.relativeOffset + 4);
     // Subtract seconds between 01/01/1904 and 01/01/1970
     // to convert Apple Mac timstamp to Standard Unix timestamp
     v -= 2082844800;
@@ -305,6 +299,7 @@ Parser.prototype.parsePointer = function(description) {
     if (structOffset > 0) {                         // NULL offset => return indefined
         return new Parser(this.data, this.offset + structOffset).parseStruct(description);
     }
+    return undefined;
 };
 
 /**
@@ -370,7 +365,7 @@ Parser.prototype.parseCoverage = function() {
             ranges: ranges
         };
     }
-    check.assert(false, '0x' + startOffset.toString(16) + ': Coverage format must be 1 or 2.');
+    throw new Error('0x' + startOffset.toString(16) + ': Coverage format must be 1 or 2.');
 };
 
 // Parse a Class Definition Table in a GSUB, GPOS or GDEF table.
@@ -394,7 +389,7 @@ Parser.prototype.parseClassDef = function() {
             })
         };
     }
-    check.assert(false, '0x' + startOffset.toString(16) + ': ClassDef format must be 1 or 2.');
+    throw new Error('0x' + startOffset.toString(16) + ': ClassDef format must be 1 or 2.');
 };
 
 ///// Static methods ///////////////////////////////////
@@ -473,4 +468,19 @@ Parser.prototype.parseLookupList = function(lookupTableParsers) {
     })));
 };
 
-exports.Parser = Parser;
+export default {
+    getByte,
+    getCard8: getByte,
+    getUShort,
+    getCard16: getUShort,
+    getShort,
+    getULong,
+    getFixed,
+    getTag,
+    getOffset,
+    getBytes,
+    bytesToString,
+    Parser,
+};
+
+export { Parser };
