@@ -57,11 +57,13 @@ You can then include them in your scripts using:
 
     <script src="/bower_components/opentype.js/dist/opentype.js"></script>
 
-### Using Browserify
+### Using Node / Browserify
 
 To install using [Browserify](http://browserify.org/), enter the following command in your project directory:
 
     npm install --save opentype.js
+    
+OpenType.js uses ES6-style imports, so debugging it in Node.js requires running `npm run build` first.
 
 API
 ===

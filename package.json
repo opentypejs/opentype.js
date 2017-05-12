@@ -20,6 +20,7 @@
     "url": "git://github.com/nodebox/opentype.js.git"
   },
   "main": "dist/opentype.js",
+  "module": "src/opentype.js",
   "bin": {
     "ot": "./bin/ot"
   },
@@ -29,6 +30,7 @@
     "test": "mocha --compilers js:babel-core/register --recursive && jshint . && jscs .",
     "browserify": "browserify src/opentype.js -p licensify --bare --standalone opentype -t [ babelify ] > dist/opentype.js",
     "uglify": "browserify src/opentype.js -p licensify --bare --standalone opentype -t [ babelify ] -g [ uglifyify --compress [ --dead_code --global_defs [ --exports.DEBUG 0 ] ] ] > dist/opentype.min.js ",
+    "build": "npm run browserify",
     "dist": "rimraf build && rimraf dist && mkdirp build && mkdirp dist && npm run test && npm run browserify && npm run uglify"
   },
   "devDependencies": {
