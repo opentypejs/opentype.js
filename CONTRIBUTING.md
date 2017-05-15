@@ -4,7 +4,7 @@
 
 The source of opentype.js is divided into modules, located in the `src` directory.
 
-We use [browserify](http://browserify.org/) to combine this into a single package with every release.
+We use [rollup](https://rollupjs.org/) to combine this into a single package with every release.
 
 When creating a pull request, you **don't** need to run `npm run dist` -- we'll do that when creating a release.
 
@@ -21,7 +21,7 @@ When creating a pull request, you **don't** need to run `npm run dist` -- we'll 
     A dedicated branch for your pull request means you can develop multiple features at the same time, and ensures
     that your pull request is stable even if you later decide to develop an unrelated feature.
 
-4. Install the development dependencies (browserify, watchify, jshint, ...):
+4. Install the development dependencies:
 
     `cd opentype.js`
     `npm install`
@@ -30,8 +30,7 @@ When creating a pull request, you **don't** need to run `npm run dist` -- we'll 
 
     `npm start`
 
-   Note that the compiled file ends up in the `build` folder, not the `dist` folder! The development server
-   rewrites the JavaScript URL from `dist/opentype.min.js` to `build/opentype.js`.
+   This bundles all source files under `dist/opentype.js`.
 
 6. Make some changes
 

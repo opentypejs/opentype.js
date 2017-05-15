@@ -26,6 +26,7 @@
   },
   "scripts": {
     "start": "node ./bin/server.js",
+    "watch": "rollup -c -w",
     "test": "mocha --require reify --compilers js:buble/register --recursive && jshint . && jscs .",
     "build": "rollup -c",
     "minify": "cross-env MINIFY=1 npm run build",
