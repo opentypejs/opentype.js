@@ -401,7 +401,7 @@ sizeOf.UTF16 = function(v) {
 // Data for converting old eight-bit Macintosh encodings to Unicode.
 // This representation is optimized for decoding; encoding is slower
 // and needs more memory. The assumption is that all opentype.js users
-// want to open fonts, but saving a font will be comperatively rare
+// want to open fonts, but saving a font will be comparatively rare
 // so it can be more expensive. Keyed by IANA character set name.
 //
 // Python script for generating these strings:
@@ -707,7 +707,7 @@ encode.INDEX = function(l) {
     //    i, v;
     // Because we have to know which data type to use to encode the offsets,
     // we have to go through the values twice: once to encode the data and
-    // calculate the offets, then again to encode the offsets using the fitting data type.
+    // calculate the offsets, then again to encode the offsets using the fitting data type.
     var offset = 1; // First offset is always 1.
     var offsets = [offset];
     var data = [];

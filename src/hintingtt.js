@@ -10,10 +10,10 @@
 * However, Javascript has floating point operations by default and only
 * those are available. One could make a case to simulate the 1/64 accuracy
 * exactly by truncating after every division operation
-* (for example with << 0) to get pixel exacty results as other TrueType
+* (for example with << 0) to get pixel exactly results as other TrueType
 * implementations. It may make sense since some fonts are pixel optimized
 * by hand using DELTAP instructions. The current implementation doesn't
-* and rather uses full floating point precission.
+* and rather uses full floating point precision.
 *
 * xScale, yScale and rotation is currently ignored.
 *
@@ -502,7 +502,7 @@ var HPZero = Object.freeze(new HPoint(0, 0));
 * The default state of the interpreter.
 *
 * Note: Freezing the defaultState and then deriving from it
-* makes the V8 Javascript engine going akward,
+* makes the V8 Javascript engine going awkward,
 * so this is avoided, albeit the defaultState shouldn't
 * ever change.
 */
@@ -727,7 +727,7 @@ function execGlyph(glyph, prepState) {
 }
 
 /*
-* Executes the hinting program for a componenet of a multi-component glyph
+* Executes the hinting program for a component of a multi-component glyph
 * or of the glyph itself by a non-component glyph.
 */
 function execComponent(glyph, state, xScale, yScale)
@@ -883,7 +883,7 @@ function initTZone(state)
 
 /*
 * Skips the instruction pointer ahead over an IF/ELSE block.
-* handleElse .. if true breaks on mathing ELSE
+* handleElse .. if true breaks on matching ELSE
 */
 function skip(state, handleElse)
 {
@@ -1237,7 +1237,7 @@ function SMD(state) {
 // 0x1B
 function ELSE(state) {
     // This instruction has been reached by executing a then branch
-    // so it just skips ahead until mathing EIF.
+    // so it just skips ahead until matching EIF.
     //
     // In case the IF was negative the IF[] instruction already
     // skipped forward over the ELSE[]
@@ -1380,7 +1380,7 @@ function CINDEX(state) {
 
     if (exports.DEBUG) console.log(state.step, 'CINDEX[]', k);
 
-    // In case of k == 1, it copies the last element after poping
+    // In case of k == 1, it copies the last element after popping
     // thus stack.length - k.
     stack.push(stack[stack.length - k]);
 }
@@ -2668,7 +2668,7 @@ instructionTable = [
     /* 0x7C */ RUTG,
     /* 0x7D */ RDTG,
     /* 0x7E */ POP, // actually SANGW, supposed to do only a pop though
-    /* 0x7F */ POP, // actually AA, upposed to do only a pop though
+    /* 0x7F */ POP, // actually AA, supposed to do only a pop though
     /* 0x80 */ undefined,   // TODO FLIPPT
     /* 0x81 */ undefined,   // TODO FLIPRGON
     /* 0x82 */ undefined,   // TODO FLIPRGOFF
@@ -2802,7 +2802,7 @@ instructionTable = [
 export default Hinting;
 
 /*****************************
-  Mathematical Considertions
+  Mathematical Considerations
 ******************************
 
 fv ... refers to freedom vector
@@ -2960,7 +2960,7 @@ option (that is avoiding 0/0 divisions) is to weight the
 original distance of the other point by the sum of both distances.
 
 If the sum of both distances is 0, then move the point by the
-arithmetic average of the movement of both refererence points.
+arithmetic average of the movement of both reference points.
 
 
 

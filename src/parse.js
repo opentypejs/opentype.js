@@ -165,7 +165,7 @@ Parser.prototype.parseTag = function() {
 Parser.prototype.parseLongDateTime = function() {
     var v = getULong(this.data, this.offset + this.relativeOffset + 4);
     // Subtract seconds between 01/01/1904 and 01/01/1970
-    // to convert Apple Mac timstamp to Standard Unix timestamp
+    // to convert Apple Mac timestamp to Standard Unix timestamp
     v -= 2082844800;
     this.relativeOffset += 8;
     return v;
@@ -296,7 +296,7 @@ Parser.prototype.parseStruct = function(description) {
 
 Parser.prototype.parsePointer = function(description) {
     var structOffset = this.parseOffset16();
-    if (structOffset > 0) {                         // NULL offset => return indefined
+    if (structOffset > 0) {                         // NULL offset => return undefined
         return new Parser(this.data, this.offset + structOffset).parseStruct(description);
     }
     return undefined;

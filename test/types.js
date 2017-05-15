@@ -592,7 +592,7 @@ describe('types.js', function() {
         // words, bytes, words:
         // a single byte-encodable word is more compact when encoded within the words run
         assert.equal(e([0x6666, 2, 0x7777]), '42 66 66 00 02 77 77');
-        // multiple byte-encodable words are more compated when forming their own run
+        // multiple byte-encodable words are more compacted when forming their own run
         assert.equal(e([0x6666, 2, 2, 0x7777]), '40 66 66 01 02 02 40 77 77');
     });
 });

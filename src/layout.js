@@ -1,4 +1,4 @@
-// The Layout object is the prototype of Substition objects, and provides
+// The Layout object is the prototype of Substitution objects, and provides
 // utility methods to manipulate common layout tables (GPOS, GSUB, GDEF...)
 
 import check from './check';
@@ -226,7 +226,7 @@ Layout.prototype = {
             var lookupTable;
             var lookupListIndexes = featureTable.lookupListIndexes;
             var allLookups = this.font.tables[this.tableName].lookups;
-            // lookupListIndexes are in no particular order, so use naïve search.
+            // lookupListIndexes are in no particular order, so use naive search.
             for (var i = 0; i < lookupListIndexes.length; i++) {
                 lookupTable = allLookups[lookupListIndexes[i]];
                 if (lookupTable.lookupType === lookupType) {

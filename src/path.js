@@ -185,7 +185,7 @@ Path.prototype.getBoundingBox = function() {
                 prevY = startY;
                 break;
             default:
-                throw new Error('Unexpected path commmand ' + cmd.type);
+                throw new Error('Unexpected path command ' + cmd.type);
         }
     }
     if (box.isEmpty()) {

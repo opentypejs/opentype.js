@@ -59,7 +59,7 @@ function Glyph(options) {
 Glyph.prototype.bindConstructorValues = function(options) {
     this.index = options.index || 0;
 
-    // These three values cannnot be deferred for memory optimization:
+    // These three values cannot be deferred for memory optimization:
     this.name = options.name || null;
     this.unicode = options.unicode || undefined;
     this.unicodes = options.unicodes || options.unicode !== undefined ? [options.unicode] : [];
@@ -116,7 +116,7 @@ Glyph.prototype.getBoundingBox = function() {
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {Object=} options - xScale, yScale to strech the glyph.
+ * @param  {Object=} options - xScale, yScale to stretch the glyph.
  * @param  {opentype.Font} if hinting is to be used, the font
  * @return {opentype.Path}
  */
@@ -259,7 +259,7 @@ Glyph.prototype.getMetrics = function() {
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {Object=} options - xScale, yScale to strech the glyph.
+ * @param  {Object=} options - xScale, yScale to stretch the glyph.
  */
 Glyph.prototype.draw = function(ctx, x, y, fontSize, options) {
     this.getPath(x, y, fontSize, options).draw(ctx);

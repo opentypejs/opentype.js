@@ -316,7 +316,7 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
 };
 
 /**
- * Create an array of Path objects that represent the glyps of a given text.
+ * Create an array of Path objects that represent the glyphs of a given text.
  * @param  {string} text - The text to create.
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
@@ -338,7 +338,7 @@ Font.prototype.getPaths = function(text, x, y, fontSize, options) {
  * Returns the advance width of a text.
  *
  * This is something different than Path.getBoundingBox() as for example a
- * suffixed whitespace increases the advancewidth but not the bounding box
+ * suffixed whitespace increases the advanceWidth but not the bounding box
  * or an overhanging letter like a calligraphic 'f' might have a quite larger
  * bounding box than its advance width.
  *

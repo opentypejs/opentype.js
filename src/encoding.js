@@ -171,7 +171,7 @@ CmapEncoding.prototype.charToGlyphIndex = function(c) {
  * @class
  * @constructor
  * @param {string} encoding - The encoding
- * @param {Array} charset - The charcater set.
+ * @param {Array} charset - The character set.
  */
 function CffEncoding(encoding, charset) {
     this.encoding = encoding;
