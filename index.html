@@ -291,10 +291,10 @@ function onReadFile(e) {
         } catch (err) {
             showErrorMessage(err.toString());
         }
-    }
+    };
     reader.onerror = function(err) {
         showErrorMessage(err.toString());
-    }
+    };
 
     reader.readAsArrayBuffer(file);
 }

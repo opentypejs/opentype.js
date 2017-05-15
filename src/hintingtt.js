@@ -636,7 +636,7 @@ Hinting.prototype.exec = function(glyph, ppem) {
             console.log('Note: further hinting errors are silenced');
         }
         this._errorState = 1;
-        return;
+        return undefined;
     }
 };
 

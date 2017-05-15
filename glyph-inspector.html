@@ -329,7 +329,7 @@ function initGlyphDisplay() {
     }
 
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#a0a0a0'
+    ctx.fillStyle = '#a0a0a0';
     hline('Baseline', 0);
     hline('yMax', font.tables.head.yMax);
     hline('yMin', font.tables.head.yMin);
@@ -387,10 +387,10 @@ function onReadFile(e) {
             if (err.stack) console.log(err.stack);
             throw(err);
         }
-    }
+    };
     reader.onerror = function(err) {
         showErrorMessage(err.toString());
-    }
+    };
 
     reader.readAsArrayBuffer(file);
 }

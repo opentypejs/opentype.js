@@ -241,10 +241,10 @@ function onReadFile(e) {
             if (err.stack) console.log(err.stack);
 	    throw(err);
         }
-    }
+    };
     reader.onerror = function(err) {
         showErrorMessage(err.toString());
-    }
+    };
 
     reader.readAsArrayBuffer(file);
 }
