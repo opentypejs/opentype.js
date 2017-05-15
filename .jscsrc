@@ -1,5 +1,5 @@
 {
-    "excludeFiles": ["node_modules/**", "build/**", "dist/**", "experiments/**"],
+    "excludeFiles": ["node_modules/**", "build/**", "dist/**", "experiments/**", ".reify-cache/**"],
     "preset": "airbnb",
     "validateIndentation": 4,
     "requirePaddingNewLinesBeforeLineComments": null,

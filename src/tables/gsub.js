@@ -253,5 +253,4 @@ function makeGsubTable(gsub) {
     ]);
 }
 
-exports.parse = parseGsubTable;
-exports.make = makeGsubTable;
+export default { parse: parseGsubTable, make: makeGsubTable };

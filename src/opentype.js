@@ -406,5 +406,3 @@ export {
     load,
     loadSync
 };
-
-export default { Font, Glyph, Path, BoundingBox, _parse: parse, parse: parseBuffer, load, loadSync };

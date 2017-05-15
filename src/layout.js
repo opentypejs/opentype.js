@@ -277,4 +277,4 @@ Layout.prototype = {
 
 };
 
-module.exports = Layout;
+export default Layout;
