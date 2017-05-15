@@ -1,10 +1,8 @@
 // The `GPOS` table contains kerning pairs, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 
-'use strict';
-
-var check = require('../check');
-var parse = require('../parse');
+import check from '../check';
+import parse from '../parse';
 
 // Parse ScriptList and FeatureList tables of GPOS, GSUB, GDEF, BASE, JSTF tables.
 // These lists are unused by now, this function is just the basis for a real parsing.
@@ -234,4 +232,4 @@ function parseGposTable(data, start, font) {
     }
 }
 
-exports.parse = parseGposTable;
+export default { parse: parseGposTable };

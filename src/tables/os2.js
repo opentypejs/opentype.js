@@ -1,10 +1,8 @@
 // The `OS/2` table contains metrics required in OpenType fonts.
 // https://www.microsoft.com/typography/OTSPEC/os2.htm
 
-'use strict';
-
-var parse = require('../parse');
-var table = require('../table');
+import parse from '../parse';
+import table from '../table';
 
 var unicodeRanges = [
     {begin: 0x0000, end: 0x007F}, // Basic Latin
@@ -248,7 +246,4 @@ function makeOS2Table(options) {
     ], options);
 }
 
-exports.unicodeRanges = unicodeRanges;
-exports.getUnicodeRange = getUnicodeRange;
-exports.parse = parseOS2Table;
-exports.make = makeOS2Table;
+export default { parse: parseOS2Table, make: makeOS2Table, unicodeRanges, getUnicodeRange };

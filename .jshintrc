@@ -1,6 +1,8 @@
 {
+  "esversion": 6,
   "browser": true,
   "node": true,
+  "mocha": true,
   "camelcase": true,
   "eqeqeq": true,
   "eqnull": true,
@@ -11,5 +13,5 @@
   "trailing": true,
   "undef": true,
   "unused": true,
-  "strict": true
+  "strict": false
 }

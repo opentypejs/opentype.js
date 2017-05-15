@@ -1,14 +1,12 @@
 // The Font object
 
-'use strict';
-
-var path = require('./path');
-var sfnt = require('./tables/sfnt');
-var encoding = require('./encoding');
-var glyphset = require('./glyphset');
-var Substitution = require('./substitution');
-var util = require('./util');
-var HintingTrueType = require('./hintingtt');
+import Path from './path';
+import sfnt from './tables/sfnt';
+import { DefaultEncoding } from './encoding';
+import glyphset from './glyphset';
+import Substitution from './substitution';
+import { isBrowser, checkArgument, arrayBufferToNodeBuffer } from './util';
+import HintingTrueType from './hintingtt';
 
 /**
  * @typedef FontOptions
@@ -51,12 +49,12 @@ function Font(options) {
 
     if (!options.empty) {
         // Check that we've provided the minimum set of names.
-        util.checkArgument(options.familyName, 'When creating a new Font object, familyName is required.');
-        util.checkArgument(options.styleName, 'When creating a new Font object, styleName is required.');
-        util.checkArgument(options.unitsPerEm, 'When creating a new Font object, unitsPerEm is required.');
-        util.checkArgument(options.ascender, 'When creating a new Font object, ascender is required.');
-        util.checkArgument(options.descender, 'When creating a new Font object, descender is required.');
-        util.checkArgument(options.descender < 0, 'Descender should be negative (e.g. -512).');
+        checkArgument(options.familyName, 'When creating a new Font object, familyName is required.');
+        checkArgument(options.styleName, 'When creating a new Font object, styleName is required.');
+        checkArgument(options.unitsPerEm, 'When creating a new Font object, unitsPerEm is required.');
+        checkArgument(options.ascender, 'When creating a new Font object, ascender is required.');
+        checkArgument(options.descender, 'When creating a new Font object, descender is required.');
+        checkArgument(options.descender < 0, 'Descender should be negative (e.g. -512).');
 
         // OS X will complain if the names are empty, so we put a single space everywhere by default.
         this.names = {
@@ -88,7 +86,7 @@ function Font(options) {
 
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
     this.glyphs = new glyphset.GlyphSet(this, options.glyphs || []);
-    this.encoding = new encoding.DefaultEncoding(this);
+    this.encoding = new DefaultEncoding(this);
     this.substitution = new Substitution(this);
     this.tables = this.tables || {};
 
@@ -309,7 +307,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
  * @return {opentype.Path}
  */
 Font.prototype.getPath = function(text, x, y, fontSize, options) {
-    var fullPath = new path.Path();
+    var fullPath = new Path();
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         var glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
         fullPath.extend(glyphPath);
@@ -483,7 +481,7 @@ Font.prototype.download = function(fileName) {
     fileName = fileName || familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
     var arrayBuffer = this.toArrayBuffer();
 
-    if (util.isBrowser()) {
+    if (isBrowser()) {
         window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
         window.requestFileSystem(window.TEMPORARY, arrayBuffer.byteLength, function(fs) {
             fs.root.getFile(fileName, {create: true}, function(fileEntry) {
@@ -504,7 +502,7 @@ Font.prototype.download = function(fileName) {
         });
     } else {
         var fs = require('fs');
-        var buffer = util.arrayBufferToNodeBuffer(arrayBuffer);
+        var buffer = arrayBufferToNodeBuffer(arrayBuffer);
         fs.writeFileSync(fileName, buffer);
     }
 };
@@ -554,4 +552,4 @@ Font.prototype.usWeightClasses = {
     BLACK:    900
 };
 
-exports.Font = Font;
+export default Font;

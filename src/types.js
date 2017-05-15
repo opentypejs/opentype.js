@@ -1,11 +1,7 @@
 // Data types used in the OpenType font file.
 // All OpenType fonts use Motorola-style byte ordering (Big Endian)
 
-/* global WeakMap */
-
-'use strict';
-
-var check = require('./check');
+import check from './check';
 
 var LIMIT16 = 32768; // The limit at which a 16-bit number switches signs == 2^15
 var LIMIT32 = 2147483648; // The limit at which a 32-bit number switches signs == 2 ^ 31
@@ -976,6 +972,4 @@ sizeOf.LITERAL = function(v) {
     return v.length;
 };
 
-exports.decode = decode;
-exports.encode = encode;
-exports.sizeOf = sizeOf;
+export { decode, encode, sizeOf };

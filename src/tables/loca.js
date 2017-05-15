@@ -1,9 +1,7 @@
 // The `loca` table stores the offsets to the locations of the glyphs in the font.
 // https://www.microsoft.com/typography/OTSPEC/loca.htm
 
-'use strict';
-
-var parse = require('../parse');
+import parse from '../parse';
 
 // Parse the `loca` table. This table stores the offsets to the locations of the glyphs in the font,
 // relative to the beginning of the glyphData table.
@@ -30,4 +28,4 @@ function parseLocaTable(data, start, numGlyphs, shortVersion) {
     return glyphOffsets;
 }
 
-exports.parse = parseLocaTable;
+export default { parse: parseLocaTable };

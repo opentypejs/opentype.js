@@ -1,13 +1,8 @@
-'use strict';
-
-var assert = require('assert');
-var mocha = require('mocha');
-var describe = mocha.describe;
-var it = mocha.it;
-var table = require('../../src/table');
-var testutil = require('../testutil');
-var types = require('../../src/types');
-var _name = require('../../src/tables/name');
+import assert from 'assert';
+import table from '../../src/table';
+import { encode } from '../../src/types';
+import _name from '../../src/tables/name';
+import { hex, unhex } from '../testutil';
 
 // For testing, we need a custom function that builds name tables.
 // The public name.make() API of opentype.js is hiding the complexity
@@ -27,7 +22,7 @@ function makeNameTable(names) {
 
     for (var i = 0; i < names.length; i++) {
         var name = names[i];
-        var text = testutil.unhex(name[1]);
+        var text = unhex(name[1]);
         t.fields.push({name: 'platformID_' + i, type: 'USHORT', value: name[2]});
         t.fields.push({name: 'encodingID_' + i, type: 'USHORT', value: name[3]});
         t.fields.push({name: 'languageID_' + i, type: 'USHORT', value: name[4]});
@@ -41,7 +36,7 @@ function makeNameTable(names) {
 
     t.fields.push({name: 'strings', type: 'LITERAL', value: stringPool});
 
-    var bytes = types.encode.TABLE(t);
+    var bytes = encode.TABLE(t);
     var data = new DataView(new ArrayBuffer(bytes.length), 0);
     for (var k = 0; k < bytes.length; k++) {
         data.setUint8(k, bytes[k]);
@@ -94,10 +89,10 @@ function getNameRecords(names) {
                 enc = lang = undefined;
             }
 
-            result.push(plat + ' ' + (enc ? enc : name.encodingID) +
-                        ' ' + (lang ? lang : name.languageID) +
+            result.push(plat + ' ' + (enc || name.encodingID) +
+                        ' ' + (lang || name.languageID) +
                         ' N' + name.nameID +
-                        ' [' + testutil.hex(encodedText) + ']');
+                        ' [' + hex(encodedText) + ']');
         }
     }
 

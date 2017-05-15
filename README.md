@@ -26,7 +26,7 @@ Here's an example. We load a font, then display it on a canvas with id "canvas":
         }
     });
 
-See [the project website](http://nodebox.github.io/opentype.js/) for a live demo.
+See [the project website](https://opentype.js.org/) for a live demo.
 
 Features
 ========
@@ -47,6 +47,12 @@ Installation
 [Download the latest ZIP](https://github.com/nodebox/opentype.js/archive/master.zip) and grab the files in the `dist`
 folder. These are compiled.
 
+### Using npm
+
+    npm install --save opentype.js
+
+OpenType.js uses ES6-style imports, so debugging it in Node.js requires running `npm run build` first. Use `npm run watch` to automatically rebuild when files change.
+
 ### Using Bower
 
 To install using [Bower](http://bower.io/), enter the following command in your project directory:
@@ -56,12 +62,6 @@ To install using [Bower](http://bower.io/), enter the following command in your 
 You can then include them in your scripts using:
 
     <script src="/bower_components/opentype.js/dist/opentype.js"></script>
-
-### Using Browserify
-
-To install using [Browserify](http://browserify.org/), enter the following command in your project directory:
-
-    npm install --save opentype.js
 
 API
 ===

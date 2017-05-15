@@ -1,11 +1,9 @@
 // The Glyph object
 
-'use strict';
-
-var check = require('./check');
-var draw = require('./draw');
-var path = require('./path');
-var glyf = require('./tables/glyf');
+import check from './check';
+import draw from './draw';
+import Path from './path';
+import glyf from './tables/glyf';
 
 function getPathDefinition(glyph, path) {
     var _path = path || { commands: [] };
@@ -153,7 +151,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
         if (yScale === undefined) yScale = scale;
     }
 
-    var p = new path.Path();
+    var p = new Path();
     for (var i = 0; i < commands.length; i += 1) {
         var cmd = commands[i];
         if (cmd.type === 'M') {
@@ -276,7 +274,6 @@ Glyph.prototype.draw = function(ctx, x, y, fontSize, options) {
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
  */
 Glyph.prototype.drawPoints = function(ctx, x, y, fontSize) {
-
     function drawCircles(l, x, y, scale) {
         var PI_SQ = Math.PI * 2;
         ctx.beginPath();
@@ -361,4 +358,4 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
     draw.line(ctx, x + (advanceWidth * scale), -10000, x + (advanceWidth * scale), 10000);
 };
 
-exports.Glyph = Glyph;
+export default Glyph;

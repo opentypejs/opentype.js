@@ -4,11 +4,9 @@
 // http://www.w3.org/International/articles/language-tags/
 // http://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
 
-'use strict';
-
-var check = require('../check');
-var parse = require('../parse');
-var table = require('../table');
+import check from '../check';
+import parse from '../parse';
+import table from '../table';
 
 function makeLtagTable(tags) {
     var result = new table.Table('ltag', [
@@ -57,5 +55,4 @@ function parseLtagTable(data, start) {
     return tags;
 }
 
-exports.make = makeLtagTable;
-exports.parse = parseLtagTable;
+export default { make: makeLtagTable, parse: parseLtagTable };

@@ -1,8 +1,6 @@
 // Glyph encoding
 
-'use strict';
-
-var cffStandardStrings = [
+const cffStandardStrings = [
     '.notdef', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar', 'percent', 'ampersand', 'quoteright',
     'parenleft', 'parenright', 'asterisk', 'plus', 'comma', 'hyphen', 'period', 'slash', 'zero', 'one', 'two',
     'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'colon', 'semicolon', 'less', 'equal', 'greater',
@@ -47,7 +45,7 @@ var cffStandardStrings = [
     'Uacutesmall', 'Ucircumflexsmall', 'Udieresissmall', 'Yacutesmall', 'Thornsmall', 'Ydieresissmall', '001.000',
     '001.001', '001.002', '001.003', 'Black', 'Bold', 'Book', 'Light', 'Medium', 'Regular', 'Roman', 'Semibold'];
 
-var cffStandardEncoding = [
+const cffStandardEncoding = [
     '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
     '', '', '', '', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar', 'percent', 'ampersand', 'quoteright',
     'parenleft', 'parenright', 'asterisk', 'plus', 'comma', 'hyphen', 'period', 'slash', 'zero', 'one', 'two',
@@ -66,7 +64,7 @@ var cffStandardEncoding = [
     '', 'Lslash', 'Oslash', 'OE', 'ordmasculine', '', '', '', '', '', 'ae', '', '', '', 'dotlessi', '', '',
     'lslash', 'oslash', 'oe', 'germandbls'];
 
-var cffExpertEncoding = [
+const cffExpertEncoding = [
     '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
     '', '', '', '', 'space', 'exclamsmall', 'Hungarumlautsmall', '', 'dollaroldstyle', 'dollarsuperior',
     'ampersandsmall', 'Acutesmall', 'parenleftsuperior', 'parenrightsuperior', 'twodotenleader', 'onedotenleader',
@@ -94,7 +92,7 @@ var cffExpertEncoding = [
     'Ocircumflexsmall', 'Otildesmall', 'Odieresissmall', 'OEsmall', 'Oslashsmall', 'Ugravesmall', 'Uacutesmall',
     'Ucircumflexsmall', 'Udieresissmall', 'Yacutesmall', 'Thornsmall', 'Ydieresissmall'];
 
-var standardNames = [
+const standardNames = [
     '.notdef', '.null', 'nonmarkingreturn', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar', 'percent',
     'ampersand', 'quotesingle', 'parenleft', 'parenright', 'asterisk', 'plus', 'comma', 'hyphen', 'period', 'slash',
     'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'colon', 'semicolon', 'less',
@@ -146,9 +144,8 @@ DefaultEncoding.prototype.charToGlyphIndex = function(c) {
                 }
             }
         }
-    } else {
-        return null;
     }
+    return null;
 };
 
 /**
@@ -224,6 +221,9 @@ function GlyphNames(post) {
         case 3:
             this.names = [];
             break;
+        default:
+            this.names = [];
+            break;
     }
 }
 
@@ -274,12 +274,14 @@ function addGlyphNames(font) {
     }
 }
 
-exports.cffStandardStrings = cffStandardStrings;
-exports.cffStandardEncoding = cffStandardEncoding;
-exports.cffExpertEncoding = cffExpertEncoding;
-exports.standardNames = standardNames;
-exports.DefaultEncoding = DefaultEncoding;
-exports.CmapEncoding = CmapEncoding;
-exports.CffEncoding = CffEncoding;
-exports.GlyphNames = GlyphNames;
-exports.addGlyphNames = addGlyphNames;
+export {
+    cffStandardStrings,
+    cffStandardEncoding,
+    cffExpertEncoding,
+    standardNames,
+    DefaultEncoding,
+    CmapEncoding,
+    CffEncoding,
+    GlyphNames,
+    addGlyphNames
+};

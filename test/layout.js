@@ -1,19 +1,14 @@
-/* jshint mocha: true */
-
-'use strict';
-
-var assert = require('assert');
-var opentype = require('../src/opentype');
-var Layout = require('../src/layout');
+import assert  from 'assert';
+import { Font, Path, Glyph } from '../src/opentype';
+import Layout  from '../src/layout';
 
 describe('layout.js', function() {
-
     var font;
     var layout;
-    var notdefGlyph = new opentype.Glyph({
+    var notdefGlyph = new Glyph({
         name: '.notdef',
         unicode: 0,
-        path: new opentype.Path()
+        path: new Path()
     });
     var defaultLayoutTable = {
         version: 1,
@@ -23,15 +18,15 @@ describe('layout.js', function() {
     };
 
     var glyphs = [notdefGlyph].concat('abcdefghijklmnopqrstuvwxyz'.split('').map(function(c) {
-        return new opentype.Glyph({
+        return new Glyph({
             name: c,
             unicode: c.charCodeAt(0),
-            path: new opentype.Path()
+            path: new Path()
         });
     }));
 
     beforeEach(function() {
-        font = new opentype.Font({
+        font = new Font({
             familyName: 'MyFont',
             styleName: 'Medium',
             unitsPerEm: 1000,

@@ -1,16 +1,6 @@
-'use strict';
-
-var assert = require('assert');
-var mocha = require('mocha');
-var describe = mocha.describe;
-var it = mocha.it;
-var testutil = require('./testutil.js');
-var hex = testutil.hex;
-var unhex = testutil.unhex;
-var types = require('../src/types.js');
-var decode = types.decode;
-var encode = types.encode;
-var sizeOf = types.sizeOf;
+import assert from 'assert';
+import { hex, unhex } from './testutil';
+import { decode, encode, sizeOf } from '../src/types';
 
 describe('types.js', function() {
     it('can handle BYTE', function() {
@@ -512,7 +502,7 @@ describe('types.js', function() {
                     {name: 'lookupListIndex', type: 'USHORT', value: 0}
                 ]}}
             ]},
-            lookupList: { fields: [] }
+            lookupList: {fields: []}
         };
 
         assert.equal(hex(encode.TABLE(table)), expected);

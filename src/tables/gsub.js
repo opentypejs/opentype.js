@@ -1,12 +1,11 @@
 // The `GSUB` table contains ligatures, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gsub.htm
 
-'use strict';
+import check from '../check';
+import { Parser } from '../parse';
+import table from '../table';
 
-var check = require('../check');
-var Parser = require('../parse').Parser;
 var subtableParsers = new Array(9);         // subtableParsers[0] is unused
-var table = require('../table');
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#SS
 subtableParsers[1] = function parseLookup1() {
@@ -254,5 +253,4 @@ function makeGsubTable(gsub) {
     ]);
 }
 
-exports.parse = parseGsubTable;
-exports.make = makeGsubTable;
+export default { parse: parseGsubTable, make: makeGsubTable };

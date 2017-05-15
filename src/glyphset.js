@@ -1,8 +1,6 @@
 // The GlyphSet object
 
-'use strict';
-
-var _glyph = require('./glyph');
+import Glyph from './glyph';
 
 // Define a property on the glyph that depends on the path being loaded.
 function defineDependentProperty(glyph, externalName, internalName) {
@@ -69,7 +67,7 @@ GlyphSet.prototype.push = function(index, loader) {
  * @return {opentype.Glyph}
  */
 function glyphLoader(font, index) {
-    return new _glyph.Glyph({index: index, font: font});
+    return new Glyph({index: index, font: font});
 }
 
 /**
@@ -87,7 +85,7 @@ function glyphLoader(font, index) {
  */
 function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
     return function() {
-        var glyph = new _glyph.Glyph({index: index, font: font});
+        var glyph = new Glyph({index: index, font: font});
 
         glyph.path = function() {
             parseGlyph(glyph, data, position);
@@ -114,7 +112,7 @@ function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
  */
 function cffGlyphLoader(font, index, parseCFFCharstring, charstring) {
     return function() {
-        var glyph = new _glyph.Glyph({index: index, font: font});
+        var glyph = new Glyph({index: index, font: font});
 
         glyph.path = function() {
             var path = parseCFFCharstring(font, glyph, charstring);
@@ -126,7 +124,4 @@ function cffGlyphLoader(font, index, parseCFFCharstring, charstring) {
     };
 }
 
-exports.GlyphSet = GlyphSet;
-exports.glyphLoader = glyphLoader;
-exports.ttfGlyphLoader = ttfGlyphLoader;
-exports.cffGlyphLoader = cffGlyphLoader;
+export default { GlyphSet, glyphLoader, ttfGlyphLoader, cffGlyphLoader };

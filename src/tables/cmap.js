@@ -1,11 +1,9 @@
 // The `cmap` table stores the mappings from characters to glyphs.
 // https://www.microsoft.com/typography/OTSPEC/cmap.htm
 
-'use strict';
-
-var check = require('../check');
-var parse = require('../parse');
-var table = require('../table');
+import check from '../check';
+import parse from '../parse';
+import table from '../table';
 
 function parseCmapTableFormat12(cmap, p) {
     var i;
@@ -217,5 +215,4 @@ function makeCmapTable(glyphs) {
     return t;
 }
 
-exports.parse = parseCmapTable;
-exports.make = makeCmapTable;
+export default { parse: parseCmapTable, make: makeCmapTable };

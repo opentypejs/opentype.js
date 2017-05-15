@@ -1,11 +1,6 @@
-'use strict';
-
-var assert = require('assert');
-var mocha = require('mocha');
-var describe = mocha.describe;
-var it = mocha.it;
-var testutil = require('../testutil.js');
-var ltag = require('../../src/tables/ltag.js');
+import assert from 'assert';
+import { hex, unhex } from '../testutil';
+import ltag from '../../src/tables/ltag';
 
 describe('tables/ltag.js', function() {
     var data =
@@ -16,10 +11,10 @@ describe('tables/ltag.js', function() {
     var tags = ['en', 'zh-Hant', 'zh', 'sl-rozaj-solba-1994'];
 
     it('can make a language tag table', function() {
-        assert.deepEqual(data, testutil.hex(ltag.make(tags).encode()));
+        assert.deepEqual(data, hex(ltag.make(tags).encode()));
     });
 
     it('can parse a language tag table', function() {
-        assert.deepEqual(tags, ltag.parse(testutil.unhex('DE AD BE EF ' + data), 4));
+        assert.deepEqual(tags, ltag.parse(unhex('DE AD BE EF ' + data), 4));
     });
 });

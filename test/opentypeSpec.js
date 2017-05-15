@@ -1,14 +1,9 @@
-'use strict';
+import assert from 'assert';
+import { Font, Path, Glyph, load, loadSync } from '../src/opentype';
 
-var assert = require('assert');
-var mocha = require('mocha');
-var describe = mocha.describe;
-var it = mocha.it;
-var opentype = require('../src/opentype.js');
-
-describe('OpenType.js', function() {
+describe('opentype.js', function() {
     it('can load a TrueType font', function() {
-        var font = opentype.loadSync('./fonts/Roboto-Black.ttf');
+        var font = loadSync('./fonts/Roboto-Black.ttf');
         assert.deepEqual(font.names.fontFamily, {en: 'Roboto Bk'});
         assert.equal(font.unitsPerEm, 2048);
         assert.equal(font.glyphs.length, 1037);
@@ -19,7 +14,7 @@ describe('OpenType.js', function() {
     });
 
     it('can load a OpenType/CFF font', function() {
-        var font = opentype.loadSync('./fonts/FiraSansOT-Medium.otf');
+        var font = loadSync('./fonts/FiraSansOT-Medium.otf');
         assert.deepEqual(font.names.fontFamily, {en: 'Fira Sans OT Medium'});
         assert.equal(font.unitsPerEm, 1000);
         assert.equal(font.glyphs.length, 1151);
@@ -30,7 +25,7 @@ describe('OpenType.js', function() {
     });
 
     it('can load a CID-keyed font', function() {
-        var font = opentype.loadSync('./fonts/FDArrayTest257.otf');
+        var font = loadSync('./fonts/FDArrayTest257.otf');
         assert.deepEqual(font.names.fontFamily, {en: 'FDArray Test 257'});
         assert.deepEqual(font.tables.cff.topDict.ros, ['Adobe', 'Identity', 0]);
         assert.equal(font.tables.cff.topDict._fdArray.length, 256);
@@ -46,7 +41,7 @@ describe('OpenType.js', function() {
     });
 
     it('can load a WOFF/CFF font', function() {
-        var font = opentype.loadSync('./fonts/FiraSansMedium.woff');
+        var font = loadSync('./fonts/FiraSansMedium.woff');
         assert.deepEqual(font.names.fontFamily, {en: 'Fira Sans OT'});
         assert.equal(font.unitsPerEm, 1000);
         assert.equal(font.glyphs.length, 1147);
@@ -57,7 +52,7 @@ describe('OpenType.js', function() {
     });
 
     it('handles a parseBuffer error', function(done) {
-        opentype.load('./fonts/badfont.ttf', function(err) {
+        load('./fonts/badfont.ttf', function(err) {
             if (err) {
                 done();
             }
@@ -65,12 +60,12 @@ describe('OpenType.js', function() {
     });
 
     it('throws an error when advanceWidth is not set', function() {
-        var notdefGlyph = new opentype.Glyph({
+        var notdefGlyph = new Glyph({
             name: '.notdef',
             unicode: 0,
-            path: new opentype.Path()
+            path: new Path()
         });
-        var font = new opentype.Font({
+        var font = new Font({
             familyName: 'MyFont',
             styleName: 'Medium',
             unitsPerEm: 1000,
@@ -80,5 +75,4 @@ describe('OpenType.js', function() {
         });
         assert.throws(function() { font.toArrayBuffer(); }, /advanceWidth is not a number/);
     });
-
 });

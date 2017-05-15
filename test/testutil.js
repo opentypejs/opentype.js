@@ -1,6 +1,4 @@
-'use strict';
-
-var hex = function(bytes) {
+function hex(bytes) {
     var values = [];
     for (var i = 0; i < bytes.length; i++) {
         var b = bytes[i];
@@ -12,9 +10,9 @@ var hex = function(bytes) {
     }
 
     return values.join(' ').toUpperCase();
-};
+}
 
-var unhex = function(str) {
+function unhex(str) {
     str = str.split(' ').join('');
     var len = str.length / 2;
     var data = new DataView(new ArrayBuffer(len), 0);
@@ -23,10 +21,10 @@ var unhex = function(str) {
     }
 
     return data;
-};
+}
 
-exports.hex = hex;
-exports.unhex = unhex;
-exports.unhexArray = function(str) {
+function unhexArray(str) {
     return Array.prototype.slice.call(new Uint8Array(unhex(str).buffer));
-};
+}
+
+export { hex, unhex, unhexArray };

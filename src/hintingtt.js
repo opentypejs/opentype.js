@@ -2799,7 +2799,7 @@ instructionTable = [
     /* 0xFF */ MDRP_MIRP.bind(undefined, 1, 1, 1, 1, 3)
 ];
 
-module.exports = Hinting;
+export default Hinting;
 
 /*****************************
   Mathematical Considertions

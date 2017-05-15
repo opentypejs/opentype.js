@@ -1,8 +1,6 @@
 // This example shows how to create a font from scratch using node.js.
 
-'use strict';
-
-var opentype = require('../src/opentype');
+import { Font, Glyph, Path } from '../src/opentype';
 
 // These are the global measurements of the typeface.
 var UNITS_PER_EM = 1000;
@@ -84,18 +82,18 @@ var GLYPH_MAP = {
 var TTF_NAME_MAP = { _: 'underscore', '.': 'period' };
 
 // The notdefGlyph always needs to be included.
-var notdefGlyph = new opentype.Glyph({
+var notdefGlyph = new Glyph({
     name: '.notdef',
     advanceWidth: 650,
-    path: new opentype.Path()
+    path: new Path()
 });
 
 // Our glyph map can't properly encode a space character, so we make one here.
-var spaceGlyph = new opentype.Glyph({
+var spaceGlyph = new Glyph({
     name: 'space',
     unicode: 32,
     advanceWidth: 10 * SCALE,
-    path: new opentype.Path()
+    path: new Path()
 });
 
 var glyphs = [notdefGlyph, spaceGlyph];
@@ -108,7 +106,7 @@ for (var i = 0; i < glyphNames.length; i++) {
     var ttfName = TTF_NAME_MAP[glyphName] || glyphName;
 
     // Create a path by looping over all the points and multiplying by the SCALE.
-    var path = new opentype.Path();
+    var path = new Path();
     var points = GLYPH_MAP[glyphName];
     // Remember the width of the character, to set the advanceWidth.
     var w = 0;
@@ -124,7 +122,7 @@ for (var i = 0; i < glyphNames.length; i++) {
     }
 
     // Create the glyph. The advanceWidth is the widest part of the letter + 1.
-    var glyph = new opentype.Glyph({
+    var glyph = new Glyph({
         name: ttfName,
         unicode: glyphName.charCodeAt(0),
         advanceWidth: (w + 1) * SCALE,
@@ -134,7 +132,7 @@ for (var i = 0; i < glyphNames.length; i++) {
 }
 
 // Create the font using measurements + glyphs defined above.
-var font = new opentype.Font({
+var font = new Font({
     familyName: 'Pyramid',
     styleName: 'Regular',
     unitsPerEm: UNITS_PER_EM,
