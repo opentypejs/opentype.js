@@ -33,6 +33,7 @@
     "dist": "npm run test && npm run build && npm run minify"
   },
   "devDependencies": {
+    "buble": "^0.15.2",
     "cross-env": "^5.0.0",
     "jscs": "^3.0.3",
     "jshint": "^2.9.2",
