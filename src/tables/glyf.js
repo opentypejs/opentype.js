@@ -8,7 +8,7 @@ import Path from '../path';
 
 // Parse the coordinate data for a glyph.
 function parseGlyphCoordinate(p, flag, previousValue, shortVectorBitMask, sameBitMask) {
-    var v;
+    let v;
     if ((flag & shortVectorBitMask) > 0) {
         // The coordinate is 1 byte long.
         v = p.parseByte();
@@ -34,38 +34,37 @@ function parseGlyphCoordinate(p, flag, previousValue, shortVectorBitMask, sameBi
 
 // Parse a TrueType glyph.
 function parseGlyph(glyph, data, start) {
-    var p = new parse.Parser(data, start);
+    const p = new parse.Parser(data, start);
     glyph.numberOfContours = p.parseShort();
     glyph._xMin = p.parseShort();
     glyph._yMin = p.parseShort();
     glyph._xMax = p.parseShort();
     glyph._yMax = p.parseShort();
-    var flags;
-    var flag;
-    var i;
+    let flags;
+    let flag;
 
     if (glyph.numberOfContours > 0) {
         // This glyph is not a composite.
-        var endPointIndices = glyph.endPointIndices = [];
-        for (i = 0; i < glyph.numberOfContours; i += 1) {
+        const endPointIndices = glyph.endPointIndices = [];
+        for (let i = 0; i < glyph.numberOfContours; i += 1) {
             endPointIndices.push(p.parseUShort());
         }
 
         glyph.instructionLength = p.parseUShort();
         glyph.instructions = [];
-        for (i = 0; i < glyph.instructionLength; i += 1) {
+        for (let i = 0; i < glyph.instructionLength; i += 1) {
             glyph.instructions.push(p.parseByte());
         }
 
-        var numberOfCoordinates = endPointIndices[endPointIndices.length - 1] + 1;
+        const numberOfCoordinates = endPointIndices[endPointIndices.length - 1] + 1;
         flags = [];
-        for (i = 0; i < numberOfCoordinates; i += 1) {
+        for (let i = 0; i < numberOfCoordinates; i += 1) {
             flag = p.parseByte();
             flags.push(flag);
             // If bit 3 is set, we repeat this flag n times, where n is the next byte.
             if ((flag & 8) > 0) {
-                var repeatCount = p.parseByte();
-                for (var j = 0; j < repeatCount; j += 1) {
+                const repeatCount = p.parseByte();
+                for (let j = 0; j < repeatCount; j += 1) {
                     flags.push(flag);
                     i += 1;
                 }
@@ -75,11 +74,11 @@ function parseGlyph(glyph, data, start) {
         check.argument(flags.length === numberOfCoordinates, 'Bad flags.');
 
         if (endPointIndices.length > 0) {
-            var points = [];
-            var point;
+            const points = [];
+            let point;
             // X/Y coordinates are relative to the previous point, except for the first point which is relative to 0,0.
             if (numberOfCoordinates > 0) {
-                for (i = 0; i < numberOfCoordinates; i += 1) {
+                for (let i = 0; i < numberOfCoordinates; i += 1) {
                     flag = flags[i];
                     point = {};
                     point.onCurve = !!(flag & 1);
@@ -87,16 +86,16 @@ function parseGlyph(glyph, data, start) {
                     points.push(point);
                 }
 
-                var px = 0;
-                for (i = 0; i < numberOfCoordinates; i += 1) {
+                let px = 0;
+                for (let i = 0; i < numberOfCoordinates; i += 1) {
                     flag = flags[i];
                     point = points[i];
                     point.x = parseGlyphCoordinate(p, flag, px, 2, 16);
                     px = point.x;
                 }
 
-                var py = 0;
-                for (i = 0; i < numberOfCoordinates; i += 1) {
+                let py = 0;
+                for (let i = 0; i < numberOfCoordinates; i += 1) {
                     flag = flags[i];
                     point = points[i];
                     point.y = parseGlyphCoordinate(p, flag, py, 4, 32);
@@ -114,10 +113,10 @@ function parseGlyph(glyph, data, start) {
         glyph.isComposite = true;
         glyph.points = [];
         glyph.components = [];
-        var moreComponents = true;
+        let moreComponents = true;
         while (moreComponents) {
             flags = p.parseUShort();
-            var component = {
+            const component = {
                 glyphIndex: p.parseUShort(),
                 xScale: 1,
                 scale01: 0,
@@ -171,7 +170,7 @@ function parseGlyph(glyph, data, start) {
             // We have instructions
             glyph.instructionLength = p.parseUShort();
             glyph.instructions = [];
-            for (i = 0; i < glyph.instructionLength; i += 1) {
+            for (let i = 0; i < glyph.instructionLength; i += 1) {
                 glyph.instructions.push(p.parseByte());
             }
         }
@@ -180,10 +179,10 @@ function parseGlyph(glyph, data, start) {
 
 // Transform an array of points and return a new array.
 function transformPoints(points, transform) {
-    var newPoints = [];
-    for (var i = 0; i < points.length; i += 1) {
-        var pt = points[i];
-        var newPt = {
+    const newPoints = [];
+    for (let i = 0; i < points.length; i += 1) {
+        const pt = points[i];
+        const newPt = {
             x: transform.xScale * pt.x + transform.scale01 * pt.y + transform.dx,
             y: transform.scale10 * pt.x + transform.yScale * pt.y + transform.dy,
             onCurve: pt.onCurve,
@@ -196,10 +195,10 @@ function transformPoints(points, transform) {
 }
 
 function getContours(points) {
-    var contours = [];
-    var currentContour = [];
-    for (var i = 0; i < points.length; i += 1) {
-        var pt = points[i];
+    const contours = [];
+    let currentContour = [];
+    for (let i = 0; i < points.length; i += 1) {
+        const pt = points[i];
         currentContour.push(pt);
         if (pt.lastPointOfContour) {
             contours.push(currentContour);
@@ -213,19 +212,19 @@ function getContours(points) {
 
 // Convert the TrueType glyph outline to a Path.
 function getPath(points) {
-    var p = new Path();
+    const p = new Path();
     if (!points) {
         return p;
     }
 
-    var contours = getContours(points);
+    const contours = getContours(points);
 
-    for (var contourIndex = 0; contourIndex < contours.length; ++contourIndex) {
-        var contour = contours[contourIndex];
+    for (let contourIndex = 0; contourIndex < contours.length; ++contourIndex) {
+        const contour = contours[contourIndex];
 
-        var prev = null;
-        var curr = contour[contour.length - 1];
-        var next = contour[0];
+        let prev = null;
+        let curr = contour[contour.length - 1];
+        let next = contour[0];
 
         if (curr.onCurve) {
             p.moveTo(curr.x, curr.y);
@@ -234,12 +233,12 @@ function getPath(points) {
                 p.moveTo(next.x, next.y);
             } else {
                 // If both first and last points are off-curve, start at their middle.
-                var start = { x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5 };
+                const start = {x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5};
                 p.moveTo(start.x, start.y);
             }
         }
 
-        for (var i = 0; i < contour.length; ++i) {
+        for (let i = 0; i < contour.length; ++i) {
             prev = curr;
             curr = next;
             next = contour[(i + 1) % contour.length];
@@ -248,8 +247,8 @@ function getPath(points) {
                 // This is a straight line.
                 p.lineTo(curr.x, curr.y);
             } else {
-                var prev2 = prev;
-                var next2 = next;
+                let prev2 = prev;
+                let next2 = next;
 
                 if (!prev.onCurve) {
                     prev2 = { x: (curr.x + prev.x) * 0.5, y: (curr.y + prev.y) * 0.5 };
@@ -272,13 +271,13 @@ function getPath(points) {
 
 function buildPath(glyphs, glyph) {
     if (glyph.isComposite) {
-        for (var j = 0; j < glyph.components.length; j += 1) {
-            var component = glyph.components[j];
-            var componentGlyph = glyphs.get(component.glyphIndex);
+        for (let j = 0; j < glyph.components.length; j += 1) {
+            const component = glyph.components[j];
+            const componentGlyph = glyphs.get(component.glyphIndex);
             // Force the ttfGlyphLoader to parse the glyph.
             componentGlyph.getPath();
             if (componentGlyph.points) {
-                var transformedPoints;
+                let transformedPoints;
                 if (component.matchedPoints === undefined) {
                     // component positioned by offset
                     transformedPoints = transformPoints(componentGlyph.points, component);
@@ -288,9 +287,9 @@ function buildPath(glyphs, glyph) {
                         (component.matchedPoints[1] > componentGlyph.points.length - 1)) {
                         throw Error('Matched points out of range in ' + glyph.name);
                     }
-                    var firstPt = glyph.points[component.matchedPoints[0]];
-                    var secondPt = componentGlyph.points[component.matchedPoints[1]];
-                    var transform = {
+                    const firstPt = glyph.points[component.matchedPoints[0]];
+                    let secondPt = componentGlyph.points[component.matchedPoints[1]];
+                    const transform = {
                         xScale: component.xScale, scale01: component.scale01,
                         scale10: component.scale10, yScale: component.yScale,
                         dx: 0, dy: 0
@@ -310,13 +309,12 @@ function buildPath(glyphs, glyph) {
 
 // Parse all the glyphs according to the offsets from the `loca` table.
 function parseGlyfTable(data, start, loca, font) {
-    var glyphs = new glyphset.GlyphSet(font);
-    var i;
+    const glyphs = new glyphset.GlyphSet(font);
 
     // The last element of the loca table is invalid.
-    for (i = 0; i < loca.length - 1; i += 1) {
-        var offset = loca[i];
-        var nextOffset = loca[i + 1];
+    for (let i = 0; i < loca.length - 1; i += 1) {
+        const offset = loca[i];
+        const nextOffset = loca[i + 1];
         if (offset !== nextOffset) {
             glyphs.push(i, glyphset.ttfGlyphLoader(font, i, parseGlyph, data, start + offset, buildPath));
         } else {

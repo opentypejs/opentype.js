@@ -4,7 +4,7 @@ import gsub from '../../src/tables/gsub';
 
 // Helper that builds a minimal GSUB table to test a lookup subtable.
 function parseLookup(lookupType, subTableData) {
-    var data = unhex('00010000 000A 000C 000E' +   // header
+    const data = unhex('00010000 000A 000C 000E' +   // header
         '0000' +                                        // ScriptTable - 0 scripts
         '0000' +                                        // FeatureListTable - 0 features
         '0001 0004' +                                   // LookupListTable - 1 lookup table
@@ -29,7 +29,7 @@ function makeLookup(lookupType, data) {
 describe('tables/gsub.js', function() {
     //// Header ///////////////////////////////////////////////////////////////
     it('can parse a GSUB header', function() {
-        var data = unhex(
+        const data = unhex(
             '00010000 000A 000C 000E' +     // header
             '0000' +                        // ScriptTable - 0 scripts
             '0000' +                        // FeatureListTable - 0 features
@@ -41,7 +41,7 @@ describe('tables/gsub.js', function() {
     //// Lookup type 1 ////////////////////////////////////////////////////////
     it('can parse lookup1 substFormat 1', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX2
-        var data = '0001 0006 00C0   0002 0001 004E 0058 0000';
+        const data = '0001 0006 00C0   0002 0001 004E 0058 0000';
         assert.deepEqual(parseLookup(1, data), {
             substFormat: 1,
             coverage: {
@@ -54,7 +54,7 @@ describe('tables/gsub.js', function() {
 
     it('can parse lookup1 substFormat 2', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX3
-        var data = '0002 000E 0004 0131 0135 013E 0143   0001 0004 003C 0040 004B 004F';
+        const data = '0002 000E 0004 0131 0135 013E 0143   0001 0004 003C 0040 004B 004F';
         assert.deepEqual(parseLookup(1, data), {
             substFormat: 2,
             coverage: {
@@ -68,7 +68,7 @@ describe('tables/gsub.js', function() {
     //// Lookup type 2 ////////////////////////////////////////////////////////
     it('can parse lookup2', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX4
-        var data = '0001 0008 0001 000E   0001 0001 00F1   0003 001A 001A 001D';
+        const data = '0001 0008 0001 000E   0001 0001 00F1   0003 001A 001A 001D';
         assert.deepEqual(parseLookup(2, data), {
             substFormat: 1,
             coverage: {
@@ -84,7 +84,7 @@ describe('tables/gsub.js', function() {
     //// Lookup type 3 ////////////////////////////////////////////////////////
     it('can parse lookup3', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX5
-        var data = '0001 0008 0001 000E   0001 0001 003A   0002 00C9 00CA';
+        const data = '0001 0008 0001 000E   0001 0001 003A   0002 00C9 00CA';
         assert.deepEqual(parseLookup(3, data), {
             substFormat: 1,
             coverage: {
@@ -100,7 +100,7 @@ describe('tables/gsub.js', function() {
     //// Lookup type 4 ////////////////////////////////////////////////////////
     it('can parse lookup4', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX6
-        var data = '0001 000A 0002 0014 0020' +                     // LigatureSubstFormat1
+        const data = '0001 000A 0002 0014 0020' +                     // LigatureSubstFormat1
             '0002 0001 0019 001A 0000' +                            // coverage format 2
             '0001 0004 015B 0003 0028 0017' +                       // Ligature set "etc"
             '0002 0006 000E 00F1 0003 001A 001D 00F0 0002 001D';    // Ligature set "ffi" and "fi"
@@ -125,7 +125,7 @@ describe('tables/gsub.js', function() {
     //// Lookup type 5 ////////////////////////////////////////////////////////
     it('can parse lookup5 substFormat 1', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX7
-        var data = '0001 000A 0002 0012 0020' +                 // ContextSubstFormat1
+        const data = '0001 000A 0002 0012 0020' +                 // ContextSubstFormat1
             '0001 0002 0028 005D' +                             // coverage format 1
             '0001 0004 0002 0001 005D 0000 0001' +              // sub rule set "space and dash"
             '0001 0004 0002 0001 0028 0001 0001';               // sub rule set "dash and space"
@@ -145,7 +145,7 @@ describe('tables/gsub.js', function() {
     it('can parse lookup5 substFormat 2', function() {
         /* jshint elision: true */
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX8
-        var data = '0002 0010 001C 0004 0000 0000 0032 0040' +          // ContextSubstFormat2
+        const data = '0002 0010 001C 0004 0000 0000 0032 0040' +          // ContextSubstFormat2
             '0001 0004 0030 0031 0040 0041' +                           // coverage format 1
             '0002 0003 0030 0031 0002 0040 0041 0003 00D2 00D3 0001' +  // class def format 2
             '0001 0004 0002 0001 0001 0001 0001' +                      // sub class set "set marks high"
@@ -177,7 +177,7 @@ describe('tables/gsub.js', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX9
         // Coverage offsets (0030, 004C, 006E) seem wrong in the example.
         // var data = '0003 0003 0002 0030 004C 006E 0000 0001 0002 0002'
-        var data = '0003 0003 0002 0014 0030 0052 0000 0001 0002 0002' +                // ContextSubstFormat3
+        const data = '0003 0003 0002 0014 0030 0052 0000 0001 0002 0002' +                // ContextSubstFormat3
             '0001 000C 0033 0035 0037 0038 0039 003B 003C 003D 0041 0042 0045 004A' +   // coverage format 1
             '0001 000F 0032 0034 0036 003A 003E 003F 0040 0043 0044 0045 0046 0047 0048 0049 004B' + // coverage format 1
             '0001 0005 0038 003B 0041 0042 004A';                                       // coverage format 1
@@ -213,13 +213,13 @@ describe('tables/gsub.js', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX10
         // In the Microsoft example, the third UShort (BacktrackGlyphCount) is 0000. It should be 0001
         // since there is an offset (NULL) to BacktrackCoverage[0]
-        var data = '0001 0068 0001 0000 0001 0026 000C 00A7 00B9 00C5 00D4 00EA 00F2 00FD 010D 011B 012B 013B 0141' + // ReverseChainSingleSubstFormat1
+        const data = '0001 0068 0001 0000 0001 0026 000C 00A7 00B9 00C5 00D4 00EA 00F2 00FD 010D 011B 012B 013B 0141' + // ReverseChainSingleSubstFormat1
             '0001 001F 00A5 00A9 00AA 00E2 0167 0168 0169 016D 016E 0170 0183' +     // coverage format 1
             '0184 0185 0189 018A 018C019F 01A0 01A1 01A2 01A3 01A4 01A5 01A6' +
             '01A7 01A8 01A9 01AA 01AB 01AC 01EC' +
             '0001 000C 00A6 00B7 00C3 00D2 00E9 00F1 00FC 010C 0119 0129 013A 0140'; // coverage format 1
 
-        var parsed = parseLookup(8, data);
+        const parsed = parseLookup(8, data);
         assert.deepEqual(parsed, {
             substFormat: 1,
             coverage: {
@@ -241,29 +241,29 @@ describe('tables/gsub.js', function() {
 
     /// Writing ///////////////////////////////////////////////////////////////
     it('should write a simple GSUB table + lookup type 4', function() {
-        var expectedData = unhexArray(
+        const expectedData = unhexArray(
             '00 01 00 00 00 0A 00 1E  00 2C 00 01 44 46 4C 54  00 08 00 04 00 00 00 00  FF FF 00 01 00 00 00 01' +
             '6C 69 67 61 00 08 00 00  00 01 00 00 00 01 00 04  00 04 00 00 00 01 00 08  00 01 00 0A 00 02 00 12' +
             '00 2E 00 01 00 02 00 18  00 1A 00 03 00 08 00 10  00 16 04 8A 00 03 00 34  00 34 04 84 00 02 00 18' +
             '04 83 00 02 00 34 00 01  00 04 04 8D 00 02 00 1D'
         );
 
-        var gsubTable = {
+        const gsubTable = {
             version: 1,
             scripts: [{
                 tag: 'DFLT',
                 script: {
-                    defaultLangSys: { reserved: 0, reqFeatureIndex: 65535, featureIndexes: [0] },
+                    defaultLangSys: {reserved: 0, reqFeatureIndex: 65535, featureIndexes: [0]},
                     langSysRecords: []
                 }
             }],
-            features: [{ tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0] } }],
+            features: [{tag: 'liga', feature: {featureParams: 0, lookupListIndexes: [0]}}],
             lookups: [{
                 lookupType: 4,
                 lookupFlag: 0,
                 subtables: [{
                     substFormat: 1,
-                    coverage: { format: 1, glyphs: [24, 26] },
+                    coverage: {format: 1, glyphs: [24, 26]},
                     ligatureSets: [
                         [
                             {ligGlyph: 1162, components: [52, 52]},
@@ -282,7 +282,7 @@ describe('tables/gsub.js', function() {
 
     //// Lookup type 1 ////////////////////////////////////////////////////////
     it('can write lookup1 substFormat 1', function() {
-        var expectedData = unhexArray('0001 0006 00C0   0001 0004 003C 0040 004B 004F');
+        const expectedData = unhexArray('0001 0006 00C0   0001 0004 003C 0040 004B 004F');
         assert.deepEqual(makeLookup(1, {
             substFormat: 1,
             coverage: {
@@ -295,7 +295,7 @@ describe('tables/gsub.js', function() {
 
     it('can write lookup1 substFormat 2', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX3
-        var expectedData = unhexArray('0002 000E 0004 0131 0135 013E 0143   0001 0004 003C 0040 004B 004F');
+        const expectedData = unhexArray('0002 000E 0004 0131 0135 013E 0143   0001 0004 003C 0040 004B 004F');
         assert.deepEqual(makeLookup(1, {
             substFormat: 2,
             coverage: {
@@ -309,7 +309,7 @@ describe('tables/gsub.js', function() {
     //// Lookup type 3 ////////////////////////////////////////////////////////
     it('can write lookup3', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX5
-        var expectedData = unhexArray('0001 0008 0001 000E   0001 0001 003A   0002 00C9 00CA');
+        const expectedData = unhexArray('0001 0008 0001 000E   0001 0001 003A   0002 00C9 00CA');
         assert.deepEqual(makeLookup(3, {
             substFormat: 1,
             coverage: {

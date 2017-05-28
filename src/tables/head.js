@@ -7,8 +7,8 @@ import table from '../table';
 
 // Parse the header `head` table
 function parseHeadTable(data, start) {
-    var head = {};
-    var p = new parse.Parser(data, start);
+    const head = {};
+    const p = new parse.Parser(data, start);
     head.version = p.parseVersion();
     head.fontRevision = Math.round(p.parseFixed() * 1000) / 1000;
     head.checkSumAdjustment = p.parseULong();
@@ -32,8 +32,8 @@ function parseHeadTable(data, start) {
 
 function makeHeadTable(options) {
     // Apple Mac timestamp epoch is 01/01/1904 not 01/01/1970
-    var timestamp = Math.round(new Date().getTime() / 1000) + 2082844800;
-    var createdTimestamp = timestamp;
+    const timestamp = Math.round(new Date().getTime() / 1000) + 2082844800;
+    let createdTimestamp = timestamp;
 
     if (options.createdTimestamp) {
         createdTimestamp = options.createdTimestamp + 2082844800;

@@ -133,12 +133,12 @@ function DefaultEncoding(font) {
 }
 
 DefaultEncoding.prototype.charToGlyphIndex = function(c) {
-    var code = c.charCodeAt(0);
-    var glyphs = this.font.glyphs;
+    const code = c.charCodeAt(0);
+    const glyphs = this.font.glyphs;
     if (glyphs) {
-        for (var i = 0; i < glyphs.length; i += 1) {
-            var glyph = glyphs.get(i);
-            for (var j = 0; j < glyph.unicodes.length; j += 1) {
+        for (let i = 0; i < glyphs.length; i += 1) {
+            const glyph = glyphs.get(i);
+            for (let j = 0; j < glyph.unicodes.length; j += 1) {
                 if (glyph.unicodes[j] === code) {
                     return i;
                 }
@@ -183,8 +183,8 @@ function CffEncoding(encoding, charset) {
  * @return {number} The index.
  */
 CffEncoding.prototype.charToGlyphIndex = function(s) {
-    var code = s.charCodeAt(0);
-    var charName = this.encoding[code];
+    const code = s.charCodeAt(0);
+    const charName = this.encoding[code];
     return this.charset.indexOf(charName);
 };
 
@@ -195,14 +195,13 @@ CffEncoding.prototype.charToGlyphIndex = function(s) {
  * @param {Object} post
  */
 function GlyphNames(post) {
-    var i;
     switch (post.version) {
         case 1:
             this.names = standardNames.slice();
             break;
         case 2:
             this.names = new Array(post.numberOfGlyphs);
-            for (i = 0; i < post.numberOfGlyphs; i++) {
+            for (let i = 0; i < post.numberOfGlyphs; i++) {
                 if (post.glyphNameIndex[i] < standardNames.length) {
                     this.names[i] = standardNames[post.glyphNameIndex[i]];
                 } else {
@@ -213,7 +212,7 @@ function GlyphNames(post) {
             break;
         case 2.5:
             this.names = new Array(post.numberOfGlyphs);
-            for (i = 0; i < post.numberOfGlyphs; i++) {
+            for (let i = 0; i < post.numberOfGlyphs; i++) {
                 this.names[i] = standardNames[i + post.glyphNameIndex[i]];
             }
 
@@ -249,18 +248,18 @@ GlyphNames.prototype.glyphIndexToName = function(gid) {
  * @param {opentype.Font}
  */
 function addGlyphNames(font) {
-    var glyph;
-    var glyphIndexMap = font.tables.cmap.glyphIndexMap;
-    var charCodes = Object.keys(glyphIndexMap);
+    let glyph;
+    const glyphIndexMap = font.tables.cmap.glyphIndexMap;
+    const charCodes = Object.keys(glyphIndexMap);
 
-    for (var i = 0; i < charCodes.length; i += 1) {
-        var c = charCodes[i];
-        var glyphIndex = glyphIndexMap[c];
+    for (let i = 0; i < charCodes.length; i += 1) {
+        const c = charCodes[i];
+        const glyphIndex = glyphIndexMap[c];
         glyph = font.glyphs.get(glyphIndex);
         glyph.addUnicode(parseInt(c));
     }
 
-    for (i = 0; i < font.glyphs.length; i += 1) {
+    for (let i = 0; i < font.glyphs.length; i += 1) {
         glyph = font.glyphs.get(i);
         if (font.cffEncoding) {
             if (font.isCIDFont) {

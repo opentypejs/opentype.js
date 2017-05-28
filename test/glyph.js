@@ -3,8 +3,8 @@ import { loadSync } from '../src/opentype';
 
 describe('glyph.js', function() {
     describe('lazy loading', function() {
-        var font;
-        var glyph;
+        let font;
+        let glyph;
 
         before(function() {
             font = loadSync('./fonts/Roboto-Black.ttf');
@@ -33,8 +33,8 @@ describe('glyph.js', function() {
     });
 
     describe('bounding box', function() {
-        var trueTypeFont;
-        var openTypeFont;
+        let trueTypeFont;
+        let openTypeFont;
 
         before(function() {
             trueTypeFont = loadSync('./fonts/Roboto-Black.ttf');
@@ -42,8 +42,8 @@ describe('glyph.js', function() {
         });
 
         it('calculates a box for a linear shape', function() {
-            var glyph = trueTypeFont.charToGlyph('A');
-            var box = glyph.getBoundingBox();
+            const glyph = trueTypeFont.charToGlyph('A');
+            const box = glyph.getBoundingBox();
             assert.equal(box.x1, 5);
             assert.equal(box.y1, 0);
             assert.equal(box.x2, 1319);
@@ -51,8 +51,8 @@ describe('glyph.js', function() {
         });
 
         it('calculates a box for a quadratic shape', function() {
-            var glyph = trueTypeFont.charToGlyph('Q');
-            var box = glyph.getBoundingBox();
+            const glyph = trueTypeFont.charToGlyph('Q');
+            const box = glyph.getBoundingBox();
             assert.equal(box.x1, 89);
             assert.equal(box.y1, -165);
             assert.equal(box.x2, 1432);
@@ -60,8 +60,8 @@ describe('glyph.js', function() {
         });
 
         it('calculates a box for a bezier shape', function() {
-            var glyph = openTypeFont.charToGlyph('Q');
-            var box = glyph.getBoundingBox();
+            const glyph = openTypeFont.charToGlyph('Q');
+            const box = glyph.getBoundingBox();
             assert.equal(box.x1, 62);
             assert.equal(box.y1, -103);
             assert.equal(box.x2, 688);

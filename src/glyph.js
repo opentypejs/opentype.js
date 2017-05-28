@@ -6,7 +6,7 @@ import Path from './path';
 import glyf from './tables/glyf';
 
 function getPathDefinition(glyph, path) {
-    var _path = path || { commands: [] };
+    let _path = path || {commands: []};
     return {
         configurable: true,
 
@@ -124,11 +124,11 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
-    var commands;
-    var hPoints;
+    let commands;
+    let hPoints;
     if (!options) options = { };
-    var xScale = options.xScale;
-    var yScale = options.yScale;
+    let xScale = options.xScale;
+    let yScale = options.yScale;
 
     if (options.hinting && font && font.hinting) {
         // in case of hinting, the hinting engine takes care
@@ -146,14 +146,14 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
         xScale = yScale = 1;
     } else {
         commands = this.path.commands;
-        var scale = 1 / this.path.unitsPerEm * fontSize;
+        const scale = 1 / this.path.unitsPerEm * fontSize;
         if (xScale === undefined) xScale = scale;
         if (yScale === undefined) yScale = scale;
     }
 
-    var p = new Path();
-    for (var i = 0; i < commands.length; i += 1) {
-        var cmd = commands[i];
+    const p = new Path();
+    for (let i = 0; i < commands.length; i += 1) {
+        const cmd = commands[i];
         if (cmd.type === 'M') {
             p.moveTo(x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'L') {
@@ -184,10 +184,10 @@ Glyph.prototype.getContours = function() {
         return [];
     }
 
-    var contours = [];
-    var currentContour = [];
-    for (var i = 0; i < this.points.length; i += 1) {
-        var pt = this.points[i];
+    const contours = [];
+    let currentContour = [];
+    for (let i = 0; i < this.points.length; i += 1) {
+        const pt = this.points[i];
         currentContour.push(pt);
         if (pt.lastPointOfContour) {
             contours.push(currentContour);
@@ -204,11 +204,11 @@ Glyph.prototype.getContours = function() {
  * @return {Object}
  */
 Glyph.prototype.getMetrics = function() {
-    var commands = this.path.commands;
-    var xCoords = [];
-    var yCoords = [];
-    for (var i = 0; i < commands.length; i += 1) {
-        var cmd = commands[i];
+    const commands = this.path.commands;
+    const xCoords = [];
+    const yCoords = [];
+    for (let i = 0; i < commands.length; i += 1) {
+        const cmd = commands[i];
         if (cmd.type !== 'Z') {
             xCoords.push(cmd.x);
             yCoords.push(cmd.y);
@@ -225,7 +225,7 @@ Glyph.prototype.getMetrics = function() {
         }
     }
 
-    var metrics = {
+    const metrics = {
         xMin: Math.min.apply(null, xCoords),
         yMin: Math.min.apply(null, yCoords),
         xMax: Math.max.apply(null, xCoords),
@@ -275,9 +275,9 @@ Glyph.prototype.draw = function(ctx, x, y, fontSize, options) {
  */
 Glyph.prototype.drawPoints = function(ctx, x, y, fontSize) {
     function drawCircles(l, x, y, scale) {
-        var PI_SQ = Math.PI * 2;
+        const PI_SQ = Math.PI * 2;
         ctx.beginPath();
-        for (var j = 0; j < l.length; j += 1) {
+        for (let j = 0; j < l.length; j += 1) {
             ctx.moveTo(x + (l[j].x * scale), y + (l[j].y * scale));
             ctx.arc(x + (l[j].x * scale), y + (l[j].y * scale), 2, 0, PI_SQ, false);
         }
@@ -289,13 +289,13 @@ Glyph.prototype.drawPoints = function(ctx, x, y, fontSize) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 24;
-    var scale = 1 / this.path.unitsPerEm * fontSize;
+    const scale = 1 / this.path.unitsPerEm * fontSize;
 
-    var blueCircles = [];
-    var redCircles = [];
-    var path = this.path;
-    for (var i = 0; i < path.commands.length; i += 1) {
-        var cmd = path.commands[i];
+    const blueCircles = [];
+    const redCircles = [];
+    const path = this.path;
+    for (let i = 0; i < path.commands.length; i += 1) {
+        const cmd = path.commands[i];
         if (cmd.x !== undefined) {
             blueCircles.push({x: cmd.x, y: -cmd.y});
         }
@@ -326,7 +326,7 @@ Glyph.prototype.drawPoints = function(ctx, x, y, fontSize) {
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
  */
 Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
-    var scale;
+    let scale;
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 24;
@@ -340,11 +340,11 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
 
     // This code is here due to memory optimization: by not using
     // defaults in the constructor, we save a notable amount of memory.
-    var xMin = this.xMin || 0;
-    var yMin = this.yMin || 0;
-    var xMax = this.xMax || 0;
-    var yMax = this.yMax || 0;
-    var advanceWidth = this.advanceWidth || 0;
+    const xMin = this.xMin || 0;
+    let yMin = this.yMin || 0;
+    const xMax = this.xMax || 0;
+    let yMax = this.yMax || 0;
+    const advanceWidth = this.advanceWidth || 0;
 
     // Draw the glyph box
     ctx.strokeStyle = 'blue';

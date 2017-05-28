@@ -7,7 +7,7 @@ describe('tables/meta.js', function() {
     // The 'dlng' and 'slng' tag with text data containing "augmented" BCP 47
     // comma-separated or comma-space-separated tags. These should be UTF-8 encoded
     // text.
-    var data =
+    const data =
         '00 00 00 01 00 00 00 00 00 00 00 28 00 00 00 02 ' +
         '64 6C 6E 67 ' + // dlng
         '00 00 00 28 00 00 00 0E ' +
@@ -17,7 +17,7 @@ describe('tables/meta.js', function() {
         '4C 61 74 6E 2C 47 72 65 6B 2C 43 79 72 6C'; // 'Latn,Grek,Cyrl'
 
     it('can parse meta table', function() {
-        var obj = {
+        const obj = {
             dlng: 'Latn,Grek,Cyrl',
             slng: 'Latn,Grek,Cyrl'
         };
@@ -25,12 +25,12 @@ describe('tables/meta.js', function() {
     });
 
     it('can make meta table', function() {
-        var obj = {
+        const obj = {
             dlng: 'Latn,Grek,Cyrl',
             slng: 'Latn,Grek,Cyrl'
         };
 
-        var hexString = hex(meta.make(obj).encode());
+        const hexString = hex(meta.make(obj).encode());
         meta.parse(unhex(hexString), 0);
         assert.deepEqual(data, hexString);
     });
