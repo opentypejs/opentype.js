@@ -122,7 +122,7 @@ function parseWOFFTableEntries(data, numTables) {
         }
 
         tableEntries.push({tag: tag, offset: offset, compression: compression,
-            compressedLength: compLength, originalLength: origLength});
+            compressedLength: compLength, length: origLength});
         p += 20;
     }
 
@@ -144,9 +144,9 @@ function parseWOFFTableEntries(data, numTables) {
 function uncompressTable(data, tableEntry) {
     if (tableEntry.compression === 'WOFF') {
         var inBuffer = new Uint8Array(data.buffer, tableEntry.offset + 2, tableEntry.compressedLength - 2);
-        var outBuffer = new Uint8Array(tableEntry.originalLength);
+        var outBuffer = new Uint8Array(tableEntry.length);
         inflate(inBuffer, outBuffer);
-        if (outBuffer.byteLength !== tableEntry.originalLength) {
+        if (outBuffer.byteLength !== tableEntry.length) {
             throw new Error('Decompression error: ' + tableEntry.tag + ' decompressed length doesn\'t match recorded length');
         }
 
