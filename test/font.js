@@ -2,16 +2,16 @@ import assert from 'assert';
 import { Font, Glyph, Path, loadSync } from '../src/opentype';
 
 describe('font.js', function() {
-    var font;
+    let font;
 
-    var fGlyph = new Glyph({ name: 'f', unicode: 102, path: new Path() });
-    var iGlyph = new Glyph({ name: 'i', unicode: 105, path: new Path() });
-    var ffGlyph = new Glyph({ name: 'f_f', unicode: 0xfb01, path: new Path() });
-    var fiGlyph = new Glyph({ name: 'f_i', unicode: 0xfb02, path: new Path() });
-    var ffiGlyph = new Glyph({ name: 'f_f_i', unicode: 0xfb03, path: new Path() });
+    const fGlyph = new Glyph({name: 'f', unicode: 102, path: new Path()});
+    const iGlyph = new Glyph({name: 'i', unicode: 105, path: new Path()});
+    const ffGlyph = new Glyph({name: 'f_f', unicode: 0xfb01, path: new Path()});
+    const fiGlyph = new Glyph({name: 'f_i', unicode: 0xfb02, path: new Path()});
+    const ffiGlyph = new Glyph({name: 'f_f_i', unicode: 0xfb03, path: new Path()});
 
-    var glyphs = [
-        new Glyph({ name: '.notdef', unicode: 0, path: new Path() }),
+    const glyphs = [
+        new Glyph({name: '.notdef', unicode: 0, path: new Path()}),
         fGlyph, iGlyph, ffGlyph, fiGlyph, ffiGlyph
     ];
 
@@ -39,8 +39,8 @@ describe('font.js', function() {
         });
 
         it('works on fonts with coverage table format 2', function() {
-            var vibur = loadSync('./fonts/Vibur.woff');
-            var glyphs = vibur.stringToGlyphs('er');
+            const vibur = loadSync('./fonts/Vibur.woff');
+            const glyphs = vibur.stringToGlyphs('er');
             assert.equal(glyphs.length, 1);
             assert.equal(glyphs[0].name, 'er');
         });

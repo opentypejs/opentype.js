@@ -6,8 +6,8 @@ import table from '../table';
 
 // Parse the horizontal header `hhea` table
 function parseHheaTable(data, start) {
-    var hhea = {};
-    var p = new parse.Parser(data, start);
+    const hhea = {};
+    const p = new parse.Parser(data, start);
     hhea.version = p.parseVersion();
     hhea.ascender = p.parseShort();
     hhea.descender = p.parseShort();

@@ -17,9 +17,9 @@ function Substitution(font) {
 
 // Check if 2 arrays of primitives are equal.
 function arraysEqual(ar1, ar2) {
-    var n = ar1.length;
+    const n = ar1.length;
     if (n !== ar2.length) { return false; }
-    for (var i = 0; i < n; i++) {
+    for (let i = 0; i < n; i++) {
         if (ar1[i] !== ar2[i]) { return false; }
     }
     return true;
@@ -27,9 +27,9 @@ function arraysEqual(ar1, ar2) {
 
 // Find the first subtable of a lookup table in a particular format.
 function getSubstFormat(lookupTable, format, defaultSubtable) {
-    var subtables = lookupTable.subtables;
-    for (var i = 0; i < subtables.length; i++) {
-        var subtable = subtables[i];
+    const subtables = lookupTable.subtables;
+    for (let i = 0; i < subtables.length; i++) {
+        const subtable = subtables[i];
         if (subtable.substFormat === format) {
             return subtable;
         }
@@ -71,22 +71,22 @@ Substitution.prototype.createDefaultTable = function() {
  * @return {Array} substitutions - The list of substitutions.
  */
 Substitution.prototype.getSingle = function(feature, script, language) {
-    var substitutions = [];
-    var lookupTables = this.getLookupTables(script, language, feature, 1);
-    for (var idx = 0; idx < lookupTables.length; idx++) {
-        var subtables = lookupTables[idx].subtables;
-        for (var i = 0; i < subtables.length; i++) {
-            var subtable = subtables[i];
-            var glyphs = this.expandCoverage(subtable.coverage);
-            var j;
+    const substitutions = [];
+    const lookupTables = this.getLookupTables(script, language, feature, 1);
+    for (let idx = 0; idx < lookupTables.length; idx++) {
+        const subtables = lookupTables[idx].subtables;
+        for (let i = 0; i < subtables.length; i++) {
+            const subtable = subtables[i];
+            const glyphs = this.expandCoverage(subtable.coverage);
+            let j;
             if (subtable.substFormat === 1) {
-                var delta = subtable.deltaGlyphId;
+                const delta = subtable.deltaGlyphId;
                 for (j = 0; j < glyphs.length; j++) {
-                    var glyph = glyphs[j];
+                    const glyph = glyphs[j];
                     substitutions.push({ sub: glyph, by: glyph + delta });
                 }
             } else {
-                var substitute = subtable.substitute;
+                const substitute = subtable.substitute;
                 for (j = 0; j < glyphs.length; j++) {
                     substitutions.push({ sub: glyphs[j], by: substitute[j] });
                 }
@@ -104,15 +104,15 @@ Substitution.prototype.getSingle = function(feature, script, language) {
  * @return {Array} alternates - The list of alternates
  */
 Substitution.prototype.getAlternates = function(feature, script, language) {
-    var alternates = [];
-    var lookupTables = this.getLookupTables(script, language, feature, 3);
-    for (var idx = 0; idx < lookupTables.length; idx++) {
-        var subtables = lookupTables[idx].subtables;
-        for (var i = 0; i < subtables.length; i++) {
-            var subtable = subtables[i];
-            var glyphs = this.expandCoverage(subtable.coverage);
-            var alternateSets = subtable.alternateSets;
-            for (var j = 0; j < glyphs.length; j++) {
+    const alternates = [];
+    const lookupTables = this.getLookupTables(script, language, feature, 3);
+    for (let idx = 0; idx < lookupTables.length; idx++) {
+        const subtables = lookupTables[idx].subtables;
+        for (let i = 0; i < subtables.length; i++) {
+            const subtable = subtables[i];
+            const glyphs = this.expandCoverage(subtable.coverage);
+            const alternateSets = subtable.alternateSets;
+            for (let j = 0; j < glyphs.length; j++) {
                 alternates.push({ sub: glyphs[j], by: alternateSets[j] });
             }
         }
@@ -129,19 +129,19 @@ Substitution.prototype.getAlternates = function(feature, script, language) {
  * @return {Array} ligatures - The list of ligatures.
  */
 Substitution.prototype.getLigatures = function(feature, script, language) {
-    var ligatures = [];
-    var lookupTables = this.getLookupTables(script, language, feature, 4);
-    for (var idx = 0; idx < lookupTables.length; idx++) {
-        var subtables = lookupTables[idx].subtables;
-        for (var i = 0; i < subtables.length; i++) {
-            var subtable = subtables[i];
-            var glyphs = this.expandCoverage(subtable.coverage);
-            var ligatureSets = subtable.ligatureSets;
-            for (var j = 0; j < glyphs.length; j++) {
-                var startGlyph = glyphs[j];
-                var ligSet = ligatureSets[j];
-                for (var k = 0; k < ligSet.length; k++) {
-                    var lig = ligSet[k];
+    const ligatures = [];
+    const lookupTables = this.getLookupTables(script, language, feature, 4);
+    for (let idx = 0; idx < lookupTables.length; idx++) {
+        const subtables = lookupTables[idx].subtables;
+        for (let i = 0; i < subtables.length; i++) {
+            const subtable = subtables[i];
+            const glyphs = this.expandCoverage(subtable.coverage);
+            const ligatureSets = subtable.ligatureSets;
+            for (let j = 0; j < glyphs.length; j++) {
+                const startGlyph = glyphs[j];
+                const ligSet = ligatureSets[j];
+                for (let k = 0; k < ligSet.length; k++) {
+                    const lig = ligSet[k];
                     ligatures.push({
                         sub: [startGlyph].concat(lig.components),
                         by: lig.ligGlyph
@@ -162,15 +162,15 @@ Substitution.prototype.getLigatures = function(feature, script, language) {
  * @param {string} [language='dflt']
  */
 Substitution.prototype.addSingle = function(feature, substitution, script, language) {
-    var lookupTable = this.getLookupTables(script, language, feature, 1, true)[0];
-    var subtable = getSubstFormat(lookupTable, 2, {                // lookup type 1 subtable, format 2, coverage format 1
+    const lookupTable = this.getLookupTables(script, language, feature, 1, true)[0];
+    const subtable = getSubstFormat(lookupTable, 2, {                // lookup type 1 subtable, format 2, coverage format 1
         substFormat: 2,
-        coverage: { format: 1, glyphs: [] },
+        coverage: {format: 1, glyphs: []},
         substitute: []
     });
     check.assert(subtable.coverage.format === 1, 'Ligature: unable to modify coverage table format ' + subtable.coverage.format);
-    var coverageGlyph = substitution.sub;
-    var pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
+    const coverageGlyph = substitution.sub;
+    let pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
     if (pos < 0) {
         pos = -1 - pos;
         subtable.coverage.glyphs.splice(pos, 0, coverageGlyph);
@@ -187,15 +187,15 @@ Substitution.prototype.addSingle = function(feature, substitution, script, langu
  * @param {string} [language='dflt']
  */
 Substitution.prototype.addAlternate = function(feature, substitution, script, language) {
-    var lookupTable = this.getLookupTables(script, language, feature, 3, true)[0];
-    var subtable = getSubstFormat(lookupTable, 1, {                // lookup type 3 subtable, format 1, coverage format 1
+    const lookupTable = this.getLookupTables(script, language, feature, 3, true)[0];
+    const subtable = getSubstFormat(lookupTable, 1, {                // lookup type 3 subtable, format 1, coverage format 1
         substFormat: 1,
-        coverage: { format: 1, glyphs: [] },
+        coverage: {format: 1, glyphs: []},
         alternateSets: []
     });
     check.assert(subtable.coverage.format === 1, 'Ligature: unable to modify coverage table format ' + subtable.coverage.format);
-    var coverageGlyph = substitution.sub;
-    var pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
+    const coverageGlyph = substitution.sub;
+    let pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
     if (pos < 0) {
         pos = -1 - pos;
         subtable.coverage.glyphs.splice(pos, 0, coverageGlyph);
@@ -213,8 +213,8 @@ Substitution.prototype.addAlternate = function(feature, substitution, script, la
  * @param {string} [language='dflt']
  */
 Substitution.prototype.addLigature = function(feature, ligature, script, language) {
-    var lookupTable = this.getLookupTables(script, language, feature, 4, true)[0];
-    var subtable = lookupTable.subtables[0];
+    const lookupTable = this.getLookupTables(script, language, feature, 4, true)[0];
+    let subtable = lookupTable.subtables[0];
     if (!subtable) {
         subtable = {                // lookup type 4 subtable, format 1, coverage format 1
             substFormat: 1,
@@ -224,17 +224,17 @@ Substitution.prototype.addLigature = function(feature, ligature, script, languag
         lookupTable.subtables[0] = subtable;
     }
     check.assert(subtable.coverage.format === 1, 'Ligature: unable to modify coverage table format ' + subtable.coverage.format);
-    var coverageGlyph = ligature.sub[0];
-    var ligComponents = ligature.sub.slice(1);
-    var ligatureTable = {
+    const coverageGlyph = ligature.sub[0];
+    const ligComponents = ligature.sub.slice(1);
+    const ligatureTable = {
         ligGlyph: ligature.by,
         components: ligComponents
     };
-    var pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
+    let pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
     if (pos >= 0) {
         // ligatureSet already exists
-        var ligatureSet = subtable.ligatureSets[pos];
-        for (var i = 0; i < ligatureSet.length; i++) {
+        const ligatureSet = subtable.ligatureSets[pos];
+        for (let i = 0; i < ligatureSet.length; i++) {
             // If ligature already exists, return.
             if (arraysEqual(ligatureSet[i].components, ligComponents)) {
                 return;

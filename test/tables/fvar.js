@@ -3,14 +3,14 @@ import { hex, unhex } from '../testutil';
 import fvar from '../../src/tables/fvar';
 
 describe('tables/fvar.js', function() {
-    var data =
+    const data =
         '00 01 00 00 00 10 00 02 00 02 00 14 00 02 00 0C ' +
         '77 67 68 74 00 64 00 00 01 90 00 00 03 84 00 00 00 00 01 01 ' +
         '77 64 74 68 00 32 00 00 00 64 00 00 00 C8 00 00 00 00 01 02 ' +
         '01 03 00 00 01 2C 00 00 00 64 00 00 ' +
         '01 04 00 00 01 2C 00 00 00 4B 00 00';
 
-    var table = {
+    const table = {
         axes: [
             {
                 tag: 'wght',
@@ -40,7 +40,7 @@ describe('tables/fvar.js', function() {
     };
 
     it('can parse a font variations table', function() {
-        var names = {
+        const names = {
             257: {en: 'Weight', ja: 'ウエイト'},
             258: {en: 'Width', ja: '幅'},
             259: {en: 'Regular', ja: 'レギュラー'},
@@ -50,7 +50,7 @@ describe('tables/fvar.js', function() {
     });
 
     it('can make a font variations table', function() {
-        var names = {
+        const names = {
             // When assigning name IDs, numbers below 256 should be ignored,
             // as these are not valid IDs of ‘fvar’ axis or instance names.
             111: {en: 'Name #111'},

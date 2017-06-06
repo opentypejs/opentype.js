@@ -7,8 +7,8 @@ import table from '../table';
 
 // Parse the maximum profile `maxp` table.
 function parseMaxpTable(data, start) {
-    var maxp = {};
-    var p = new parse.Parser(data, start);
+    const maxp = {};
+    const p = new parse.Parser(data, start);
     maxp.version = p.parseVersion();
     maxp.numGlyphs = p.parseUShort();
     if (maxp.version === 1.0) {

@@ -27,10 +27,10 @@
 */
 'use strict';
 
-var instructionTable;
-var exec;
-var execComponent;
-var execGlyph;
+let instructionTable;
+let exec;
+let execGlyph;
+let execComponent;
 
 /*
 * Creates a hinting object.
@@ -103,11 +103,11 @@ function roundDownToGrid(v) {
 /*
 * Super rounding.
 */
-var roundSuper = function(v) {
-    var period = this.srPeriod;
-    var phase = this.srPhase;
-    var threshold = this.srThreshold;
-    var sign = 1;
+const roundSuper = function (v) {
+    const period = this.srPeriod;
+    let phase = this.srPhase;
+    const threshold = this.srThreshold;
+    let sign = 1;
 
     if (v < 0) {
         v = -v;
@@ -130,7 +130,7 @@ var roundSuper = function(v) {
 /*
 * Unit vector of x-axis.
 */
-var xUnitVector = {
+const xUnitVector = {
     x: 1,
 
     y: 0,
@@ -139,7 +139,7 @@ var xUnitVector = {
 
     // Gets the projected distance between two points.
     // o1/o2 ... if true, respective original position is used.
-    distance: function(p1, p2, o1, o2) {
+    distance: function (p1, p2, o1, o2) {
         return (o1 ? p1.xo : p1.x) - (o2 ? p2.xo : p2.x);
     },
 
@@ -148,14 +148,14 @@ var xUnitVector = {
     // original positions had.
     //
     // See APPENDIX on INTERPOLATE at the bottom of this file.
-    interpolate: function(p, rp1, rp2, pv) {
-        var do1;
-        var do2;
-        var doa1;
-        var doa2;
-        var dm1;
-        var dm2;
-        var dt;
+    interpolate: function (p, rp1, rp2, pv) {
+        let do1;
+        let do2;
+        let doa1;
+        let doa2;
+        let dm1;
+        let dm2;
+        let dt;
 
         if (!pv || pv === this) {
             do1 = p.xo - rp1.xo;
@@ -204,16 +204,16 @@ var xUnitVector = {
     // d   ... distance on projection vector
     // pv  ... projection vector (undefined = this)
     // org ... if true, uses the original position of rp as reference.
-    setRelative: function(p, rp, d, pv, org) {
+    setRelative: function (p, rp, d, pv, org) {
         if (!pv || pv === this) {
             p.x = (org ? rp.xo : rp.x) + d;
             return;
         }
 
-        var rpx = org ? rp.xo : rp.x;
-        var rpy = org ? rp.yo : rp.y;
-        var rpdx = rpx + d * pv.x;
-        var rpdy = rpy + d * pv.y;
+        const rpx = org ? rp.xo : rp.x;
+        const rpy = org ? rp.yo : rp.y;
+        const rpdx = rpx + d * pv.x;
+        const rpdy = rpy + d * pv.y;
 
         p.x = rpdx + (p.y - rpdy) / pv.normalSlope;
     },
@@ -222,19 +222,25 @@ var xUnitVector = {
     slope: 0,
 
     // Touches the point p.
-    touch: function(p) { p.xTouched = true; },
+    touch: function (p) {
+        p.xTouched = true;
+    },
 
     // Tests if a point p is touched.
-    touched: function(p) { return p.xTouched; },
+    touched: function (p) {
+        return p.xTouched;
+    },
 
     // Untouches the point p.
-    untouch: function(p) { p.xTouched = false; }
+    untouch: function (p) {
+        p.xTouched = false;
+    }
 };
 
 /*
 * Unit vector of y-axis.
 */
-var yUnitVector = {
+const yUnitVector = {
     x: 0,
 
     y: 1,
@@ -243,7 +249,7 @@ var yUnitVector = {
 
     // Gets the projected distance between two points.
     // o1/o2 ... if true, respective original position is used.
-    distance: function(p1, p2, o1, o2) {
+    distance: function (p1, p2, o1, o2) {
         return (o1 ? p1.yo : p1.y) - (o2 ? p2.yo : p2.y);
     },
 
@@ -252,14 +258,14 @@ var yUnitVector = {
     // original positions had.
     //
     // See APPENDIX on INTERPOLATE at the bottom of this file.
-    interpolate: function(p, rp1, rp2, pv) {
-        var do1;
-        var do2;
-        var doa1;
-        var doa2;
-        var dm1;
-        var dm2;
-        var dt;
+    interpolate: function (p, rp1, rp2, pv) {
+        let do1;
+        let do2;
+        let doa1;
+        let doa2;
+        let dm1;
+        let dm2;
+        let dt;
 
         if (!pv || pv === this) {
             do1 = p.yo - rp1.yo;
@@ -308,16 +314,16 @@ var yUnitVector = {
     // d   ... distance on projection vector
     // pv  ... projection vector (undefined = this)
     // org ... if true, uses the original position of rp as reference.
-    setRelative: function(p, rp, d, pv, org) {
+    setRelative: function (p, rp, d, pv, org) {
         if (!pv || pv === this) {
             p.y = (org ? rp.yo : rp.y) + d;
             return;
         }
 
-        var rpx = org ? rp.xo : rp.x;
-        var rpy = org ? rp.yo : rp.y;
-        var rpdx = rpx + d * pv.x;
-        var rpdy = rpy + d * pv.y;
+        const rpx = org ? rp.xo : rp.x;
+        const rpy = org ? rp.yo : rp.y;
+        const rpdx = rpx + d * pv.x;
+        const rpdy = rpy + d * pv.y;
 
         p.y = rpdy + pv.normalSlope * (p.x - rpdx);
     },
@@ -326,13 +332,19 @@ var yUnitVector = {
     slope: Number.POSITIVE_INFINITY,
 
     // Touches the point p.
-    touch: function(p) { p.yTouched = true; },
+    touch: function (p) {
+        p.yTouched = true;
+    },
 
     // Tests if a point p is touched.
-    touched: function(p) { return p.yTouched; },
+    touched: function (p) {
+        return p.yTouched;
+    },
 
     // Untouches the point p.
-    untouch: function(p) { p.yTouched = false; }
+    untouch: function (p) {
+        p.yTouched = false;
+    }
 };
 
 Object.freeze(xUnitVector);
@@ -369,13 +381,13 @@ UnitVector.prototype.distance = function(p1, p2, o1, o2) {
 * See APPENDIX on INTERPOLATE at the bottom of this file.
 */
 UnitVector.prototype.interpolate = function(p, rp1, rp2, pv) {
-    var dm1;
-    var dm2;
-    var do1;
-    var do2;
-    var doa1;
-    var doa2;
-    var dt;
+    let dm1;
+    let dm2;
+    let do1;
+    let do2;
+    let doa1;
+    let doa2;
+    let dt;
 
     do1 = pv.distance(p, rp1, true, true);
     do2 = pv.distance(p, rp2, true, true);
@@ -408,16 +420,16 @@ UnitVector.prototype.interpolate = function(p, rp1, rp2, pv) {
 UnitVector.prototype.setRelative = function(p, rp, d, pv, org) {
     pv = pv || this;
 
-    var rpx = org ? rp.xo : rp.x;
-    var rpy = org ? rp.yo : rp.y;
-    var rpdx = rpx + d * pv.x;
-    var rpdy = rpy + d * pv.y;
+    const rpx = org ? rp.xo : rp.x;
+    const rpy = org ? rp.yo : rp.y;
+    const rpdx = rpx + d * pv.x;
+    const rpdy = rpy + d * pv.y;
 
-    var pvns = pv.normalSlope;
-    var fvs = this.slope;
+    const pvns = pv.normalSlope;
+    const fvs = this.slope;
 
-    var px = p.x;
-    var py = p.y;
+    const px = p.x;
+    const py = p.y;
 
     p.x = (fvs * px - pvns * rpdx + rpdy - py) / (fvs - pvns);
     p.y = fvs * (p.x - px) + py;
@@ -435,7 +447,7 @@ UnitVector.prototype.touch = function(p) {
 * Returns a unit vector with x/y coordinates.
 */
 function getUnitVector(x, y) {
-    var d = Math.sqrt(x * x + y * y);
+    const d = Math.sqrt(x * x + y * y);
 
     x /= d;
     y /= d;
@@ -473,7 +485,7 @@ function HPoint(
 * v  ... unit vector to test touch axis.
 */
 HPoint.prototype.nextTouched = function(v) {
-    var p = this.nextPointOnContour;
+    let p = this.nextPointOnContour;
 
     while (!v.touched(p) && p !== this) p = p.nextPointOnContour;
 
@@ -486,7 +498,7 @@ HPoint.prototype.nextTouched = function(v) {
 * v  ... unit vector to test touch axis.
 */
 HPoint.prototype.prevTouched = function(v) {
-    var p = this.prevPointOnContour;
+    let p = this.prevPointOnContour;
 
     while (!v.touched(p) && p !== this) p = p.prevPointOnContour;
 
@@ -496,7 +508,7 @@ HPoint.prototype.prevTouched = function(v) {
 /*
 * The zero point.
 */
-var HPZero = Object.freeze(new HPoint(0, 0));
+const HPZero = Object.freeze(new HPoint(0, 0));
 
 /*
 * The default state of the interpreter.
@@ -506,7 +518,7 @@ var HPZero = Object.freeze(new HPoint(0, 0));
 * so this is avoided, albeit the defaultState shouldn't
 * ever change.
 */
-var defaultState = {
+const defaultState = {
     cvCutIn: 17 / 16,    // control value cut in
     deltaBase: 9,
     deltaShift: 0.125,
@@ -555,11 +567,11 @@ Hinting.prototype.exec = function(glyph, ppem) {
     // Received a fatal error, don't do any hinting anymore.
     if (this._errorState > 2) return;
 
-    var font = this.font;
-    var prepState = this._prepState;
+    const font = this.font;
+    let prepState = this._prepState;
 
     if (!prepState || prepState.ppem !== ppem) {
-        var fpgmState = this._fpgmState;
+        let fpgmState = this._fpgmState;
 
         if (!fpgmState) {
             // Executes the fpgm state.
@@ -600,11 +612,11 @@ Hinting.prototype.exec = function(glyph, ppem) {
 
         // Creates a copy of the cvt table
         // and scales it to the current ppem setting.
-        var oCvt = font.tables.cvt;
+        const oCvt = font.tables.cvt;
         if (oCvt) {
-            var cvt = prepState.cvt = new Array(oCvt.length);
-            var scale = ppem / font.unitsPerEm;
-            for (var c = 0; c < oCvt.length; c++) {
+            const cvt = prepState.cvt = new Array(oCvt.length);
+            const scale = ppem / font.unitsPerEm;
+            for (let c = 0; c < oCvt.length; c++) {
                 cvt[c] = oCvt[c] * scale;
             }
         } else {
@@ -643,14 +655,14 @@ Hinting.prototype.exec = function(glyph, ppem) {
 /*
 * Executes the hinting program for a glyph.
 */
-function execGlyph(glyph, prepState) {
+execGlyph = function(glyph, prepState) {
     // original point positions
-    var xScale = prepState.ppem / prepState.font.unitsPerEm;
-    var yScale = xScale;
-    var components = glyph.components;
-    var contours;
-    var gZone;
-    var state;
+    const xScale = prepState.ppem / prepState.font.unitsPerEm;
+    const yScale = xScale;
+    let components = glyph.components;
+    let contours;
+    let gZone;
+    let state;
 
     State.prototype = prepState;
     if (!components) {
@@ -662,12 +674,12 @@ function execGlyph(glyph, prepState) {
         execComponent(glyph, state, xScale, yScale);
         gZone = state.gZone;
     } else {
-        var font = prepState.font;
+        const font = prepState.font;
         gZone = [];
         contours = [];
-        for (var i = 0; i < components.length; i++) {
-            var c = components[i];
-            var cg = font.glyphs.get(c.glyphIndex);
+        for (let i = 0; i < components.length; i++) {
+            const c = components[i];
+            const cg = font.glyphs.get(c.glyphIndex);
 
             state = new State('glyf', cg.instructions);
 
@@ -679,20 +691,20 @@ function execGlyph(glyph, prepState) {
             execComponent(cg, state, xScale, yScale);
             // appends the computed points to the result array
             // post processes the component points
-            var dx = Math.round(c.dx * xScale);
-            var dy = Math.round(c.dy * yScale);
-            var gz = state.gZone;
-            var cc = state.contours;
-            for (var pi = 0; pi < gz.length; pi++) {
-                var p = gz[pi];
+            const dx = Math.round(c.dx * xScale);
+            const dy = Math.round(c.dy * yScale);
+            const gz = state.gZone;
+            const cc = state.contours;
+            for (let pi = 0; pi < gz.length; pi++) {
+                const p = gz[pi];
                 p.xTouched = p.yTouched = false;
                 p.xo = p.x = p.x + dx;
                 p.yo = p.y = p.y + dy;
             }
 
-            var gLen = gZone.length;
+            const gLen = gZone.length;
             gZone.push.apply(gZone, gz);
-            for (var j = 0; j < cc.length; j++) {
+            for (let j = 0; j < cc.length; j++) {
                 contours.push(cc[j] + gLen);
             }
         }
@@ -724,24 +736,23 @@ function execGlyph(glyph, prepState) {
     }
 
     return gZone;
-}
+};
 
 /*
 * Executes the hinting program for a component of a multi-component glyph
 * or of the glyph itself by a non-component glyph.
 */
-function execComponent(glyph, state, xScale, yScale)
+execComponent = function(glyph, state, xScale, yScale)
 {
-    var points = glyph.points || [];
-    var pLen = points.length;
-    var gZone = state.gZone = state.z0 = state.z1 = state.z2 = [];
-    var contours = state.contours = [];
-    var i;
+    const points = glyph.points || [];
+    const pLen = points.length;
+    const gZone = state.gZone = state.z0 = state.z1 = state.z2 = [];
+    const contours = state.contours = [];
 
     // Scales the original points and
     // makes copies for the hinted points.
-    var cp; // current point
-    for (i = 0; i < pLen; i++) {
+    let cp; // current point
+    for (let i = 0; i < pLen; i++) {
         cp = points[i];
 
         gZone[i] = new HPoint(
@@ -753,10 +764,10 @@ function execComponent(glyph, state, xScale, yScale)
     }
 
     // Chain links the contours.
-    var sp; // start point
-    var np; // next point
+    let sp; // start point
+    let np; // next point
 
-    for (i = 0; i < pLen; i++) {
+    for (let i = 0; i < pLen; i++) {
         cp = gZone[i];
 
         if (!sp) {
@@ -789,22 +800,22 @@ function execComponent(glyph, state, xScale, yScale)
 
     if (exports.DEBUG) {
         console.log('FINISHED GLYPH', state.stack);
-        for (i = 0; i < pLen; i++) {
+        for (let i = 0; i < pLen; i++) {
             console.log(i, gZone[i].x, gZone[i].y);
         }
     }
-}
+};
 
 /*
 * Executes the program loaded in state.
 */
-function exec(state) {
-    var prog = state.prog;
+exec = function(state) {
+    let prog = state.prog;
 
     if (!prog) return;
 
-    var pLen = prog.length;
-    var ins;
+    const pLen = prog.length;
+    let ins;
 
     for (state.ip = 0; state.ip < pLen; state.ip++) {
         if (exports.DEBUG) state.step++;
@@ -823,10 +834,9 @@ function exec(state) {
         /*
         if (exports.DEBUG) {
             var da;
-            var i;
             if (state.gZone) {
                 da = [];
-                for (i = 0; i < state.gZone.length; i++)
+                for (let i = 0; i < state.gZone.length; i++)
                 {
                     da.push(i + ' ' +
                         state.gZone[i].x * 64 + ' ' +
@@ -840,7 +850,7 @@ function exec(state) {
 
             if (state.tZone) {
                 da = [];
-                for (i = 0; i < state.tZone.length; i++) {
+                for (let i = 0; i < state.tZone.length; i++) {
                     da.push(i + ' ' +
                         state.tZone[i].x * 64 + ' ' +
                         state.tZone[i].y * 64 + ' ' +
@@ -862,7 +872,7 @@ function exec(state) {
         }
         */
     }
-}
+};
 
 /*
 * Initializes the twilight zone.
@@ -872,10 +882,10 @@ function exec(state) {
 */
 function initTZone(state)
 {
-    var tZone = state.tZone = new Array(state.gZone.length);
+    const tZone = state.tZone = new Array(state.gZone.length);
 
     // no idea if this is actually correct...
-    for (var i = 0; i < tZone.length; i++)
+    for (let i = 0; i < tZone.length; i++)
     {
         tZone[i] = new HPoint(0, 0);
     }
@@ -887,10 +897,10 @@ function initTZone(state)
 */
 function skip(state, handleElse)
 {
-    var prog = state.prog;
-    var ip = state.ip;
-    var nesting = 1;
-    var ins;
+    const prog = state.prog;
+    let ip = state.ip;
+    let nesting = 1;
+    let ins;
 
     do {
         ins = prog[++ip];
@@ -944,16 +954,16 @@ function SFVTCA(v, state) {
 // SPVTL[a] Set Projection Vector To Line
 // 0x06-0x07
 function SPVTL(a, state) {
-    var stack = state.stack;
-    var p2i = stack.pop();
-    var p1i = stack.pop();
-    var p2 = state.z2[p2i];
-    var p1 = state.z1[p1i];
+    const stack = state.stack;
+    const p2i = stack.pop();
+    const p1i = stack.pop();
+    const p2 = state.z2[p2i];
+    const p1 = state.z1[p1i];
 
     if (exports.DEBUG) console.log('SPVTL[' + a + ']', p2i, p1i);
 
-    var dx;
-    var dy;
+    let dx;
+    let dy;
 
     if (!a) {
         dx = p1.x - p2.x;
@@ -969,16 +979,16 @@ function SPVTL(a, state) {
 // SFVTL[a] Set Freedom Vector To Line
 // 0x08-0x09
 function SFVTL(a, state) {
-    var stack = state.stack;
-    var p2i = stack.pop();
-    var p1i = stack.pop();
-    var p2 = state.z2[p2i];
-    var p1 = state.z1[p1i];
+    const stack = state.stack;
+    const p2i = stack.pop();
+    const p1i = stack.pop();
+    const p2 = state.z2[p2i];
+    const p1 = state.z1[p1i];
 
     if (exports.DEBUG) console.log('SFVTL[' + a + ']', p2i, p1i);
 
-    var dx;
-    var dy;
+    let dx;
+    let dy;
 
     if (!a) {
         dx = p1.x - p2.x;
@@ -994,9 +1004,9 @@ function SFVTL(a, state) {
 // SPVFS[] Set Projection Vector From Stack
 // 0x0A
 function SPVFS(state) {
-    var stack = state.stack;
-    var y = stack.pop();
-    var x = stack.pop();
+    const stack = state.stack;
+    const y = stack.pop();
+    const x = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SPVFS[]', y, x);
 
@@ -1006,9 +1016,9 @@ function SPVFS(state) {
 // SFVFS[] Set Freedom Vector From Stack
 // 0x0B
 function SFVFS(state) {
-    var stack = state.stack;
-    var y = stack.pop();
-    var x = stack.pop();
+    const stack = state.stack;
+    const y = stack.pop();
+    const x = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SPVFS[]', y, x);
 
@@ -1018,8 +1028,8 @@ function SFVFS(state) {
 // GPV[] Get Projection Vector
 // 0x0C
 function GPV(state) {
-    var stack = state.stack;
-    var pv = state.pv;
+    const stack = state.stack;
+    const pv = state.pv;
 
     if (exports.DEBUG) console.log(state.step, 'GPV[]');
 
@@ -1030,8 +1040,8 @@ function GPV(state) {
 // GFV[] Get Freedom Vector
 // 0x0C
 function GFV(state) {
-    var stack = state.stack;
-    var fv = state.fv;
+    const stack = state.stack;
+    const fv = state.fv;
 
     if (exports.DEBUG) console.log(state.step, 'GFV[]');
 
@@ -1051,37 +1061,37 @@ function SFVTPV(state) {
 // 0x0F
 function ISECT(state)
 {
-    var stack = state.stack;
-    var pa0i = stack.pop();
-    var pa1i = stack.pop();
-    var pb0i = stack.pop();
-    var pb1i = stack.pop();
-    var pi = stack.pop();
-    var z0 = state.z0;
-    var z1 = state.z1;
-    var pa0 = z0[pa0i];
-    var pa1 = z0[pa1i];
-    var pb0 = z1[pb0i];
-    var pb1 = z1[pb1i];
-    var p = state.z2[pi];
+    const stack = state.stack;
+    const pa0i = stack.pop();
+    const pa1i = stack.pop();
+    const pb0i = stack.pop();
+    const pb1i = stack.pop();
+    const pi = stack.pop();
+    const z0 = state.z0;
+    const z1 = state.z1;
+    const pa0 = z0[pa0i];
+    const pa1 = z0[pa1i];
+    const pb0 = z1[pb0i];
+    const pb1 = z1[pb1i];
+    const p = state.z2[pi];
 
     if (exports.DEBUG) console.log('ISECT[], ', pa0i, pa1i, pb0i, pb1i, pi);
 
     // math from
     // en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line
 
-    var x1 = pa0.x;
-    var y1 = pa0.y;
-    var x2 = pa1.x;
-    var y2 = pa1.y;
-    var x3 = pb0.x;
-    var y3 = pb0.y;
-    var x4 = pb1.x;
-    var y4 = pb1.y;
+    const x1 = pa0.x;
+    const y1 = pa0.y;
+    const x2 = pa1.x;
+    const y2 = pa1.y;
+    const x3 = pb0.x;
+    const y3 = pb0.y;
+    const x4 = pb1.x;
+    const y4 = pb1.y;
 
-    var div = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-    var f1 = x1 * y2 - y1 * x2;
-    var f2 = x3 * y4 - y3 * x4;
+    const div = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    const f1 = x1 * y2 - y1 * x2;
+    const f2 = x3 * y4 - y3 * x4;
 
     p.x = (f1 * (x3 - x4) - f2 * (x1 - x2)) / div;
     p.y = (f1 * (y3 - y4) - f2 * (y1 - y2)) / div;
@@ -1114,7 +1124,7 @@ function SRP2(state) {
 // SZP0[] Set Zone Pointer 0
 // 0x13
 function SZP0(state) {
-    var n = state.stack.pop();
+    const n = state.stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SZP0[]', n);
 
@@ -1136,7 +1146,7 @@ function SZP0(state) {
 // SZP1[] Set Zone Pointer 1
 // 0x14
 function SZP1(state) {
-    var n = state.stack.pop();
+    const n = state.stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SZP1[]', n);
 
@@ -1158,7 +1168,7 @@ function SZP1(state) {
 // SZP2[] Set Zone Pointer 2
 // 0x15
 function SZP2(state) {
-    var n = state.stack.pop();
+    const n = state.stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SZP2[]', n);
 
@@ -1180,7 +1190,7 @@ function SZP2(state) {
 // SZPS[] Set Zone PointerS
 // 0x16
 function SZPS(state) {
-    var n = state.stack.pop();
+    const n = state.stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SZPS[]', n);
 
@@ -1226,7 +1236,7 @@ function RTHG(state) {
 // SMD[] Set Minimum Distance
 // 0x1A
 function SMD(state) {
-    var d = state.stack.pop();
+    const d = state.stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SMD[]', d);
 
@@ -1250,7 +1260,7 @@ function ELSE(state) {
 // JMPR[] JuMP Relative
 // 0x1C
 function JMPR(state) {
-    var o = state.stack.pop();
+    const o = state.stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'JMPR[]', o);
 
@@ -1261,7 +1271,7 @@ function JMPR(state) {
 // SCVTCI[] Set Control Value Table Cut-In
 // 0x1D
 function SCVTCI(state) {
-    var n = state.stack.pop();
+    const n = state.stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SCVTCI[]', n);
 
@@ -1271,7 +1281,7 @@ function SCVTCI(state) {
 // DUP[] DUPlicate top stack element
 // 0x20
 function DUP(state) {
-    var stack = state.stack;
+    const stack = state.stack;
 
     if (exports.DEBUG) console.log(state.step, 'DUP[]');
 
@@ -1297,10 +1307,10 @@ function CLEAR(state) {
 // SWAP[] SWAP the top two elements on the stack
 // 0x23
 function SWAP(state) {
-    var stack = state.stack;
+    const stack = state.stack;
 
-    var a = stack.pop();
-    var b = stack.pop();
+    const a = stack.pop();
+    const b = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SWAP[]');
 
@@ -1311,7 +1321,7 @@ function SWAP(state) {
 // DEPTH[] DEPTH of the stack
 // 0x24
 function DEPTH(state) {
-    var stack = state.stack;
+    const stack = state.stack;
 
     if (exports.DEBUG) console.log(state.step, 'DEPTH[]');
 
@@ -1321,20 +1331,20 @@ function DEPTH(state) {
 // LOOPCALL[] LOOPCALL function
 // 0x2A
 function LOOPCALL(state) {
-    var stack = state.stack;
-    var fn = stack.pop();
-    var c = stack.pop();
+    const stack = state.stack;
+    const fn = stack.pop();
+    const c = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'LOOPCALL[]', fn, c);
 
     // saves callers program
-    var cip = state.ip;
-    var cprog = state.prog;
+    const cip = state.ip;
+    const cprog = state.prog;
 
     state.prog = state.funcs[fn];
 
     // executes the function
-    for (var i = 0; i < c; i++) {
+    for (let i = 0; i < c; i++) {
         exec(state);
 
         if (exports.DEBUG) console.log(
@@ -1352,13 +1362,13 @@ function LOOPCALL(state) {
 // CALL[] CALL function
 // 0x2B
 function CALL(state) {
-    var fn = state.stack.pop();
+    const fn = state.stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'CALL[]', fn);
 
     // saves callers program
-    var cip = state.ip;
-    var cprog = state.prog;
+    const cip = state.ip;
+    const cprog = state.prog;
 
     state.prog = state.funcs[fn];
 
@@ -1375,8 +1385,8 @@ function CALL(state) {
 // CINDEX[] Copy the INDEXed element to the top of the stack
 // 0x25
 function CINDEX(state) {
-    var stack = state.stack;
-    var k = stack.pop();
+    const stack = state.stack;
+    const k = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'CINDEX[]', k);
 
@@ -1388,8 +1398,8 @@ function CINDEX(state) {
 // MINDEX[] Move the INDEXed element to the top of the stack
 // 0x26
 function MINDEX(state) {
-    var stack = state.stack;
-    var k = stack.pop();
+    const stack = state.stack;
+    const k = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'MINDEX[]', k);
 
@@ -1400,12 +1410,12 @@ function MINDEX(state) {
 // 0x2C
 function FDEF(state) {
     if (state.env !== 'fpgm') throw new Error('FDEF not allowed here');
-    var stack = state.stack;
-    var prog = state.prog;
-    var ip = state.ip;
+    const stack = state.stack;
+    const prog = state.prog;
+    let ip = state.ip;
 
-    var fn = stack.pop();
-    var ipBegin = ip;
+    const fn = stack.pop();
+    const ipBegin = ip;
 
     if (exports.DEBUG) console.log(state.step, 'FDEF[]', fn);
 
@@ -1418,14 +1428,14 @@ function FDEF(state) {
 // MDAP[a] Move Direct Absolute Point
 // 0x2E-0x2F
 function MDAP(round, state) {
-    var pi = state.stack.pop();
-    var p = state.z0[pi];
-    var fv = state.fv;
-    var pv = state.pv;
+    const pi = state.stack.pop();
+    const p = state.z0[pi];
+    const fv = state.fv;
+    const pv = state.pv;
 
     if (exports.DEBUG) console.log(state.step, 'MDAP[' + round + ']', pi);
 
-    var d = pv.distance(p, HPZero);
+    let d = pv.distance(p, HPZero);
 
     if (round) d = state.round(d);
 
@@ -1438,15 +1448,15 @@ function MDAP(round, state) {
 // IUP[a] Interpolate Untouched Points through the outline
 // 0x30
 function IUP(v, state) {
-    var z2 = state.z2;
-    var pLen = z2.length - 2;
-    var cp;
-    var pp;
-    var np;
+    const z2 = state.z2;
+    const pLen = z2.length - 2;
+    let cp;
+    let pp;
+    let np;
 
     if (exports.DEBUG) console.log(state.step, 'IUP[' + v.axis + ']');
 
-    for (var i = 0; i < pLen; i++) {
+    for (let i = 0; i < pLen; i++) {
         cp = z2[i]; // current point
 
         // if this point has been touched go on
@@ -1473,20 +1483,20 @@ function IUP(v, state) {
 // SHP[] SHift Point using reference point
 // 0x32-0x33
 function SHP(a, state) {
-    var stack = state.stack;
-    var rpi = a ? state.rp1 : state.rp2;
-    var rp = (a ? state.z0 : state.z1)[rpi];
-    var fv = state.fv;
-    var pv = state.pv;
-    var loop = state.loop;
-    var z2 = state.z2;
+    const stack = state.stack;
+    const rpi = a ? state.rp1 : state.rp2;
+    const rp = (a ? state.z0 : state.z1)[rpi];
+    const fv = state.fv;
+    const pv = state.pv;
+    let loop = state.loop;
+    const z2 = state.z2;
 
     while (loop--)
     {
-        var pi = stack.pop();
-        var p = z2[pi];
+        const pi = stack.pop();
+        const p = z2[pi];
 
-        var d = pv.distance(rp, rp, false, true);
+        const d = pv.distance(rp, rp, false, true);
         fv.setRelative(p, p, d, pv);
         fv.touch(p);
 
@@ -1508,18 +1518,18 @@ function SHP(a, state) {
 // SHC[] SHift Contour using reference point
 // 0x36-0x37
 function SHC(a, state) {
-    var stack = state.stack;
-    var rpi = a ? state.rp1 : state.rp2;
-    var rp = (a ? state.z0 : state.z1)[rpi];
-    var fv = state.fv;
-    var pv = state.pv;
-    var ci = stack.pop();
-    var sp = state.z2[state.contours[ci]];
-    var p = sp;
+    const stack = state.stack;
+    const rpi = a ? state.rp1 : state.rp2;
+    const rp = (a ? state.z0 : state.z1)[rpi];
+    const fv = state.fv;
+    const pv = state.pv;
+    const ci = stack.pop();
+    const sp = state.z2[state.contours[ci]];
+    let p = sp;
 
     if (exports.DEBUG) console.log(state.step, 'SHC[' + a + ']', ci);
 
-    var d = pv.distance(rp, rp, false, true);
+    const d = pv.distance(rp, rp, false, true);
 
     do {
         if (p !== rp) fv.setRelative(p, p, d, pv);
@@ -1530,27 +1540,27 @@ function SHC(a, state) {
 // SHZ[] SHift Zone using reference point
 // 0x36-0x37
 function SHZ(a, state) {
-    var stack = state.stack;
-    var rpi = a ? state.rp1 : state.rp2;
-    var rp = (a ? state.z0 : state.z1)[rpi];
-    var fv = state.fv;
-    var pv = state.pv;
+    const stack = state.stack;
+    const rpi = a ? state.rp1 : state.rp2;
+    const rp = (a ? state.z0 : state.z1)[rpi];
+    const fv = state.fv;
+    const pv = state.pv;
 
-    var e = stack.pop();
+    const e = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SHZ[' + a + ']', e);
 
-    var z;
+    let z;
     switch (e) {
         case 0 : z = state.tZone; break;
         case 1 : z = state.gZone; break;
         default : throw new Error('Invalid zone');
     }
 
-    var p;
-    var d = pv.distance(rp, rp, false, true);
-    var pLen = z.length - 2;
-    for (var i = 0; i < pLen; i++)
+    let p;
+    const d = pv.distance(rp, rp, false, true);
+    const pLen = z.length - 2;
+    for (let i = 0; i < pLen; i++)
     {
         p = z[i];
         if (p !== rp) fv.setRelative(p, p, d, pv);
@@ -1560,15 +1570,15 @@ function SHZ(a, state) {
 // SHPIX[] SHift point by a PIXel amount
 // 0x38
 function SHPIX(state) {
-    var stack = state.stack;
-    var loop = state.loop;
-    var fv = state.fv;
-    var d = stack.pop() / 0x40;
-    var z2 = state.z2;
+    const stack = state.stack;
+    let loop = state.loop;
+    const fv = state.fv;
+    const d = stack.pop() / 0x40;
+    const z2 = state.z2;
 
     while (loop--) {
-        var pi = stack.pop();
-        var p = z2[pi];
+        const pi = stack.pop();
+        const p = z2[pi];
 
         if (exports.DEBUG) {
             console.log(
@@ -1588,19 +1598,19 @@ function SHPIX(state) {
 // IP[] Interpolate Point
 // 0x39
 function IP(state) {
-    var stack = state.stack;
-    var rp1i = state.rp1;
-    var rp2i = state.rp2;
-    var loop = state.loop;
-    var rp1 = state.z0[rp1i];
-    var rp2 = state.z1[rp2i];
-    var fv = state.fv;
-    var pv = state.dpv;
-    var z2 = state.z2;
+    const stack = state.stack;
+    const rp1i = state.rp1;
+    const rp2i = state.rp2;
+    let loop = state.loop;
+    const rp1 = state.z0[rp1i];
+    const rp2 = state.z1[rp2i];
+    const fv = state.fv;
+    const pv = state.dpv;
+    const z2 = state.z2;
 
     while (loop--) {
-        var pi = stack.pop();
-        var p = z2[pi];
+        const pi = stack.pop();
+        const p = z2[pi];
 
         if (exports.DEBUG) {
             console.log(
@@ -1621,13 +1631,13 @@ function IP(state) {
 // MSIRP[a] Move Stack Indirect Relative Point
 // 0x3A-0x3B
 function MSIRP(a, state) {
-    var stack = state.stack;
-    var d = stack.pop() / 64;
-    var pi = stack.pop();
-    var p = state.z1[pi];
-    var rp0 = state.z0[state.rp0];
-    var fv = state.fv;
-    var pv = state.pv;
+    const stack = state.stack;
+    const d = stack.pop() / 64;
+    const pi = stack.pop();
+    const p = state.z1[pi];
+    const rp0 = state.z0[state.rp0];
+    const fv = state.fv;
+    const pv = state.pv;
 
     fv.setRelative(p, rp0, d, pv);
     fv.touch(p);
@@ -1642,17 +1652,17 @@ function MSIRP(a, state) {
 // ALIGNRP[] Align to reference point.
 // 0x3C
 function ALIGNRP(state) {
-    var stack = state.stack;
-    var rp0i = state.rp0;
-    var rp0 = state.z0[rp0i];
-    var loop = state.loop;
-    var fv = state.fv;
-    var pv = state.pv;
-    var z1 = state.z1;
+    const stack = state.stack;
+    const rp0i = state.rp0;
+    const rp0 = state.z0[rp0i];
+    let loop = state.loop;
+    const fv = state.fv;
+    const pv = state.pv;
+    const z1 = state.z1;
 
     while (loop--) {
-        var pi = stack.pop();
-        var p = z1[pi];
+        const pi = stack.pop();
+        const p = z1[pi];
 
         if (exports.DEBUG) {
             console.log(
@@ -1680,13 +1690,13 @@ function RTDG(state) {
 // MIAP[a] Move Indirect Absolute Point
 // 0x3E-0x3F
 function MIAP(round, state) {
-    var stack = state.stack;
-    var n = stack.pop();
-    var pi = stack.pop();
-    var p = state.z0[pi];
-    var fv = state.fv;
-    var pv = state.pv;
-    var cv = state.cvt[n];
+    const stack = state.stack;
+    const n = stack.pop();
+    const pi = stack.pop();
+    const p = state.z0[pi];
+    const fv = state.fv;
+    const pv = state.pv;
+    let cv = state.cvt[n];
 
     // TODO cvtcutin should be considered here
     if (round) cv = state.round(cv);
@@ -1714,15 +1724,15 @@ function MIAP(round, state) {
 // NPUSB[] PUSH N Bytes
 // 0x40
 function NPUSHB(state) {
-    var prog = state.prog;
-    var ip = state.ip;
-    var stack = state.stack;
+    const prog = state.prog;
+    let ip = state.ip;
+    const stack = state.stack;
 
-    var n = prog[++ip];
+    const n = prog[++ip];
 
     if (exports.DEBUG) console.log(state.step, 'NPUSHB[]', n);
 
-    for (var i = 0; i < n; i++) stack.push(prog[++ip]);
+    for (let i = 0; i < n; i++) stack.push(prog[++ip]);
 
     state.ip = ip;
 }
@@ -1730,15 +1740,15 @@ function NPUSHB(state) {
 // NPUSHW[] PUSH N Words
 // 0x41
 function NPUSHW(state) {
-    var ip = state.ip;
-    var prog = state.prog;
-    var stack = state.stack;
-    var n = prog[++ip];
+    let ip = state.ip;
+    const prog = state.prog;
+    const stack = state.stack;
+    const n = prog[++ip];
 
     if (exports.DEBUG) console.log(state.step, 'NPUSHW[]', n);
 
-    for (var i = 0; i < n; i++) {
-        var w = (prog[++ip] << 8) | prog[++ip];
+    for (let i = 0; i < n; i++) {
+        let w = (prog[++ip] << 8) | prog[++ip];
         if (w & 0x8000) w = -((w ^ 0xffff) + 1);
         stack.push(w);
     }
@@ -1749,13 +1759,13 @@ function NPUSHW(state) {
 // WS[] Write Store
 // 0x42
 function WS(state) {
-    var stack = state.stack;
-    var store = state.store;
+    const stack = state.stack;
+    let store = state.store;
 
     if (!store) store = state.store = [];
 
-    var v = stack.pop();
-    var l = stack.pop();
+    const v = stack.pop();
+    const l = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'WS', v, l);
 
@@ -1765,14 +1775,14 @@ function WS(state) {
 // RS[] Read Store
 // 0x43
 function RS(state) {
-    var stack = state.stack;
-    var store = state.store;
+    const stack = state.stack;
+    const store = state.store;
 
-    var l = stack.pop();
+    const l = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'RS', l);
 
-    var v = (store && store[l]) || 0;
+    const v = (store && store[l]) || 0;
 
     stack.push(v);
 }
@@ -1780,10 +1790,10 @@ function RS(state) {
 // WCVTP[] Write Control Value Table in Pixel units
 // 0x44
 function WCVTP(state) {
-    var stack = state.stack;
+    const stack = state.stack;
 
-    var v = stack.pop();
-    var l = stack.pop();
+    const v = stack.pop();
+    const l = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'WCVTP', v, l);
 
@@ -1793,8 +1803,8 @@ function WCVTP(state) {
 // RCVT[] Read Control Value Table entry
 // 0x45
 function RCVT(state) {
-    var stack = state.stack;
-    var cvte = stack.pop();
+    const stack = state.stack;
+    const cvte = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'RCVT', cvte);
 
@@ -1804,9 +1814,9 @@ function RCVT(state) {
 // GC[] Get Coordinate projected onto the projection vector
 // 0x46-0x47
 function GC(a, state) {
-    var stack = state.stack;
-    var pi = stack.pop();
-    var p = state.z2[pi];
+    const stack = state.stack;
+    const pi = stack.pop();
+    const p = state.z2[pi];
 
     if (exports.DEBUG) console.log(state.step, 'GC[' + a + ']', pi);
 
@@ -1816,12 +1826,12 @@ function GC(a, state) {
 // MD[a] Measure Distance
 // 0x49-0x4A
 function MD(a, state) {
-    var stack = state.stack;
-    var pi2 = stack.pop();
-    var pi1 = stack.pop();
-    var p2 = state.z1[pi2];
-    var p1 = state.z0[pi1];
-    var d = state.dpv.distance(p1, p2, a, a);
+    const stack = state.stack;
+    const pi2 = stack.pop();
+    const pi1 = stack.pop();
+    const p2 = state.z1[pi2];
+    const p1 = state.z0[pi1];
+    const d = state.dpv.distance(p1, p2, a, a);
 
     if (exports.DEBUG) console.log(state.step, 'MD[' + a + ']', pi2, pi1, '->', d);
 
@@ -1845,9 +1855,9 @@ function FLIPON(state) {
 // LT[] Less Than
 // 0x50
 function LT(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
+    const stack = state.stack;
+    const e2 = stack.pop();
+    const e1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'LT[]', e2, e1);
 
@@ -1857,9 +1867,9 @@ function LT(state) {
 // LTEQ[] Less Than or EQual
 // 0x53
 function LTEQ(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
+    const stack = state.stack;
+    const e2 = stack.pop();
+    const e1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'LTEQ[]', e2, e1);
 
@@ -1869,9 +1879,9 @@ function LTEQ(state) {
 // GTEQ[] Greater Than
 // 0x52
 function GT(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
+    const stack = state.stack;
+    const e2 = stack.pop();
+    const e1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'GT[]', e2, e1);
 
@@ -1881,9 +1891,9 @@ function GT(state) {
 // GTEQ[] Greater Than or EQual
 // 0x53
 function GTEQ(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
+    const stack = state.stack;
+    const e2 = stack.pop();
+    const e1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'GTEQ[]', e2, e1);
 
@@ -1893,9 +1903,9 @@ function GTEQ(state) {
 // EQ[] EQual
 // 0x54
 function EQ(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
+    const stack = state.stack;
+    const e2 = stack.pop();
+    const e1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'EQ[]', e2, e1);
 
@@ -1905,9 +1915,9 @@ function EQ(state) {
 // NEQ[] Not EQual
 // 0x55
 function NEQ(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
+    const stack = state.stack;
+    const e2 = stack.pop();
+    const e1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'NEQ[]', e2, e1);
 
@@ -1917,8 +1927,8 @@ function NEQ(state) {
 // ODD[] ODD
 // 0x56
 function ODD(state) {
-    var stack = state.stack;
-    var n = stack.pop();
+    const stack = state.stack;
+    const n = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'ODD[]', n);
 
@@ -1928,8 +1938,8 @@ function ODD(state) {
 // EVEN[] EVEN
 // 0x57
 function EVEN(state) {
-    var stack = state.stack;
-    var n = stack.pop();
+    const stack = state.stack;
+    const n = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'EVEN[]', n);
 
@@ -1939,8 +1949,8 @@ function EVEN(state) {
 // IF[] IF test
 // 0x58
 function IF(state) {
-    var test = state.stack.pop();
-    var ins;
+    let test = state.stack.pop();
+    let ins;
 
     if (exports.DEBUG) console.log(state.step, 'IF[]', test);
 
@@ -1966,9 +1976,9 @@ function EIF(state) {
 // AND[] logical AND
 // 0x5A
 function AND(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
+    const stack = state.stack;
+    const e2 = stack.pop();
+    const e1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'AND[]', e2, e1);
 
@@ -1978,9 +1988,9 @@ function AND(state) {
 // OR[] logical OR
 // 0x5B
 function OR(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
+    const stack = state.stack;
+    const e2 = stack.pop();
+    const e1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'OR[]', e2, e1);
 
@@ -1990,8 +2000,8 @@ function OR(state) {
 // NOT[] logical NOT
 // 0x5C
 function NOT(state) {
-    var stack = state.stack;
-    var e = stack.pop();
+    const stack = state.stack;
+    const e = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'NOT[]', e);
 
@@ -2003,29 +2013,29 @@ function NOT(state) {
 // DELTAP3[] DELTA exception P3
 // 0x5D, 0x71, 0x72
 function DELTAP123(b, state) {
-    var stack = state.stack;
-    var n = stack.pop();
-    var fv = state.fv;
-    var pv = state.pv;
-    var ppem = state.ppem;
-    var base = state.deltaBase + (b - 1) * 16;
-    var ds = state.deltaShift;
-    var z0 = state.z0;
+    const stack = state.stack;
+    const n = stack.pop();
+    const fv = state.fv;
+    const pv = state.pv;
+    const ppem = state.ppem;
+    const base = state.deltaBase + (b - 1) * 16;
+    const ds = state.deltaShift;
+    const z0 = state.z0;
 
     if (exports.DEBUG) console.log(state.step, 'DELTAP[' + b + ']', n, stack);
 
-    for (var i = 0; i < n; i++)
+    for (let i = 0; i < n; i++)
     {
-        var pi = stack.pop();
-        var arg = stack.pop();
-        var appem = base + ((arg & 0xF0) >> 4);
+        const pi = stack.pop();
+        const arg = stack.pop();
+        const appem = base + ((arg & 0xF0) >> 4);
         if (appem !== ppem) continue;
 
-        var mag = (arg & 0x0F) - 8;
+        let mag = (arg & 0x0F) - 8;
         if (mag >= 0) mag++;
         if (exports.DEBUG) console.log(state.step, 'DELTAPFIX', pi, 'by', mag * ds);
 
-        var p = z0[pi];
+        const p = z0[pi];
         fv.setRelative(p, p, mag * ds, pv);
     }
 }
@@ -2033,8 +2043,8 @@ function DELTAP123(b, state) {
 // SDB[] Set Delta Base in the graphics state
 // 0x5E
 function SDB(state) {
-    var stack = state.stack;
-    var n = stack.pop();
+    const stack = state.stack;
+    const n = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SDB[]', n);
 
@@ -2044,8 +2054,8 @@ function SDB(state) {
 // SDS[] Set Delta Shift in the graphics state
 // 0x5F
 function SDS(state) {
-    var stack = state.stack;
-    var n = stack.pop();
+    const stack = state.stack;
+    const n = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SDS[]', n);
 
@@ -2055,9 +2065,9 @@ function SDS(state) {
 // ADD[] ADD
 // 0x60
 function ADD(state) {
-    var stack = state.stack;
-    var n2 = stack.pop();
-    var n1 = stack.pop();
+    const stack = state.stack;
+    const n2 = stack.pop();
+    const n1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'ADD[]', n2, n1);
 
@@ -2067,9 +2077,9 @@ function ADD(state) {
 // SUB[] SUB
 // 0x61
 function SUB(state) {
-    var stack = state.stack;
-    var n2 = stack.pop();
-    var n1 = stack.pop();
+    const stack = state.stack;
+    const n2 = stack.pop();
+    const n1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SUB[]', n2, n1);
 
@@ -2079,9 +2089,9 @@ function SUB(state) {
 // DIV[] DIV
 // 0x62
 function DIV(state) {
-    var stack = state.stack;
-    var n2 = stack.pop();
-    var n1 = stack.pop();
+    const stack = state.stack;
+    const n2 = stack.pop();
+    const n1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'DIV[]', n2, n1);
 
@@ -2091,9 +2101,9 @@ function DIV(state) {
 // MUL[] MUL
 // 0x63
 function MUL(state) {
-    var stack = state.stack;
-    var n2 = stack.pop();
-    var n1 = stack.pop();
+    const stack = state.stack;
+    const n2 = stack.pop();
+    const n1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'MUL[]', n2, n1);
 
@@ -2103,8 +2113,8 @@ function MUL(state) {
 // ABS[] ABSolute value
 // 0x64
 function ABS(state) {
-    var stack = state.stack;
-    var n = stack.pop();
+    const stack = state.stack;
+    const n = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'ABS[]', n);
 
@@ -2114,8 +2124,8 @@ function ABS(state) {
 // NEG[] NEGate
 // 0x65
 function NEG(state) {
-    var stack = state.stack;
-    var n = stack.pop();
+    const stack = state.stack;
+    let n = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'NEG[]', n);
 
@@ -2125,8 +2135,8 @@ function NEG(state) {
 // FLOOR[] FLOOR
 // 0x66
 function FLOOR(state) {
-    var stack = state.stack;
-    var n = stack.pop();
+    const stack = state.stack;
+    const n = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'FLOOR[]', n);
 
@@ -2136,8 +2146,8 @@ function FLOOR(state) {
 // CEILING[] CEILING
 // 0x67
 function CEILING(state) {
-    var stack = state.stack;
-    var n = stack.pop();
+    const stack = state.stack;
+    const n = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'CEILING[]', n);
 
@@ -2147,8 +2157,8 @@ function CEILING(state) {
 // ROUND[ab] ROUND value
 // 0x68-0x6B
 function ROUND(dt, state) {
-    var stack = state.stack;
-    var n = stack.pop();
+    const stack = state.stack;
+    const n = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'ROUND[]');
 
@@ -2158,9 +2168,9 @@ function ROUND(dt, state) {
 // WCVTF[] Write Control Value Table in Funits
 // 0x70
 function WCVTF(state) {
-    var stack = state.stack;
-    var v = stack.pop();
-    var l = stack.pop();
+    const stack = state.stack;
+    const v = stack.pop();
+    const l = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'WCVTF[]', v, l);
 
@@ -2172,24 +2182,24 @@ function WCVTF(state) {
 // DELTAC3[] DELTA exception C3
 // 0x73, 0x74, 0x75
 function DELTAC123(b, state) {
-    var stack = state.stack;
-    var n = stack.pop();
-    var ppem = state.ppem;
-    var base = state.deltaBase + (b - 1) * 16;
-    var ds = state.deltaShift;
+    const stack = state.stack;
+    const n = stack.pop();
+    const ppem = state.ppem;
+    const base = state.deltaBase + (b - 1) * 16;
+    const ds = state.deltaShift;
 
     if (exports.DEBUG) console.log(state.step, 'DELTAC[' + b + ']', n, stack);
 
-    for (var i = 0; i < n; i++) {
-        var c = stack.pop();
-        var arg = stack.pop();
-        var appem = base + ((arg & 0xF0) >> 4);
+    for (let i = 0; i < n; i++) {
+        const c = stack.pop();
+        const arg = stack.pop();
+        const appem = base + ((arg & 0xF0) >> 4);
         if (appem !== ppem) continue;
 
-        var mag = (arg & 0x0F) - 8;
+        let mag = (arg & 0x0F) - 8;
         if (mag >= 0) mag++;
 
-        var delta = mag * ds;
+        const delta = mag * ds;
 
         if (exports.DEBUG) console.log(state.step, 'DELTACFIX', c, 'by', delta);
 
@@ -2200,13 +2210,13 @@ function DELTAC123(b, state) {
 // SROUND[] Super ROUND
 // 0x76
 function SROUND(state) {
-    var n = state.stack.pop();
+    let n = state.stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'SROUND[]', n);
 
     state.round = roundSuper;
 
-    var period;
+    let period;
 
     switch (n & 0xC0) {
         case 0x00:
@@ -2249,13 +2259,13 @@ function SROUND(state) {
 // S45ROUND[] Super ROUND 45 degrees
 // 0x77
 function S45ROUND(state) {
-    var n = state.stack.pop();
+    let n = state.stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'S45ROUND[]', n);
 
     state.round = roundSuper;
 
-    var period;
+    let period;
 
     switch (n & 0xC0) {
         case 0x00:
@@ -2323,7 +2333,7 @@ function RDTG(state) {
 // SCANCTRL[] SCAN conversion ConTRoL
 // 0x85
 function SCANCTRL(state) {
-    var n = state.stack.pop();
+    const n = state.stack.pop();
 
     // ignored by opentype.js
 
@@ -2333,16 +2343,16 @@ function SCANCTRL(state) {
 // SDPVTL[a] Set Dual Projection Vector To Line
 // 0x86-0x87
 function SDPVTL(a, state) {
-    var stack = state.stack;
-    var p2i = stack.pop();
-    var p1i = stack.pop();
-    var p2 = state.z2[p2i];
-    var p1 = state.z1[p1i];
+    const stack = state.stack;
+    const p2i = stack.pop();
+    const p1i = stack.pop();
+    const p2 = state.z2[p2i];
+    const p1 = state.z1[p1i];
 
     if (exports.DEBUG) console.log('SDPVTL[' + a + ']', p2i, p1i);
 
-    var dx;
-    var dy;
+    let dx;
+    let dy;
 
     if (!a) {
         dx = p1.x - p2.x;
@@ -2358,9 +2368,9 @@ function SDPVTL(a, state) {
 // GETINFO[] GET INFOrmation
 // 0x88
 function GETINFO(state) {
-    var stack = state.stack;
-    var sel = stack.pop();
-    var r = 0;
+    const stack = state.stack;
+    const sel = stack.pop();
+    let r = 0;
 
     if (exports.DEBUG) console.log(state.step, 'GETINFO[]', sel);
 
@@ -2379,10 +2389,10 @@ function GETINFO(state) {
 // ROLL[] ROLL the top three stack elements
 // 0x8A
 function ROLL(state) {
-    var stack = state.stack;
-    var a = stack.pop();
-    var b = stack.pop();
-    var c = stack.pop();
+    const stack = state.stack;
+    const a = stack.pop();
+    const b = stack.pop();
+    const c = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'ROLL[]');
 
@@ -2394,9 +2404,9 @@ function ROLL(state) {
 // MAX[] MAXimum of top two stack elements
 // 0x8B
 function MAX(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
+    const stack = state.stack;
+    const e2 = stack.pop();
+    const e1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'MAX[]', e2, e1);
 
@@ -2406,9 +2416,9 @@ function MAX(state) {
 // MIN[] MINimum of top two stack elements
 // 0x8C
 function MIN(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
+    const stack = state.stack;
+    const e2 = stack.pop();
+    const e1 = stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'MIN[]', e2, e1);
 
@@ -2418,7 +2428,7 @@ function MIN(state) {
 // SCANTYPE[] SCANTYPE
 // 0x8D
 function SCANTYPE(state) {
-    var n = state.stack.pop();
+    const n = state.stack.pop();
     // ignored by opentype.js
     if (exports.DEBUG) console.log(state.step, 'SCANTYPE[]', n);
 }
@@ -2426,8 +2436,8 @@ function SCANTYPE(state) {
 // INSTCTRL[] INSTCTRL
 // 0x8D
 function INSTCTRL(state) {
-    var s = state.stack.pop();
-    var v = state.stack.pop();
+    const s = state.stack.pop();
+    let v = state.stack.pop();
 
     if (exports.DEBUG) console.log(state.step, 'INSTCTRL[]', s, v);
 
@@ -2441,13 +2451,13 @@ function INSTCTRL(state) {
 // PUSHB[abc] PUSH Bytes
 // 0xB0-0xB7
 function PUSHB(n, state) {
-    var stack = state.stack;
-    var prog = state.prog;
-    var ip = state.ip;
+    const stack = state.stack;
+    const prog = state.prog;
+    let ip = state.ip;
 
     if (exports.DEBUG) console.log(state.step, 'PUSHB[' + n + ']');
 
-    for (var i = 0; i < n; i++) stack.push(prog[++ip]);
+    for (let i = 0; i < n; i++) stack.push(prog[++ip]);
 
     state.ip = ip;
 }
@@ -2455,14 +2465,14 @@ function PUSHB(n, state) {
 // PUSHW[abc] PUSH Words
 // 0xB8-0xBF
 function PUSHW(n, state) {
-    var ip = state.ip;
-    var prog = state.prog;
-    var stack = state.stack;
+    let ip = state.ip;
+    const prog = state.prog;
+    const stack = state.stack;
 
     if (exports.DEBUG) console.log(state.ip, 'PUSHW[' + n + ']');
 
-    for (var i = 0; i < n; i++) {
-        var w = (prog[++ip] << 8) | prog[++ip];
+    for (let i = 0; i < n; i++) {
+        let w = (prog[++ip] << 8) | prog[++ip];
         if (w & 0x8000) w = -((w ^ 0xffff) + 1);
         stack.push(w);
     }
@@ -2481,20 +2491,20 @@ function PUSHW(n, state) {
 // (if indirect is 1)
 
 function MDRP_MIRP(indirect, setRp0, keepD, ro, dt, state) {
-    var stack = state.stack;
-    var cvte = indirect && stack.pop();
-    var pi = stack.pop();
-    var rp0i = state.rp0;
-    var rp = state.z0[rp0i];
-    var p = state.z1[pi];
+    const stack = state.stack;
+    const cvte = indirect && stack.pop();
+    const pi = stack.pop();
+    const rp0i = state.rp0;
+    const rp = state.z0[rp0i];
+    const p = state.z1[pi];
 
-    var md = state.minDis;
-    var fv = state.fv;
-    var pv = state.dpv;
-    var od; // original distance
-    var d; // moving distance
-    var sign; // sign of distance
-    var cv;
+    const md = state.minDis;
+    const fv = state.fv;
+    const pv = state.dpv;
+    let od; // original distance
+    let d; // moving distance
+    let sign; // sign of distance
+    let cv;
 
     d = od = pv.distance(p, rp, true, true);
     sign = d >= 0 ? 1 : -1; // Math.sign would be 0 in case of 0
