@@ -3,15 +3,15 @@ import { Font, Glyph, Path } from '../src/opentype';
 import Substitution from '../src/substitution';
 
 describe('substitution.js', function() {
-    var font;
-    var substitution;
-    var notdefGlyph = new Glyph({
+    let font;
+    let substitution;
+    const notdefGlyph = new Glyph({
         name: '.notdef',
         unicode: 0,
         path: new Path()
     });
 
-    var glyphs = [notdefGlyph].concat('abcdefghijklmnopqrstuvwxyz'.split('').map(function(c) {
+    const glyphs = [notdefGlyph].concat('abcdefghijklmnopqrstuvwxyz'.split('').map(function (c) {
         return new Glyph({
             name: c,
             unicode: c.charCodeAt(0),
@@ -19,10 +19,10 @@ describe('substitution.js', function() {
         });
     }));
 
-    var defaultScriptList = [{
+    const defaultScriptList = [{
         tag: 'DFLT',
         script: {
-            defaultLangSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [0] },
+            defaultLangSys: {reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [0]},
             langSysRecords: []
         }
     }];

@@ -5,12 +5,12 @@ import check from '../check';
 import { Parser } from '../parse';
 import table from '../table';
 
-var subtableParsers = new Array(9);         // subtableParsers[0] is unused
+const subtableParsers = new Array(9);         // subtableParsers[0] is unused
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#SS
 subtableParsers[1] = function parseLookup1() {
-    var start = this.offset + this.relativeOffset;
-    var substFormat = this.parseUShort();
+    const start = this.offset + this.relativeOffset;
+    const substFormat = this.parseUShort();
     if (substFormat === 1) {
         return {
             substFormat: 1,
@@ -29,7 +29,7 @@ subtableParsers[1] = function parseLookup1() {
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#MS
 subtableParsers[2] = function parseLookup2() {
-    var substFormat = this.parseUShort();
+    const substFormat = this.parseUShort();
     check.argument(substFormat === 1, 'GSUB Multiple Substitution Subtable identifier-format must be 1');
     return {
         substFormat: substFormat,
@@ -40,7 +40,7 @@ subtableParsers[2] = function parseLookup2() {
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#AS
 subtableParsers[3] = function parseLookup3() {
-    var substFormat = this.parseUShort();
+    const substFormat = this.parseUShort();
     check.argument(substFormat === 1, 'GSUB Alternate Substitution Subtable identifier-format must be 1');
     return {
         substFormat: substFormat,
@@ -51,7 +51,7 @@ subtableParsers[3] = function parseLookup3() {
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#LS
 subtableParsers[4] = function parseLookup4() {
-    var substFormat = this.parseUShort();
+    const substFormat = this.parseUShort();
     check.argument(substFormat === 1, 'GSUB ligature table identifier-format must be 1');
     return {
         substFormat: substFormat,
@@ -65,23 +65,23 @@ subtableParsers[4] = function parseLookup4() {
     };
 };
 
-var lookupRecordDesc = {
+const lookupRecordDesc = {
     sequenceIndex: Parser.uShort,
     lookupListIndex: Parser.uShort
 };
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#CSF
 subtableParsers[5] = function parseLookup5() {
-    var start = this.offset + this.relativeOffset;
-    var substFormat = this.parseUShort();
+    const start = this.offset + this.relativeOffset;
+    const substFormat = this.parseUShort();
 
     if (substFormat === 1) {
         return {
             substFormat: substFormat,
             coverage: this.parsePointer(Parser.coverage),
             ruleSets: this.parseListOfLists(function() {
-                var glyphCount = this.parseUShort();
-                var substCount = this.parseUShort();
+                const glyphCount = this.parseUShort();
+                const substCount = this.parseUShort();
                 return {
                     input: this.parseUShortList(glyphCount - 1),
                     lookupRecords: this.parseRecordList(substCount, lookupRecordDesc)
@@ -94,8 +94,8 @@ subtableParsers[5] = function parseLookup5() {
             coverage: this.parsePointer(Parser.coverage),
             classDef: this.parsePointer(Parser.classDef),
             classSets: this.parseListOfLists(function() {
-                var glyphCount = this.parseUShort();
-                var substCount = this.parseUShort();
+                const glyphCount = this.parseUShort();
+                const substCount = this.parseUShort();
                 return {
                     classes: this.parseUShortList(glyphCount - 1),
                     lookupRecords: this.parseRecordList(substCount, lookupRecordDesc)
@@ -103,8 +103,8 @@ subtableParsers[5] = function parseLookup5() {
             })
         };
     } else if (substFormat === 3) {
-        var glyphCount = this.parseUShort();
-        var substCount = this.parseUShort();
+        const glyphCount = this.parseUShort();
+        const substCount = this.parseUShort();
         return {
             substFormat: substFormat,
             coverages: this.parseList(glyphCount, Parser.pointer(Parser.coverage)),
@@ -116,8 +116,8 @@ subtableParsers[5] = function parseLookup5() {
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#CC
 subtableParsers[6] = function parseLookup6() {
-    var start = this.offset + this.relativeOffset;
-    var substFormat = this.parseUShort();
+    const start = this.offset + this.relativeOffset;
+    const substFormat = this.parseUShort();
     if (substFormat === 1) {
         return {
             substFormat: 1,
@@ -162,10 +162,10 @@ subtableParsers[6] = function parseLookup6() {
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#ES
 subtableParsers[7] = function parseLookup7() {
     // Extension Substitution subtable
-    var substFormat = this.parseUShort();
+    const substFormat = this.parseUShort();
     check.argument(substFormat === 1, 'GSUB Extension Substitution subtable identifier-format must be 1');
-    var extensionLookupType = this.parseUShort();
-    var extensionParser = new Parser(this.data, this.offset + this.parseULong());
+    const extensionLookupType = this.parseUShort();
+    const extensionParser = new Parser(this.data, this.offset + this.parseULong());
     return {
         substFormat: 1,
         lookupType: extensionLookupType,
@@ -175,7 +175,7 @@ subtableParsers[7] = function parseLookup7() {
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#RCCS
 subtableParsers[8] = function parseLookup8() {
-    var substFormat = this.parseUShort();
+    const substFormat = this.parseUShort();
     check.argument(substFormat === 1, 'GSUB Reverse Chaining Contextual Single Substitution Subtable identifier-format must be 1');
     return {
         substFormat: substFormat,
@@ -189,8 +189,8 @@ subtableParsers[8] = function parseLookup8() {
 // https://www.microsoft.com/typography/OTSPEC/gsub.htm
 function parseGsubTable(data, start) {
     start = start || 0;
-    var p = new Parser(data, start);
-    var tableVersion = p.parseVersion();
+    const p = new Parser(data, start);
+    const tableVersion = p.parseVersion();
     check.argument(tableVersion === 1, 'Unsupported GSUB table version.');
     return {
         version: tableVersion,
@@ -201,7 +201,7 @@ function parseGsubTable(data, start) {
 }
 
 // GSUB Writing //////////////////////////////////////////////
-var subtableMakers = new Array(9);
+const subtableMakers = new Array(9);
 
 subtableMakers[1] = function makeLookup1(subtable) {
     if (subtable.substFormat === 1) {

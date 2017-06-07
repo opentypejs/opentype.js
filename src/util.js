@@ -7,9 +7,9 @@ function isNode() {
 }
 
 function nodeBufferToArrayBuffer(buffer) {
-    var ab = new ArrayBuffer(buffer.length);
-    var view = new Uint8Array(ab);
-    for (var i = 0; i < buffer.length; ++i) {
+    const ab = new ArrayBuffer(buffer.length);
+    const view = new Uint8Array(ab);
+    for (let i = 0; i < buffer.length; ++i) {
         view[i] = buffer[i];
     }
 
@@ -17,9 +17,9 @@ function nodeBufferToArrayBuffer(buffer) {
 }
 
 function arrayBufferToNodeBuffer(ab) {
-    var buffer = new Buffer(ab.byteLength);
-    var view = new Uint8Array(ab);
-    for (var i = 0; i < buffer.length; ++i) {
+    const buffer = new Buffer(ab.byteLength);
+    const view = new Uint8Array(ab);
+    for (let i = 0; i < buffer.length; ++i) {
         buffer[i] = view[i];
     }
 

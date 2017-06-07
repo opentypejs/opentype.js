@@ -6,8 +6,6 @@ import parse from '../parse';
 import table from '../table';
 
 function parseCmapTableFormat12(cmap, p) {
-    var i;
-
     //Skip reserved.
     p.parseUShort();
 
@@ -15,16 +13,16 @@ function parseCmapTableFormat12(cmap, p) {
     cmap.length = p.parseULong();
     cmap.language = p.parseULong();
 
-    var groupCount;
+    let groupCount;
     cmap.groupCount = groupCount = p.parseULong();
     cmap.glyphIndexMap = {};
 
-    for (i = 0; i < groupCount; i += 1) {
-        var startCharCode = p.parseULong();
-        var endCharCode = p.parseULong();
-        var startGlyphId = p.parseULong();
+    for (let i = 0; i < groupCount; i += 1) {
+        const startCharCode = p.parseULong();
+        const endCharCode = p.parseULong();
+        let startGlyphId = p.parseULong();
 
-        for (var c = startCharCode; c <= endCharCode; c += 1) {
+        for (let c = startCharCode; c <= endCharCode; c += 1) {
             cmap.glyphIndexMap[c] = startGlyphId;
             startGlyphId++;
         }
@@ -32,14 +30,12 @@ function parseCmapTableFormat12(cmap, p) {
 }
 
 function parseCmapTableFormat4(cmap, p, data, start, offset) {
-    var i;
-
     // Length in bytes of the sub-tables.
     cmap.length = p.parseUShort();
     cmap.language = p.parseUShort();
 
     // segCount is stored x 2.
-    var segCount;
+    let segCount;
     cmap.segCount = segCount = p.parseUShort() >> 1;
 
     // Skip searchRange, entrySelector, rangeShift.
@@ -47,18 +43,18 @@ function parseCmapTableFormat4(cmap, p, data, start, offset) {
 
     // The "unrolled" mapping from character codes to glyph indices.
     cmap.glyphIndexMap = {};
-    var endCountParser = new parse.Parser(data, start + offset + 14);
-    var startCountParser = new parse.Parser(data, start + offset + 16 + segCount * 2);
-    var idDeltaParser = new parse.Parser(data, start + offset + 16 + segCount * 4);
-    var idRangeOffsetParser = new parse.Parser(data, start + offset + 16 + segCount * 6);
-    var glyphIndexOffset = start + offset + 16 + segCount * 8;
-    for (i = 0; i < segCount - 1; i += 1) {
-        var glyphIndex;
-        var endCount = endCountParser.parseUShort();
-        var startCount = startCountParser.parseUShort();
-        var idDelta = idDeltaParser.parseShort();
-        var idRangeOffset = idRangeOffsetParser.parseUShort();
-        for (var c = startCount; c <= endCount; c += 1) {
+    const endCountParser = new parse.Parser(data, start + offset + 14);
+    const startCountParser = new parse.Parser(data, start + offset + 16 + segCount * 2);
+    const idDeltaParser = new parse.Parser(data, start + offset + 16 + segCount * 4);
+    const idRangeOffsetParser = new parse.Parser(data, start + offset + 16 + segCount * 6);
+    let glyphIndexOffset = start + offset + 16 + segCount * 8;
+    for (let i = 0; i < segCount - 1; i += 1) {
+        let glyphIndex;
+        const endCount = endCountParser.parseUShort();
+        const startCount = startCountParser.parseUShort();
+        const idDelta = idDeltaParser.parseShort();
+        const idRangeOffset = idRangeOffsetParser.parseUShort();
+        for (let c = startCount; c <= endCount; c += 1) {
             if (idRangeOffset !== 0) {
                 // The idRangeOffset is relative to the current position in the idRangeOffset array.
                 // Take the current offset in the idRangeOffset array.
@@ -86,18 +82,17 @@ function parseCmapTableFormat4(cmap, p, data, start, offset) {
 // There are many available formats, but we only support the Windows format 4 and 12.
 // This function returns a `CmapEncoding` object or null if no supported format could be found.
 function parseCmapTable(data, start) {
-    var i;
-    var cmap = {};
+    const cmap = {};
     cmap.version = parse.getUShort(data, start);
     check.argument(cmap.version === 0, 'cmap table version should be 0.');
 
     // The cmap table can contain many sub-tables, each with their own format.
     // We're only interested in a "platform 3" table. This is a Windows format.
     cmap.numTables = parse.getUShort(data, start + 2);
-    var offset = -1;
-    for (i = cmap.numTables - 1; i >= 0; i -= 1) {
-        var platformId = parse.getUShort(data, start + 4 + (i * 8));
-        var encodingId = parse.getUShort(data, start + 4 + (i * 8) + 2);
+    let offset = -1;
+    for (let i = cmap.numTables - 1; i >= 0; i -= 1) {
+        const platformId = parse.getUShort(data, start + 4 + (i * 8));
+        const encodingId = parse.getUShort(data, start + 4 + (i * 8) + 2);
         if (platformId === 3 && (encodingId === 0 || encodingId === 1 || encodingId === 10)) {
             offset = parse.getULong(data, start + 4 + (i * 8) + 4);
             break;
@@ -109,7 +104,7 @@ function parseCmapTable(data, start) {
         throw new Error('No valid cmap sub-tables found.');
     }
 
-    var p = new parse.Parser(data, start + offset);
+    const p = new parse.Parser(data, start + offset);
     cmap.format = p.parseUShort();
 
     if (cmap.format === 12) {
@@ -142,8 +137,7 @@ function addTerminatorSegment(t) {
 }
 
 function makeCmapTable(glyphs) {
-    var i;
-    var t = new table.Table('cmap', [
+    const t = new table.Table('cmap', [
         {name: 'version', type: 'USHORT', value: 0},
         {name: 'numTables', type: 'USHORT', value: 1},
         {name: 'platformID', type: 'USHORT', value: 3},
@@ -159,9 +153,9 @@ function makeCmapTable(glyphs) {
     ]);
 
     t.segments = [];
-    for (i = 0; i < glyphs.length; i += 1) {
-        var glyph = glyphs.get(i);
-        for (var j = 0; j < glyph.unicodes.length; j += 1) {
+    for (let i = 0; i < glyphs.length; i += 1) {
+        const glyph = glyphs.get(i);
+        for (let j = 0; j < glyph.unicodes.length; j += 1) {
             addSegment(t, glyph.unicodes[j], i);
         }
 
@@ -172,7 +166,7 @@ function makeCmapTable(glyphs) {
 
     addTerminatorSegment(t);
 
-    var segCount;
+    let segCount;
     segCount = t.segments.length;
     t.segCountX2 = segCount * 2;
     t.searchRange = Math.pow(2, Math.floor(Math.log(segCount) / Math.log(2))) * 2;
@@ -180,14 +174,14 @@ function makeCmapTable(glyphs) {
     t.rangeShift = t.segCountX2 - t.searchRange;
 
     // Set up parallel segment arrays.
-    var endCounts = [];
-    var startCounts = [];
-    var idDeltas = [];
-    var idRangeOffsets = [];
-    var glyphIds = [];
+    let endCounts = [];
+    let startCounts = [];
+    let idDeltas = [];
+    let idRangeOffsets = [];
+    let glyphIds = [];
 
-    for (i = 0; i < segCount; i += 1) {
-        var segment = t.segments[i];
+    for (let i = 0; i < segCount; i += 1) {
+        const segment = t.segments[i];
         endCounts = endCounts.concat({name: 'end_' + i, type: 'USHORT', value: segment.end});
         startCounts = startCounts.concat({name: 'start_' + i, type: 'USHORT', value: segment.start});
         idDeltas = idDeltas.concat({name: 'idDelta_' + i, type: 'SHORT', value: segment.delta});

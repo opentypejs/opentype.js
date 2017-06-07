@@ -5,11 +5,11 @@ import check from './check';
 
 function searchTag(arr, tag) {
     /* jshint bitwise: false */
-    var imin = 0;
-    var imax = arr.length - 1;
+    let imin = 0;
+    let imax = arr.length - 1;
     while (imin <= imax) {
-        var imid = (imin + imax) >>> 1;
-        var val = arr[imid].tag;
+        const imid = (imin + imax) >>> 1;
+        const val = arr[imid].tag;
         if (val === tag) {
             return imid;
         } else if (val < tag) {
@@ -22,11 +22,11 @@ function searchTag(arr, tag) {
 
 function binSearch(arr, value) {
     /* jshint bitwise: false */
-    var imin = 0;
-    var imax = arr.length - 1;
+    let imin = 0;
+    let imax = arr.length - 1;
     while (imin <= imax) {
-        var imid = (imin + imax) >>> 1;
-        var val = arr[imid];
+        const imid = (imin + imax) >>> 1;
+        const val = arr[imid];
         if (val === value) {
             return imid;
         } else if (val < value) {
@@ -76,7 +76,7 @@ Layout.prototype = {
      * @return {Object} The GSUB or GPOS table.
      */
     getTable: function(create) {
-        var layout = this.font.tables[this.tableName];
+        let layout = this.font.tables[this.tableName];
         if (!layout && create) {
             layout = this.font.tables[this.tableName] = this.createDefaultTable();
         }
@@ -89,7 +89,7 @@ Layout.prototype = {
      * @return {Array}
      */
     getScriptNames: function() {
-        var layout = this.getTable();
+        let layout = this.getTable();
         if (!layout) { return []; }
         return layout.scripts.map(function(script) {
             return script.tag;
@@ -103,11 +103,11 @@ Layout.prototype = {
      * If neither exist, returns undefined.
      */
     getDefaultScriptName: function() {
-        var layout = this.getTable();
+        let layout = this.getTable();
         if (!layout) { return; }
-        var hasLatn = false;
-        for (var i = 0; i < layout.scripts.length; i++) {
-            var name = layout.scripts[i].tag;
+        let hasLatn = false;
+        for (let i = 0; i < layout.scripts.length; i++) {
+            const name = layout.scripts[i].tag;
             if (name === 'DFLT') return name;
             if (name === 'latn') hasLatn = true;
         }
@@ -122,18 +122,18 @@ Layout.prototype = {
      * @return {Object} An object with tag and script properties.
      */
     getScriptTable: function(script, create) {
-        var layout = this.getTable(create);
+        const layout = this.getTable(create);
         if (layout) {
             script = script || 'DFLT';
-            var scripts = layout.scripts;
-            var pos = searchTag(layout.scripts, script);
+            const scripts = layout.scripts;
+            const pos = searchTag(layout.scripts, script);
             if (pos >= 0) {
                 return scripts[pos].script;
             } else if (create) {
-                var scr = {
+                const scr = {
                     tag: script,
                     script: {
-                        defaultLangSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [] },
+                        defaultLangSys: {reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: []},
                         langSysRecords: []
                     }
                 };
@@ -152,18 +152,18 @@ Layout.prototype = {
      * @return {Object}
      */
     getLangSysTable: function(script, language, create) {
-        var scriptTable = this.getScriptTable(script, create);
+        const scriptTable = this.getScriptTable(script, create);
         if (scriptTable) {
             if (!language || language === 'dflt' || language === 'DFLT') {
                 return scriptTable.defaultLangSys;
             }
-            var pos = searchTag(scriptTable.langSysRecords, language);
+            const pos = searchTag(scriptTable.langSysRecords, language);
             if (pos >= 0) {
                 return scriptTable.langSysRecords[pos].langSys;
             } else if (create) {
-                var langSysRecord = {
+                const langSysRecord = {
                     tag: language,
-                    langSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [] }
+                    langSys: {reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: []}
                 };
                 scriptTable.langSysRecords.splice(-1 - pos, 0, langSysRecord);
                 return langSysRecord.langSys;
@@ -181,21 +181,21 @@ Layout.prototype = {
      * @return {Object}
      */
     getFeatureTable: function(script, language, feature, create) {
-        var langSysTable = this.getLangSysTable(script, language, create);
+        const langSysTable = this.getLangSysTable(script, language, create);
         if (langSysTable) {
-            var featureRecord;
-            var featIndexes = langSysTable.featureIndexes;
-            var allFeatures = this.font.tables[this.tableName].features;
+            let featureRecord;
+            const featIndexes = langSysTable.featureIndexes;
+            const allFeatures = this.font.tables[this.tableName].features;
             // The FeatureIndex array of indices is in arbitrary order,
             // even if allFeatures is sorted alphabetically by feature tag.
-            for (var i = 0; i < featIndexes.length; i++) {
+            for (let i = 0; i < featIndexes.length; i++) {
                 featureRecord = allFeatures[featIndexes[i]];
                 if (featureRecord.tag === feature) {
                     return featureRecord.feature;
                 }
             }
             if (create) {
-                var index = allFeatures.length;
+                const index = allFeatures.length;
                 // Automatic ordering of features would require to shift feature indexes in the script list.
                 check.assert(index === 0 || feature >= allFeatures[index - 1].tag, 'Features must be added in alphabetical order.');
                 featureRecord = {
@@ -220,14 +220,14 @@ Layout.prototype = {
      * @return {Object[]}
      */
     getLookupTables: function(script, language, feature, lookupType, create) {
-        var featureTable = this.getFeatureTable(script, language, feature, create);
-        var tables = [];
+        const featureTable = this.getFeatureTable(script, language, feature, create);
+        const tables = [];
         if (featureTable) {
-            var lookupTable;
-            var lookupListIndexes = featureTable.lookupListIndexes;
-            var allLookups = this.font.tables[this.tableName].lookups;
+            let lookupTable;
+            const lookupListIndexes = featureTable.lookupListIndexes;
+            const allLookups = this.font.tables[this.tableName].lookups;
             // lookupListIndexes are in no particular order, so use naive search.
-            for (var i = 0; i < lookupListIndexes.length; i++) {
+            for (let i = 0; i < lookupListIndexes.length; i++) {
                 lookupTable = allLookups[lookupListIndexes[i]];
                 if (lookupTable.lookupType === lookupType) {
                     tables.push(lookupTable);
@@ -240,7 +240,7 @@ Layout.prototype = {
                     subtables: [],
                     markFilteringSet: undefined
                 };
-                var index = allLookups.length;
+                const index = allLookups.length;
                 allLookups.push(lookupTable);
                 lookupListIndexes.push(index);
                 return [lookupTable];
@@ -261,13 +261,13 @@ Layout.prototype = {
         if (coverageTable.format === 1) {
             return coverageTable.glyphs;
         } else {
-            var glyphs = [];
-            var ranges = coverageTable.ranges;
-            for (var i = 0; i < ranges.length; i++) {
-                var range = ranges[i];
-                var start = range.start;
-                var end = range.end;
-                for (var j = start; j <= end; j++) {
+            const glyphs = [];
+            const ranges = coverageTable.ranges;
+            for (let i = 0; i < ranges.length; i++) {
+                const range = ranges[i];
+                const start = range.start;
+                const end = range.end;
+                for (let j = start; j <= end; j++) {
                     glyphs.push(j);
                 }
             }

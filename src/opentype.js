@@ -44,7 +44,7 @@ import meta from './tables/meta';
  * @param  {Function} callback - The function to call when the font load completes
  */
 function loadFromFile(path, callback) {
-    var fs = require('fs');
+    const fs = require('fs');
     fs.readFile(path, function(err, buffer) {
         if (err) {
             return callback(err.message);
@@ -60,7 +60,7 @@ function loadFromFile(path, callback) {
  * @param  {Function} callback - The function to call when the font load completes
  */
 function loadFromUrl(url, callback) {
-    var request = new XMLHttpRequest();
+    const request = new XMLHttpRequest();
     request.open('get', url, true);
     request.responseType = 'arraybuffer';
     request.onload = function() {
@@ -86,13 +86,13 @@ function loadFromUrl(url, callback) {
  * @return {Object[]}
  */
 function parseOpenTypeTableEntries(data, numTables) {
-    var tableEntries = [];
-    var p = 12;
-    for (var i = 0; i < numTables; i += 1) {
-        var tag = parse.getTag(data, p);
-        var checksum = parse.getULong(data, p + 4);
-        var offset = parse.getULong(data, p + 8);
-        var length = parse.getULong(data, p + 12);
+    const tableEntries = [];
+    let p = 12;
+    for (let i = 0; i < numTables; i += 1) {
+        const tag = parse.getTag(data, p);
+        const checksum = parse.getULong(data, p + 4);
+        const offset = parse.getULong(data, p + 8);
+        const length = parse.getULong(data, p + 12);
         tableEntries.push({tag: tag, checksum: checksum, offset: offset, length: length, compression: false});
         p += 16;
     }
@@ -107,14 +107,14 @@ function parseOpenTypeTableEntries(data, numTables) {
  * @return {Object[]}
  */
 function parseWOFFTableEntries(data, numTables) {
-    var tableEntries = [];
-    var p = 44; // offset to the first table directory entry.
-    for (var i = 0; i < numTables; i += 1) {
-        var tag = parse.getTag(data, p);
-        var offset = parse.getULong(data, p + 4);
-        var compLength = parse.getULong(data, p + 8);
-        var origLength = parse.getULong(data, p + 12);
-        var compression;
+    const tableEntries = [];
+    let p = 44; // offset to the first table directory entry.
+    for (let i = 0; i < numTables; i += 1) {
+        const tag = parse.getTag(data, p);
+        const offset = parse.getULong(data, p + 4);
+        const compLength = parse.getULong(data, p + 8);
+        const origLength = parse.getULong(data, p + 12);
+        let compression;
         if (compLength < origLength) {
             compression = 'WOFF';
         } else {
@@ -143,14 +143,14 @@ function parseWOFFTableEntries(data, numTables) {
  */
 function uncompressTable(data, tableEntry) {
     if (tableEntry.compression === 'WOFF') {
-        var inBuffer = new Uint8Array(data.buffer, tableEntry.offset + 2, tableEntry.compressedLength - 2);
-        var outBuffer = new Uint8Array(tableEntry.length);
+        const inBuffer = new Uint8Array(data.buffer, tableEntry.offset + 2, tableEntry.compressedLength - 2);
+        const outBuffer = new Uint8Array(tableEntry.length);
         inflate(inBuffer, outBuffer);
         if (outBuffer.byteLength !== tableEntry.length) {
             throw new Error('Decompression error: ' + tableEntry.tag + ' decompressed length doesn\'t match recorded length');
         }
 
-        var view = new DataView(outBuffer.buffer, 0);
+        const view = new DataView(outBuffer.buffer, 0);
         return {data: view, offset: 0};
     } else {
         return {data: data, offset: tableEntry.offset};
@@ -166,20 +166,20 @@ function uncompressTable(data, tableEntry) {
  * @return {opentype.Font}
  */
 function parseBuffer(buffer) {
-    var indexToLocFormat;
-    var ltagTable;
+    let indexToLocFormat;
+    let ltagTable;
 
     // Since the constructor can also be called to create new fonts from scratch, we indicate this
     // should be an empty font that we'll fill with our own data.
-    var font = new Font({empty: true});
+    const font = new Font({empty: true});
 
     // OpenType fonts use big endian byte ordering.
     // We can't rely on typed array view types, because they operate with the endianness of the host computer.
     // Instead we use DataViews where we can specify endianness.
-    var data = new DataView(buffer, 0);
-    var numTables;
-    var tableEntries = [];
-    var signature = parse.getTag(data, 0);
+    const data = new DataView(buffer, 0);
+    let numTables;
+    let tableEntries = [];
+    const signature = parse.getTag(data, 0);
     if (signature === String.fromCharCode(0, 1, 0, 0) || signature === 'true' || signature === 'typ1') {
         font.outlinesFormat = 'truetype';
         numTables = parse.getUShort(data, 4);
@@ -189,7 +189,7 @@ function parseBuffer(buffer) {
         numTables = parse.getUShort(data, 4);
         tableEntries = parseOpenTypeTableEntries(data, numTables);
     } else if (signature === 'wOFF') {
-        var flavor = parse.getTag(data, 4);
+        const flavor = parse.getTag(data, 4);
         if (flavor === String.fromCharCode(0, 1, 0, 0)) {
             font.outlinesFormat = 'truetype';
         } else if (flavor === 'OTTO') {
@@ -204,21 +204,21 @@ function parseBuffer(buffer) {
         throw new Error('Unsupported OpenType signature ' + signature);
     }
 
-    var cffTableEntry;
-    var fvarTableEntry;
-    var glyfTableEntry;
-    var gposTableEntry;
-    var gsubTableEntry;
-    var hmtxTableEntry;
-    var kernTableEntry;
-    var locaTableEntry;
-    var nameTableEntry;
-    var metaTableEntry;
-    var p;
+    let cffTableEntry;
+    let fvarTableEntry;
+    let glyfTableEntry;
+    let gposTableEntry;
+    let gsubTableEntry;
+    let hmtxTableEntry;
+    let kernTableEntry;
+    let locaTableEntry;
+    let nameTableEntry;
+    let metaTableEntry;
+    let p;
 
-    for (var i = 0; i < numTables; i += 1) {
-        var tableEntry = tableEntries[i];
-        var table;
+    for (let i = 0; i < numTables; i += 1) {
+        const tableEntry = tableEntries[i];
+        let table;
         switch (tableEntry.tag) {
             case 'cmap':
                 table = uncompressTable(data, tableEntry);
@@ -304,51 +304,51 @@ function parseBuffer(buffer) {
         }
     }
 
-    var nameTable = uncompressTable(data, nameTableEntry);
+    const nameTable = uncompressTable(data, nameTableEntry);
     font.tables.name = _name.parse(nameTable.data, nameTable.offset, ltagTable);
     font.names = font.tables.name;
 
     if (glyfTableEntry && locaTableEntry) {
-        var shortVersion = indexToLocFormat === 0;
-        var locaTable = uncompressTable(data, locaTableEntry);
-        var locaOffsets = loca.parse(locaTable.data, locaTable.offset, font.numGlyphs, shortVersion);
-        var glyfTable = uncompressTable(data, glyfTableEntry);
+        const shortVersion = indexToLocFormat === 0;
+        const locaTable = uncompressTable(data, locaTableEntry);
+        const locaOffsets = loca.parse(locaTable.data, locaTable.offset, font.numGlyphs, shortVersion);
+        const glyfTable = uncompressTable(data, glyfTableEntry);
         font.glyphs = glyf.parse(glyfTable.data, glyfTable.offset, locaOffsets, font);
     } else if (cffTableEntry) {
-        var cffTable = uncompressTable(data, cffTableEntry);
+        const cffTable = uncompressTable(data, cffTableEntry);
         cff.parse(cffTable.data, cffTable.offset, font);
     } else {
         throw new Error('Font doesn\'t contain TrueType or CFF outlines.');
     }
 
-    var hmtxTable = uncompressTable(data, hmtxTableEntry);
+    const hmtxTable = uncompressTable(data, hmtxTableEntry);
     hmtx.parse(hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
     addGlyphNames(font);
 
     if (kernTableEntry) {
-        var kernTable = uncompressTable(data, kernTableEntry);
+        const kernTable = uncompressTable(data, kernTableEntry);
         font.kerningPairs = kern.parse(kernTable.data, kernTable.offset);
     } else {
         font.kerningPairs = {};
     }
 
     if (gposTableEntry) {
-        var gposTable = uncompressTable(data, gposTableEntry);
+        const gposTable = uncompressTable(data, gposTableEntry);
         gpos.parse(gposTable.data, gposTable.offset, font);
     }
 
     if (gsubTableEntry) {
-        var gsubTable = uncompressTable(data, gsubTableEntry);
+        const gsubTable = uncompressTable(data, gsubTableEntry);
         font.tables.gsub = gsub.parse(gsubTable.data, gsubTable.offset);
     }
 
     if (fvarTableEntry) {
-        var fvarTable = uncompressTable(data, fvarTableEntry);
+        const fvarTable = uncompressTable(data, fvarTableEntry);
         font.tables.fvar = fvar.parse(fvarTable.data, fvarTable.offset, font.names);
     }
 
     if (metaTableEntry) {
-        var metaTable = uncompressTable(data, metaTableEntry);
+        const metaTable = uncompressTable(data, metaTableEntry);
         font.tables.meta = meta.parse(metaTable.data, metaTable.offset);
         font.metas = font.tables.meta;
     }
@@ -367,13 +367,13 @@ function parseBuffer(buffer) {
  * @param  {Function} callback - The callback.
  */
 function load(url, callback) {
-    var isNode = typeof window === 'undefined';
-    var loadFn = isNode ? loadFromFile : loadFromUrl;
+    const isNode = typeof window === 'undefined';
+    const loadFn = isNode ? loadFromFile : loadFromUrl;
     loadFn(url, function(err, arrayBuffer) {
         if (err) {
             return callback(err);
         }
-        var font;
+        let font;
         try {
             font = parseBuffer(arrayBuffer);
         } catch (e) {
@@ -391,8 +391,8 @@ function load(url, callback) {
  * @return {opentype.Font}
  */
 function loadSync(url) {
-    var fs = require('fs');
-    var buffer = fs.readFileSync(url);
+    const fs = require('fs');
+    const buffer = fs.readFileSync(url);
     return parseBuffer(nodeBufferToArrayBuffer(buffer));
 }
 
