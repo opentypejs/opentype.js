@@ -21,10 +21,10 @@ function Data(source, dest) {
   this.sourceIndex = 0;
   this.tag = 0;
   this.bitcount = 0;
-
+  
   this.dest = dest;
   this.destLen = 0;
-
+  
   this.ltree = new Tree();  /* dynamic length/symbol tree */
   this.dtree = new Tree();  /* dynamic distance tree */
 }
@@ -166,7 +166,7 @@ function tinf_decode_symbol(d, t) {
     d.tag |= d.source[d.sourceIndex++] << d.bitcount;
     d.bitcount += 8;
   }
-
+  
   var sum = 0, cur = 0, len = 0;
   var tag = d.tag;
 
@@ -179,7 +179,7 @@ function tinf_decode_symbol(d, t) {
     sum += t.table[len];
     cur -= t.table[len];
   } while (cur >= 0);
-
+  
   d.tag = tag;
   d.bitcount -= len;
 
@@ -290,7 +290,7 @@ function tinf_inflate_block_data(d, lt, dt) {
 function tinf_inflate_uncompressed_block(d) {
   var length, invlength;
   var i;
-
+  
   /* unread from bitbuffer */
   while (d.bitcount > 8) {
     d.sourceIndex--;
@@ -363,7 +363,7 @@ function tinf_uncompress(source, dest) {
     else
       { return d.dest.subarray(0, d.destLen); }
   }
-
+  
   return d.dest;
 }
 
@@ -1187,9 +1187,7 @@ encode.REAL = function(v) {
     }
 
     var nibbles = '';
-    var i;
-    var ii;
-    for (i = 0, ii = value.length; i < ii; i += 1) {
+    for (var i = 0, ii = value.length; i < ii; i += 1) {
         var c = value[i];
         if (c === 'e') {
             nibbles += value[++i] === '-' ? 'c' : 'b';
@@ -1204,8 +1202,8 @@ encode.REAL = function(v) {
 
     nibbles += (nibbles.length & 1) ? 'f' : 'ff';
     var out = [30];
-    for (i = 0, ii = nibbles.length; i < ii; i += 2) {
-        out.push(parseInt(nibbles.substr(i, 2), 16));
+    for (var i$1 = 0, ii$1 = nibbles.length; i$1 < ii$1; i$1 += 2) {
+        out.push(parseInt(nibbles.substr(i$1, 2), 16));
     }
 
     return out;
@@ -1296,37 +1294,35 @@ sizeOf.UTF16 = function(v) {
  */
 var eightBitMacEncodings = {
     'x-mac-croatian':  // Python: 'mac_croatian'
-        'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®Š™´¨≠ŽØ∞±≤≥∆µ∂∑∏š∫ªºΩžø' +
-        '¿¡¬√ƒ≈Ć«Č… ÀÃÕŒœĐ—“”‘’÷◊©⁄€‹›Æ»–·‚„‰ÂćÁčÈÍÎÏÌÓÔđÒÚÛÙıˆ˜¯πË˚¸Êæˇ',
+    'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®Š™´¨≠ŽØ∞±≤≥∆µ∂∑∏š∫ªºΩžø' +
+    '¿¡¬√ƒ≈Ć«Č… ÀÃÕŒœĐ—“”‘’÷◊©⁄€‹›Æ»–·‚„‰ÂćÁčÈÍÎÏÌÓÔđÒÚÛÙıˆ˜¯πË˚¸Êæˇ',
     'x-mac-cyrillic':  // Python: 'mac_cyrillic'
-        'АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ†°Ґ£§•¶І®©™Ђђ≠Ѓѓ∞±≤≥іµґЈЄєЇїЉљЊњ' +
-        'јЅ¬√ƒ≈∆«»… ЋћЌќѕ–—“”‘’÷„ЎўЏџ№Ёёяабвгдежзийклмнопрстуфхцчшщъыьэю',
-    'x-mac-gaelic':
-        // http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/GAELIC.TXT
-        'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØḂ±≤≥ḃĊċḊḋḞḟĠġṀæø' +
-        'ṁṖṗɼƒſṠ«»… ÀÃÕŒœ–—“”‘’ṡẛÿŸṪ€‹›Ŷŷṫ·Ỳỳ⁊ÂÊÁËÈÍÎÏÌÓÔ♣ÒÚÛÙıÝýŴŵẄẅẀẁẂẃ',
+    'АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ†°Ґ£§•¶І®©™Ђђ≠Ѓѓ∞±≤≥іµґЈЄєЇїЉљЊњ' +
+    'јЅ¬√ƒ≈∆«»… ЋћЌќѕ–—“”‘’÷„ЎўЏџ№Ёёяабвгдежзийклмнопрстуфхцчшщъыьэю',
+    'x-mac-gaelic': // http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/GAELIC.TXT
+    'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØḂ±≤≥ḃĊċḊḋḞḟĠġṀæø' +
+    'ṁṖṗɼƒſṠ«»… ÀÃÕŒœ–—“”‘’ṡẛÿŸṪ€‹›Ŷŷṫ·Ỳỳ⁊ÂÊÁËÈÍÎÏÌÓÔ♣ÒÚÛÙıÝýŴŵẄẅẀẁẂẃ',
     'x-mac-greek':  // Python: 'mac_greek'
-        'Ä¹²É³ÖÜ΅àâä΄¨çéèêë£™îï•½‰ôö¦€ùûü†ΓΔΘΛΞΠß®©ΣΪ§≠°·Α±≤≥¥ΒΕΖΗΙΚΜΦΫΨΩ' +
-        'άΝ¬ΟΡ≈Τ«»… ΥΧΆΈœ–―“”‘’÷ΉΊΌΎέήίόΏύαβψδεφγηιξκλμνοπώρστθωςχυζϊϋΐΰ\u00AD',
+    'Ä¹²É³ÖÜ΅àâä΄¨çéèêë£™îï•½‰ôö¦€ùûü†ΓΔΘΛΞΠß®©ΣΪ§≠°·Α±≤≥¥ΒΕΖΗΙΚΜΦΫΨΩ' +
+    'άΝ¬ΟΡ≈Τ«»… ΥΧΆΈœ–―“”‘’÷ΉΊΌΎέήίόΏύαβψδεφγηιξκλμνοπώρστθωςχυζϊϋΐΰ\u00AD',
     'x-mac-icelandic':  // Python: 'mac_iceland'
-        'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûüÝ°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø' +
-        '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€ÐðÞþý·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ',
-    'x-mac-inuit':
-        // http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/INUIT.TXT
-        'ᐃᐄᐅᐆᐊᐋᐱᐲᐳᐴᐸᐹᑉᑎᑏᑐᑑᑕᑖᑦᑭᑮᑯᑰᑲᑳᒃᒋᒌᒍᒎᒐᒑ°ᒡᒥᒦ•¶ᒧ®©™ᒨᒪᒫᒻᓂᓃᓄᓅᓇᓈᓐᓯᓰᓱᓲᓴᓵᔅᓕᓖᓗ' +
-        'ᓘᓚᓛᓪᔨᔩᔪᔫᔭ… ᔮᔾᕕᕖᕗ–—“”‘’ᕘᕙᕚᕝᕆᕇᕈᕉᕋᕌᕐᕿᖀᖁᖂᖃᖄᖅᖏᖐᖑᖒᖓᖔᖕᙱᙲᙳᙴᙵᙶᖖᖠᖡᖢᖣᖤᖥᖦᕼŁł',
+    'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûüÝ°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø' +
+    '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€ÐðÞþý·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ',
+    'x-mac-inuit': // http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/INUIT.TXT
+    'ᐃᐄᐅᐆᐊᐋᐱᐲᐳᐴᐸᐹᑉᑎᑏᑐᑑᑕᑖᑦᑭᑮᑯᑰᑲᑳᒃᒋᒌᒍᒎᒐᒑ°ᒡᒥᒦ•¶ᒧ®©™ᒨᒪᒫᒻᓂᓃᓄᓅᓇᓈᓐᓯᓰᓱᓲᓴᓵᔅᓕᓖᓗ' +
+    'ᓘᓚᓛᓪᔨᔩᔪᔫᔭ… ᔮᔾᕕᕖᕗ–—“”‘’ᕘᕙᕚᕝᕆᕇᕈᕉᕋᕌᕐᕿᖀᖁᖂᖃᖄᖅᖏᖐᖑᖒᖓᖔᖕᙱᙲᙳᙴᙵᙶᖖᖠᖡᖢᖣᖤᖥᖦᕼŁł',
     'x-mac-ce':  // Python: 'mac_latin2'
-        'ÄĀāÉĄÖÜáąČäčĆćéŹźĎíďĒēĖóėôöõúĚěü†°Ę£§•¶ß®©™ę¨≠ģĮįĪ≤≥īĶ∂∑łĻļĽľĹĺŅ' +
-        'ņŃ¬√ńŇ∆«»… ňŐÕőŌ–—“”‘’÷◊ōŔŕŘ‹›řŖŗŠ‚„šŚśÁŤťÍŽžŪÓÔūŮÚůŰűŲųÝýķŻŁżĢˇ',
+    'ÄĀāÉĄÖÜáąČäčĆćéŹźĎíďĒēĖóėôöõúĚěü†°Ę£§•¶ß®©™ę¨≠ģĮįĪ≤≥īĶ∂∑łĻļĽľĹĺŅ' +
+    'ņŃ¬√ńŇ∆«»… ňŐÕőŌ–—“”‘’÷◊ōŔŕŘ‹›řŖŗŠ‚„šŚśÁŤťÍŽžŪÓÔūŮÚůŰűŲųÝýķŻŁżĢˇ',
     macintosh:  // Python: 'mac_roman'
-        'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø' +
-        '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›ﬁﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ',
+    'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø' +
+    '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›ﬁﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ',
     'x-mac-romanian':  // Python: 'mac_romanian'
-        'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ĂȘ∞±≤≥¥µ∂∑∏π∫ªºΩăș' +
-        '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›Țț‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ',
+    'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ĂȘ∞±≤≥¥µ∂∑∏π∫ªºΩăș' +
+    '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›Țț‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ',
     'x-mac-turkish':  // Python: 'mac_turkish'
-        'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø' +
-        '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸĞğİıŞş‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙˆ˜¯˘˙˚¸˝˛ˇ'
+    'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø' +
+    '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸĞğİıŞş‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙˆ˜¯˘˙˚¸˝˛ˇ'
 };
 
 /**
@@ -1367,7 +1363,7 @@ decode.MACSTRING = function(dataView, offset, dataLength, encoding) {
 // encoding Macintosh strings is only rarely needed in typical applications.
 var macEncodingTableCache = typeof WeakMap === 'function' && new WeakMap();
 var macEncodingCacheKeys;
-var getMacEncodingTable = function(encoding) {
+var getMacEncodingTable = function (encoding) {
     // Since we use encoding as a cache key for WeakMap, it has to be
     // a String object and not a literal. And at least on NodeJS 2.10.1,
     // WeakMap requires that the same String instance is passed for cache hits.
@@ -1585,7 +1581,6 @@ encode.VARDELTAS = function(deltas) {
  * @returns {Array}
  */
 encode.INDEX = function(l) {
-    var i;
     //var offset, offsets, offsetEncoder, encodedOffsets, encodedOffset, data,
     //    i, v;
     // Because we have to know which data type to use to encode the offsets,
@@ -1594,7 +1589,7 @@ encode.INDEX = function(l) {
     var offset = 1; // First offset is always 1.
     var offsets = [offset];
     var data = [];
-    for (i = 0; i < l.length; i += 1) {
+    for (var i = 0; i < l.length; i += 1) {
         var v = encode.OBJECT(l[i]);
         Array.prototype.push.apply(data, v);
         offset += v.length;
@@ -1608,8 +1603,8 @@ encode.INDEX = function(l) {
     var encodedOffsets = [];
     var offSize = (1 + Math.floor(Math.log(offset) / Math.log(2)) / 8) | 0;
     var offsetEncoder = [undefined, encode.BYTE, encode.USHORT, encode.UINT24, encode.ULONG][offSize];
-    for (i = 0; i < offsets.length; i += 1) {
-        var encodedOffset = offsetEncoder(offsets[i]);
+    for (var i$1 = 0; i$1 < offsets.length; i$1 += 1) {
+        var encodedOffset = offsetEncoder(offsets[i$1]);
         Array.prototype.push.apply(encodedOffsets, encodedOffset);
     }
 
@@ -1781,9 +1776,8 @@ encode.TABLE = function(table) {
     var length = table.fields.length;
     var subtables = [];
     var subtableOffsets = [];
-    var i;
 
-    for (i = 0; i < length; i += 1) {
+    for (var i = 0; i < length; i += 1) {
         var field = table.fields[i];
         var encodingFunction = encode[field.type];
         check.argument(encodingFunction !== undefined, 'No encoding function for field type ' + field.type + ' (' + field.name + ')');
@@ -1803,13 +1797,13 @@ encode.TABLE = function(table) {
         }
     }
 
-    for (i = 0; i < subtables.length; i += 1) {
-        var o = subtableOffsets[i];
+    for (var i$1 = 0; i$1 < subtables.length; i$1 += 1) {
+        var o = subtableOffsets[i$1];
         var offset = d.length;
         check.argument(offset < 65536, 'Table ' + table.tableName + ' too big.');
         d[o] = offset >> 8;
         d[o + 1] = offset & 0xff;
-        d = d.concat(subtables[i]);
+        d = d.concat(subtables[i$1]);
     }
 
     return d;
@@ -1868,8 +1862,7 @@ sizeOf.LITERAL = function(v) {
 function Table(tableName, fields, options) {
     var this$1 = this;
 
-    var i;
-    for (i = 0; i < fields.length; i += 1) {
+    for (var i = 0; i < fields.length; i += 1) {
         var field = fields[i];
         this$1[field.name] = field.value;
     }
@@ -1878,8 +1871,8 @@ function Table(tableName, fields, options) {
     this.fields = fields;
     if (options) {
         var optionKeys = Object.keys(options);
-        for (i = 0; i < optionKeys.length; i += 1) {
-            var k = optionKeys[i];
+        for (var i$1 = 0; i$1 < optionKeys.length; i$1 += 1) {
+            var k = optionKeys[i$1];
             var v = options[k];
             if (this$1[k] !== undefined) {
                 this$1[k] = v;
@@ -2551,8 +2544,6 @@ var parse = {
 // https://www.microsoft.com/typography/OTSPEC/cmap.htm
 
 function parseCmapTableFormat12(cmap, p) {
-    var i;
-
     //Skip reserved.
     p.parseUShort();
 
@@ -2564,7 +2555,7 @@ function parseCmapTableFormat12(cmap, p) {
     cmap.groupCount = groupCount = p.parseULong();
     cmap.glyphIndexMap = {};
 
-    for (i = 0; i < groupCount; i += 1) {
+    for (var i = 0; i < groupCount; i += 1) {
         var startCharCode = p.parseULong();
         var endCharCode = p.parseULong();
         var startGlyphId = p.parseULong();
@@ -2577,8 +2568,6 @@ function parseCmapTableFormat12(cmap, p) {
 }
 
 function parseCmapTableFormat4(cmap, p, data, start, offset) {
-    var i;
-
     // Length in bytes of the sub-tables.
     cmap.length = p.parseUShort();
     cmap.language = p.parseUShort();
@@ -2597,8 +2586,8 @@ function parseCmapTableFormat4(cmap, p, data, start, offset) {
     var idDeltaParser = new parse.Parser(data, start + offset + 16 + segCount * 4);
     var idRangeOffsetParser = new parse.Parser(data, start + offset + 16 + segCount * 6);
     var glyphIndexOffset = start + offset + 16 + segCount * 8;
-    for (i = 0; i < segCount - 1; i += 1) {
-        var glyphIndex;
+    for (var i = 0; i < segCount - 1; i += 1) {
+        var glyphIndex = (void 0);
         var endCount = endCountParser.parseUShort();
         var startCount = startCountParser.parseUShort();
         var idDelta = idDeltaParser.parseShort();
@@ -2631,7 +2620,6 @@ function parseCmapTableFormat4(cmap, p, data, start, offset) {
 // There are many available formats, but we only support the Windows format 4 and 12.
 // This function returns a `CmapEncoding` object or null if no supported format could be found.
 function parseCmapTable(data, start) {
-    var i;
     var cmap = {};
     cmap.version = parse.getUShort(data, start);
     check.argument(cmap.version === 0, 'cmap table version should be 0.');
@@ -2640,7 +2628,7 @@ function parseCmapTable(data, start) {
     // We're only interested in a "platform 3" table. This is a Windows format.
     cmap.numTables = parse.getUShort(data, start + 2);
     var offset = -1;
-    for (i = cmap.numTables - 1; i >= 0; i -= 1) {
+    for (var i = cmap.numTables - 1; i >= 0; i -= 1) {
         var platformId = parse.getUShort(data, start + 4 + (i * 8));
         var encodingId = parse.getUShort(data, start + 4 + (i * 8) + 2);
         if (platformId === 3 && (encodingId === 0 || encodingId === 1 || encodingId === 10)) {
@@ -2687,7 +2675,6 @@ function addTerminatorSegment(t) {
 }
 
 function makeCmapTable(glyphs) {
-    var i;
     var t = new table.Table('cmap', [
         {name: 'version', type: 'USHORT', value: 0},
         {name: 'numTables', type: 'USHORT', value: 1},
@@ -2704,7 +2691,7 @@ function makeCmapTable(glyphs) {
     ]);
 
     t.segments = [];
-    for (i = 0; i < glyphs.length; i += 1) {
+    for (var i = 0; i < glyphs.length; i += 1) {
         var glyph = glyphs.get(i);
         for (var j = 0; j < glyph.unicodes.length; j += 1) {
             addSegment(t, glyph.unicodes[j], i);
@@ -2731,14 +2718,14 @@ function makeCmapTable(glyphs) {
     var idRangeOffsets = [];
     var glyphIds = [];
 
-    for (i = 0; i < segCount; i += 1) {
-        var segment = t.segments[i];
-        endCounts = endCounts.concat({name: 'end_' + i, type: 'USHORT', value: segment.end});
-        startCounts = startCounts.concat({name: 'start_' + i, type: 'USHORT', value: segment.start});
-        idDeltas = idDeltas.concat({name: 'idDelta_' + i, type: 'SHORT', value: segment.delta});
-        idRangeOffsets = idRangeOffsets.concat({name: 'idRangeOffset_' + i, type: 'USHORT', value: segment.offset});
+    for (var i$1 = 0; i$1 < segCount; i$1 += 1) {
+        var segment = t.segments[i$1];
+        endCounts = endCounts.concat({name: 'end_' + i$1, type: 'USHORT', value: segment.end});
+        startCounts = startCounts.concat({name: 'start_' + i$1, type: 'USHORT', value: segment.start});
+        idDeltas = idDeltas.concat({name: 'idDelta_' + i$1, type: 'SHORT', value: segment.delta});
+        idRangeOffsets = idRangeOffsets.concat({name: 'idRangeOffset_' + i$1, type: 'USHORT', value: segment.offset});
         if (segment.glyphId !== undefined) {
-            glyphIds = glyphIds.concat({name: 'glyph_' + i, type: 'USHORT', value: segment.glyphId});
+            glyphIds = glyphIds.concat({name: 'glyph_' + i$1, type: 'USHORT', value: segment.glyphId});
         }
     }
 
@@ -2961,14 +2948,13 @@ CffEncoding.prototype.charToGlyphIndex = function(s) {
 function GlyphNames(post) {
     var this$1 = this;
 
-    var i;
     switch (post.version) {
         case 1:
             this.names = standardNames.slice();
             break;
         case 2:
             this.names = new Array(post.numberOfGlyphs);
-            for (i = 0; i < post.numberOfGlyphs; i++) {
+            for (var i = 0; i < post.numberOfGlyphs; i++) {
                 if (post.glyphNameIndex[i] < standardNames.length) {
                     this$1.names[i] = standardNames[post.glyphNameIndex[i]];
                 } else {
@@ -2979,8 +2965,8 @@ function GlyphNames(post) {
             break;
         case 2.5:
             this.names = new Array(post.numberOfGlyphs);
-            for (i = 0; i < post.numberOfGlyphs; i++) {
-                this$1.names[i] = standardNames[i + post.glyphNameIndex[i]];
+            for (var i$1 = 0; i$1 < post.numberOfGlyphs; i$1++) {
+                this$1.names[i$1] = standardNames[i$1 + post.glyphNameIndex[i$1]];
             }
 
             break;
@@ -3026,16 +3012,16 @@ function addGlyphNames(font) {
         glyph.addUnicode(parseInt(c));
     }
 
-    for (i = 0; i < font.glyphs.length; i += 1) {
-        glyph = font.glyphs.get(i);
+    for (var i$1 = 0; i$1 < font.glyphs.length; i$1 += 1) {
+        glyph = font.glyphs.get(i$1);
         if (font.cffEncoding) {
             if (font.isCIDFont) {
-                glyph.name = 'gid' + i;
+                glyph.name = 'gid' + i$1;
             } else {
-                glyph.name = font.cffEncoding.charset[i];
+                glyph.name = font.cffEncoding.charset[i$1];
             }
         } else if (font.glyphNames.names) {
-            glyph.name = font.glyphNames.glyphIndexToName(i);
+            glyph.name = font.glyphNames.glyphIndexToName(i$1);
         }
     }
 }
@@ -3091,24 +3077,23 @@ function parseGlyph(glyph, data, start) {
     glyph._yMax = p.parseShort();
     var flags;
     var flag;
-    var i;
 
     if (glyph.numberOfContours > 0) {
         // This glyph is not a composite.
         var endPointIndices = glyph.endPointIndices = [];
-        for (i = 0; i < glyph.numberOfContours; i += 1) {
+        for (var i = 0; i < glyph.numberOfContours; i += 1) {
             endPointIndices.push(p.parseUShort());
         }
 
         glyph.instructionLength = p.parseUShort();
         glyph.instructions = [];
-        for (i = 0; i < glyph.instructionLength; i += 1) {
+        for (var i$1 = 0; i$1 < glyph.instructionLength; i$1 += 1) {
             glyph.instructions.push(p.parseByte());
         }
 
         var numberOfCoordinates = endPointIndices[endPointIndices.length - 1] + 1;
         flags = [];
-        for (i = 0; i < numberOfCoordinates; i += 1) {
+        for (var i$2 = 0; i$2 < numberOfCoordinates; i$2 += 1) {
             flag = p.parseByte();
             flags.push(flag);
             // If bit 3 is set, we repeat this flag n times, where n is the next byte.
@@ -3116,7 +3101,7 @@ function parseGlyph(glyph, data, start) {
                 var repeatCount = p.parseByte();
                 for (var j = 0; j < repeatCount; j += 1) {
                     flags.push(flag);
-                    i += 1;
+                    i$2 += 1;
                 }
             }
         }
@@ -3128,26 +3113,26 @@ function parseGlyph(glyph, data, start) {
             var point;
             // X/Y coordinates are relative to the previous point, except for the first point which is relative to 0,0.
             if (numberOfCoordinates > 0) {
-                for (i = 0; i < numberOfCoordinates; i += 1) {
-                    flag = flags[i];
+                for (var i$3 = 0; i$3 < numberOfCoordinates; i$3 += 1) {
+                    flag = flags[i$3];
                     point = {};
                     point.onCurve = !!(flag & 1);
-                    point.lastPointOfContour = endPointIndices.indexOf(i) >= 0;
+                    point.lastPointOfContour = endPointIndices.indexOf(i$3) >= 0;
                     points.push(point);
                 }
 
                 var px = 0;
-                for (i = 0; i < numberOfCoordinates; i += 1) {
-                    flag = flags[i];
-                    point = points[i];
+                for (var i$4 = 0; i$4 < numberOfCoordinates; i$4 += 1) {
+                    flag = flags[i$4];
+                    point = points[i$4];
                     point.x = parseGlyphCoordinate(p, flag, px, 2, 16);
                     px = point.x;
                 }
 
                 var py = 0;
-                for (i = 0; i < numberOfCoordinates; i += 1) {
-                    flag = flags[i];
-                    point = points[i];
+                for (var i$5 = 0; i$5 < numberOfCoordinates; i$5 += 1) {
+                    flag = flags[i$5];
+                    point = points[i$5];
                     point.y = parseGlyphCoordinate(p, flag, py, 4, 32);
                     py = point.y;
                 }
@@ -3220,7 +3205,7 @@ function parseGlyph(glyph, data, start) {
             // We have instructions
             glyph.instructionLength = p.parseUShort();
             glyph.instructions = [];
-            for (i = 0; i < glyph.instructionLength; i += 1) {
+            for (var i$6 = 0; i$6 < glyph.instructionLength; i$6 += 1) {
                 glyph.instructions.push(p.parseByte());
             }
         }
@@ -3283,7 +3268,7 @@ function getPath(points) {
                 p.moveTo(next.x, next.y);
             } else {
                 // If both first and last points are off-curve, start at their middle.
-                var start = { x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5 };
+                var start = {x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5};
                 p.moveTo(start.x, start.y);
             }
         }
@@ -3327,7 +3312,7 @@ function buildPath(glyphs, glyph) {
             // Force the ttfGlyphLoader to parse the glyph.
             componentGlyph.getPath();
             if (componentGlyph.points) {
-                var transformedPoints;
+                var transformedPoints = (void 0);
                 if (component.matchedPoints === undefined) {
                     // component positioned by offset
                     transformedPoints = transformPoints(componentGlyph.points, component);
@@ -3360,10 +3345,9 @@ function buildPath(glyphs, glyph) {
 // Parse all the glyphs according to the offsets from the `loca` table.
 function parseGlyfTable(data, start, loca, font) {
     var glyphs = new glyphset.GlyphSet(font);
-    var i;
 
     // The last element of the loca table is invalid.
-    for (i = 0; i < loca.length - 1; i += 1) {
+    for (var i = 0; i < loca.length - 1; i += 1) {
         var offset = loca[i];
         var nextOffset = loca[i + 1];
         if (offset !== nextOffset) {
@@ -3381,7 +3365,7 @@ var glyf = { getPath: getPath, parse: parseGlyfTable };
 // The Glyph object
 
 function getPathDefinition(glyph, path) {
-    var _path = path || { commands: [] };
+    var _path = path || {commands: []};
     return {
         configurable: true,
 
@@ -3910,14 +3894,13 @@ function parseCFFIndex(data, start, conversionFn) {
     var offsets = [];
     var objects = [];
     var count = parse.getCard16(data, start);
-    var i;
     var objectOffset;
     var endOffset;
     if (count !== 0) {
         var offsetSize = parse.getByte(data, start + 2);
         objectOffset = start + ((count + 1) * offsetSize) + 2;
         var pos = start + 3;
-        for (i = 0; i < count + 1; i += 1) {
+        for (var i = 0; i < count + 1; i += 1) {
             offsets.push(parse.getOffset(data, pos, offsetSize));
             pos += offsetSize;
         }
@@ -3928,8 +3911,8 @@ function parseCFFIndex(data, start, conversionFn) {
         endOffset = start + 2;
     }
 
-    for (i = 0; i < offsets.length - 1; i += 1) {
-        var value = parse.getBytes(data, objectOffset + offsets[i], objectOffset + offsets[i + 1]);
+    for (var i$1 = 0; i$1 < offsets.length - 1; i$1 += 1) {
+        var value = parse.getBytes(data, objectOffset + offsets[i$1], objectOffset + offsets[i$1 + 1]);
         if (conversionFn) {
             value = conversionFn(value);
         }
@@ -4014,7 +3997,7 @@ function entriesToObject(entries) {
     for (var i = 0; i < entries.length; i += 1) {
         var key = entries[i][0];
         var values = entries[i][1];
-        var value;
+        var value = (void 0);
         if (values.length === 1) {
             value = values[0];
         } else {
@@ -4141,7 +4124,12 @@ var TOP_DICT_META = [
     {name: 'underlineThickness', op: 1204, type: 'number', value: 50},
     {name: 'paintType', op: 1205, type: 'number', value: 0},
     {name: 'charstringType', op: 1206, type: 'number', value: 2},
-    {name: 'fontMatrix', op: 1207, type: ['real', 'real', 'real', 'real', 'real', 'real'], value: [0.001, 0, 0, 0.001, 0, 0]},
+    {
+        name: 'fontMatrix',
+        op: 1207,
+        type: ['real', 'real', 'real', 'real', 'real', 'real'],
+        value: [0.001, 0, 0, 0.001, 0, 0]
+    },
     {name: 'uniqueId', op: 13, type: 'number'},
     {name: 'fontBBox', op: 5, type: ['number', 'number', 'number', 'number'], value: [0, 0, 0, 0]},
     {name: 'strokeWidth', op: 1208, type: 'number', value: 0},
@@ -4225,7 +4213,6 @@ function gatherCFFTopDicts(data, start, cffIndex, strings) {
 // This function will return a list of glyph names.
 // See Adobe TN #5176 chapter 13, "Charsets".
 function parseCFFCharset(data, start, nGlyphs, strings) {
-    var i;
     var sid;
     var count;
     var parser = new parse.Parser(data, start);
@@ -4236,7 +4223,7 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
 
     var format = parser.parseCard8();
     if (format === 0) {
-        for (i = 0; i < nGlyphs; i += 1) {
+        for (var i = 0; i < nGlyphs; i += 1) {
             sid = parser.parseSID();
             charset.push(getCFFString(strings, sid));
         }
@@ -4244,7 +4231,7 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
         while (charset.length <= nGlyphs) {
             sid = parser.parseSID();
             count = parser.parseCard8();
-            for (i = 0; i <= count; i += 1) {
+            for (var i$1 = 0; i$1 <= count; i$1 += 1) {
                 charset.push(getCFFString(strings, sid));
                 sid += 1;
             }
@@ -4253,7 +4240,7 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
         while (charset.length <= nGlyphs) {
             sid = parser.parseSID();
             count = parser.parseCard16();
-            for (i = 0; i <= count; i += 1) {
+            for (var i$2 = 0; i$2 <= count; i$2 += 1) {
                 charset.push(getCFFString(strings, sid));
                 sid += 1;
             }
@@ -4268,21 +4255,20 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
 // Parse the CFF encoding data. Only one encoding can be specified per font.
 // See Adobe TN #5176 chapter 12, "Encodings".
 function parseCFFEncoding(data, start, charset) {
-    var i;
     var code;
     var enc = {};
     var parser = new parse.Parser(data, start);
     var format = parser.parseCard8();
     if (format === 0) {
         var nCodes = parser.parseCard8();
-        for (i = 0; i < nCodes; i += 1) {
+        for (var i = 0; i < nCodes; i += 1) {
             code = parser.parseCard8();
             enc[code] = i;
         }
     } else if (format === 1) {
         var nRanges = parser.parseCard8();
         code = 1;
-        for (i = 0; i < nRanges; i += 1) {
+        for (var i$1 = 0; i$1 < nRanges; i$1 += 1) {
             var first = parser.parseCard8();
             var nLeft = parser.parseCard8();
             for (var j = first; j <= first + nLeft; j += 1) {
@@ -4963,8 +4949,8 @@ function glyphToOps(glyph) {
     var x = 0;
     var y = 0;
     for (var i = 0; i < path.commands.length; i += 1) {
-        var dx;
-        var dy;
+        var dx = (void 0);
+        var dy = (void 0);
         var cmd = path.commands[i];
         if (cmd.type === 'Q') {
             // CFF only supports bézier curves, so convert the quad to a bézier.
@@ -6000,7 +5986,7 @@ function parseNameTable(data, start, ltag) {
         var language = getLanguageCode(platformID, languageID, ltag);
         var encoding = getEncoding(platformID, encodingID, languageID);
         if (encoding !== undefined && language !== undefined) {
-            var text;
+            var text = (void 0);
             if (encoding === utf16) {
                 text = decode.UTF16(data, stringOffset + offset, byteLength);
             } else {
@@ -6075,7 +6061,9 @@ function addStringToPool(s, pool) {
     var offset = findSubArray(s, pool);
     if (offset < 0) {
         offset = pool.length;
-        for (var i = 0, len = s.length; i < len; ++i) {
+        var i = 0;
+        var len = s.length;
+        for (; i < len; ++i) {
             pool.push(s[i]);
         }
 
@@ -6440,7 +6428,6 @@ var os2 = { parse: parseOS2Table, make: makeOS2Table, unicodeRanges: unicodeRang
 function parsePostTable(data, start) {
     var post = {};
     var p = new parse.Parser(data, start);
-    var i;
     post.version = p.parseVersion();
     post.italicAngle = p.parseFixed();
     post.underlinePosition = p.parseShort();
@@ -6457,13 +6444,13 @@ function parsePostTable(data, start) {
         case 2:
             post.numberOfGlyphs = p.parseUShort();
             post.glyphNameIndex = new Array(post.numberOfGlyphs);
-            for (i = 0; i < post.numberOfGlyphs; i++) {
+            for (var i = 0; i < post.numberOfGlyphs; i++) {
                 post.glyphNameIndex[i] = p.parseUShort();
             }
 
             post.names = [];
-            for (i = 0; i < post.numberOfGlyphs; i++) {
-                if (post.glyphNameIndex[i] >= standardNames.length) {
+            for (var i$1 = 0; i$1 < post.numberOfGlyphs; i$1++) {
+                if (post.glyphNameIndex[i$1] >= standardNames.length) {
                     var nameLength = p.parseChar();
                     post.names.push(p.parseString(nameLength));
                 }
@@ -6473,8 +6460,8 @@ function parsePostTable(data, start) {
         case 2.5:
             post.numberOfGlyphs = p.parseUShort();
             post.offset = new Array(post.numberOfGlyphs);
-            for (i = 0; i < post.numberOfGlyphs; i++) {
-                post.offset[i] = p.parseChar();
+            for (var i$2 = 0; i$2 < post.numberOfGlyphs; i$2++) {
+                post.offset[i$2] = p.parseChar();
             }
 
             break;
@@ -7110,9 +7097,9 @@ function fontToSfntTable(font) {
     var checkSum = computeCheckSum(bytes);
     var tableFields = sfntTable.fields;
     var checkSumAdjusted = false;
-    for (i = 0; i < tableFields.length; i += 1) {
-        if (tableFields[i].name === 'head table') {
-            tableFields[i].value.checkSumAdjustment = 0xB1B0AFBA - checkSum;
+    for (var i$1 = 0; i$1 < tableFields.length; i$1 += 1) {
+        if (tableFields[i$1].name === 'head table') {
+            tableFields[i$1].value.checkSumAdjustment = 0xB1B0AFBA - checkSum;
             checkSumAdjusted = true;
             break;
         }
@@ -7260,7 +7247,7 @@ Layout.prototype = {
                 var scr = {
                     tag: script,
                     script: {
-                        defaultLangSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [] },
+                        defaultLangSys: {reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: []},
                         langSysRecords: []
                     }
                 };
@@ -7290,7 +7277,7 @@ Layout.prototype = {
             } else if (create) {
                 var langSysRecord = {
                     tag: language,
-                    langSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [] }
+                    langSys: {reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: []}
                 };
                 scriptTable.langSysRecords.splice(-1 - pos, 0, langSysRecord);
                 return langSysRecord.langSys;
@@ -7483,7 +7470,7 @@ Substitution.prototype.getSingle = function(feature, script, language) {
         for (var i = 0; i < subtables.length; i++) {
             var subtable = subtables[i];
             var glyphs = this$1.expandCoverage(subtable.coverage);
-            var j;
+            var j = (void 0);
             if (subtable.substFormat === 1) {
                 var delta = subtable.deltaGlyphId;
                 for (j = 0; j < glyphs.length; j++) {
@@ -7574,7 +7561,7 @@ Substitution.prototype.addSingle = function(feature, substitution, script, langu
     var lookupTable = this.getLookupTables(script, language, feature, 1, true)[0];
     var subtable = getSubstFormat(lookupTable, 2, {                // lookup type 1 subtable, format 2, coverage format 1
         substFormat: 2,
-        coverage: { format: 1, glyphs: [] },
+        coverage: {format: 1, glyphs: []},
         substitute: []
     });
     check.assert(subtable.coverage.format === 1, 'Ligature: unable to modify coverage table format ' + subtable.coverage.format);
@@ -7599,7 +7586,7 @@ Substitution.prototype.addAlternate = function(feature, substitution, script, la
     var lookupTable = this.getLookupTables(script, language, feature, 3, true)[0];
     var subtable = getSubstFormat(lookupTable, 1, {                // lookup type 3 subtable, format 1, coverage format 1
         substFormat: 1,
-        coverage: { format: 1, glyphs: [] },
+        coverage: {format: 1, glyphs: []},
         alternateSets: []
     });
     check.assert(subtable.coverage.format === 1, 'Ligature: unable to modify coverage table format ' + subtable.coverage.format);
@@ -7767,8 +7754,8 @@ function checkArgument(expression, message) {
 */
 var instructionTable;
 var exec;
-var execComponent;
 var execGlyph;
+var execComponent;
 
 /*
 * Creates a hinting object.
@@ -7841,7 +7828,7 @@ function roundDownToGrid(v) {
 /*
 * Super rounding.
 */
-var roundSuper = function(v) {
+var roundSuper = function (v) {
     var period = this.srPeriod;
     var phase = this.srPhase;
     var threshold = this.srThreshold;
@@ -7877,7 +7864,7 @@ var xUnitVector = {
 
     // Gets the projected distance between two points.
     // o1/o2 ... if true, respective original position is used.
-    distance: function(p1, p2, o1, o2) {
+    distance: function (p1, p2, o1, o2) {
         return (o1 ? p1.xo : p1.x) - (o2 ? p2.xo : p2.x);
     },
 
@@ -7886,7 +7873,7 @@ var xUnitVector = {
     // original positions had.
     //
     // See APPENDIX on INTERPOLATE at the bottom of this file.
-    interpolate: function(p, rp1, rp2, pv) {
+    interpolate: function (p, rp1, rp2, pv) {
         var do1;
         var do2;
         var doa1;
@@ -7942,7 +7929,7 @@ var xUnitVector = {
     // d   ... distance on projection vector
     // pv  ... projection vector (undefined = this)
     // org ... if true, uses the original position of rp as reference.
-    setRelative: function(p, rp, d, pv, org) {
+    setRelative: function (p, rp, d, pv, org) {
         if (!pv || pv === this) {
             p.x = (org ? rp.xo : rp.x) + d;
             return;
@@ -7960,13 +7947,19 @@ var xUnitVector = {
     slope: 0,
 
     // Touches the point p.
-    touch: function(p) { p.xTouched = true; },
+    touch: function (p) {
+        p.xTouched = true;
+    },
 
     // Tests if a point p is touched.
-    touched: function(p) { return p.xTouched; },
+    touched: function (p) {
+        return p.xTouched;
+    },
 
     // Untouches the point p.
-    untouch: function(p) { p.xTouched = false; }
+    untouch: function (p) {
+        p.xTouched = false;
+    }
 };
 
 /*
@@ -7981,7 +7974,7 @@ var yUnitVector = {
 
     // Gets the projected distance between two points.
     // o1/o2 ... if true, respective original position is used.
-    distance: function(p1, p2, o1, o2) {
+    distance: function (p1, p2, o1, o2) {
         return (o1 ? p1.yo : p1.y) - (o2 ? p2.yo : p2.y);
     },
 
@@ -7990,7 +7983,7 @@ var yUnitVector = {
     // original positions had.
     //
     // See APPENDIX on INTERPOLATE at the bottom of this file.
-    interpolate: function(p, rp1, rp2, pv) {
+    interpolate: function (p, rp1, rp2, pv) {
         var do1;
         var do2;
         var doa1;
@@ -8046,7 +8039,7 @@ var yUnitVector = {
     // d   ... distance on projection vector
     // pv  ... projection vector (undefined = this)
     // org ... if true, uses the original position of rp as reference.
-    setRelative: function(p, rp, d, pv, org) {
+    setRelative: function (p, rp, d, pv, org) {
         if (!pv || pv === this) {
             p.y = (org ? rp.yo : rp.y) + d;
             return;
@@ -8064,13 +8057,19 @@ var yUnitVector = {
     slope: Number.POSITIVE_INFINITY,
 
     // Touches the point p.
-    touch: function(p) { p.yTouched = true; },
+    touch: function (p) {
+        p.yTouched = true;
+    },
 
     // Tests if a point p is touched.
-    touched: function(p) { return p.yTouched; },
+    touched: function (p) {
+        return p.yTouched;
+    },
 
     // Untouches the point p.
-    untouch: function(p) { p.yTouched = false; }
+    untouch: function (p) {
+        p.yTouched = false;
+    }
 };
 
 Object.freeze(xUnitVector);
@@ -8381,7 +8380,7 @@ Hinting.prototype.exec = function(glyph, ppem) {
 /*
 * Executes the hinting program for a glyph.
 */
-function execGlyph(glyph, prepState) {
+execGlyph = function(glyph, prepState) {
     // original point positions
     var xScale = prepState.ppem / prepState.font.unitsPerEm;
     var yScale = xScale;
@@ -8462,24 +8461,23 @@ function execGlyph(glyph, prepState) {
     }
 
     return gZone;
-}
+};
 
 /*
 * Executes the hinting program for a component of a multi-component glyph
 * or of the glyph itself by a non-component glyph.
 */
-function execComponent(glyph, state, xScale, yScale)
+execComponent = function(glyph, state, xScale, yScale)
 {
     var points = glyph.points || [];
     var pLen = points.length;
     var gZone = state.gZone = state.z0 = state.z1 = state.z2 = [];
     var contours = state.contours = [];
-    var i;
 
     // Scales the original points and
     // makes copies for the hinted points.
     var cp; // current point
-    for (i = 0; i < pLen; i++) {
+    for (var i = 0; i < pLen; i++) {
         cp = points[i];
 
         gZone[i] = new HPoint(
@@ -8494,12 +8492,12 @@ function execComponent(glyph, state, xScale, yScale)
     var sp; // start point
     var np; // next point
 
-    for (i = 0; i < pLen; i++) {
-        cp = gZone[i];
+    for (var i$1 = 0; i$1 < pLen; i$1++) {
+        cp = gZone[i$1];
 
         if (!sp) {
             sp = cp;
-            contours.push(i);
+            contours.push(i$1);
         }
 
         if (cp.lastPointOfContour) {
@@ -8507,7 +8505,7 @@ function execComponent(glyph, state, xScale, yScale)
             sp.prevPointOnContour = cp;
             sp = undefined;
         } else {
-            np = gZone[i + 1];
+            np = gZone[i$1 + 1];
             cp.nextPointOnContour = np;
             np.prevPointOnContour = cp;
         }
@@ -8527,16 +8525,16 @@ function execComponent(glyph, state, xScale, yScale)
 
     if (exports.DEBUG) {
         console.log('FINISHED GLYPH', state.stack);
-        for (i = 0; i < pLen; i++) {
-            console.log(i, gZone[i].x, gZone[i].y);
+        for (var i$2 = 0; i$2 < pLen; i$2++) {
+            console.log(i$2, gZone[i$2].x, gZone[i$2].y);
         }
     }
-}
+};
 
 /*
 * Executes the program loaded in state.
 */
-function exec(state) {
+exec = function(state) {
     var prog = state.prog;
 
     if (!prog) { return; }
@@ -8561,10 +8559,9 @@ function exec(state) {
         /*
         if (exports.DEBUG) {
             var da;
-            var i;
             if (state.gZone) {
                 da = [];
-                for (i = 0; i < state.gZone.length; i++)
+                for (let i = 0; i < state.gZone.length; i++)
                 {
                     da.push(i + ' ' +
                         state.gZone[i].x * 64 + ' ' +
@@ -8578,7 +8575,7 @@ function exec(state) {
 
             if (state.tZone) {
                 da = [];
-                for (i = 0; i < state.tZone.length; i++) {
+                for (let i = 0; i < state.tZone.length; i++) {
                     da.push(i + ' ' +
                         state.tZone[i].x * 64 + ' ' +
                         state.tZone[i].y * 64 + ' ' +
@@ -8600,7 +8597,7 @@ function exec(state) {
         }
         */
     }
-}
+};
 
 /*
 * Initializes the twilight zone.
@@ -10917,10 +10914,9 @@ Font.prototype.stringToGlyphs = function(s, options) {
     var this$1 = this;
 
     options = options || this.defaultRenderOptions;
-    var i;
     // Get glyph indexes
     var indexes = [];
-    for (i = 0; i < s.length; i += 1) {
+    for (var i = 0; i < s.length; i += 1) {
         var c = s[i];
         indexes.push(this$1.charToGlyphIndex(c));
     }
@@ -10932,15 +10928,15 @@ Font.prototype.stringToGlyphs = function(s, options) {
         var manyToOne = [];
         if (options.features.liga) { manyToOne = manyToOne.concat(this.substitution.getFeature('liga', script, options.language)); }
         if (options.features.rlig) { manyToOne = manyToOne.concat(this.substitution.getFeature('rlig', script, options.language)); }
-        for (i = 0; i < length; i += 1) {
+        for (var i$1 = 0; i$1 < length; i$1 += 1) {
             for (var j = 0; j < manyToOne.length; j++) {
                 var ligature = manyToOne[j];
                 var components = ligature.sub;
                 var compCount = components.length;
                 var k = 0;
-                while (k < compCount && components[k] === indexes[i + k]) { k++; }
+                while (k < compCount && components[k] === indexes[i$1 + k]) { k++; }
                 if (k === compCount) {
-                    indexes.splice(i, compCount, ligature.by);
+                    indexes.splice(i$1, compCount, ligature.by);
                     length = length - compCount + 1;
                 }
             }
@@ -10950,8 +10946,8 @@ Font.prototype.stringToGlyphs = function(s, options) {
     // convert glyph indexes to glyph objects
     var glyphs = new Array(length);
     var notdef = this.glyphs.get(0);
-    for (i = 0; i < length; i += 1) {
-        glyphs[i] = this$1.glyphs.get(indexes[i]) || notdef;
+    for (var i$2 = 0; i$2 < length; i$2 += 1) {
+        glyphs[i$2] = this$1.glyphs.get(indexes[i$2]) || notdef;
     }
     return glyphs;
 };
@@ -11477,7 +11473,7 @@ function parseTaggedListTable(data, start) {
 function parseCoverageTable(data, start) {
     var p = new parse.Parser(data, start);
     var format = p.parseUShort();
-    var count =  p.parseUShort();
+    var count = p.parseUShort();
     if (format === 1) {
         return p.parseUShortList(count);
     } else if (format === 2) {
@@ -11612,7 +11608,9 @@ function parsePairPosSubTable(data, start) {
 
         // Convert coverage list to a hash
         var covered = {};
-        for (i = 0; i < coverage.length; i++) { covered[coverage[i]] = 1; }
+        for (var i$1 = 0; i$1 < coverage.length; i$1++) {
+            covered[coverage[i$1]] = 1;
+        }
 
         // Get the kerning value for a specific glyph pair.
         return function(leftGlyph, rightGlyph) {
@@ -11875,7 +11873,7 @@ function parseWOFFTableEntries(data, numTables) {
         var offset = parse.getULong(data, p + 4);
         var compLength = parse.getULong(data, p + 8);
         var origLength = parse.getULong(data, p + 12);
-        var compression;
+        var compression = (void 0);
         if (compLength < origLength) {
             compression = 'WOFF';
         } else {
@@ -11979,7 +11977,7 @@ function parseBuffer(buffer) {
 
     for (var i = 0; i < numTables; i += 1) {
         var tableEntry = tableEntries[i];
-        var table;
+        var table = (void 0);
         switch (tableEntry.tag) {
             case 'cmap':
                 table = uncompressTable(data, tableEntry);
