@@ -138,13 +138,14 @@ Font.prototype.charToGlyph = function(c) {
     return glyph;
 };
 
-let supportsForOf = false
+let supportsForOf = false;
 try {
-  new Function('for (var i of []) {}')();
-  supportsForOf = true;
-} catch(err) {
-  // console.log("ForOf is not supported");
-  supportsForOf = false;
+    /*jshint -W054 */ // this is form of eval is only used for feature detection
+    new Function('for (var i of []) {}')();
+    supportsForOf = true;
+} catch (err) {
+    // console.log("ForOf is not supported");
+    supportsForOf = false;
 }
 
 /**
@@ -161,14 +162,14 @@ Font.prototype.stringToGlyphs = function(s, options) {
     // Get glyph indexes
     const indexes = [];
     if (supportsForOf) {
-      for (let ch of s) {
-        indexes.push(this.charToGlyphIndex(ch));
-      }
+        for (let ch of s) {
+            indexes.push(this.charToGlyphIndex(ch));
+        }
     } else { // For IE 11 and other older browsers
-      for (let i = 0; i < s.length; i += 1) {
-        const c = s[i];
-        indexes.push(this.charToGlyphIndex(c));
-      }
+        for (let i = 0; i < s.length; i += 1) {
+            const c = s[i];
+            indexes.push(this.charToGlyphIndex(c));
+        }
     }
     let length = indexes.length;
 
