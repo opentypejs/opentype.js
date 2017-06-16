@@ -16,7 +16,9 @@ module.exports =  {
             browser: true,
         }),
         commonjs(),
-        buble(),
+        buble({
+          transforms: { forOf: false }
+        }),
         license({
             banner: 'https://opentype.js.org v<%= pkg.version %> | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett'
         }),

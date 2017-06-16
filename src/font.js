@@ -138,6 +138,15 @@ Font.prototype.charToGlyph = function(c) {
     return glyph;
 };
 
+let supportsForOf = false
+try {
+  new Function('for (var i of []) {}')();
+  supportsForOf = true;
+} catch(err) {
+  // console.log("ForOf is not supported");
+  supportsForOf = false;
+}
+
 /**
  * Convert the given text to a list of Glyph objects.
  * Note that there is no strict one-to-one mapping between characters and
@@ -151,9 +160,15 @@ Font.prototype.stringToGlyphs = function(s, options) {
     options = options || this.defaultRenderOptions;
     // Get glyph indexes
     const indexes = [];
-    for (let i = 0; i < s.length; i += 1) {
+    if (supportsForOf) {
+      for (let ch of s) {
+        indexes.push(this.charToGlyphIndex(ch));
+      }
+    } else { // For IE 11 and other older browsers
+      for (let i = 0; i < s.length; i += 1) {
         const c = s[i];
         indexes.push(this.charToGlyphIndex(c));
+      }
     }
     let length = indexes.length;
 
