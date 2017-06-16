@@ -140,7 +140,7 @@ Font.prototype.charToGlyph = function(c) {
 
 let supportsForOf = false;
 try {
-    /*jshint -W054 */ // this is form of eval is only used for feature detection
+    /*jshint -W054 */ // this eval is used for feature detection
     new Function('for (var i of []) {}')();
     supportsForOf = true;
 } catch (err) {
