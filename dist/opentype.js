@@ -1,5 +1,5 @@
 /**
- * https://opentype.js.org v0.7.1 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett
+ * https://opentype.js.org v0.7.2 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett
  */
 
 (function (global, factory) {
@@ -10901,6 +10901,15 @@ Font.prototype.charToGlyph = function(c) {
     return glyph;
 };
 
+var supportsForOf = false;
+try {
+  new Function('for (var i of []) {}')();
+  supportsForOf = true;
+} catch(err) {
+  // console.log("ForOf is not supported");
+  supportsForOf = false;
+}
+
 /**
  * Convert the given text to a list of Glyph objects.
  * Note that there is no strict one-to-one mapping between characters and
@@ -10916,9 +10925,15 @@ Font.prototype.stringToGlyphs = function(s, options) {
     options = options || this.defaultRenderOptions;
     // Get glyph indexes
     var indexes = [];
-    for (var i = 0; i < s.length; i += 1) {
+    if (supportsForOf) {
+      for (var ch of s) {
+        indexes.push(this$1.charToGlyphIndex(ch));
+      }
+    } else { // For IE 11 and other older browsers
+      for (var i = 0; i < s.length; i += 1) {
         var c = s[i];
         indexes.push(this$1.charToGlyphIndex(c));
+      }
     }
     var length = indexes.length;
 

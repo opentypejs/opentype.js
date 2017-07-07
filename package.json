@@ -45,8 +45,7 @@
     "rollup-plugin-license": "^0.4.0",
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-watch": "^3.2.2",
-    "uglify-js": "^3.0.14",
-    "uglifyjs": "^2.4.11"
+    "uglify-es": "^3.0.17"
   },
   "browser": {
     "fs": false
