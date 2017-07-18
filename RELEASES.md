@@ -1,3 +1,7 @@
+0.7.3 (July 18, 2017)
+=====================
+* Fix "Object x already has key" error in Safari (thanks @neiltron!).
+
 0.7.2 (June 7, 2017)
 ====================
 * WOFF fonts with cvt tables now parse correctly.

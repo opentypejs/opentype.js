@@ -1,5 +1,5 @@
 /**
- * https://opentype.js.org v0.7.2 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett
+ * https://opentype.js.org v0.7.3 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett
  */
 
 (function (global, factory) {
