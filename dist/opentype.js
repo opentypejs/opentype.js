@@ -1,5 +1,5 @@
 /**
- * https://opentype.js.org v0.7.1 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett
+ * https://opentype.js.org v0.7.2 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett
  */
 
 (function (global, factory) {
@@ -4004,7 +4004,7 @@ function entriesToObject(entries) {
             value = values;
         }
 
-        if (o.hasOwnProperty(key)) {
+        if (o.hasOwnProperty(key) && !isNaN(o[key])) {
             throw new Error('Object ' + o + ' already has key ' + key);
         }
 
@@ -11093,7 +11093,7 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
 Font.prototype.getPaths = function(text, x, y, fontSize, options) {
     var glyphPaths = [];
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        var glyphPath = glyph.getPath(gX, gY, gFontSize);
+        var glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
         glyphPaths.push(glyphPath);
     });
 
