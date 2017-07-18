@@ -1,6 +1,7 @@
 0.7.3 (July 18, 2017)
 =====================
 * Fix "Object x already has key" error in Safari (thanks @neiltron!).
+* Fixed a bug where Font.getPaths() didn't pass options (thanks @keeslinp!).
 
 0.7.2 (June 7, 2017)
 ====================
