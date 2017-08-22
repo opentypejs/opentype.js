@@ -11820,7 +11820,7 @@ function loadFromFile(path, callback) {
  */
 function loadFromUrl(url, callback) {
     var request = new XMLHttpRequest();
-    request.open('get', url, true);
+    request.open('GET', url, true);
     request.responseType = 'arraybuffer';
     request.onload = function() {
         if (request.status !== 200) {
