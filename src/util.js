@@ -32,4 +32,10 @@ function checkArgument(expression, message) {
     }
 }
 
-export { isBrowser, isNode, nodeBufferToArrayBuffer, arrayBufferToNodeBuffer, checkArgument };
+module.exposrts = {
+    isBrowser: isBrowser,
+    isNode: isNode,
+    nodeBufferToArrayBuffer: nodeBufferToArrayBuffer,
+    arrayBufferToNodeBuffer: arrayBufferToNodeBuffer,
+    checkArgument: checkArgument
+};
