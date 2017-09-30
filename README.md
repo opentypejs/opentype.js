@@ -67,7 +67,7 @@ You can then include them in your scripts using:
 
 To use via a CDN, include the following code in your html:
 
-    <script src="https://cdn.jsdelivr.net/npm/opentype.js@0/dist/opentype.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
 
 API
 ===
