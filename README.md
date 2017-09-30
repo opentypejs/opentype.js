@@ -62,6 +62,12 @@ To install using [Bower](http://bower.io/), enter the following command in your 
 You can then include them in your scripts using:
 
     <script src="/bower_components/opentype.js/dist/opentype.js"></script>
+    
+### Using via a CDN
+
+To use via a CDN, include the following code in your html:
+
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
 
 API
 ===
