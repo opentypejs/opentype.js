@@ -21,10 +21,10 @@ function Data(source, dest) {
   this.sourceIndex = 0;
   this.tag = 0;
   this.bitcount = 0;
-
+  
   this.dest = dest;
   this.destLen = 0;
-
+  
   this.ltree = new Tree();  /* dynamic length/symbol tree */
   this.dtree = new Tree();  /* dynamic distance tree */
 }
@@ -166,7 +166,7 @@ function tinf_decode_symbol(d, t) {
     d.tag |= d.source[d.sourceIndex++] << d.bitcount;
     d.bitcount += 8;
   }
-
+  
   var sum = 0, cur = 0, len = 0;
   var tag = d.tag;
 
@@ -179,7 +179,7 @@ function tinf_decode_symbol(d, t) {
     sum += t.table[len];
     cur -= t.table[len];
   } while (cur >= 0);
-
+  
   d.tag = tag;
   d.bitcount -= len;
 
@@ -290,7 +290,7 @@ function tinf_inflate_block_data(d, lt, dt) {
 function tinf_inflate_uncompressed_block(d) {
   var length, invlength;
   var i;
-
+  
   /* unread from bitbuffer */
   while (d.bitcount > 8) {
     d.sourceIndex--;
@@ -363,7 +363,7 @@ function tinf_uncompress(source, dest) {
     else
       { return d.dest.subarray(0, d.destLen); }
   }
-
+  
   return d.dest;
 }
 
@@ -382,7 +382,7 @@ tinf_build_bits_base(dist_bits, dist_base, 2, 1);
 length_bits[28] = 0;
 length_base[28] = 258;
 
-var index = tinf_uncompress;
+var tinyInflate = tinf_uncompress;
 
 // The Bounding Box object
 
@@ -11820,15 +11820,16 @@ function loadFromFile(path, callback) {
  */
 function loadFromUrl(url, callback) {
     var request = new XMLHttpRequest();
-    request.open('GET', url, true);
+    request.open('get', url, true);
     request.responseType = 'arraybuffer';
     request.onload = function() {
-				if(request.response)
-				{
-					return callback(null, request.response);
-				}
-				else
-					return callback('Font could not be loaded: ' + request.statusText);
+        if (request.response)
+        {
+            return callback(null, request.response);
+        } else
+        {
+            return callback('Font could not be loaded: ' + request.statusText);
+        }
     };
 
     request.onerror = function () {
@@ -11905,7 +11906,7 @@ function uncompressTable(data, tableEntry) {
     if (tableEntry.compression === 'WOFF') {
         var inBuffer = new Uint8Array(data.buffer, tableEntry.offset + 2, tableEntry.compressedLength - 2);
         var outBuffer = new Uint8Array(tableEntry.length);
-        index(inBuffer, outBuffer);
+        tinyInflate(inBuffer, outBuffer);
         if (outBuffer.byteLength !== tableEntry.length) {
             throw new Error('Decompression error: ' + tableEntry.tag + ' decompressed length doesn\'t match recorded length');
         }
