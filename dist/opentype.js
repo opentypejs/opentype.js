@@ -382,7 +382,7 @@ tinf_build_bits_base(dist_bits, dist_base, 2, 1);
 length_bits[28] = 0;
 length_base[28] = 258;
 
-var index = tinf_uncompress;
+var tinyInflate = tinf_uncompress;
 
 // The Bounding Box object
 
@@ -11820,14 +11820,16 @@ function loadFromFile(path, callback) {
  */
 function loadFromUrl(url, callback) {
     var request = new XMLHttpRequest();
-    request.open('GET', url, true);
+    request.open('get', url, true);
     request.responseType = 'arraybuffer';
     request.onload = function() {
-        if (request.status !== 200) {
+        if (request.response)
+        {
+            return callback(null, request.response);
+        } else
+        {
             return callback('Font could not be loaded: ' + request.statusText);
         }
-
-        return callback(null, request.response);
     };
 
     request.onerror = function () {
@@ -11904,7 +11906,7 @@ function uncompressTable(data, tableEntry) {
     if (tableEntry.compression === 'WOFF') {
         var inBuffer = new Uint8Array(data.buffer, tableEntry.offset + 2, tableEntry.compressedLength - 2);
         var outBuffer = new Uint8Array(tableEntry.length);
-        index(inBuffer, outBuffer);
+        tinyInflate(inBuffer, outBuffer);
         if (outBuffer.byteLength !== tableEntry.length) {
             throw new Error('Decompression error: ' + tableEntry.tag + ' decompressed length doesn\'t match recorded length');
         }
