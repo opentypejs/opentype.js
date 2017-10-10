@@ -11823,11 +11823,9 @@ function loadFromUrl(url, callback) {
     request.open('get', url, true);
     request.responseType = 'arraybuffer';
     request.onload = function() {
-        if (request.response)
-        {
+        if (request.response) {
             return callback(null, request.response);
-        } else
-        {
+        } else {
             return callback('Font could not be loaded: ' + request.statusText);
         }
     };
