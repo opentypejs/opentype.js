@@ -1,12 +1,10 @@
 // The `OS/2` table contains metrics required in OpenType fonts.
 // https://www.microsoft.com/typography/OTSPEC/os2.htm
 
-'use strict';
+import parse from '../parse';
+import table from '../table';
 
-var parse = require('../parse');
-var table = require('../table');
-
-var unicodeRanges = [
+const unicodeRanges = [
     {begin: 0x0000, end: 0x007F}, // Basic Latin
     {begin: 0x0080, end: 0x00FF}, // Latin-1 Supplement
     {begin: 0x0100, end: 0x017F}, // Latin Extended-A
@@ -133,8 +131,8 @@ var unicodeRanges = [
 ];
 
 function getUnicodeRange(unicode) {
-    for (var i = 0; i < unicodeRanges.length; i += 1) {
-        var range = unicodeRanges[i];
+    for (let i = 0; i < unicodeRanges.length; i += 1) {
+        const range = unicodeRanges[i];
         if (unicode >= range.begin && unicode < range.end) {
             return i;
         }
@@ -145,8 +143,8 @@ function getUnicodeRange(unicode) {
 
 // Parse the OS/2 and Windows metrics `OS/2` table
 function parseOS2Table(data, start) {
-    var os2 = {};
-    var p = new parse.Parser(data, start);
+    const os2 = {};
+    const p = new parse.Parser(data, start);
     os2.version = p.parseUShort();
     os2.xAvgCharWidth = p.parseShort();
     os2.usWeightClass = p.parseUShort();
@@ -164,7 +162,7 @@ function parseOS2Table(data, start) {
     os2.yStrikeoutPosition = p.parseShort();
     os2.sFamilyClass = p.parseShort();
     os2.panose = [];
-    for (var i = 0; i < 10; i++) {
+    for (let i = 0; i < 10; i++) {
         os2.panose[i] = p.parseByte();
     }
 
@@ -248,7 +246,4 @@ function makeOS2Table(options) {
     ], options);
 }
 
-exports.unicodeRanges = unicodeRanges;
-exports.getUnicodeRange = getUnicodeRange;
-exports.parse = parseOS2Table;
-exports.make = makeOS2Table;
+export default { parse: parseOS2Table, make: makeOS2Table, unicodeRanges, getUnicodeRange };

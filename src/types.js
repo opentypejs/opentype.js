@@ -1,30 +1,26 @@
 // Data types used in the OpenType font file.
 // All OpenType fonts use Motorola-style byte ordering (Big Endian)
 
-/* global WeakMap */
+import check from './check';
 
-'use strict';
-
-var check = require('./check');
-
-var LIMIT16 = 32768; // The limit at which a 16-bit number switches signs == 2^15
-var LIMIT32 = 2147483648; // The limit at which a 32-bit number switches signs == 2 ^ 31
+const LIMIT16 = 32768; // The limit at which a 16-bit number switches signs == 2^15
+const LIMIT32 = 2147483648; // The limit at which a 32-bit number switches signs == 2 ^ 31
 
 /**
  * @exports opentype.decode
  * @class
  */
-var decode = {};
+const decode = {};
 /**
  * @exports opentype.encode
  * @class
  */
-var encode = {};
+const encode = {};
 /**
  * @exports opentype.sizeOf
  * @class
  */
-var sizeOf = {};
+const sizeOf = {};
 
 // Return a function that always returns the same value.
 function constant(v) {
@@ -71,8 +67,8 @@ sizeOf.CHAR = constant(1);
  * @returns {Array}
  */
 encode.CHARARRAY = function(v) {
-    var b = [];
-    for (var i = 0; i < v.length; i += 1) {
+    const b = [];
+    for (let i = 0; i < v.length; i += 1) {
         b[i] = v.charCodeAt(i);
     }
 
@@ -297,21 +293,19 @@ sizeOf.NUMBER32 = constant(5);
  * @returns {Array}
  */
 encode.REAL = function(v) {
-    var value = v.toString();
+    let value = v.toString();
 
     // Some numbers use an epsilon to encode the value. (e.g. JavaScript will store 0.0000001 as 1e-7)
     // This code converts it back to a number without the epsilon.
-    var m = /\.(\d*?)(?:9{5,20}|0{5,20})\d{0,2}(?:e(.+)|$)/.exec(value);
+    const m = /\.(\d*?)(?:9{5,20}|0{5,20})\d{0,2}(?:e(.+)|$)/.exec(value);
     if (m) {
-        var epsilon = parseFloat('1e' + ((m[2] ? +m[2] : 0) + m[1].length));
+        const epsilon = parseFloat('1e' + ((m[2] ? +m[2] : 0) + m[1].length));
         value = (Math.round(v * epsilon) / epsilon).toString();
     }
 
-    var nibbles = '';
-    var i;
-    var ii;
-    for (i = 0, ii = value.length; i < ii; i += 1) {
-        var c = value[i];
+    let nibbles = '';
+    for (let i = 0, ii = value.length; i < ii; i += 1) {
+        const c = value[i];
         if (c === 'e') {
             nibbles += value[++i] === '-' ? 'c' : 'b';
         } else if (c === '.') {
@@ -324,8 +318,8 @@ encode.REAL = function(v) {
     }
 
     nibbles += (nibbles.length & 1) ? 'f' : 'ff';
-    var out = [30];
-    for (i = 0, ii = nibbles.length; i < ii; i += 2) {
+    const out = [30];
+    for (let i = 0, ii = nibbles.length; i < ii; i += 2) {
         out.push(parseInt(nibbles.substr(i, 2), 16));
     }
 
@@ -353,9 +347,9 @@ sizeOf.STRING = sizeOf.CHARARRAY;
  * @returns {string}
  */
 decode.UTF8 = function(data, offset, numBytes) {
-    var codePoints = [];
-    var numChars = numBytes;
-    for (var j = 0; j < numChars; j++, offset += 1) {
+    const codePoints = [];
+    const numChars = numBytes;
+    for (let j = 0; j < numChars; j++, offset += 1) {
         codePoints[j] = data.getUint8(offset);
     }
 
@@ -369,9 +363,9 @@ decode.UTF8 = function(data, offset, numBytes) {
  * @returns {string}
  */
 decode.UTF16 = function(data, offset, numBytes) {
-    var codePoints = [];
-    var numChars = numBytes / 2;
-    for (var j = 0; j < numChars; j++, offset += 2) {
+    const codePoints = [];
+    const numChars = numBytes / 2;
+    for (let j = 0; j < numChars; j++, offset += 2) {
         codePoints[j] = data.getUint16(offset);
     }
 
@@ -384,9 +378,9 @@ decode.UTF16 = function(data, offset, numBytes) {
  * @returns {Array}
  */
 encode.UTF16 = function(v) {
-    var b = [];
-    for (var i = 0; i < v.length; i += 1) {
-        var codepoint = v.charCodeAt(i);
+    const b = [];
+    for (let i = 0; i < v.length; i += 1) {
+        const codepoint = v.charCodeAt(i);
         b[b.length] = (codepoint >> 8) & 0xFF;
         b[b.length] = codepoint & 0xFF;
     }
@@ -405,7 +399,7 @@ sizeOf.UTF16 = function(v) {
 // Data for converting old eight-bit Macintosh encodings to Unicode.
 // This representation is optimized for decoding; encoding is slower
 // and needs more memory. The assumption is that all opentype.js users
-// want to open fonts, but saving a font will be comperatively rare
+// want to open fonts, but saving a font will be comparatively rare
 // so it can be more expensive. Keyed by IANA character set name.
 //
 // Python script for generating these strings:
@@ -415,39 +409,37 @@ sizeOf.UTF16 = function(v) {
 /**
  * @private
  */
-var eightBitMacEncodings = {
+const eightBitMacEncodings = {
     'x-mac-croatian':  // Python: 'mac_croatian'
-        'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®Š™´¨≠ŽØ∞±≤≥∆µ∂∑∏š∫ªºΩžø' +
-        '¿¡¬√ƒ≈Ć«Č… ÀÃÕŒœĐ—“”‘’÷◊©⁄€‹›Æ»–·‚„‰ÂćÁčÈÍÎÏÌÓÔđÒÚÛÙıˆ˜¯πË˚¸Êæˇ',
+    'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®Š™´¨≠ŽØ∞±≤≥∆µ∂∑∏š∫ªºΩžø' +
+    '¿¡¬√ƒ≈Ć«Č… ÀÃÕŒœĐ—“”‘’÷◊©⁄€‹›Æ»–·‚„‰ÂćÁčÈÍÎÏÌÓÔđÒÚÛÙıˆ˜¯πË˚¸Êæˇ',
     'x-mac-cyrillic':  // Python: 'mac_cyrillic'
-        'АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ†°Ґ£§•¶І®©™Ђђ≠Ѓѓ∞±≤≥іµґЈЄєЇїЉљЊњ' +
-        'јЅ¬√ƒ≈∆«»… ЋћЌќѕ–—“”‘’÷„ЎўЏџ№Ёёяабвгдежзийклмнопрстуфхцчшщъыьэю',
-    'x-mac-gaelic':
-        // http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/GAELIC.TXT
-        'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØḂ±≤≥ḃĊċḊḋḞḟĠġṀæø' +
-        'ṁṖṗɼƒſṠ«»… ÀÃÕŒœ–—“”‘’ṡẛÿŸṪ€‹›Ŷŷṫ·Ỳỳ⁊ÂÊÁËÈÍÎÏÌÓÔ♣ÒÚÛÙıÝýŴŵẄẅẀẁẂẃ',
+    'АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ†°Ґ£§•¶І®©™Ђђ≠Ѓѓ∞±≤≥іµґЈЄєЇїЉљЊњ' +
+    'јЅ¬√ƒ≈∆«»… ЋћЌќѕ–—“”‘’÷„ЎўЏџ№Ёёяабвгдежзийклмнопрстуфхцчшщъыьэю',
+    'x-mac-gaelic': // http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/GAELIC.TXT
+    'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØḂ±≤≥ḃĊċḊḋḞḟĠġṀæø' +
+    'ṁṖṗɼƒſṠ«»… ÀÃÕŒœ–—“”‘’ṡẛÿŸṪ€‹›Ŷŷṫ·Ỳỳ⁊ÂÊÁËÈÍÎÏÌÓÔ♣ÒÚÛÙıÝýŴŵẄẅẀẁẂẃ',
     'x-mac-greek':  // Python: 'mac_greek'
-        'Ä¹²É³ÖÜ΅àâä΄¨çéèêë£™îï•½‰ôö¦€ùûü†ΓΔΘΛΞΠß®©ΣΪ§≠°·Α±≤≥¥ΒΕΖΗΙΚΜΦΫΨΩ' +
-        'άΝ¬ΟΡ≈Τ«»… ΥΧΆΈœ–―“”‘’÷ΉΊΌΎέήίόΏύαβψδεφγηιξκλμνοπώρστθωςχυζϊϋΐΰ\u00AD',
+    'Ä¹²É³ÖÜ΅àâä΄¨çéèêë£™îï•½‰ôö¦€ùûü†ΓΔΘΛΞΠß®©ΣΪ§≠°·Α±≤≥¥ΒΕΖΗΙΚΜΦΫΨΩ' +
+    'άΝ¬ΟΡ≈Τ«»… ΥΧΆΈœ–―“”‘’÷ΉΊΌΎέήίόΏύαβψδεφγηιξκλμνοπώρστθωςχυζϊϋΐΰ\u00AD',
     'x-mac-icelandic':  // Python: 'mac_iceland'
-        'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûüÝ°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø' +
-        '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€ÐðÞþý·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ',
-    'x-mac-inuit':
-        // http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/INUIT.TXT
-        'ᐃᐄᐅᐆᐊᐋᐱᐲᐳᐴᐸᐹᑉᑎᑏᑐᑑᑕᑖᑦᑭᑮᑯᑰᑲᑳᒃᒋᒌᒍᒎᒐᒑ°ᒡᒥᒦ•¶ᒧ®©™ᒨᒪᒫᒻᓂᓃᓄᓅᓇᓈᓐᓯᓰᓱᓲᓴᓵᔅᓕᓖᓗ' +
-        'ᓘᓚᓛᓪᔨᔩᔪᔫᔭ… ᔮᔾᕕᕖᕗ–—“”‘’ᕘᕙᕚᕝᕆᕇᕈᕉᕋᕌᕐᕿᖀᖁᖂᖃᖄᖅᖏᖐᖑᖒᖓᖔᖕᙱᙲᙳᙴᙵᙶᖖᖠᖡᖢᖣᖤᖥᖦᕼŁł',
+    'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûüÝ°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø' +
+    '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€ÐðÞþý·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ',
+    'x-mac-inuit': // http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/INUIT.TXT
+    'ᐃᐄᐅᐆᐊᐋᐱᐲᐳᐴᐸᐹᑉᑎᑏᑐᑑᑕᑖᑦᑭᑮᑯᑰᑲᑳᒃᒋᒌᒍᒎᒐᒑ°ᒡᒥᒦ•¶ᒧ®©™ᒨᒪᒫᒻᓂᓃᓄᓅᓇᓈᓐᓯᓰᓱᓲᓴᓵᔅᓕᓖᓗ' +
+    'ᓘᓚᓛᓪᔨᔩᔪᔫᔭ… ᔮᔾᕕᕖᕗ–—“”‘’ᕘᕙᕚᕝᕆᕇᕈᕉᕋᕌᕐᕿᖀᖁᖂᖃᖄᖅᖏᖐᖑᖒᖓᖔᖕᙱᙲᙳᙴᙵᙶᖖᖠᖡᖢᖣᖤᖥᖦᕼŁł',
     'x-mac-ce':  // Python: 'mac_latin2'
-        'ÄĀāÉĄÖÜáąČäčĆćéŹźĎíďĒēĖóėôöõúĚěü†°Ę£§•¶ß®©™ę¨≠ģĮįĪ≤≥īĶ∂∑łĻļĽľĹĺŅ' +
-        'ņŃ¬√ńŇ∆«»… ňŐÕőŌ–—“”‘’÷◊ōŔŕŘ‹›řŖŗŠ‚„šŚśÁŤťÍŽžŪÓÔūŮÚůŰűŲųÝýķŻŁżĢˇ',
+    'ÄĀāÉĄÖÜáąČäčĆćéŹźĎíďĒēĖóėôöõúĚěü†°Ę£§•¶ß®©™ę¨≠ģĮįĪ≤≥īĶ∂∑łĻļĽľĹĺŅ' +
+    'ņŃ¬√ńŇ∆«»… ňŐÕőŌ–—“”‘’÷◊ōŔŕŘ‹›řŖŗŠ‚„šŚśÁŤťÍŽžŪÓÔūŮÚůŰűŲųÝýķŻŁżĢˇ',
     macintosh:  // Python: 'mac_roman'
-        'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø' +
-        '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›ﬁﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ',
+    'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø' +
+    '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›ﬁﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ',
     'x-mac-romanian':  // Python: 'mac_romanian'
-        'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ĂȘ∞±≤≥¥µ∂∑∏π∫ªºΩăș' +
-        '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›Țț‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ',
+    'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ĂȘ∞±≤≥¥µ∂∑∏π∫ªºΩăș' +
+    '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›Țț‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ',
     'x-mac-turkish':  // Python: 'mac_turkish'
-        'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø' +
-        '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸĞğİıŞş‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙˆ˜¯˘˙˚¸˝˛ˇ'
+    'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø' +
+    '¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸĞğİıŞş‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙˆ˜¯˘˙˚¸˝˛ˇ'
 };
 
 /**
@@ -462,14 +454,14 @@ var eightBitMacEncodings = {
  * @returns {string}
  */
 decode.MACSTRING = function(dataView, offset, dataLength, encoding) {
-    var table = eightBitMacEncodings[encoding];
+    const table = eightBitMacEncodings[encoding];
     if (table === undefined) {
         return undefined;
     }
 
-    var result = '';
-    for (var i = 0; i < dataLength; i++) {
-        var c = dataView.getUint8(offset + i);
+    let result = '';
+    for (let i = 0; i < dataLength; i++) {
+        const c = dataView.getUint8(offset + i);
         // In all eight-bit Mac encodings, the characters 0x00..0x7F are
         // mapped to U+0000..U+007F; we only need to look up the others.
         if (c <= 0x7F) {
@@ -486,21 +478,21 @@ decode.MACSTRING = function(dataView, offset, dataLength, encoding) {
 // Unicode character codes to their 8-bit MacOS equivalent. This table
 // is not exactly a super cheap data structure, but we do not care because
 // encoding Macintosh strings is only rarely needed in typical applications.
-var macEncodingTableCache = typeof WeakMap === 'function' && new WeakMap();
-var macEncodingCacheKeys;
-var getMacEncodingTable = function(encoding) {
+const macEncodingTableCache = typeof WeakMap === 'function' && new WeakMap();
+let macEncodingCacheKeys;
+const getMacEncodingTable = function (encoding) {
     // Since we use encoding as a cache key for WeakMap, it has to be
     // a String object and not a literal. And at least on NodeJS 2.10.1,
     // WeakMap requires that the same String instance is passed for cache hits.
     if (!macEncodingCacheKeys) {
         macEncodingCacheKeys = {};
-        for (var e in eightBitMacEncodings) {
+        for (let e in eightBitMacEncodings) {
             /*jshint -W053 */  // Suppress "Do not use String as a constructor."
             macEncodingCacheKeys[e] = new String(e);
         }
     }
 
-    var cacheKey = macEncodingCacheKeys[encoding];
+    const cacheKey = macEncodingCacheKeys[encoding];
     if (cacheKey === undefined) {
         return undefined;
     }
@@ -510,19 +502,19 @@ var getMacEncodingTable = function(encoding) {
     // between the calls to cache.has() and cache.get(). In that case,
     // we would return 'undefined' even though we do support the encoding.
     if (macEncodingTableCache) {
-        var cachedTable = macEncodingTableCache.get(cacheKey);
+        const cachedTable = macEncodingTableCache.get(cacheKey);
         if (cachedTable !== undefined) {
             return cachedTable;
         }
     }
 
-    var decodingTable = eightBitMacEncodings[encoding];
+    const decodingTable = eightBitMacEncodings[encoding];
     if (decodingTable === undefined) {
         return undefined;
     }
 
-    var encodingTable = {};
-    for (var i = 0; i < decodingTable.length; i++) {
+    const encodingTable = {};
+    for (let i = 0; i < decodingTable.length; i++) {
         encodingTable[decodingTable.charCodeAt(i)] = i + 0x80;
     }
 
@@ -543,14 +535,14 @@ var getMacEncodingTable = function(encoding) {
  * @returns {Array}
  */
 encode.MACSTRING = function(str, encoding) {
-    var table = getMacEncodingTable(encoding);
+    const table = getMacEncodingTable(encoding);
     if (table === undefined) {
         return undefined;
     }
 
-    var result = [];
-    for (var i = 0; i < str.length; i++) {
-        var c = str.charCodeAt(i);
+    const result = [];
+    for (let i = 0; i < str.length; i++) {
+        let c = str.charCodeAt(i);
 
         // In all eight-bit Mac encodings, the characters 0x00..0x7F are
         // mapped to U+0000..U+007F; we only need to look up the others.
@@ -575,7 +567,7 @@ encode.MACSTRING = function(str, encoding) {
  * @returns {number}
  */
 sizeOf.MACSTRING = function(str, encoding) {
-    var b = encode.MACSTRING(str, encoding);
+    const b = encode.MACSTRING(str, encoding);
     if (b !== undefined) {
         return b.length;
     } else {
@@ -590,8 +582,8 @@ function isByteEncodable(value) {
 
 // Helper for encode.VARDELTAS
 function encodeVarDeltaRunAsZeroes(deltas, pos, result) {
-    var runLength = 0;
-    var numDeltas = deltas.length;
+    let runLength = 0;
+    const numDeltas = deltas.length;
     while (pos < numDeltas && runLength < 64 && deltas[pos] === 0) {
         ++pos;
         ++runLength;
@@ -602,11 +594,11 @@ function encodeVarDeltaRunAsZeroes(deltas, pos, result) {
 
 // Helper for encode.VARDELTAS
 function encodeVarDeltaRunAsBytes(deltas, offset, result) {
-    var runLength = 0;
-    var numDeltas = deltas.length;
-    var pos = offset;
+    let runLength = 0;
+    const numDeltas = deltas.length;
+    let pos = offset;
     while (pos < numDeltas && runLength < 64) {
-        var value = deltas[pos];
+        const value = deltas[pos];
         if (!isByteEncodable(value)) {
             break;
         }
@@ -626,7 +618,7 @@ function encodeVarDeltaRunAsBytes(deltas, offset, result) {
         ++runLength;
     }
     result.push(runLength - 1);
-    for (var i = offset; i < pos; ++i) {
+    for (let i = offset; i < pos; ++i) {
         result.push((deltas[i] + 256) & 0xff);
     }
     return pos;
@@ -634,11 +626,11 @@ function encodeVarDeltaRunAsBytes(deltas, offset, result) {
 
 // Helper for encode.VARDELTAS
 function encodeVarDeltaRunAsWords(deltas, offset, result) {
-    var runLength = 0;
-    var numDeltas = deltas.length;
-    var pos = offset;
+    let runLength = 0;
+    const numDeltas = deltas.length;
+    let pos = offset;
     while (pos < numDeltas && runLength < 64) {
-        var value = deltas[pos];
+        const value = deltas[pos];
 
         // Within a word-encoded run of deltas, it is easiest to start
         // a new run (with a different encoding) whenever we encounter
@@ -664,8 +656,8 @@ function encodeVarDeltaRunAsWords(deltas, offset, result) {
         ++runLength;
     }
     result.push(0x40 | (runLength - 1));
-    for (var i = offset; i < pos; ++i) {
-        var val = deltas[i];
+    for (let i = offset; i < pos; ++i) {
+        const val = deltas[i];
         result.push(((val + 0x10000) >> 8) & 0xff, (val + 0x100) & 0xff);
     }
     return pos;
@@ -684,10 +676,10 @@ function encodeVarDeltaRunAsWords(deltas, offset, result) {
  * @return {Array}
  */
 encode.VARDELTAS = function(deltas) {
-    var pos = 0;
-    var result = [];
+    let pos = 0;
+    const result = [];
     while (pos < deltas.length) {
-        var value = deltas[pos];
+        const value = deltas[pos];
         if (value === 0) {
             pos = encodeVarDeltaRunAsZeroes(deltas, pos, result);
         } else if (value >= -128 && value <= 127) {
@@ -706,17 +698,16 @@ encode.VARDELTAS = function(deltas) {
  * @returns {Array}
  */
 encode.INDEX = function(l) {
-    var i;
     //var offset, offsets, offsetEncoder, encodedOffsets, encodedOffset, data,
     //    i, v;
     // Because we have to know which data type to use to encode the offsets,
     // we have to go through the values twice: once to encode the data and
-    // calculate the offets, then again to encode the offsets using the fitting data type.
-    var offset = 1; // First offset is always 1.
-    var offsets = [offset];
-    var data = [];
-    for (i = 0; i < l.length; i += 1) {
-        var v = encode.OBJECT(l[i]);
+    // calculate the offsets, then again to encode the offsets using the fitting data type.
+    let offset = 1; // First offset is always 1.
+    const offsets = [offset];
+    const data = [];
+    for (let i = 0; i < l.length; i += 1) {
+        const v = encode.OBJECT(l[i]);
         Array.prototype.push.apply(data, v);
         offset += v.length;
         offsets.push(offset);
@@ -726,11 +717,11 @@ encode.INDEX = function(l) {
         return [0, 0];
     }
 
-    var encodedOffsets = [];
-    var offSize = (1 + Math.floor(Math.log(offset) / Math.log(2)) / 8) | 0;
-    var offsetEncoder = [undefined, encode.BYTE, encode.USHORT, encode.UINT24, encode.ULONG][offSize];
-    for (i = 0; i < offsets.length; i += 1) {
-        var encodedOffset = offsetEncoder(offsets[i]);
+    const encodedOffsets = [];
+    const offSize = (1 + Math.floor(Math.log(offset) / Math.log(2)) / 8) | 0;
+    const offsetEncoder = [undefined, encode.BYTE, encode.USHORT, encode.UINT24, encode.ULONG][offSize];
+    for (let i = 0; i < offsets.length; i += 1) {
+        const encodedOffset = offsetEncoder(offsets[i]);
         Array.prototype.push.apply(encodedOffsets, encodedOffset);
     }
 
@@ -756,14 +747,14 @@ sizeOf.INDEX = function(v) {
  * @returns {Array}
  */
 encode.DICT = function(m) {
-    var d = [];
-    var keys = Object.keys(m);
-    var length = keys.length;
+    let d = [];
+    const keys = Object.keys(m);
+    const length = keys.length;
 
-    for (var i = 0; i < length; i += 1) {
+    for (let i = 0; i < length; i += 1) {
         // Object.keys() return string keys, but our keys are always numeric.
-        var k = parseInt(keys[i], 0);
-        var v = m[k];
+        const k = parseInt(keys[i], 0);
+        const v = m[k];
         // Value comes before the key.
         d = d.concat(encode.OPERAND(v.value, v.type));
         d = d.concat(encode.OPERATOR(k));
@@ -798,9 +789,9 @@ encode.OPERATOR = function(v) {
  * @returns {Array}
  */
 encode.OPERAND = function(v, type) {
-    var d = [];
+    let d = [];
     if (Array.isArray(type)) {
-        for (var i = 0; i < type.length; i += 1) {
+        for (let i = 0; i < type.length; i += 1) {
             check.argument(v.length === type.length, 'Not enough arguments given for type' + type);
             d = d.concat(encode.OPERAND(v[i], type[i]));
         }
@@ -828,7 +819,7 @@ encode.OP = encode.BYTE;
 sizeOf.OP = sizeOf.BYTE;
 
 // memoize charstring encoding using WeakMap if available
-var wmm = typeof WeakMap === 'function' && new WeakMap();
+const wmm = typeof WeakMap === 'function' && new WeakMap();
 
 /**
  * Convert a list of CharString operations to bytes.
@@ -838,17 +829,17 @@ var wmm = typeof WeakMap === 'function' && new WeakMap();
 encode.CHARSTRING = function(ops) {
     // See encode.MACSTRING for why we don't do "if (wmm && wmm.has(ops))".
     if (wmm) {
-        var cachedValue = wmm.get(ops);
+        const cachedValue = wmm.get(ops);
         if (cachedValue !== undefined) {
             return cachedValue;
         }
     }
 
-    var d = [];
-    var length = ops.length;
+    let d = [];
+    const length = ops.length;
 
-    for (var i = 0; i < length; i += 1) {
-        var op = ops[i];
+    for (let i = 0; i < length; i += 1) {
+        const op = ops[i];
         d = d.concat(encode[op.type](op.value));
     }
 
@@ -875,7 +866,7 @@ sizeOf.CHARSTRING = function(ops) {
  * @returns {Array}
  */
 encode.OBJECT = function(v) {
-    var encodingFunction = encode[v.type];
+    const encodingFunction = encode[v.type];
     check.argument(encodingFunction !== undefined, 'No encoding function for type ' + v.type);
     return encodingFunction(v.value);
 };
@@ -885,7 +876,7 @@ encode.OBJECT = function(v) {
  * @returns {number}
  */
 sizeOf.OBJECT = function(v) {
-    var sizeOfFunction = sizeOf[v.type];
+    const sizeOfFunction = sizeOf[v.type];
     check.argument(sizeOfFunction !== undefined, 'No sizeOf function for type ' + v.type);
     return sizeOfFunction(v.value);
 };
@@ -898,22 +889,21 @@ sizeOf.OBJECT = function(v) {
  * @returns {Array}
  */
 encode.TABLE = function(table) {
-    var d = [];
-    var length = table.fields.length;
-    var subtables = [];
-    var subtableOffsets = [];
-    var i;
+    let d = [];
+    const length = table.fields.length;
+    const subtables = [];
+    const subtableOffsets = [];
 
-    for (i = 0; i < length; i += 1) {
-        var field = table.fields[i];
-        var encodingFunction = encode[field.type];
+    for (let i = 0; i < length; i += 1) {
+        const field = table.fields[i];
+        const encodingFunction = encode[field.type];
         check.argument(encodingFunction !== undefined, 'No encoding function for field type ' + field.type + ' (' + field.name + ')');
-        var value = table[field.name];
+        let value = table[field.name];
         if (value === undefined) {
             value = field.value;
         }
 
-        var bytes = encodingFunction(value);
+        const bytes = encodingFunction(value);
 
         if (field.type === 'TABLE') {
             subtableOffsets.push(d.length);
@@ -924,9 +914,9 @@ encode.TABLE = function(table) {
         }
     }
 
-    for (i = 0; i < subtables.length; i += 1) {
-        var o = subtableOffsets[i];
-        var offset = d.length;
+    for (let i = 0; i < subtables.length; i += 1) {
+        const o = subtableOffsets[i];
+        const offset = d.length;
         check.argument(offset < 65536, 'Table ' + table.tableName + ' too big.');
         d[o] = offset >> 8;
         d[o + 1] = offset & 0xff;
@@ -941,14 +931,14 @@ encode.TABLE = function(table) {
  * @returns {number}
  */
 sizeOf.TABLE = function(table) {
-    var numBytes = 0;
-    var length = table.fields.length;
+    let numBytes = 0;
+    const length = table.fields.length;
 
-    for (var i = 0; i < length; i += 1) {
-        var field = table.fields[i];
-        var sizeOfFunction = sizeOf[field.type];
+    for (let i = 0; i < length; i += 1) {
+        const field = table.fields[i];
+        const sizeOfFunction = sizeOf[field.type];
         check.argument(sizeOfFunction !== undefined, 'No sizeOf function for field type ' + field.type + ' (' + field.name + ')');
-        var value = table[field.name];
+        let value = table[field.name];
         if (value === undefined) {
             value = field.value;
         }
@@ -976,6 +966,4 @@ sizeOf.LITERAL = function(v) {
     return v.length;
 };
 
-exports.decode = decode;
-exports.encode = encode;
-exports.sizeOf = sizeOf;
+export { decode, encode, sizeOf };

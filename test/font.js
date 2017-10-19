@@ -1,27 +1,22 @@
-/* jshint mocha: true */
-
-'use strict';
-
-var assert = require('assert');
-var opentype = require('../src/opentype');
+import assert from 'assert';
+import { Font, Glyph, Path, loadSync } from '../src/opentype';
 
 describe('font.js', function() {
+    let font;
 
-    var font;
+    const fGlyph = new Glyph({name: 'f', unicode: 102, path: new Path()});
+    const iGlyph = new Glyph({name: 'i', unicode: 105, path: new Path()});
+    const ffGlyph = new Glyph({name: 'f_f', unicode: 0xfb01, path: new Path()});
+    const fiGlyph = new Glyph({name: 'f_i', unicode: 0xfb02, path: new Path()});
+    const ffiGlyph = new Glyph({name: 'f_f_i', unicode: 0xfb03, path: new Path()});
 
-    var fGlyph = new opentype.Glyph({ name: 'f', unicode: 102, path: new opentype.Path() });
-    var iGlyph = new opentype.Glyph({ name: 'i', unicode: 105, path: new opentype.Path() });
-    var ffGlyph = new opentype.Glyph({ name: 'f_f', unicode: 0xfb01, path: new opentype.Path() });
-    var fiGlyph = new opentype.Glyph({ name: 'f_i', unicode: 0xfb02, path: new opentype.Path() });
-    var ffiGlyph = new opentype.Glyph({ name: 'f_f_i', unicode: 0xfb03, path: new opentype.Path() });
-
-    var glyphs = [
-        new opentype.Glyph({ name: '.notdef', unicode: 0, path: new opentype.Path() }),
+    const glyphs = [
+        new Glyph({name: '.notdef', unicode: 0, path: new Path()}),
         fGlyph, iGlyph, ffGlyph, fiGlyph, ffiGlyph
     ];
 
     beforeEach(function() {
-        font = new opentype.Font({
+        font = new Font({
             familyName: 'MyFont',
             styleName: 'Medium',
             unitsPerEm: 1000,
@@ -44,12 +39,10 @@ describe('font.js', function() {
         });
 
         it('works on fonts with coverage table format 2', function() {
-            var vibur = opentype.loadSync('./fonts/Vibur.woff');
-            var glyphs = vibur.stringToGlyphs('er');
+            const vibur = loadSync('./fonts/Vibur.woff');
+            const glyphs = vibur.stringToGlyphs('er');
             assert.equal(glyphs.length, 1);
             assert.equal(glyphs[0].name, 'er');
         });
-
     });
-
 });

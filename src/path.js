@@ -1,8 +1,6 @@
 // Geometric objects
 
-'use strict';
-
-var bbox = require('./bbox');
+import BoundingBox from './bbox';
 
 /**
  * A bézier path containing a set of path commands similar to a SVG path.
@@ -135,8 +133,8 @@ Path.prototype.close = Path.prototype.closePath = function() {
 Path.prototype.extend = function(pathOrCommands) {
     if (pathOrCommands.commands) {
         pathOrCommands = pathOrCommands.commands;
-    } else if (pathOrCommands instanceof bbox.BoundingBox) {
-        var box = pathOrCommands;
+    } else if (pathOrCommands instanceof BoundingBox) {
+        const box = pathOrCommands;
         this.moveTo(box.x1, box.y1);
         this.lineTo(box.x2, box.y1);
         this.lineTo(box.x2, box.y2);
@@ -153,14 +151,14 @@ Path.prototype.extend = function(pathOrCommands) {
  * @returns {opentype.BoundingBox}
  */
 Path.prototype.getBoundingBox = function() {
-    var box = new bbox.BoundingBox();
+    const box = new BoundingBox();
 
-    var startX = 0;
-    var startY = 0;
-    var prevX = 0;
-    var prevY = 0;
-    for (var i = 0; i < this.commands.length; i++) {
-        var cmd = this.commands[i];
+    let startX = 0;
+    let startY = 0;
+    let prevX = 0;
+    let prevY = 0;
+    for (let i = 0; i < this.commands.length; i++) {
+        const cmd = this.commands[i];
         switch (cmd.type) {
             case 'M':
                 box.addPoint(cmd.x, cmd.y);
@@ -187,7 +185,7 @@ Path.prototype.getBoundingBox = function() {
                 prevY = startY;
                 break;
             default:
-                throw new Error('Unexpected path commmand ' + cmd.type);
+                throw new Error('Unexpected path command ' + cmd.type);
         }
     }
     if (box.isEmpty()) {
@@ -202,8 +200,8 @@ Path.prototype.getBoundingBox = function() {
  */
 Path.prototype.draw = function(ctx) {
     ctx.beginPath();
-    for (var i = 0; i < this.commands.length; i += 1) {
-        var cmd = this.commands[i];
+    for (let i = 0; i < this.commands.length; i += 1) {
+        const cmd = this.commands[i];
         if (cmd.type === 'M') {
             ctx.moveTo(cmd.x, cmd.y);
         } else if (cmd.type === 'L') {
@@ -247,9 +245,9 @@ Path.prototype.toPathData = function(decimalPlaces) {
     }
 
     function packValues() {
-        var s = '';
-        for (var i = 0; i < arguments.length; i += 1) {
-            var v = arguments[i];
+        let s = '';
+        for (let i = 0; i < arguments.length; i += 1) {
+            const v = arguments[i];
             if (v >= 0 && i > 0) {
                 s += ' ';
             }
@@ -260,9 +258,9 @@ Path.prototype.toPathData = function(decimalPlaces) {
         return s;
     }
 
-    var d = '';
-    for (var i = 0; i < this.commands.length; i += 1) {
-        var cmd = this.commands[i];
+    let d = '';
+    for (let i = 0; i < this.commands.length; i += 1) {
+        const cmd = this.commands[i];
         if (cmd.type === 'M') {
             d += 'M' + packValues(cmd.x, cmd.y);
         } else if (cmd.type === 'L') {
@@ -285,7 +283,7 @@ Path.prototype.toPathData = function(decimalPlaces) {
  * @return {string}
  */
 Path.prototype.toSVG = function(decimalPlaces) {
-    var svg = '<path d="';
+    let svg = '<path d="';
     svg += this.toPathData(decimalPlaces);
     svg += '"';
     if (this.fill && this.fill !== 'black') {
@@ -310,12 +308,12 @@ Path.prototype.toSVG = function(decimalPlaces) {
  * @return {SVGPathElement}
  */
 Path.prototype.toDOMElement = function(decimalPlaces) {
-    var temporaryPath = this.toPathData(decimalPlaces);
-    var newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const temporaryPath = this.toPathData(decimalPlaces);
+    const newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
     newPath.setAttribute('d', temporaryPath);
 
     return newPath;
 };
 
-exports.Path = Path;
+export default Path;

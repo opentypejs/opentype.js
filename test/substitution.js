@@ -1,39 +1,34 @@
-/* jshint mocha: true */
-
-'use strict';
-
-var assert = require('assert');
-var opentype = require('../src/opentype');
-var Substitution = require('../src/substitution');
+import assert from 'assert';
+import { Font, Glyph, Path } from '../src/opentype';
+import Substitution from '../src/substitution';
 
 describe('substitution.js', function() {
-
-    var font;
-    var substitution;
-    var notdefGlyph = new opentype.Glyph({
+    let font;
+    let substitution;
+    const notdefGlyph = new Glyph({
         name: '.notdef',
         unicode: 0,
-        path: new opentype.Path()
+        path: new Path()
     });
 
-    var glyphs = [notdefGlyph].concat('abcdefghijklmnopqrstuvwxyz'.split('').map(function(c) {
-        return new opentype.Glyph({
+    const glyphs = [notdefGlyph].concat('abcdefghijklmnopqrstuvwxyz'.split('').map(function (c) {
+        return new Glyph({
             name: c,
             unicode: c.charCodeAt(0),
-            path: new opentype.Path()
+            path: new Path()
         });
     }));
 
-    var defaultScriptList = [{
+    const defaultScriptList = [{
         tag: 'DFLT',
         script: {
-            defaultLangSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [0] },
+            defaultLangSys: {reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [0]},
             langSysRecords: []
         }
     }];
 
     beforeEach(function() {
-        font = new opentype.Font({
+        font = new Font({
             familyName: 'MyFont',
             styleName: 'Medium',
             unitsPerEm: 1000,

@@ -1,16 +1,6 @@
-'use strict';
-
-var assert = require('assert');
-var mocha = require('mocha');
-var describe = mocha.describe;
-var it = mocha.it;
-var testutil = require('./testutil.js');
-var hex = testutil.hex;
-var unhex = testutil.unhex;
-var types = require('../src/types.js');
-var decode = types.decode;
-var encode = types.encode;
-var sizeOf = types.sizeOf;
+import assert from 'assert';
+import { hex, unhex } from './testutil';
+import { decode, encode, sizeOf } from '../src/types';
 
 describe('types.js', function() {
     it('can handle BYTE', function() {
@@ -208,8 +198,8 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Central European encoding', function() {
-        var encoding = 'x-mac-ce';
-        var data = '42 65 74 F5 74 92 70 75 73';
+        const encoding = 'x-mac-ce';
+        const data = '42 65 74 F5 74 92 70 75 73';
 
         assert.equal(
             decode.MACSTRING(unhex('DE AD BE EF ' + data), 4, 9, encoding),
@@ -224,8 +214,8 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Croatian encoding', function() {
-        var encoding = 'x-mac-croatian';
-        var data = 'A9 74 61 6D 70 61 E8';
+        const encoding = 'x-mac-croatian';
+        const data = 'A9 74 61 6D 70 61 E8';
 
         assert.equal(
             decode.MACSTRING(unhex('DE AD BE EF ' + data), 4, 7, encoding),
@@ -240,8 +230,8 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Cyrillic encoding', function() {
-        var encoding = 'x-mac-cyrillic';
-        var data = '98 F0 E8 F4 F2 20 46 6F 6F';
+        const encoding = 'x-mac-cyrillic';
+        const data = '98 F0 E8 F4 F2 20 46 6F 6F';
 
         assert.equal(
             decode.MACSTRING(unhex('DE AD BE EF ' + data), 4, 9, encoding),
@@ -256,8 +246,8 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Gaelic encoding', function() {
-        var encoding = 'x-mac-gaelic';
-        var data = '44 9C 69 E0 B6 92';
+        const encoding = 'x-mac-gaelic';
+        const data = '44 9C 69 E0 B6 92';
 
         assert.equal(
             decode.MACSTRING(unhex('DE AD BE EF ' + data), 4, 6, encoding),
@@ -272,8 +262,8 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Greek encoding', function() {
-        var encoding = 'x-mac-greek';
-        var data = 'A1 F2 E1 ED ED E1 F4 EF F3 E5 E9 F2 C0 20 2E 85 2E';
+        const encoding = 'x-mac-greek';
+        const data = 'A1 F2 E1 ED ED E1 F4 EF F3 E5 E9 F2 C0 20 2E 85 2E';
 
         assert.equal(
             decode.MACSTRING(unhex('DE AD BE EF ' + data), 4, 17, encoding),
@@ -288,8 +278,8 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Icelandic encoding', function() {
-        var encoding = 'x-mac-icelandic';
-        var data = 'DE 97 72 69 73 64 97 74 74 69 72 20 DF 97 20 61 DD 8E 67';
+        const encoding = 'x-mac-icelandic';
+        const data = 'DE 97 72 69 73 64 97 74 74 69 72 20 DF 97 20 61 DD 8E 67';
 
         assert.equal(
             decode.MACSTRING(unhex('DE AD BE EF ' + data), 4, 19, encoding),
@@ -304,8 +294,8 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Inuit encoding', function() {
-        var encoding = 'x-mac-inuit';
-        var data = '8A 80 8C 8B AB DA CC C6 93';
+        const encoding = 'x-mac-inuit';
+        const data = '8A 80 8C 8B AB DA CC C6 93';
 
         assert.equal(
             decode.MACSTRING(unhex('DE AD BE EF ' + data), 4, 9, encoding),
@@ -320,8 +310,8 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Roman encoding', function() {
-        var encoding = 'macintosh';
-        var data = '86 65 74 6C 69 62 8A 72 67';
+        const encoding = 'macintosh';
+        const data = '86 65 74 6C 69 62 8A 72 67';
 
         assert.equal(
             decode.MACSTRING(unhex('DE AD BE EF ' + data), 4, 9, encoding),
@@ -336,8 +326,8 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Romanian encoding', function() {
-        var encoding = 'x-mac-romanian';
-        var data = '54 69 70 BE 72 69 72 65';
+        const encoding = 'x-mac-romanian';
+        const data = '54 69 70 BE 72 69 72 65';
 
         assert.equal(
             decode.MACSTRING(unhex('DE AD BE EF ' + data), 4, 8, encoding),
@@ -352,8 +342,8 @@ describe('types.js', function() {
     });
 
     it('can handle MACSTRING in Turkish encoding', function() {
-        var encoding = 'x-mac-turkish';
-        var data = '42 61 73 DD 6C 6D DD DF';
+        const encoding = 'x-mac-turkish';
+        const data = '42 61 73 DD 6C 6D DD DF';
 
         assert.equal(
             decode.MACSTRING(unhex('DE AD BE EF ' + data), 4, 8, encoding),
@@ -368,7 +358,7 @@ describe('types.js', function() {
     });
 
     it('rejects MACSTRING in unsupported encodings', function() {
-        var encoding = 'KOI8-R';
+        const encoding = 'KOI8-R';
         assert.equal(decode.MACSTRING(unhex('41 42'), 0, 1, encoding), undefined);
         assert.equal(encode.MACSTRING('AB', encoding), undefined);
         assert.equal(sizeOf.MACSTRING('AB', encoding), 0);
@@ -378,8 +368,8 @@ describe('types.js', function() {
         assert.equal(hex(encode.INDEX([])), '00 00');
         assert.equal(sizeOf.INDEX([]), 2);
 
-        var foo = {name: 'foo', type: 'STRING', value: 'hello'};
-        var bar = {name: 'bar', type: 'NUMBER', value: 23};
+        const foo = {name: 'foo', type: 'STRING', value: 'hello'};
+        const bar = {name: 'bar', type: 'NUMBER', value: 23};
         assert.equal(hex(encode.INDEX([foo, bar])),
                      '00 02 01 01 06 07 68 65 6C 6C 6F A2');
         assert.equal(sizeOf.INDEX([foo, bar]), 12);
@@ -389,8 +379,8 @@ describe('types.js', function() {
         assert.equal(hex(encode.DICT({})), '');
         assert.equal(sizeOf.DICT({}), 0);
 
-        var foo = {name: 'foo', type: 'number', value: -1131};
-        var bar = {name: 'bar', type: 'number', value: 1131};
+        const foo = {name: 'foo', type: 'number', value: -1131};
+        const bar = {name: 'bar', type: 'number', value: 1131};
         assert.equal(hex(encode.DICT({7: foo, 42: bar})), 'FE FF 07 FA FF 2A');
         assert.equal(sizeOf.DICT({7: foo, 42: bar}), 6);
     });
@@ -424,11 +414,11 @@ describe('types.js', function() {
 
         // FIXME: Somebody who knows CFF should double-check this;
         // the result seems a little short.
-        var ops = [
-           {name: 'width', type: 'NUMBER', value: 42},
-           {name: 'dx', type: 'NUMBER', value: 17},
-           {name: 'dy', type: 'NUMBER', value: -23},
-           {name: 'rlineto', type: 'OP', value: 5}
+        const ops = [
+            {name: 'width', type: 'NUMBER', value: 42},
+            {name: 'dx', type: 'NUMBER', value: 17},
+            {name: 'dy', type: 'NUMBER', value: -23},
+            {name: 'rlineto', type: 'OP', value: 5}
         ];
 
         // Because encode.CHARSTRING uses a cache, we call it twice
@@ -439,13 +429,13 @@ describe('types.js', function() {
     });
 
     it('can handle OBJECT', function() {
-        var obj = {type: 'TAG', value: 'Font'};
+        const obj = {type: 'TAG', value: 'Font'};
         assert.equal(hex(encode.OBJECT(obj)), '46 6F 6E 74');
         assert.equal(sizeOf.OBJECT(obj), 4);
     });
 
     it('can handle TABLE', function() {
-        var table = {
+        const table = {
             fields: [
                 {name: 'version', type: 'FIXED', value: 0x01234567},
                 {name: 'flags', type: 'USHORT', value: 0xBEEF}
@@ -456,14 +446,16 @@ describe('types.js', function() {
     });
 
     it('can handle subTABLEs', function() {
-        var table = {
+        const table = {
             fields: [
                 {name: 'version', type: 'FIXED', value: 0x01234567},
-                {name: 'subtable', type: 'TABLE', value: {
-                    fields: [
-                        {name: 'flags', type: 'USHORT', value: 0xBEEF}
-                    ]
-                }}
+                {
+                    name: 'subtable', type: 'TABLE', value: {
+                        fields: [
+                            {name: 'flags', type: 'USHORT', value: 0xBEEF}
+                        ]
+                    }
+                }
             ]
         };
         assert.equal(hex(encode.TABLE(table)), '01 23 45 67 00 06 BE EF');
@@ -472,47 +464,67 @@ describe('types.js', function() {
 
     it('can handle deeply nested TABLEs', function() {
         // First 58 bytes of Roboto-Black.ttf GSUB table.
-        var expected = '00 01 00 00 00 0A 00 20 00 3A ' +                                           // header
+        const expected = '00 01 00 00 00 0A 00 20 00 3A ' +                                           // header
             '00 01 44 46 4C 54 00 08 00 04 00 00 00 00 FF FF 00 02 00 00 00 01 ' +                  // script list
             '00 02 6C 69 67 61 00 0E 73 6D 63 70 00 14 00 00 00 01 00 01 00 00 00 01 00 00';        // feature list
 
-        var table = {
+        const table = {
             fields: [
                 {name: 'version', type: 'FIXED', value: 0x00010000},
                 {name: 'scriptList', type: 'TABLE'},
                 {name: 'featureList', type: 'TABLE'},
                 {name: 'lookupList', type: 'TABLE'}
             ],
-            scriptList: { fields: [
-                {name: 'scriptCount', type: 'USHORT', value: 1},
-                {name: 'scriptTag_0', type: 'TAG', value: 'DFLT'},
-                {name: 'script_0', type: 'TABLE', value: { fields: [
-                    {name: 'defaultLangSys', type: 'TABLE', value: { fields: [
-                        {name: 'lookupOrder', type: 'USHORT', value: 0},
-                        {name: 'reqFeatureIndex', type: 'USHORT', value: 0xffff},
-                        {name: 'featureCount', type: 'USHORT', value: 2},
-                        {name: 'featureIndex_0', type: 'USHORT', value: 0},
-                        {name: 'featureIndex_1', type: 'USHORT', value: 1}
-                    ]}},
-                    {name: 'langSysCount', type: 'USHORT', value: 0}
-                ]}}
-            ]},
-            featureList: { fields: [
-                {name: 'featureCount', type: 'USHORT', value: 2},
-                {name: 'featureTag_0', type: 'TAG', value: 'liga'},
-                {name: 'feature_0', type: 'TABLE', value: { fields: [
-                    {name: 'featureParams', type: 'USHORT', value: 0},
-                    {name: 'lookupCount', type: 'USHORT', value: 1},
-                    {name: 'lookupListIndex', type: 'USHORT', value: 1}
-                ]}},
-                {name: 'featureTag_1', type: 'TAG', value: 'smcp'},
-                {name: 'feature_1', type: 'TABLE', value: { fields: [
-                    {name: 'featureParams', type: 'USHORT', value: 0},
-                    {name: 'lookupCount', type: 'USHORT', value: 1},
-                    {name: 'lookupListIndex', type: 'USHORT', value: 0}
-                ]}}
-            ]},
-            lookupList: { fields: [] }
+            scriptList: {
+                fields: [
+                    {name: 'scriptCount', type: 'USHORT', value: 1},
+                    {name: 'scriptTag_0', type: 'TAG', value: 'DFLT'},
+                    {
+                        name: 'script_0', type: 'TABLE', value: {
+                            fields: [
+                            {
+                                name: 'defaultLangSys', type: 'TABLE', value: {
+                                    fields: [
+                                        {name: 'lookupOrder', type: 'USHORT', value: 0},
+                                        {name: 'reqFeatureIndex', type: 'USHORT', value: 0xffff},
+                                        {name: 'featureCount', type: 'USHORT', value: 2},
+                                        {name: 'featureIndex_0', type: 'USHORT', value: 0},
+                                        {name: 'featureIndex_1', type: 'USHORT', value: 1}
+                                    ]
+                                }
+                            },
+                            {name: 'langSysCount', type: 'USHORT', value: 0}
+                            ]
+                        }
+                    }
+                ]
+            },
+            featureList: {
+                fields: [
+                    {name: 'featureCount', type: 'USHORT', value: 2},
+                    {name: 'featureTag_0', type: 'TAG', value: 'liga'},
+                    {
+                        name: 'feature_0', type: 'TABLE', value: {
+                            fields: [
+                                {name: 'featureParams', type: 'USHORT', value: 0},
+                                {name: 'lookupCount', type: 'USHORT', value: 1},
+                                {name: 'lookupListIndex', type: 'USHORT', value: 1}
+                            ]
+                        }
+                    },
+                    {name: 'featureTag_1', type: 'TAG', value: 'smcp'},
+                    {
+                        name: 'feature_1', type: 'TABLE', value: {
+                            fields: [
+                                {name: 'featureParams', type: 'USHORT', value: 0},
+                                {name: 'lookupCount', type: 'USHORT', value: 1},
+                                {name: 'lookupListIndex', type: 'USHORT', value: 0}
+                            ]
+                        }
+                    }
+                ]
+            },
+            lookupList: {fields: []}
         };
 
         assert.equal(hex(encode.TABLE(table)), expected);
@@ -520,7 +532,7 @@ describe('types.js', function() {
     });
 
     it('can handle RECORD', function() {
-        var table = {
+        const table = {
             fields: [
                 {name: 'version', type: 'FIXED', value: 0x01234567},
                 {name: 'record', type: 'RECORD'}
@@ -547,7 +559,9 @@ describe('types.js', function() {
     });
 
     it('can encode VARDELTAS', function() {
-        var e = function(deltas) { return hex(encode.VARDELTAS(deltas)); };
+        const e = function (deltas) {
+            return hex(encode.VARDELTAS(deltas));
+        };
         assert.equal(e([]), '');
 
         // zeroes
@@ -602,7 +616,7 @@ describe('types.js', function() {
         // words, bytes, words:
         // a single byte-encodable word is more compact when encoded within the words run
         assert.equal(e([0x6666, 2, 0x7777]), '42 66 66 00 02 77 77');
-        // multiple byte-encodable words are more compated when forming their own run
+        // multiple byte-encodable words are more compacted when forming their own run
         assert.equal(e([0x6666, 2, 2, 0x7777]), '40 66 66 01 02 02 40 77 77');
     });
 });

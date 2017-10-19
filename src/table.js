@@ -1,10 +1,8 @@
 // Table metadata
 
-'use strict';
+import check from './check';
+import { encode, sizeOf } from './types';
 
-var check = require('./check');
-var encode = require('./types').encode;
-var sizeOf = require('./types').sizeOf;
 /**
  * @exports opentype.Table
  * @class
@@ -14,19 +12,18 @@ var sizeOf = require('./types').sizeOf;
  * @constructor
  */
 function Table(tableName, fields, options) {
-    var i;
-    for (i = 0; i < fields.length; i += 1) {
-        var field = fields[i];
+    for (let i = 0; i < fields.length; i += 1) {
+        const field = fields[i];
         this[field.name] = field.value;
     }
 
     this.tableName = tableName;
     this.fields = fields;
     if (options) {
-        var optionKeys = Object.keys(options);
-        for (i = 0; i < optionKeys.length; i += 1) {
-            var k = optionKeys[i];
-            var v = options[k];
+        const optionKeys = Object.keys(options);
+        for (let i = 0; i < optionKeys.length; i += 1) {
+            const k = optionKeys[i];
+            const v = options[k];
             if (this[k] !== undefined) {
                 this[k] = v;
             }
@@ -57,9 +54,9 @@ function ushortList(itemName, list, count) {
     if (count === undefined) {
         count = list.length;
     }
-    var fields = new Array(list.length + 1);
+    const fields = new Array(list.length + 1);
     fields[0] = {name: itemName + 'Count', type: 'USHORT', value: count};
-    for (var i = 0; i < list.length; i++) {
+    for (let i = 0; i < list.length; i++) {
         fields[i + 1] = {name: itemName + i, type: 'USHORT', value: list[i]};
     }
     return fields;
@@ -69,10 +66,10 @@ function ushortList(itemName, list, count) {
  * @private
  */
 function tableList(itemName, records, itemCallback) {
-    var count = records.length;
-    var fields = new Array(count + 1);
+    const count = records.length;
+    const fields = new Array(count + 1);
     fields[0] = {name: itemName + 'Count', type: 'USHORT', value: count};
-    for (var i = 0; i < count; i++) {
+    for (let i = 0; i < count; i++) {
         fields[i + 1] = {name: itemName + i, type: 'TABLE', value: itemCallback(records[i], i)};
     }
     return fields;
@@ -82,10 +79,10 @@ function tableList(itemName, records, itemCallback) {
  * @private
  */
 function recordList(itemName, records, itemCallback) {
-    var count = records.length;
-    var fields = [];
+    const count = records.length;
+    let fields = [];
     fields[0] = {name: itemName + 'Count', type: 'USHORT', value: count};
-    for (var i = 0; i < count; i++) {
+    for (let i = 0; i < count; i++) {
         fields = fields.concat(itemCallback(records[i], i));
     }
     return fields;
@@ -116,8 +113,8 @@ Coverage.prototype.constructor = Coverage;
 function ScriptList(scriptListTable) {
     Table.call(this, 'scriptListTable',
         recordList('scriptRecord', scriptListTable, function(scriptRecord, i) {
-            var script = scriptRecord.script;
-            var defaultLangSys = script.defaultLangSys;
+            const script = scriptRecord.script;
+            let defaultLangSys = script.defaultLangSys;
             check.assert(!!defaultLangSys, 'Unable to write GSUB: script ' + scriptRecord.tag + ' has no default language system.');
             return [
                 {name: 'scriptTag' + i, type: 'TAG', value: scriptRecord.tag},
@@ -127,7 +124,7 @@ function ScriptList(scriptListTable) {
                         {name: 'reqFeatureIndex', type: 'USHORT', value: defaultLangSys.reqFeatureIndex}]
                         .concat(ushortList('featureIndex', defaultLangSys.featureIndexes)))}
                     ].concat(recordList('langSys', script.langSysRecords, function(langSysRecord, i) {
-                        var langSys = langSysRecord.langSys;
+                        const langSys = langSysRecord.langSys;
                         return [
                             {name: 'langSysTag' + i, type: 'TAG', value: langSysRecord.tag},
                             {name: 'langSys' + i, type: 'TABLE', value: new Table('langSys', [
@@ -153,7 +150,7 @@ ScriptList.prototype.constructor = ScriptList;
 function FeatureList(featureListTable) {
     Table.call(this, 'featureListTable',
         recordList('featureRecord', featureListTable, function(featureRecord, i) {
-            var feature = featureRecord.feature;
+            const feature = featureRecord.feature;
             return [
                 {name: 'featureTag' + i, type: 'TAG', value: featureRecord.tag},
                 {name: 'feature' + i, type: 'TABLE', value: new Table('featureTable', [
@@ -176,7 +173,7 @@ FeatureList.prototype.constructor = FeatureList;
  */
 function LookupList(lookupListTable, subtableMakers) {
     Table.call(this, 'lookupListTable', tableList('lookup', lookupListTable, function(lookupTable) {
-        var subtableCallback = subtableMakers[lookupTable.lookupType];
+        let subtableCallback = subtableMakers[lookupTable.lookupType];
         check.assert(!!subtableCallback, 'Unable to write GSUB lookup type ' + lookupTable.lookupType + ' tables.');
         return new Table('lookupTable', [
             {name: 'lookupType', type: 'USHORT', value: lookupTable.lookupType},
@@ -189,12 +186,14 @@ LookupList.prototype.constructor = LookupList;
 
 // Record = same as Table, but inlined (a Table has an offset and its data is further in the stream)
 // Don't use offsets inside Records (probable bug), only in Tables.
-exports.Record = exports.Table = Table;
-exports.Coverage = Coverage;
-exports.ScriptList = ScriptList;
-exports.FeatureList = FeatureList;
-exports.LookupList = LookupList;
-
-exports.ushortList = ushortList;
-exports.tableList = tableList;
-exports.recordList = recordList;
+export default {
+    Table,
+    Record: Table,
+    Coverage,
+    ScriptList,
+    FeatureList,
+    LookupList,
+    ushortList,
+    tableList,
+    recordList,
+};

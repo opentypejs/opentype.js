@@ -1,7 +1,5 @@
 // Drawing utility functions.
 
-'use strict';
-
 // Draw a line on the given context from point `x1,y1` to point `x2,y2`.
 function line(ctx, x1, y1, x2, y2) {
     ctx.beginPath();
@@ -10,4 +8,4 @@ function line(ctx, x1, y1, x2, y2) {
     ctx.stroke();
 }
 
-exports.line = line;
+export default { line };

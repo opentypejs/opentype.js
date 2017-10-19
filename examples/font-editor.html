@@ -215,7 +215,7 @@
             'Y': [[0, 10], [3, 10], [4, 8], [5, 10], [8, 10], [5, 5], [5, 0], [3, 0], [3, 5]],
             'Z': [[0, 10], [7, 10], [7, 7], [3, 3], [7, 3], [7, 0], [0, 0], [0, 3], [4, 7], [0, 7]],
             '_': [[0, 0], [0, 1], [8, 1], [8, 0]],
-        }
+        };
 
         // We map between the character and the internal name.
         var TTF_NAME_MAP = { _: 'underscore' };
@@ -426,7 +426,7 @@
                 var glyph = gGlyphMap[c];
                 json += '  \'' + c + '\': ' + JSON.stringify(glyph) + ',\n';
             }
-            json += '}\n'
+            json += '}\n';
 
             code.value = json;
         }

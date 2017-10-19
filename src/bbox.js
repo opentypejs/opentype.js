@@ -1,7 +1,5 @@
 // The Bounding Box object
 
-'use strict';
-
 function derive(v0, v1, v2, v3, t) {
     return Math.pow(1 - t, 3) * v0 +
         3 * Math.pow(1 - t, 2) * t * v1 +
@@ -101,22 +99,22 @@ BoundingBox.prototype.addBezier = function(x0, y0, x1, y1, x2, y2, x, y) {
     // This code is based on http://nishiohirokazu.blogspot.com/2009/06/how-to-calculate-bezier-curves-bounding.html
     // and https://github.com/icons8/svg-path-bounding-box
 
-    var p0 = [x0, y0];
-    var p1 = [x1, y1];
-    var p2 = [x2, y2];
-    var p3 = [x, y];
+    const p0 = [x0, y0];
+    const p1 = [x1, y1];
+    const p2 = [x2, y2];
+    const p3 = [x, y];
 
     this.addPoint(x0, y0);
     this.addPoint(x, y);
 
-    for (var i = 0; i <= 1; i++) {
-        var b = 6 * p0[i] - 12 * p1[i] + 6 * p2[i];
-        var a = -3 * p0[i] + 9 * p1[i] - 9 * p2[i] + 3 * p3[i];
-        var c = 3 * p1[i] - 3 * p0[i];
+    for (let i = 0; i <= 1; i++) {
+        const b = 6 * p0[i] - 12 * p1[i] + 6 * p2[i];
+        const a = -3 * p0[i] + 9 * p1[i] - 9 * p2[i] + 3 * p3[i];
+        const c = 3 * p1[i] - 3 * p0[i];
 
         if (a === 0) {
             if (b === 0) continue;
-            var t = -c / b;
+            const t = -c / b;
             if (0 < t && t < 1) {
                 if (i === 0) this.addX(derive(p0[i], p1[i], p2[i], p3[i], t));
                 if (i === 1) this.addY(derive(p0[i], p1[i], p2[i], p3[i], t));
@@ -124,14 +122,14 @@ BoundingBox.prototype.addBezier = function(x0, y0, x1, y1, x2, y2, x, y) {
             continue;
         }
 
-        var b2ac = Math.pow(b, 2) - 4 * c * a;
+        const b2ac = Math.pow(b, 2) - 4 * c * a;
         if (b2ac < 0) continue;
-        var t1 = (-b + Math.sqrt(b2ac)) / (2 * a);
+        const t1 = (-b + Math.sqrt(b2ac)) / (2 * a);
         if (0 < t1 && t1 < 1) {
             if (i === 0) this.addX(derive(p0[i], p1[i], p2[i], p3[i], t1));
             if (i === 1) this.addY(derive(p0[i], p1[i], p2[i], p3[i], t1));
         }
-        var t2 = (-b - Math.sqrt(b2ac)) / (2 * a);
+        const t2 = (-b - Math.sqrt(b2ac)) / (2 * a);
         if (0 < t2 && t2 < 1) {
             if (i === 0) this.addX(derive(p0[i], p1[i], p2[i], p3[i], t2));
             if (i === 1) this.addY(derive(p0[i], p1[i], p2[i], p3[i], t2));
@@ -150,11 +148,11 @@ BoundingBox.prototype.addBezier = function(x0, y0, x1, y1, x2, y2, x, y) {
  * @param {number} y - The ending Y coordinate.
  */
 BoundingBox.prototype.addQuad = function(x0, y0, x1, y1, x, y) {
-    var cp1x = x0 + 2 / 3 * (x1 - x0);
-    var cp1y = y0 + 2 / 3 * (y1 - y0);
-    var cp2x = cp1x + 1 / 3 * (x - x0);
-    var cp2y = cp1y + 1 / 3 * (y - y0);
+    const cp1x = x0 + 2 / 3 * (x1 - x0);
+    const cp1y = y0 + 2 / 3 * (y1 - y0);
+    const cp2x = cp1x + 1 / 3 * (x - x0);
+    const cp2y = cp1y + 1 / 3 * (y - y0);
     this.addBezier(x0, y0, cp1x, cp1y, cp2x, cp2y, x, y);
 };
 
-exports.BoundingBox = BoundingBox;
+export default BoundingBox;

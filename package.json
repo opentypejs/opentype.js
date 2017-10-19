@@ -1,7 +1,7 @@
 {
   "name": "opentype.js",
   "description": "OpenType font parser",
-  "version": "0.7.1",
+  "version": "0.7.3",
   "author": {
     "name": "Frederik De Bleser",
     "email": "frederik@debleser.be"
@@ -19,29 +19,34 @@
     "type": "git",
     "url": "git://github.com/nodebox/opentype.js.git"
   },
-  "main": "src/opentype.js",
+  "main": "dist/opentype.js",
+  "module": "src/opentype.js",
   "bin": {
     "ot": "./bin/ot"
   },
   "scripts": {
-    "watch": "watchify src/opentype.js --standalone opentype --debug -o build/opentype.js -v",
-    "start": "mkdirp build && parallelshell \"npm run watch\" \"node ./bin/server.js\"",
-    "test": "mocha --recursive && jshint . && jscs .",
-    "browserify": "browserify src/opentype.js -p licensify --bare --standalone opentype > dist/opentype.js",
-    "uglify": "browserify src/opentype.js -p licensify --bare --standalone opentype -g [ uglifyify --compress [ --dead_code --global_defs [ --exports.DEBUG 0 ] ] ] > dist/opentype.min.js ",
-    "dist": "rimraf build && rimraf dist && mkdirp build && mkdirp dist && npm run test && npm run browserify && npm run uglify"
+    "start": "node ./bin/server.js",
+    "watch": "rollup -c -w",
+    "test": "mocha --require reify --compilers js:buble/register --recursive && jshint . && jscs .",
+    "build": "rollup -c",
+    "minify": "uglifyjs ./dist/opentype.js > ./dist/opentype.min.js",
+    "dist": "npm run test && npm run build && npm run minify"
   },
   "devDependencies": {
-    "browserify": "^13.0.1",
+    "buble": "^0.15.2",
+    "cross-env": "^5.0.0",
     "jscs": "^3.0.3",
     "jshint": "^2.9.2",
-    "mkdirp": "^0.5.1",
     "mocha": "^2.5.3",
-    "parallelshell": "^2.0.0",
-    "rimraf": "^2.5.2",
-    "uglifyify": "^3.0.1",
-    "watchify": "^3.7.0",
-    "licensify": "^3.1.2"
+    "reify": "^0.11.0",
+    "rollup": "^0.41.6",
+    "rollup-plugin-buble": "^0.15.0",
+    "rollup-plugin-commonjs": "^8.0.2",
+    "rollup-plugin-license": "^0.4.0",
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-watch": "^3.2.2",
+    "uglify-js": "^3.0.14",
+    "uglifyjs": "^2.4.11"
   },
   "browser": {
     "fs": false

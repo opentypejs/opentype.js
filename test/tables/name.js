@@ -1,13 +1,8 @@
-'use strict';
-
-var assert = require('assert');
-var mocha = require('mocha');
-var describe = mocha.describe;
-var it = mocha.it;
-var table = require('../../src/table');
-var testutil = require('../testutil');
-var types = require('../../src/types');
-var _name = require('../../src/tables/name');
+import assert from 'assert';
+import table from '../../src/table';
+import { encode } from '../../src/types';
+import _name from '../../src/tables/name';
+import { hex, unhex } from '../testutil';
 
 // For testing, we need a custom function that builds name tables.
 // The public name.make() API of opentype.js is hiding the complexity
@@ -18,32 +13,32 @@ var _name = require('../../src/tables/name');
 // tags.  That is convenient for users of opentype.js, but it
 // complicates testing.
 function makeNameTable(names) {
-    var t = new table.Table('name', [
+    const t = new table.Table('name', [
         {name: 'format', type: 'USHORT', value: 0},
         {name: 'count', type: 'USHORT', value: names.length},
         {name: 'stringOffset', type: 'USHORT', value: 6 + names.length * 12}
     ]);
-    var stringPool = [];
+    const stringPool = [];
 
-    for (var i = 0; i < names.length; i++) {
-        var name = names[i];
-        var text = testutil.unhex(name[1]);
+    for (let i = 0; i < names.length; i++) {
+        const name = names[i];
+        const text = unhex(name[1]);
         t.fields.push({name: 'platformID_' + i, type: 'USHORT', value: name[2]});
         t.fields.push({name: 'encodingID_' + i, type: 'USHORT', value: name[3]});
         t.fields.push({name: 'languageID_' + i, type: 'USHORT', value: name[4]});
         t.fields.push({name: 'nameID_' + i, type: 'USHORT', value: name[0]});
         t.fields.push({name: 'length_' + i, type: 'USHORT', value: text.byteLength});
         t.fields.push({name: 'offset_' + i, type: 'USHORT', value: stringPool.length});
-        for (var j = 0; j < text.byteLength; j++) {
+        for (let j = 0; j < text.byteLength; j++) {
             stringPool.push(text.getUint8(j));
         }
     }
 
     t.fields.push({name: 'strings', type: 'LITERAL', value: stringPool});
 
-    var bytes = types.encode.TABLE(t);
-    var data = new DataView(new ArrayBuffer(bytes.length), 0);
-    for (var k = 0; k < bytes.length; k++) {
+    const bytes = encode.TABLE(t);
+    const data = new DataView(new ArrayBuffer(bytes.length), 0);
+    for (let k = 0; k < bytes.length; k++) {
         data.setUint8(k, bytes[k]);
     }
 
@@ -55,20 +50,20 @@ function parseNameTable(names, ltag) {
 }
 
 function getNameRecords(names) {
-    var result = [];
-    var stringPool = names.fields[names.fields.length - 1];
+    const result = [];
+    const stringPool = names.fields[names.fields.length - 1];
     assert(stringPool.name === 'strings');
-    for (var i = 0; i < names.fields.length; i++) {
-        var field = names.fields[i];
+    for (let i = 0; i < names.fields.length; i++) {
+        const field = names.fields[i];
         if (field.name.indexOf('record_') === 0) {
-            var name = field.value;
-            var encodedText =
+            const name = field.value;
+            const encodedText =
                 stringPool.value.slice(name.offset, name.offset + name.length);
-            var plat =
+            const plat =
                 {0: 'Uni', 1: 'Mac', 2: 'ISO', 3: 'Win'}[name.platformID] ||
                 name.platormID;
-            var enc;
-            var lang;
+            let enc;
+            let lang;
             if (name.platformID === 0) {
                 enc = {3: 'UCS-2', 4: 'UTF-16'}[name.encodingID];
                 lang = undefined;
@@ -94,10 +89,10 @@ function getNameRecords(names) {
                 enc = lang = undefined;
             }
 
-            result.push(plat + ' ' + (enc ? enc : name.encodingID) +
-                        ' ' + (lang ? lang : name.languageID) +
+            result.push(plat + ' ' + (enc || name.encodingID) +
+                        ' ' + (lang || name.languageID) +
                         ' N' + name.nameID +
-                        ' [' + testutil.hex(encodedText) + ']');
+                        ' [' + hex(encodedText) + ']');
         }
     }
 
@@ -134,7 +129,7 @@ describe('tables/name.js', function() {
     });
 
     it('can parse a naming table which refers to an ‘ltag’ table', function() {
-        var ltag = ['en', 'de', 'de-1901'];
+        const ltag = ['en', 'de', 'de-1901'];
         assert.deepEqual(parseNameTable([
             [1, '0057 0061 006C 0072 0075 0073', 0, 4, 0],
             [1, '0057 0061 006C 0072 006F 0073 0073', 0, 4, 1],
@@ -162,14 +157,14 @@ describe('tables/name.js', function() {
         // This is an interesting test case for various reasons:
         // * Indonesian ('id') uses the same string as English,
         //   so we exercise the building of string pools;
-        var names = {
+        const names = {
             fontFamily: {
                 en: 'Walrus',
                 de: 'Walross',
                 id: 'Walrus'
             }
         };
-        var ltag = [];
+        const ltag = [];
         assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
             'Mac smRoman langEnglish N1 [57 61 6C 72 75 73]',
             'Mac smRoman langGerman N1 [57 61 6C 72 6F 73 73]',
@@ -186,13 +181,13 @@ describe('tables/name.js', function() {
         // for “German in the traditional orthography” (de-1901).
         // Windows has one for “Inuktitut in Latin” (iu-Latn),
         // but MacOS does not.
-        var names = {
+        const names = {
             fontFamily: {
                 'de-1901': 'Walroß',
                 'iu-Latn': 'Aiviq'
             }
         };
-        var ltag = [];
+        const ltag = [];
         assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
             'Uni UTF-16 0 N1 [00 57 00 61 00 6C 00 72 00 6F 00 DF]',
             'Uni UTF-16 1 N1 [00 41 00 69 00 76 00 69 00 71]',
@@ -207,12 +202,12 @@ describe('tables/name.js', function() {
         // The implementation should fall back to emitting Unicode strings
         // with a BCP 47 language code; only newer versions of MacOS will
         // recognize it but this is better than stripping the string away.
-        var names = {
+        const names = {
             fontFamily: {
                 ja: '海馬'
             }
         };
-        var ltag = [];
+        const ltag = [];
         assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
             'Uni UTF-16 0 N1 [6D 77 99 AC]',
             'Win UCS-2 Japanese/Japan N1 [6D 77 99 AC]'
@@ -223,12 +218,12 @@ describe('tables/name.js', function() {
     it('can make a naming table for English names with unusual characters', function() {
         // The MacRoman encoding has no interrobang character. When
         // building a name table, this case should be handled gracefully.
-        var names = {
+        const names = {
             fontFamily: {
                 en: 'Hello‽'
             }
         };
-        var ltag = [];
+        const ltag = [];
         assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
             'Uni UTF-16 0 N1 [00 48 00 65 00 6C 00 6C 00 6F 20 3D]',
             'Win UCS-2 English/US N1 [00 48 00 65 00 6C 00 6C 00 6F 20 3D]'
@@ -242,12 +237,12 @@ describe('tables/name.js', function() {
         // Apple had run out of script codes and needed a quick hack.
         // The implementation uses a secondary look-up table for handling such
         // corner cases (Inuktitut is not the only one), and this test exercises it.
-        var names = {
+        const names = {
             fontFamily: {
                 iu: 'ᐊᐃᕕᖅ'
             }
         };
-        var ltag = [];
+        const ltag = [];
         assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
             'Mac smEthiopic langInuktitut N1 [84 80 CD E7]',
             'Win UCS-2 Inuktitut/Canada N1 [14 0A 14 03 15 55 15 85]'
@@ -257,13 +252,13 @@ describe('tables/name.js', function() {
 
     it('can make a naming table with custom names', function() {
         // Custom name for a font variation axis.
-        var names = {
+        const names = {
             256: {
                 en: 'Width',
                 de: 'Breite'
             }
         };
-        var ltag = [];
+        const ltag = [];
         assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
             'Mac smRoman langEnglish N256 [57 69 64 74 68]',
             'Mac smRoman langGerman N256 [42 72 65 69 74 65]',

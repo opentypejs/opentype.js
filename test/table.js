@@ -1,16 +1,11 @@
-/* jshint mocha: true */
-
-'use strict';
-
-var assert = require('assert');
-var testutil = require('./testutil');
-var table = require('../src/table');
+import assert from 'assert';
+import { unhexArray } from './testutil';
+import table from '../src/table';
 
 describe('table.js', function() {
-
     it('should make a ScriptList table', function() {
         // https://www.microsoft.com/typography/OTSPEC/chapter2.htm Examples 1 & 2
-        var expectedData = testutil.unhexArray(
+        const expectedData = unhexArray(
             '0003 68616E69 0014 6B616E61 0020 6C61746E 002E' +  // Example 1 (hani, kana, latn)
             '0004 0000 0000 FFFF 0001 0003' +                   // hani lang sys
             '0004 0000 0000 FFFF 0002 0003 0004' +              // kana lang sys
@@ -51,5 +46,4 @@ describe('table.js', function() {
             } },
         ]).encode(), expectedData);
     });
-
 });

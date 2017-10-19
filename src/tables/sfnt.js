@@ -4,23 +4,21 @@
 // Recommendations for creating OpenType Fonts:
 // http://www.microsoft.com/typography/otspec140/recom.htm
 
-'use strict';
+import check from '../check';
+import table from '../table';
 
-var check = require('../check');
-var table = require('../table');
-
-var cmap = require('./cmap');
-var cff = require('./cff');
-var head = require('./head');
-var hhea = require('./hhea');
-var hmtx = require('./hmtx');
-var ltag = require('./ltag');
-var maxp = require('./maxp');
-var _name = require('./name');
-var os2 = require('./os2');
-var post = require('./post');
-var gsub = require('./gsub');
-var meta = require('./meta');
+import cmap from './cmap';
+import cff from './cff';
+import head from './head';
+import hhea from './hhea';
+import hmtx from './hmtx';
+import ltag from './ltag';
+import maxp from './maxp';
+import _name from './name';
+import os2 from './os2';
+import post from './post';
+import gsub from './gsub';
+import meta from './meta';
 
 function log2(v) {
     return Math.log(v) / Math.log(2) | 0;
@@ -31,8 +29,8 @@ function computeCheckSum(bytes) {
         bytes.push(0);
     }
 
-    var sum = 0;
-    for (var i = 0; i < bytes.length; i += 4) {
+    let sum = 0;
+    for (let i = 0; i < bytes.length; i += 4) {
         sum += (bytes[i] << 24) +
             (bytes[i + 1] << 16) +
             (bytes[i + 2] << 8) +
@@ -53,7 +51,7 @@ function makeTableRecord(tag, checkSum, offset, length) {
 }
 
 function makeSfntTable(tables) {
-    var sfnt = new table.Table('sfnt', [
+    const sfnt = new table.Table('sfnt', [
         {name: 'version', type: 'TAG', value: 'OTTO'},
         {name: 'numTables', type: 'USHORT', value: 0},
         {name: 'searchRange', type: 'USHORT', value: 0},
@@ -62,25 +60,25 @@ function makeSfntTable(tables) {
     ]);
     sfnt.tables = tables;
     sfnt.numTables = tables.length;
-    var highestPowerOf2 = Math.pow(2, log2(sfnt.numTables));
+    const highestPowerOf2 = Math.pow(2, log2(sfnt.numTables));
     sfnt.searchRange = 16 * highestPowerOf2;
     sfnt.entrySelector = log2(highestPowerOf2);
     sfnt.rangeShift = sfnt.numTables * 16 - sfnt.searchRange;
 
-    var recordFields = [];
-    var tableFields = [];
+    const recordFields = [];
+    const tableFields = [];
 
-    var offset = sfnt.sizeOf() + (makeTableRecord().sizeOf() * sfnt.numTables);
+    let offset = sfnt.sizeOf() + (makeTableRecord().sizeOf() * sfnt.numTables);
     while (offset % 4 !== 0) {
         offset += 1;
         tableFields.push({name: 'padding', type: 'BYTE', value: 0});
     }
 
-    for (var i = 0; i < tables.length; i += 1) {
-        var t = tables[i];
+    for (let i = 0; i < tables.length; i += 1) {
+        const t = tables[i];
         check.argument(t.tableName.length === 4, 'Table name' + t.tableName + ' is invalid.');
-        var tableLength = t.sizeOf();
-        var tableRecord = makeTableRecord(t.tableName, computeCheckSum(t.encode()), offset, tableLength);
+        const tableLength = t.sizeOf();
+        const tableRecord = makeTableRecord(t.tableName, computeCheckSum(t.encode()), offset, tableLength);
         recordFields.push({name: tableRecord.tag + ' Table Record', type: 'RECORD', value: tableRecord});
         tableFields.push({name: t.tableName + ' table', type: 'RECORD', value: t});
         offset += tableLength;
@@ -109,10 +107,10 @@ function makeSfntTable(tables) {
 // this function returns metrics for the first available character.
 // You can provide optional fallback metrics if no characters are available.
 function metricsForChar(font, chars, notFoundMetrics) {
-    for (var i = 0; i < chars.length; i += 1) {
-        var glyphIndex = font.charToGlyphIndex(chars[i]);
+    for (let i = 0; i < chars.length; i += 1) {
+        const glyphIndex = font.charToGlyphIndex(chars[i]);
         if (glyphIndex > 0) {
-            var glyph = font.glyphs.get(glyphIndex);
+            const glyph = font.glyphs.get(glyphIndex);
             return glyph.getMetrics();
         }
     }
@@ -121,8 +119,8 @@ function metricsForChar(font, chars, notFoundMetrics) {
 }
 
 function average(vs) {
-    var sum = 0;
-    for (var i = 0; i < vs.length; i += 1) {
+    let sum = 0;
+    for (let i = 0; i < vs.length; i += 1) {
         sum += vs[i];
     }
 
@@ -132,23 +130,23 @@ function average(vs) {
 // Convert the font object to a SFNT data structure.
 // This structure contains all the necessary tables and metadata to create a binary OTF file.
 function fontToSfntTable(font) {
-    var xMins = [];
-    var yMins = [];
-    var xMaxs = [];
-    var yMaxs = [];
-    var advanceWidths = [];
-    var leftSideBearings = [];
-    var rightSideBearings = [];
-    var firstCharIndex;
-    var lastCharIndex = 0;
-    var ulUnicodeRange1 = 0;
-    var ulUnicodeRange2 = 0;
-    var ulUnicodeRange3 = 0;
-    var ulUnicodeRange4 = 0;
+    const xMins = [];
+    const yMins = [];
+    const xMaxs = [];
+    const yMaxs = [];
+    const advanceWidths = [];
+    const leftSideBearings = [];
+    const rightSideBearings = [];
+    let firstCharIndex;
+    let lastCharIndex = 0;
+    let ulUnicodeRange1 = 0;
+    let ulUnicodeRange2 = 0;
+    let ulUnicodeRange3 = 0;
+    let ulUnicodeRange4 = 0;
 
-    for (var i = 0; i < font.glyphs.length; i += 1) {
-        var glyph = font.glyphs.get(i);
-        var unicode = glyph.unicode | 0;
+    for (let i = 0; i < font.glyphs.length; i += 1) {
+        const glyph = font.glyphs.get(i);
+        const unicode = glyph.unicode | 0;
 
         if (isNaN(glyph.advanceWidth)) {
             throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is not a number.');
@@ -165,7 +163,7 @@ function fontToSfntTable(font) {
             lastCharIndex = unicode;
         }
 
-        var position = os2.getUnicodeRange(unicode);
+        const position = os2.getUnicodeRange(unicode);
         if (position < 32) {
             ulUnicodeRange1 |= 1 << position;
         } else if (position < 64) {
@@ -179,7 +177,7 @@ function fontToSfntTable(font) {
         }
         // Skip non-important characters.
         if (glyph.name === '.notdef') continue;
-        var metrics = glyph.getMetrics();
+        const metrics = glyph.getMetrics();
         xMins.push(metrics.xMin);
         yMins.push(metrics.yMin);
         xMaxs.push(metrics.xMax);
@@ -189,7 +187,7 @@ function fontToSfntTable(font) {
         advanceWidths.push(glyph.advanceWidth);
     }
 
-    var globals = {
+    const globals = {
         xMin: Math.min.apply(null, xMins),
         yMin: Math.min.apply(null, yMins),
         xMax: Math.max.apply(null, xMaxs),
@@ -203,7 +201,7 @@ function fontToSfntTable(font) {
     globals.ascender = font.ascender;
     globals.descender = font.descender;
 
-    var headTable = head.make({
+    const headTable = head.make({
         flags: 3, // 00000011 (baseline for font at y=0; left sidebearing point at x=0)
         unitsPerEm: font.unitsPerEm,
         xMin: globals.xMin,
@@ -214,7 +212,7 @@ function fontToSfntTable(font) {
         createdTimestamp: font.createdTimestamp
     });
 
-    var hheaTable = hhea.make({
+    const hheaTable = hhea.make({
         ascender: globals.ascender,
         descender: globals.descender,
         advanceWidthMax: globals.advanceWidthMax,
@@ -224,9 +222,9 @@ function fontToSfntTable(font) {
         numberOfHMetrics: font.glyphs.length
     });
 
-    var maxpTable = maxp.make(font.glyphs.length);
+    const maxpTable = maxp.make(font.glyphs.length);
 
-    var os2Table = os2.make({
+    const os2Table = os2.make({
         xAvgCharWidth: Math.round(globals.advanceWidthAvg),
         usWeightClass: font.tables.os2.usWeightClass,
         usWidthClass: font.tables.os2.usWidthClass,
@@ -253,19 +251,19 @@ function fontToSfntTable(font) {
         usBreakChar: font.hasChar(' ') ? 32 : 0 // Use space as the break character, if available.
     });
 
-    var hmtxTable = hmtx.make(font.glyphs);
-    var cmapTable = cmap.make(font.glyphs);
+    const hmtxTable = hmtx.make(font.glyphs);
+    const cmapTable = cmap.make(font.glyphs);
 
-    var englishFamilyName = font.getEnglishName('fontFamily');
-    var englishStyleName = font.getEnglishName('fontSubfamily');
-    var englishFullName = englishFamilyName + ' ' + englishStyleName;
-    var postScriptName = font.getEnglishName('postScriptName');
+    const englishFamilyName = font.getEnglishName('fontFamily');
+    const englishStyleName = font.getEnglishName('fontSubfamily');
+    const englishFullName = englishFamilyName + ' ' + englishStyleName;
+    let postScriptName = font.getEnglishName('postScriptName');
     if (!postScriptName) {
         postScriptName = englishFamilyName.replace(/\s/g, '') + '-' + englishStyleName;
     }
 
-    var names = {};
-    for (var n in font.names) {
+    const names = {};
+    for (let n in font.names) {
         names[n] = font.names[n];
     }
 
@@ -285,12 +283,12 @@ function fontToSfntTable(font) {
         names.preferredSubfamily = font.names.fontSubfamily;
     }
 
-    var languageTags = [];
-    var nameTable = _name.make(names, languageTags);
-    var ltagTable = (languageTags.length > 0 ? ltag.make(languageTags) : undefined);
+    const languageTags = [];
+    const nameTable = _name.make(names, languageTags);
+    const ltagTable = (languageTags.length > 0 ? ltag.make(languageTags) : undefined);
 
-    var postTable = post.make();
-    var cffTable = cff.make(font.glyphs, {
+    const postTable = post.make();
+    const cffTable = cff.make(font.glyphs, {
         version: font.getEnglishName('version'),
         fullName: englishFullName,
         familyName: englishFamilyName,
@@ -300,10 +298,10 @@ function fontToSfntTable(font) {
         fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax]
     });
 
-    var metaTable = (font.metas && Object.keys(font.metas).length > 0) ? meta.make(font.metas) : undefined;
+    const metaTable = (font.metas && Object.keys(font.metas).length > 0) ? meta.make(font.metas) : undefined;
 
     // The order does not matter because makeSfntTable() will sort them.
-    var tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable];
+    const tables = [headTable, hheaTable, maxpTable, os2Table, nameTable, cmapTable, postTable, cffTable, hmtxTable];
     if (ltagTable) {
         tables.push(ltagTable);
     }
@@ -315,14 +313,14 @@ function fontToSfntTable(font) {
         tables.push(metaTable);
     }
 
-    var sfntTable = makeSfntTable(tables);
+    const sfntTable = makeSfntTable(tables);
 
     // Compute the font's checkSum and store it in head.checkSumAdjustment.
-    var bytes = sfntTable.encode();
-    var checkSum = computeCheckSum(bytes);
-    var tableFields = sfntTable.fields;
-    var checkSumAdjusted = false;
-    for (i = 0; i < tableFields.length; i += 1) {
+    const bytes = sfntTable.encode();
+    const checkSum = computeCheckSum(bytes);
+    const tableFields = sfntTable.fields;
+    let checkSumAdjusted = false;
+    for (let i = 0; i < tableFields.length; i += 1) {
         if (tableFields[i].name === 'head table') {
             tableFields[i].value.checkSumAdjustment = 0xB1B0AFBA - checkSum;
             checkSumAdjusted = true;
@@ -337,6 +335,4 @@ function fontToSfntTable(font) {
     return sfntTable;
 }
 
-exports.computeCheckSum = computeCheckSum;
-exports.make = makeSfntTable;
-exports.fontToTable = fontToSfntTable;
+export default { make: makeSfntTable, fontToTable: fontToSfntTable, computeCheckSum };

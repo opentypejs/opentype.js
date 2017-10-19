@@ -1,14 +1,12 @@
 // The Font object
 
-'use strict';
-
-var path = require('./path');
-var sfnt = require('./tables/sfnt');
-var encoding = require('./encoding');
-var glyphset = require('./glyphset');
-var Substitution = require('./substitution');
-var util = require('./util');
-var HintingTrueType = require('./hintingtt');
+import Path from './path';
+import sfnt from './tables/sfnt';
+import { DefaultEncoding } from './encoding';
+import glyphset from './glyphset';
+import Substitution from './substitution';
+import { isBrowser, checkArgument, arrayBufferToNodeBuffer } from './util';
+import HintingTrueType from './hintingtt';
 
 /**
  * @typedef FontOptions
@@ -51,12 +49,12 @@ function Font(options) {
 
     if (!options.empty) {
         // Check that we've provided the minimum set of names.
-        util.checkArgument(options.familyName, 'When creating a new Font object, familyName is required.');
-        util.checkArgument(options.styleName, 'When creating a new Font object, styleName is required.');
-        util.checkArgument(options.unitsPerEm, 'When creating a new Font object, unitsPerEm is required.');
-        util.checkArgument(options.ascender, 'When creating a new Font object, ascender is required.');
-        util.checkArgument(options.descender, 'When creating a new Font object, descender is required.');
-        util.checkArgument(options.descender < 0, 'Descender should be negative (e.g. -512).');
+        checkArgument(options.familyName, 'When creating a new Font object, familyName is required.');
+        checkArgument(options.styleName, 'When creating a new Font object, styleName is required.');
+        checkArgument(options.unitsPerEm, 'When creating a new Font object, unitsPerEm is required.');
+        checkArgument(options.ascender, 'When creating a new Font object, ascender is required.');
+        checkArgument(options.descender, 'When creating a new Font object, descender is required.');
+        checkArgument(options.descender < 0, 'Descender should be negative (e.g. -512).');
 
         // OS X will complain if the names are empty, so we put a single space everywhere by default.
         this.names = {
@@ -88,7 +86,7 @@ function Font(options) {
 
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
     this.glyphs = new glyphset.GlyphSet(this, options.glyphs || []);
-    this.encoding = new encoding.DefaultEncoding(this);
+    this.encoding = new DefaultEncoding(this);
     this.substitution = new Substitution(this);
     this.tables = this.tables || {};
 
@@ -130,8 +128,8 @@ Font.prototype.charToGlyphIndex = function(s) {
  * @return {opentype.Glyph}
  */
 Font.prototype.charToGlyph = function(c) {
-    var glyphIndex = this.charToGlyphIndex(c);
-    var glyph = this.glyphs.get(glyphIndex);
+    const glyphIndex = this.charToGlyphIndex(c);
+    let glyph = this.glyphs.get(glyphIndex);
     if (!glyph) {
         // .notdef
         glyph = this.glyphs.get(0);
@@ -151,27 +149,26 @@ Font.prototype.charToGlyph = function(c) {
  */
 Font.prototype.stringToGlyphs = function(s, options) {
     options = options || this.defaultRenderOptions;
-    var i;
     // Get glyph indexes
-    var indexes = [];
-    for (i = 0; i < s.length; i += 1) {
-        var c = s[i];
+    const indexes = [];
+    for (let i = 0; i < s.length; i += 1) {
+        const c = s[i];
         indexes.push(this.charToGlyphIndex(c));
     }
-    var length = indexes.length;
+    let length = indexes.length;
 
     // Apply substitutions on glyph indexes
     if (options.features) {
-        var script = options.script || this.substitution.getDefaultScriptName();
-        var manyToOne = [];
+        const script = options.script || this.substitution.getDefaultScriptName();
+        let manyToOne = [];
         if (options.features.liga) manyToOne = manyToOne.concat(this.substitution.getFeature('liga', script, options.language));
         if (options.features.rlig) manyToOne = manyToOne.concat(this.substitution.getFeature('rlig', script, options.language));
-        for (i = 0; i < length; i += 1) {
-            for (var j = 0; j < manyToOne.length; j++) {
-                var ligature = manyToOne[j];
-                var components = ligature.sub;
-                var compCount = components.length;
-                var k = 0;
+        for (let i = 0; i < length; i += 1) {
+            for (let j = 0; j < manyToOne.length; j++) {
+                const ligature = manyToOne[j];
+                const components = ligature.sub;
+                const compCount = components.length;
+                let k = 0;
                 while (k < compCount && components[k] === indexes[i + k]) k++;
                 if (k === compCount) {
                     indexes.splice(i, compCount, ligature.by);
@@ -182,9 +179,9 @@ Font.prototype.stringToGlyphs = function(s, options) {
     }
 
     // convert glyph indexes to glyph objects
-    var glyphs = new Array(length);
-    var notdef = this.glyphs.get(0);
-    for (i = 0; i < length; i += 1) {
+    const glyphs = new Array(length);
+    const notdef = this.glyphs.get(0);
+    for (let i = 0; i < length; i += 1) {
         glyphs[i] = this.glyphs.get(indexes[i]) || notdef;
     }
     return glyphs;
@@ -203,8 +200,8 @@ Font.prototype.nameToGlyphIndex = function(name) {
  * @return {opentype.Glyph}
  */
 Font.prototype.nameToGlyph = function(name) {
-    var glyphIndex = this.nameToGlyphIndex(name);
-    var glyph = this.glyphs.get(glyphIndex);
+    const glyphIndex = this.nameToGlyphIndex(name);
+    let glyph = this.glyphs.get(glyphIndex);
     if (!glyph) {
         // .notdef
         glyph = this.glyphs.get(0);
@@ -237,7 +234,7 @@ Font.prototype.glyphIndexToName = function(gid) {
 Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
     leftGlyph = leftGlyph.index || leftGlyph;
     rightGlyph = rightGlyph.index || rightGlyph;
-    var gposKerning = this.getGposKerningValue;
+    const gposKerning = this.getGposKerningValue;
     return gposKerning ? gposKerning(leftGlyph, rightGlyph) :
         (this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0);
 };
@@ -276,17 +273,17 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
     options = options || this.defaultRenderOptions;
-    var fontScale = 1 / this.unitsPerEm * fontSize;
-    var glyphs = this.stringToGlyphs(text, options);
-    for (var i = 0; i < glyphs.length; i += 1) {
-        var glyph = glyphs[i];
+    const fontScale = 1 / this.unitsPerEm * fontSize;
+    const glyphs = this.stringToGlyphs(text, options);
+    for (let i = 0; i < glyphs.length; i += 1) {
+        const glyph = glyphs[i];
         callback.call(this, glyph, x, y, fontSize, options);
         if (glyph.advanceWidth) {
             x += glyph.advanceWidth * fontScale;
         }
 
         if (options.kerning && i < glyphs.length - 1) {
-            var kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
+            const kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
             x += kerningValue * fontScale;
         }
 
@@ -309,16 +306,16 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
  * @return {opentype.Path}
  */
 Font.prototype.getPath = function(text, x, y, fontSize, options) {
-    var fullPath = new path.Path();
+    const fullPath = new Path();
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        var glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
+        const glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
         fullPath.extend(glyphPath);
     });
     return fullPath;
 };
 
 /**
- * Create an array of Path objects that represent the glyps of a given text.
+ * Create an array of Path objects that represent the glyphs of a given text.
  * @param  {string} text - The text to create.
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
@@ -327,9 +324,9 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
  * @return {opentype.Path[]}
  */
 Font.prototype.getPaths = function(text, x, y, fontSize, options) {
-    var glyphPaths = [];
+    const glyphPaths = [];
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        var glyphPath = glyph.getPath(gX, gY, gFontSize);
+        const glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
         glyphPaths.push(glyphPath);
     });
 
@@ -340,7 +337,7 @@ Font.prototype.getPaths = function(text, x, y, fontSize, options) {
  * Returns the advance width of a text.
  *
  * This is something different than Path.getBoundingBox() as for example a
- * suffixed whitespace increases the advancewidth but not the bounding box
+ * suffixed whitespace increases the advanceWidth but not the bounding box
  * or an overhanging letter like a calligraphic 'f' might have a quite larger
  * bounding box than its advance width.
  *
@@ -407,7 +404,7 @@ Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
  * @return {string}
  */
 Font.prototype.getEnglishName = function(name) {
-    var translations = this.names[name];
+    const translations = this.names[name];
     if (translations) {
         return translations.en;
     }
@@ -417,8 +414,8 @@ Font.prototype.getEnglishName = function(name) {
  * Validate
  */
 Font.prototype.validate = function() {
-    var warnings = [];
-    var _this = this;
+    const warnings = [];
+    const _this = this;
 
     function assert(predicate, message) {
         if (!predicate) {
@@ -427,7 +424,7 @@ Font.prototype.validate = function() {
     }
 
     function assertNamePresent(name) {
-        var englishName = _this.getEnglishName(name);
+        const englishName = _this.getEnglishName(name);
         assert(englishName && englishName.trim().length > 0,
                'No English ' + name + ' specified.');
     }
@@ -463,11 +460,11 @@ Font.prototype.toBuffer = function() {
  * @return {ArrayBuffer}
  */
 Font.prototype.toArrayBuffer = function() {
-    var sfntTable = this.toTables();
-    var bytes = sfntTable.encode();
-    var buffer = new ArrayBuffer(bytes.length);
-    var intArray = new Uint8Array(buffer);
-    for (var i = 0; i < bytes.length; i++) {
+    const sfntTable = this.toTables();
+    const bytes = sfntTable.encode();
+    const buffer = new ArrayBuffer(bytes.length);
+    const intArray = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.length; i++) {
         intArray[i] = bytes[i];
     }
 
@@ -478,18 +475,18 @@ Font.prototype.toArrayBuffer = function() {
  * Initiate a download of the OpenType font.
  */
 Font.prototype.download = function(fileName) {
-    var familyName = this.getEnglishName('fontFamily');
-    var styleName = this.getEnglishName('fontSubfamily');
+    const familyName = this.getEnglishName('fontFamily');
+    const styleName = this.getEnglishName('fontSubfamily');
     fileName = fileName || familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
-    var arrayBuffer = this.toArrayBuffer();
+    const arrayBuffer = this.toArrayBuffer();
 
-    if (util.isBrowser()) {
+    if (isBrowser()) {
         window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
         window.requestFileSystem(window.TEMPORARY, arrayBuffer.byteLength, function(fs) {
             fs.root.getFile(fileName, {create: true}, function(fileEntry) {
                 fileEntry.createWriter(function(writer) {
-                    var dataView = new DataView(arrayBuffer);
-                    var blob = new Blob([dataView], {type: 'font/opentype'});
+                    const dataView = new DataView(arrayBuffer);
+                    const blob = new Blob([dataView], {type: 'font/opentype'});
                     writer.write(blob);
 
                     writer.addEventListener('writeend', function() {
@@ -503,8 +500,8 @@ Font.prototype.download = function(fileName) {
             throw new Error(err.name + ': ' + err.message);
         });
     } else {
-        var fs = require('fs');
-        var buffer = util.arrayBufferToNodeBuffer(arrayBuffer);
+        const fs = require('fs');
+        const buffer = arrayBufferToNodeBuffer(arrayBuffer);
         fs.writeFileSync(fileName, buffer);
     }
 };
@@ -554,4 +551,4 @@ Font.prototype.usWeightClasses = {
     BLACK:    900
 };
 
-exports.Font = Font;
+export default Font;

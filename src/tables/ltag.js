@@ -4,23 +4,21 @@
 // http://www.w3.org/International/articles/language-tags/
 // http://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
 
-'use strict';
-
-var check = require('../check');
-var parse = require('../parse');
-var table = require('../table');
+import check from '../check';
+import parse from '../parse';
+import table from '../table';
 
 function makeLtagTable(tags) {
-    var result = new table.Table('ltag', [
+    const result = new table.Table('ltag', [
         {name: 'version', type: 'ULONG', value: 1},
         {name: 'flags', type: 'ULONG', value: 0},
         {name: 'numTags', type: 'ULONG', value: tags.length}
     ]);
 
-    var stringPool = '';
-    var stringPoolOffset = 12 + tags.length * 4;
-    for (var i = 0; i < tags.length; ++i) {
-        var pos = stringPool.indexOf(tags[i]);
+    let stringPool = '';
+    const stringPoolOffset = 12 + tags.length * 4;
+    for (let i = 0; i < tags.length; ++i) {
+        let pos = stringPool.indexOf(tags[i]);
         if (pos < 0) {
             pos = stringPool.length;
             stringPool += tags[i];
@@ -35,19 +33,19 @@ function makeLtagTable(tags) {
 }
 
 function parseLtagTable(data, start) {
-    var p = new parse.Parser(data, start);
-    var tableVersion = p.parseULong();
+    const p = new parse.Parser(data, start);
+    const tableVersion = p.parseULong();
     check.argument(tableVersion === 1, 'Unsupported ltag table version.');
     // The 'ltag' specification does not define any flags; skip the field.
     p.skip('uLong', 1);
-    var numTags = p.parseULong();
+    const numTags = p.parseULong();
 
-    var tags = [];
-    for (var i = 0; i < numTags; i++) {
-        var tag = '';
-        var offset = start + p.parseUShort();
-        var length = p.parseUShort();
-        for (var j = offset; j < offset + length; ++j) {
+    const tags = [];
+    for (let i = 0; i < numTags; i++) {
+        let tag = '';
+        const offset = start + p.parseUShort();
+        const length = p.parseUShort();
+        for (let j = offset; j < offset + length; ++j) {
             tag += String.fromCharCode(data.getInt8(j));
         }
 
@@ -57,5 +55,4 @@ function parseLtagTable(data, start) {
     return tags;
 }
 
-exports.make = makeLtagTable;
-exports.parse = parseLtagTable;
+export default { make: makeLtagTable, parse: parseLtagTable };

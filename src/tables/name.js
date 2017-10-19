@@ -1,16 +1,12 @@
 // The `name` naming table.
 // https://www.microsoft.com/typography/OTSPEC/name.htm
 
-'use strict';
-
-var types = require('../types');
-var decode = types.decode;
-var encode = types.encode;
-var parse = require('../parse');
-var table = require('../table');
+import { decode, encode } from '../types';
+import parse from '../parse';
+import table from '../table';
 
 // NameIDs for the name table.
-var nameTableNames = [
+const nameTableNames = [
     'copyright',              // 0
     'fontFamily',             // 1
     'fontSubfamily',          // 2
@@ -36,7 +32,7 @@ var nameTableNames = [
     'wwsSubfamily'            // 22
 ];
 
-var macLanguages = {
+const macLanguages = {
     0: 'en',
     1: 'fr',
     2: 'de',
@@ -170,7 +166,7 @@ var macLanguages = {
 // done as a (pretty radical) "modification" of Ethiopic.
 //
 // http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/Readme.txt
-var macLanguageToScript = {
+const macLanguageToScript = {
     0: 0,  // langEnglish → smRoman
     1: 0,  // langFrench → smRoman
     2: 0,  // langGerman → smRoman
@@ -308,7 +304,7 @@ var macLanguageToScript = {
 //
 // http://www.unicode.org/cldr/charts/latest/supplemental/likely_subtags.html
 // http://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
-var windowsLanguages = {
+const windowsLanguages = {
     0x0436: 'af',
     0x041C: 'sq',
     0x0484: 'gsw',
@@ -548,11 +544,11 @@ function getLanguageCode(platformID, languageID, ltag) {
     return undefined;
 }
 
-var utf16 = 'utf-16';
+const utf16 = 'utf-16';
 
 // MacOS script ID → encoding. This table stores the default case,
 // which can be overridden by macLanguageEncodings.
-var macScriptEncodings = {
+const macScriptEncodings = {
     0: 'macintosh',           // smRoman
     1: 'x-mac-japanese',      // smJapanese
     2: 'x-mac-chinesetrad',   // smTradChinese
@@ -590,7 +586,7 @@ var macScriptEncodings = {
 // merge macScriptEncodings into macLanguageEncodings.
 //
 // http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/Readme.txt
-var macLanguageEncodings = {
+const macLanguageEncodings = {
     15: 'x-mac-icelandic',    // langIcelandic
     17: 'x-mac-turkish',      // langTurkish
     18: 'x-mac-croatian',     // langCroatian
@@ -631,23 +627,23 @@ function getEncoding(platformID, encodingID, languageID) {
 // FIXME: Format 1 additional fields are not supported yet.
 // ltag is the content of the `ltag' table, such as ['en', 'zh-Hans', 'de-CH-1904'].
 function parseNameTable(data, start, ltag) {
-    var name = {};
-    var p = new parse.Parser(data, start);
-    var format = p.parseUShort();
-    var count = p.parseUShort();
-    var stringOffset = p.offset + p.parseUShort();
-    for (var i = 0; i < count; i++) {
-        var platformID = p.parseUShort();
-        var encodingID = p.parseUShort();
-        var languageID = p.parseUShort();
-        var nameID = p.parseUShort();
-        var property = nameTableNames[nameID] || nameID;
-        var byteLength = p.parseUShort();
-        var offset = p.parseUShort();
-        var language = getLanguageCode(platformID, languageID, ltag);
-        var encoding = getEncoding(platformID, encodingID, languageID);
+    const name = {};
+    const p = new parse.Parser(data, start);
+    const format = p.parseUShort();
+    const count = p.parseUShort();
+    const stringOffset = p.offset + p.parseUShort();
+    for (let i = 0; i < count; i++) {
+        const platformID = p.parseUShort();
+        const encodingID = p.parseUShort();
+        const languageID = p.parseUShort();
+        const nameID = p.parseUShort();
+        const property = nameTableNames[nameID] || nameID;
+        const byteLength = p.parseUShort();
+        const offset = p.parseUShort();
+        const language = getLanguageCode(platformID, languageID, ltag);
+        const encoding = getEncoding(platformID, encodingID, languageID);
         if (encoding !== undefined && language !== undefined) {
-            var text;
+            let text;
             if (encoding === utf16) {
                 text = decode.UTF16(data, stringOffset + offset, byteLength);
             } else {
@@ -655,7 +651,7 @@ function parseNameTable(data, start, ltag) {
             }
 
             if (text) {
-                var translations = name[property];
+                let translations = name[property];
                 if (translations === undefined) {
                     translations = name[property] = {};
                 }
@@ -665,7 +661,7 @@ function parseNameTable(data, start, ltag) {
         }
     }
 
-    var langTagCount = 0;
+    let langTagCount = 0;
     if (format === 1) {
         // FIXME: Also handle Microsoft's 'name' table 1.
         langTagCount = p.parseUShort();
@@ -677,8 +673,8 @@ function parseNameTable(data, start, ltag) {
 // {23: 'foo'} → {'foo': 23}
 // ['bar', 'baz'] → {'bar': 0, 'baz': 1}
 function reverseDict(dict) {
-    var result = {};
-    for (var key in dict) {
+    const result = {};
+    for (let key in dict) {
         result[dict[key]] = parseInt(key);
     }
 
@@ -699,13 +695,13 @@ function makeNameRecord(platformID, encodingID, languageID, nameID, length, offs
 // Finds the position of needle in haystack, or -1 if not there.
 // Like String.indexOf(), but for arrays.
 function findSubArray(needle, haystack) {
-    var needleLength = needle.length;
-    var limit = haystack.length - needleLength + 1;
+    const needleLength = needle.length;
+    const limit = haystack.length - needleLength + 1;
 
     loop:
-    for (var pos = 0; pos < limit; pos++) {
+    for (let pos = 0; pos < limit; pos++) {
         for (; pos < limit; pos++) {
-            for (var k = 0; k < needleLength; k++) {
+            for (let k = 0; k < needleLength; k++) {
                 if (haystack[pos + k] !== needle[k]) {
                     continue loop;
                 }
@@ -719,10 +715,12 @@ function findSubArray(needle, haystack) {
 }
 
 function addStringToPool(s, pool) {
-    var offset = findSubArray(s, pool);
+    let offset = findSubArray(s, pool);
     if (offset < 0) {
         offset = pool.length;
-        for (var i = 0, len = s.length; i < len; ++i) {
+        let i = 0;
+        const len = s.length;
+        for (; i < len; ++i) {
             pool.push(s[i]);
         }
 
@@ -732,13 +730,13 @@ function addStringToPool(s, pool) {
 }
 
 function makeNameTable(names, ltag) {
-    var nameID;
-    var nameIDs = [];
+    let nameID;
+    const nameIDs = [];
 
-    var namesWithNumericKeys = {};
-    var nameTableIds = reverseDict(nameTableNames);
-    for (var key in names) {
-        var id = nameTableIds[key];
+    const namesWithNumericKeys = {};
+    const nameTableIds = reverseDict(nameTableNames);
+    for (let key in names) {
+        let id = nameTableIds[key];
         if (id === undefined) {
             id = key;
         }
@@ -753,17 +751,17 @@ function makeNameTable(names, ltag) {
         nameIDs.push(nameID);
     }
 
-    var macLanguageIds = reverseDict(macLanguages);
-    var windowsLanguageIds = reverseDict(windowsLanguages);
+    const macLanguageIds = reverseDict(macLanguages);
+    const windowsLanguageIds = reverseDict(windowsLanguages);
 
-    var nameRecords = [];
-    var stringPool = [];
+    const nameRecords = [];
+    const stringPool = [];
 
-    for (var i = 0; i < nameIDs.length; i++) {
+    for (let i = 0; i < nameIDs.length; i++) {
         nameID = nameIDs[i];
-        var translations = namesWithNumericKeys[nameID];
-        for (var lang in translations) {
-            var text = translations[lang];
+        const translations = namesWithNumericKeys[nameID];
+        for (let lang in translations) {
+            const text = translations[lang];
 
             // For MacOS, we try to emit the name in the form that was introduced
             // in the initial version of the TrueType spec (in the late 1980s).
@@ -779,11 +777,11 @@ function makeNameTable(names, ltag) {
             // However, there are many applications and libraries that read
             // 'name' tables directly, and these will usually only recognize
             // the ancient form (silently skipping the unrecognized names).
-            var macPlatform = 1;  // Macintosh
-            var macLanguage = macLanguageIds[lang];
-            var macScript = macLanguageToScript[macLanguage];
-            var macEncoding = getEncoding(macPlatform, macScript, macLanguage);
-            var macName = encode.MACSTRING(text, macEncoding);
+            let macPlatform = 1;  // Macintosh
+            let macLanguage = macLanguageIds[lang];
+            let macScript = macLanguageToScript[macLanguage];
+            const macEncoding = getEncoding(macPlatform, macScript, macLanguage);
+            let macName = encode.MACSTRING(text, macEncoding);
             if (macName === undefined) {
                 macPlatform = 0;  // Unicode
                 macLanguage = ltag.indexOf(lang);
@@ -796,14 +794,14 @@ function makeNameTable(names, ltag) {
                 macName = encode.UTF16(text);
             }
 
-            var macNameOffset = addStringToPool(macName, stringPool);
+            const macNameOffset = addStringToPool(macName, stringPool);
             nameRecords.push(makeNameRecord(macPlatform, macScript, macLanguage,
                                             nameID, macName.length, macNameOffset));
 
-            var winLanguage = windowsLanguageIds[lang];
+            const winLanguage = windowsLanguageIds[lang];
             if (winLanguage !== undefined) {
-                var winName = encode.UTF16(text);
-                var winNameOffset = addStringToPool(winName, stringPool);
+                const winName = encode.UTF16(text);
+                const winNameOffset = addStringToPool(winName, stringPool);
                 nameRecords.push(makeNameRecord(3, 1, winLanguage,
                                                 nameID, winName.length, winNameOffset));
             }
@@ -817,13 +815,13 @@ function makeNameTable(names, ltag) {
                 (a.nameID - b.nameID));
     });
 
-    var t = new table.Table('name', [
+    const t = new table.Table('name', [
         {name: 'format', type: 'USHORT', value: 0},
         {name: 'count', type: 'USHORT', value: nameRecords.length},
         {name: 'stringOffset', type: 'USHORT', value: 6 + nameRecords.length * 12}
     ]);
 
-    for (var r = 0; r < nameRecords.length; r++) {
+    for (let r = 0; r < nameRecords.length; r++) {
         t.fields.push({name: 'record_' + r, type: 'RECORD', value: nameRecords[r]});
     }
 
@@ -831,5 +829,4 @@ function makeNameTable(names, ltag) {
     return t;
 }
 
-exports.parse = parseNameTable;
-exports.make = makeNameTable;
+export default { parse: parseNameTable, make: makeNameTable };

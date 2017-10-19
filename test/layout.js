@@ -1,37 +1,32 @@
-/* jshint mocha: true */
-
-'use strict';
-
-var assert = require('assert');
-var opentype = require('../src/opentype');
-var Layout = require('../src/layout');
+import assert  from 'assert';
+import { Font, Path, Glyph } from '../src/opentype';
+import Layout  from '../src/layout';
 
 describe('layout.js', function() {
-
-    var font;
-    var layout;
-    var notdefGlyph = new opentype.Glyph({
+    let font;
+    let layout;
+    const notdefGlyph = new Glyph({
         name: '.notdef',
         unicode: 0,
-        path: new opentype.Path()
+        path: new Path()
     });
-    var defaultLayoutTable = {
+    const defaultLayoutTable = {
         version: 1,
         scripts: [],
         features: [],
         lookups: []
     };
 
-    var glyphs = [notdefGlyph].concat('abcdefghijklmnopqrstuvwxyz'.split('').map(function(c) {
-        return new opentype.Glyph({
+    const glyphs = [notdefGlyph].concat('abcdefghijklmnopqrstuvwxyz'.split('').map(function (c) {
+        return new Glyph({
             name: c,
             unicode: c.charCodeAt(0),
-            path: new opentype.Path()
+            path: new Path()
         });
     }));
 
     beforeEach(function() {
-        font = new opentype.Font({
+        font = new Font({
             familyName: 'MyFont',
             styleName: 'Medium',
             unitsPerEm: 1000,
@@ -61,7 +56,7 @@ describe('layout.js', function() {
         });
 
         it('must create an new script table only on demand and if it does not exist', function() {
-            var scriptTable = layout.getScriptTable('DFLT', true);
+            const scriptTable = layout.getScriptTable('DFLT', true);
             assert.notEqual(scriptTable, undefined);
             assert.notEqual(scriptTable.defaultLangSys, undefined);
             assert.equal(layout.getScriptTable('DFLT', true), scriptTable, 'must create only one instance for each tag');

@@ -1,30 +1,27 @@
 // The `GPOS` table contains kerning pairs, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 
-'use strict';
-
-var types = require('../types');
-var decode = types.decode;
-var check = require('../check');
-var parse = require('../parse');
-var table = require('../table');
+import check from '../check';
+import { decode } from '../types';
+import parse from '../parse';
+import table from '../table';
 
 // Parse the metadata `meta` table.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6meta.html
 function parseMetaTable(data, start) {
-    var p = new parse.Parser(data, start);
-    var tableVersion = p.parseULong();
+    const p = new parse.Parser(data, start);
+    const tableVersion = p.parseULong();
     check.argument(tableVersion === 1, 'Unsupported META table version.');
     p.parseULong(); // flags - currently unused and set to 0
     p.parseULong(); // tableOffset
-    var numDataMaps = p.parseULong();
+    const numDataMaps = p.parseULong();
 
-    var tags = {};
-    for (var i = 0; i < numDataMaps; i++) {
-        var tag = p.parseTag();
-        var dataOffset = p.parseULong();
-        var dataLength = p.parseULong();
-        var text = decode.UTF8(data, start + dataOffset, dataLength);
+    const tags = {};
+    for (let i = 0; i < numDataMaps; i++) {
+        const tag = p.parseTag();
+        const dataOffset = p.parseULong();
+        const dataLength = p.parseULong();
+        const text = decode.UTF8(data, start + dataOffset, dataLength);
 
         tags[tag] = text;
     }
@@ -32,19 +29,19 @@ function parseMetaTable(data, start) {
 }
 
 function makeMetaTable(tags) {
-    var numTags = Object.keys(tags).length;
-    var stringPool = '';
-    var stringPoolOffset = 16 + numTags * 12;
+    const numTags = Object.keys(tags).length;
+    let stringPool = '';
+    const stringPoolOffset = 16 + numTags * 12;
 
-    var result = new table.Table('meta', [
+    const result = new table.Table('meta', [
         {name: 'version', type: 'ULONG', value: 1},
         {name: 'flags', type: 'ULONG', value: 0},
         {name: 'offset', type: 'ULONG', value: stringPoolOffset},
         {name: 'numTags', type: 'ULONG', value: numTags}
     ]);
 
-    for (var tag in tags) {
-        var pos = stringPool.length;
+    for (let tag in tags) {
+        const pos = stringPool.length;
         stringPool += tags[tag];
 
         result.fields.push({name: 'tag ' + tag, type: 'TAG', value: tag});
@@ -57,5 +54,4 @@ function makeMetaTable(tags) {
     return result;
 }
 
-exports.parse = parseMetaTable;
-exports.make = makeMetaTable;
+export default { parse: parseMetaTable, make: makeMetaTable };

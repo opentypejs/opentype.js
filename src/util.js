@@ -1,35 +1,35 @@
-'use strict';
-
-exports.isBrowser = function() {
+function isBrowser() {
     return typeof window !== 'undefined';
-};
+}
 
-exports.isNode = function() {
+function isNode() {
     return typeof window === 'undefined';
-};
+}
 
-exports.nodeBufferToArrayBuffer = function(buffer) {
-    var ab = new ArrayBuffer(buffer.length);
-    var view = new Uint8Array(ab);
-    for (var i = 0; i < buffer.length; ++i) {
+function nodeBufferToArrayBuffer(buffer) {
+    const ab = new ArrayBuffer(buffer.length);
+    const view = new Uint8Array(ab);
+    for (let i = 0; i < buffer.length; ++i) {
         view[i] = buffer[i];
     }
 
     return ab;
-};
+}
 
-exports.arrayBufferToNodeBuffer = function(ab) {
-    var buffer = new Buffer(ab.byteLength);
-    var view = new Uint8Array(ab);
-    for (var i = 0; i < buffer.length; ++i) {
+function arrayBufferToNodeBuffer(ab) {
+    const buffer = new Buffer(ab.byteLength);
+    const view = new Uint8Array(ab);
+    for (let i = 0; i < buffer.length; ++i) {
         buffer[i] = view[i];
     }
 
     return buffer;
-};
+}
 
-exports.checkArgument = function(expression, message) {
+function checkArgument(expression, message) {
     if (!expression) {
         throw message;
     }
-};
+}
+
+export { isBrowser, isNode, nodeBufferToArrayBuffer, arrayBufferToNodeBuffer, checkArgument };

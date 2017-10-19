@@ -1,3 +1,14 @@
+0.7.3 (July 18, 2017)
+=====================
+* Fix "Object x already has key" error in Safari (thanks @neiltron!).
+* Fixed a bug where Font.getPaths() didn't pass options (thanks @keeslinp!).
+
+0.7.2 (June 7, 2017)
+====================
+* WOFF fonts with cvt tables now parse correctly.
+* Migrated to ES6 modules and let/const.
+* Use Rollup to bundle the JavaScript.
+
 0.7.1 (Apr 25, 2017)
 ====================
 * Auto-generated glyph IDs (CID-keyed fonts) are now prefixed with "gid", e.g. "gid42".

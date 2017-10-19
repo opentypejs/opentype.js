@@ -1,17 +1,14 @@
 // The `post` table stores additional PostScript information, such as glyph names.
 // https://www.microsoft.com/typography/OTSPEC/post.htm
 
-'use strict';
-
-var encoding = require('../encoding');
-var parse = require('../parse');
-var table = require('../table');
+import { standardNames } from '../encoding';
+import parse from '../parse';
+import table from '../table';
 
 // Parse the PostScript `post` table
 function parsePostTable(data, start) {
-    var post = {};
-    var p = new parse.Parser(data, start);
-    var i;
+    const post = {};
+    const p = new parse.Parser(data, start);
     post.version = p.parseVersion();
     post.italicAngle = p.parseFixed();
     post.underlinePosition = p.parseShort();
@@ -23,19 +20,19 @@ function parsePostTable(data, start) {
     post.maxMemType1 = p.parseULong();
     switch (post.version) {
         case 1:
-            post.names = encoding.standardNames.slice();
+            post.names = standardNames.slice();
             break;
         case 2:
             post.numberOfGlyphs = p.parseUShort();
             post.glyphNameIndex = new Array(post.numberOfGlyphs);
-            for (i = 0; i < post.numberOfGlyphs; i++) {
+            for (let i = 0; i < post.numberOfGlyphs; i++) {
                 post.glyphNameIndex[i] = p.parseUShort();
             }
 
             post.names = [];
-            for (i = 0; i < post.numberOfGlyphs; i++) {
-                if (post.glyphNameIndex[i] >= encoding.standardNames.length) {
-                    var nameLength = p.parseChar();
+            for (let i = 0; i < post.numberOfGlyphs; i++) {
+                if (post.glyphNameIndex[i] >= standardNames.length) {
+                    const nameLength = p.parseChar();
                     post.names.push(p.parseString(nameLength));
                 }
             }
@@ -44,7 +41,7 @@ function parsePostTable(data, start) {
         case 2.5:
             post.numberOfGlyphs = p.parseUShort();
             post.offset = new Array(post.numberOfGlyphs);
-            for (i = 0; i < post.numberOfGlyphs; i++) {
+            for (let i = 0; i < post.numberOfGlyphs; i++) {
                 post.offset[i] = p.parseChar();
             }
 
@@ -67,5 +64,4 @@ function makePostTable() {
     ]);
 }
 
-exports.parse = parsePostTable;
-exports.make = makePostTable;
+export default { parse: parsePostTable, make: makePostTable };

@@ -1,15 +1,13 @@
 // The `hhea` table contains information for horizontal layout.
 // https://www.microsoft.com/typography/OTSPEC/hhea.htm
 
-'use strict';
-
-var parse = require('../parse');
-var table = require('../table');
+import parse from '../parse';
+import table from '../table';
 
 // Parse the horizontal header `hhea` table
 function parseHheaTable(data, start) {
-    var hhea = {};
-    var p = new parse.Parser(data, start);
+    const hhea = {};
+    const p = new parse.Parser(data, start);
     hhea.version = p.parseVersion();
     hhea.ascender = p.parseShort();
     hhea.descender = p.parseShort();
@@ -49,5 +47,4 @@ function makeHheaTable(options) {
     ], options);
 }
 
-exports.parse = parseHheaTable;
-exports.make = makeHheaTable;
+export default { parse: parseHheaTable, make: makeHheaTable };
