@@ -121,8 +121,7 @@ const roundSuper = function (v) {
     v += phase;
 
     // according to http://xgridfit.sourceforge.net/round.html
-    if (sign > 0 && v < 0) return phase;
-    if (sign < 0 && v > 0) return -phase;
+    if (v < 0) return phase * sign;
 
     return v * sign;
 };
@@ -740,7 +739,7 @@ execGlyph = function(glyph, prepState) {
 
 /*
 * Executes the hinting program for a component of a multi-component glyph
-* or of the glyph itself by a non-component glyph.
+* or of the glyph itself for a non-component glyph.
 */
 execComponent = function(glyph, state, xScale, yScale)
 {
@@ -787,6 +786,13 @@ execComponent = function(glyph, state, xScale, yScale)
     }
 
     if (state.inhibitGridFit) return;
+
+    if (exports.DEBUG) {
+        console.log('PROCESSING GLYPH', state.stack);
+        for (let i = 0; i < pLen; i++) {
+            console.log(i, gZone[i].x, gZone[i].y);
+        }
+    }
 
     gZone.push(
         new HPoint(0, 0),
@@ -1061,21 +1067,6 @@ function SFVTPV(state) {
 // 0x0F
 function ISECT(state)
 {
-<<<<<<< HEAD
-    var stack = state.stack;
-    var pa0i = stack.pop();
-    var pa1i = stack.pop();
-    var pb0i = stack.pop();
-    var pb1i = stack.pop();
-    var pi = stack.pop();
-    var z0 = state.z0;
-    var z1 = state.z1;
-    var pa0 = z0[pa0i];
-    var pa1 = z0[pa1i];
-    var pb0 = z1[pb0i];
-    var pb1 = z1[pb1i];
-    var p = state.z2[pi];
-=======
     const stack = state.stack;
     const pa0i = stack.pop();
     const pa1i = stack.pop();
@@ -1089,7 +1080,6 @@ function ISECT(state)
     const pb0 = z1[pb0i];
     const pb1 = z1[pb1i];
     const p = state.z2[pi];
->>>>>>> d7d7510d96993df05b7e8c7b6d9f0e12541cf8d8
 
     if (exports.DEBUG) console.log('ISECT[], ', pa0i, pa1i, pb0i, pb1i, pi);
 
@@ -1579,7 +1569,8 @@ function SHZ(a, state) {
     for (let i = 0; i < pLen; i++)
     {
         p = z[i];
-        if (p !== rp) fv.setRelative(p, p, d, pv);
+        fv.setRelative(p, p, d, pv);
+        //if (p !== rp) fv.setRelative(p, p, d, pv);
     }
 }
 
@@ -1714,9 +1705,6 @@ function MIAP(round, state) {
     const pv = state.pv;
     let cv = state.cvt[n];
 
-    // TODO cvtcutin should be considered here
-    if (round) cv = state.round(cv);
-
     if (exports.DEBUG) {
         console.log(
             state.step,
@@ -1725,7 +1713,15 @@ function MIAP(round, state) {
         );
     }
 
-    fv.setRelative(p, HPZero, cv, pv);
+    let d = pv.distance(p, HPZero);
+
+    if (round) {
+        if (Math.abs(d - cv) < state.cvCutIn) d = cv;
+
+        d = state.round(d);
+    }
+
+    fv.setRelative(p, HPZero, d, pv);
 
     if (state.zp0 === 0) {
         p.xo = p.x;
@@ -2029,20 +2025,6 @@ function NOT(state) {
 // DELTAP3[] DELTA exception P3
 // 0x5D, 0x71, 0x72
 function DELTAP123(b, state) {
-<<<<<<< HEAD
-    var stack = state.stack;
-    var n = stack.pop();
-    var fv = state.fv;
-    var pv = state.pv;
-    var ppem = state.ppem;
-    var base = state.deltaBase + (b - 1) * 16;
-    var ds = state.deltaShift;
-    var z0 = state.z0;
-
-    if (exports.DEBUG) console.log(state.step, 'DELTAP[' + b + ']', n, stack);
-
-    for (var i = 0; i < n; i++)
-=======
     const stack = state.stack;
     const n = stack.pop();
     const fv = state.fv;
@@ -2054,9 +2036,7 @@ function DELTAP123(b, state) {
 
     if (exports.DEBUG) console.log(state.step, 'DELTAP[' + b + ']', n, stack);
 
-    for (let i = 0; i < n; i++)
->>>>>>> d7d7510d96993df05b7e8c7b6d9f0e12541cf8d8
-    {
+    for (let i = 0; i < n; i++) {
         const pi = stack.pop();
         const arg = stack.pop();
         const appem = base + ((arg & 0xF0) >> 4);
@@ -2213,20 +2193,6 @@ function WCVTF(state) {
 // DELTAC3[] DELTA exception C3
 // 0x73, 0x74, 0x75
 function DELTAC123(b, state) {
-<<<<<<< HEAD
-    var stack = state.stack;
-    var n = stack.pop();
-    var ppem = state.ppem;
-    var base = state.deltaBase + (b - 1) * 16;
-    var ds = state.deltaShift;
-
-    if (exports.DEBUG) console.log(state.step, 'DELTAC[' + b + ']', n, stack);
-
-    for (var i = 0; i < n; i++) {
-        var c = stack.pop();
-        var arg = stack.pop();
-        var appem = base + ((arg & 0xF0) >> 4);
-=======
     const stack = state.stack;
     const n = stack.pop();
     const ppem = state.ppem;
@@ -2239,7 +2205,6 @@ function DELTAC123(b, state) {
         const c = stack.pop();
         const arg = stack.pop();
         const appem = base + ((arg & 0xF0) >> 4);
->>>>>>> d7d7510d96993df05b7e8c7b6d9f0e12541cf8d8
         if (appem !== ppem) continue;
 
         let mag = (arg & 0x0F) - 8;
@@ -2395,7 +2360,7 @@ function SDPVTL(a, state) {
     const p2 = state.z2[p2i];
     const p1 = state.z1[p1i];
 
-    if (exports.DEBUG) console.log('SDPVTL[' + a + ']', p2i, p1i);
+    if (exports.DEBUG) console.log(state.step, 'SDPVTL[' + a + ']', p2i, p1i);
 
     let dx;
     let dy;
