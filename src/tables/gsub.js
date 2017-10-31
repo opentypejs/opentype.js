@@ -190,8 +190,8 @@ subtableParsers[8] = function parseLookup8() {
 function parseGsubTable(data, start) {
     start = start || 0;
     const p = new Parser(data, start);
-    const tableVersion = p.parseVersion();
-    check.argument(tableVersion === 1, 'Unsupported GSUB table version.');
+    const tableVersion = p.parseVersion(1);
+    check.argument(tableVersion === 1 || tableVersion === 1.1 , 'Unsupported GSUB table version.');
     return {
         version: tableVersion,
         scripts: p.parseScriptList(),
