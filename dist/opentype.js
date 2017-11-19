@@ -545,13 +545,6 @@ BoundingBox.prototype.addQuad = function(x0, y0, x1, y1, x, y) {
 
 // Geometric objects
 
-/**
- * A bézier path containing a set of path commands similar to a SVG path.
- * Paths can be drawn on a context using `draw`.
- * @exports opentype.Path
- * @class
- * @constructor
- */
 function Path() {
     this.commands = [];
     this.fill = 'black';
@@ -1851,14 +1844,6 @@ sizeOf.LITERAL = function(v) {
 
 // Table metadata
 
-/**
- * @exports opentype.Table
- * @class
- * @param {string} tableName
- * @param {Array} fields
- * @param {Object} options
- * @constructor
- */
 function Table(tableName, fields, options) {
     var this$1 = this;
 
@@ -2049,7 +2034,6 @@ var table = {
 
 // Parsing utility functions
 
-// Retrieve an unsigned byte from the DataView.
 function getByte(dataView, offset) {
     return dataView.getUint8(offset);
 }
@@ -2183,6 +2167,8 @@ Parser.prototype.parseULong = function() {
     return v;
 };
 
+Parser.prototype.parseOffset32 = Parser.prototype.parseULong;
+
 Parser.prototype.parseFixed = function() {
     var v = getFixed(this.data, this.offset + this.relativeOffset);
     this.relativeOffset += 4;
@@ -2218,14 +2204,17 @@ Parser.prototype.parseLongDateTime = function() {
     return v;
 };
 
-Parser.prototype.parseVersion = function() {
+Parser.prototype.parseVersion = function(minorBase) {
+    if ( minorBase === void 0 ) minorBase = 0x1000;
+
     var major = getUShort(this.data, this.offset + this.relativeOffset);
 
     // How to interpret the minor version is very vague in the spec. 0x5000 is 5, 0x1000 is 1
-    // This returns the correct number if minor = 0xN000 where N is 0-9
+    // Default returns the correct number if minor = 0xN000 where N is 0-9
+    // Set minorBase to 1 for tables that use minor = N where N is 0-9
     var minor = getUShort(this.data, this.offset + this.relativeOffset + 2);
     this.relativeOffset += 4;
-    return major + minor / 0x1000 / 10;
+    return major + minor / minorBase / 10;
 };
 
 Parser.prototype.skip = function(type, amount) {
@@ -2237,6 +2226,21 @@ Parser.prototype.skip = function(type, amount) {
 };
 
 ///// Parsing lists and records ///////////////////////////////
+
+// Parse a list of 32 bit unsigned integers. 
+Parser.prototype.parseULongList = function(count) {
+    if (count === undefined) { count = this.parseULong(); }
+    var offsets = new Array(count);
+    var dataView = this.data;
+    var offset = this.offset + this.relativeOffset;
+    for (var i = 0; i < count; i++) {
+        offsets[i] = dataView.getUint32(offset);
+        offset += 4;
+    }
+
+    this.relativeOffset += count * 4;
+    return offsets;
+};
 
 // Parse a list of 16 bit unsigned integers. The length of the list can be read on the stream
 // or provided as an argument.
@@ -2301,6 +2305,20 @@ Parser.prototype.parseList = function(count, itemCallback) {
     return list;
 };
 
+Parser.prototype.parseList32 = function(count, itemCallback) {
+    var this$1 = this;
+
+    if (!itemCallback) {
+        itemCallback = count;
+        count = this.parseULong();
+    }
+    var list = new Array(count);
+    for (var i = 0; i < count; i++) {
+        list[i] = itemCallback.call(this$1);
+    }
+    return list;
+};
+
 /**
  * Parse a list of records.
  * Record count is optional, if omitted it is read from the stream.
@@ -2313,6 +2331,28 @@ Parser.prototype.parseRecordList = function(count, recordDescription) {
     if (!recordDescription) {
         recordDescription = count;
         count = this.parseUShort();
+    }
+    var records = new Array(count);
+    var fields = Object.keys(recordDescription);
+    for (var i = 0; i < count; i++) {
+        var rec = {};
+        for (var j = 0; j < fields.length; j++) {
+            var fieldName = fields[j];
+            var fieldType = recordDescription[fieldName];
+            rec[fieldName] = fieldType.call(this$1);
+        }
+        records[i] = rec;
+    }
+    return records;
+};
+
+Parser.prototype.parseRecordList32 = function(count, recordDescription) {
+    var this$1 = this;
+
+    // If the count argument is absent, read it in the stream.
+    if (!recordDescription) {
+        recordDescription = count;
+        count = this.parseULong();
     }
     var records = new Array(count);
     var fields = Object.keys(recordDescription);
@@ -2349,6 +2389,14 @@ Parser.prototype.parseStruct = function(description) {
 
 Parser.prototype.parsePointer = function(description) {
     var structOffset = this.parseOffset16();
+    if (structOffset > 0) {                         // NULL offset => return undefined
+        return new Parser(this.data, this.offset + structOffset).parseStruct(description);
+    }
+    return undefined;
+};
+
+Parser.prototype.parsePointer32 = function(description) {
+    var structOffset = this.parseOffset32();
     if (structOffset > 0) {                         // NULL offset => return undefined
         return new Parser(this.data, this.offset + structOffset).parseStruct(description);
     }
@@ -2458,9 +2506,21 @@ Parser.list = function(count, itemCallback) {
     };
 };
 
+Parser.list32 = function(count, itemCallback) {
+    return function() {
+        return this.parseList32(count, itemCallback);
+    };
+};
+
 Parser.recordList = function(count, recordDescription) {
     return function() {
         return this.parseRecordList(count, recordDescription);
+    };
+};
+
+Parser.recordList32 = function(count, recordDescription) {
+    return function() {
+        return this.parseRecordList32(count, recordDescription);
     };
 };
 
@@ -2470,10 +2530,18 @@ Parser.pointer = function(description) {
     };
 };
 
+Parser.pointer32 = function(description) {
+    return function() {
+        return this.parsePointer32(description);
+    };
+};
+
 Parser.tag = Parser.prototype.parseTag;
 Parser.byte = Parser.prototype.parseByte;
 Parser.uShort = Parser.offset16 = Parser.prototype.parseUShort;
 Parser.uShortList = Parser.prototype.parseUShortList;
+Parser.uLong = Parser.offset32 = Parser.prototype.parseULong;
+Parser.uLongList = Parser.prototype.parseULongList;
 Parser.struct = Parser.prototype.parseStruct;
 Parser.coverage = Parser.prototype.parseCoverage;
 Parser.classDef = Parser.prototype.parseClassDef;
@@ -2523,6 +2591,19 @@ Parser.prototype.parseLookupList = function(lookupTableParsers) {
             markFilteringSet: useMarkFilteringSet ? this.parseUShort() : undefined
         };
     })));
+};
+
+Parser.prototype.parseFeatureVariationsList = function() {
+    return this.parsePointer32(function() {
+        var majorVersion = this.parseUShort();
+        var minorVersion = this.parseUShort();
+        check.argument(1 == majorVersion && minorVersion < 1, 'GSUB feature variations table unknown.');
+        var featureVariations = this.parseRecordList32({
+                conditionSetOffset: Parser.offset32,
+                featureTableSubstitutionOffset: Parser.offset32
+        });
+        return featureVariations;
+    });
 };
 
 var parse = {
@@ -3041,7 +3122,6 @@ var draw = { line: line };
 // The `glyf` table describes the glyphs in TrueType outline format.
 // http://www.microsoft.com/typography/otspec/glyf.htm
 
-// Parse the coordinate data for a glyph.
 function parseGlyphCoordinate(p, flag, previousValue, shortVectorBitMask, sameBitMask) {
     var v;
     if ((flag & shortVectorBitMask) > 0) {
@@ -3721,7 +3801,6 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
 
 // The GlyphSet object
 
-// Define a property on the glyph that depends on the path being loaded.
 function defineDependentProperty(glyph, externalName, internalName) {
     Object.defineProperty(glyph, externalName, {
         get: function() {
@@ -3852,7 +3931,6 @@ var glyphset = { GlyphSet: GlyphSet, glyphLoader: glyphLoader, ttfGlyphLoader: t
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/type2.pdf
 
-// Custom equals function that can also check lists.
 function equals(a, b) {
     if (a === b) {
         return true;
@@ -5110,7 +5188,6 @@ var cff = { parse: parseCFFTable, make: makeCFFTable };
 // The `head` table contains global information about the font.
 // https://www.microsoft.com/typography/OTSPEC/head.htm
 
-// Parse the header `head` table
 function parseHeadTable(data, start) {
     var head = {};
     var p = new parse.Parser(data, start);
@@ -5170,7 +5247,6 @@ var head = { parse: parseHeadTable, make: makeHeadTable };
 // The `hhea` table contains information for horizontal layout.
 // https://www.microsoft.com/typography/OTSPEC/hhea.htm
 
-// Parse the horizontal header `hhea` table
 function parseHheaTable(data, start) {
     var hhea = {};
     var p = new parse.Parser(data, start);
@@ -5218,8 +5294,6 @@ var hhea = { parse: parseHheaTable, make: makeHheaTable };
 // The `hmtx` table contains the horizontal metrics for all glyphs.
 // https://www.microsoft.com/typography/OTSPEC/hmtx.htm
 
-// Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
-// This function augments the glyph array, adding the advanceWidth and leftSideBearing to each glyph.
 function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
     var advanceWidth;
     var leftSideBearing;
@@ -5311,7 +5385,6 @@ var ltag = { make: makeLtagTable, parse: parseLtagTable };
 // We need it just to get the number of glyphs in the font.
 // https://www.microsoft.com/typography/OTSPEC/maxp.htm
 
-// Parse the maximum profile `maxp` table.
 function parseMaxpTable(data, start) {
     var maxp = {};
     var p = new parse.Parser(data, start);
@@ -5348,7 +5421,6 @@ var maxp = { parse: parseMaxpTable, make: makeMaxpTable };
 // The `name` naming table.
 // https://www.microsoft.com/typography/OTSPEC/name.htm
 
-// NameIDs for the name table.
 var nameTableNames = [
     'copyright',              // 0
     'fontFamily',             // 1
@@ -6424,7 +6496,6 @@ var os2 = { parse: parseOS2Table, make: makeOS2Table, unicodeRanges: unicodeRang
 // The `post` table stores additional PostScript information, such as glyph names.
 // https://www.microsoft.com/typography/OTSPEC/post.htm
 
-// Parse the PostScript `post` table
 function parsePostTable(data, start) {
     var post = {};
     var p = new parse.Parser(data, start);
@@ -6673,14 +6744,25 @@ subtableParsers[8] = function parseLookup8() {
 function parseGsubTable(data, start) {
     start = start || 0;
     var p = new Parser(data, start);
-    var tableVersion = p.parseVersion();
-    check.argument(tableVersion === 1, 'Unsupported GSUB table version.');
-    return {
-        version: tableVersion,
-        scripts: p.parseScriptList(),
-        features: p.parseFeatureList(),
-        lookups: p.parseLookupList(subtableParsers)
-    };
+    var tableVersion = p.parseVersion(1);
+    check.argument(tableVersion === 1 || tableVersion === 1.1 , 'Unsupported GSUB table version.');
+    if (tableVersion === 1) {
+        return {
+            version: tableVersion,
+            scripts: p.parseScriptList(),
+            features: p.parseFeatureList(),
+            lookups: p.parseLookupList(subtableParsers)
+        };
+    } else {
+        return {
+            version: tableVersion,
+            scripts: p.parseScriptList(),
+            features: p.parseFeatureList(),
+            lookups: p.parseLookupList(subtableParsers),
+            variations: p.parseFeatureVariationsList()
+        };
+    }
+
 }
 
 // GSUB Writing //////////////////////////////////////////////
@@ -6741,8 +6823,6 @@ var gsub = { parse: parseGsubTable, make: makeGsubTable };
 // The `GPOS` table contains kerning pairs, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 
-// Parse the metadata `meta` table.
-// https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6meta.html
 function parseMetaTable(data, start) {
     var p = new parse.Parser(data, start);
     var tableVersion = p.parseULong();
@@ -7394,13 +7474,6 @@ Layout.prototype = {
 // The Substitution object provides utility methods to manipulate
 // the GSUB substitution table.
 
-/**
- * @exports opentype.Substitution
- * @class
- * @extends opentype.Layout
- * @param {opentype.Font}
- * @constructor
- */
 function Substitution(font) {
     Layout.call(this, font, 'gsub');
 }
@@ -7846,8 +7919,7 @@ var roundSuper = function (v) {
     v += phase;
 
     // according to http://xgridfit.sourceforge.net/round.html
-    if (sign > 0 && v < 0) { return phase; }
-    if (sign < 0 && v > 0) { return -phase; }
+    if (v < 0) { return phase * sign; }
 
     return v * sign;
 };
@@ -8465,7 +8537,7 @@ execGlyph = function(glyph, prepState) {
 
 /*
 * Executes the hinting program for a component of a multi-component glyph
-* or of the glyph itself by a non-component glyph.
+* or of the glyph itself for a non-component glyph.
 */
 execComponent = function(glyph, state, xScale, yScale)
 {
@@ -8513,6 +8585,13 @@ execComponent = function(glyph, state, xScale, yScale)
 
     if (state.inhibitGridFit) { return; }
 
+    if (exports.DEBUG) {
+        console.log('PROCESSING GLYPH', state.stack);
+        for (var i$2 = 0; i$2 < pLen; i$2++) {
+            console.log(i$2, gZone[i$2].x, gZone[i$2].y);
+        }
+    }
+
     gZone.push(
         new HPoint(0, 0),
         new HPoint(Math.round(glyph.advanceWidth * xScale), 0)
@@ -8525,8 +8604,8 @@ execComponent = function(glyph, state, xScale, yScale)
 
     if (exports.DEBUG) {
         console.log('FINISHED GLYPH', state.stack);
-        for (var i$2 = 0; i$2 < pLen; i$2++) {
-            console.log(i$2, gZone[i$2].x, gZone[i$2].y);
+        for (var i$3 = 0; i$3 < pLen; i$3++) {
+            console.log(i$3, gZone[i$3].x, gZone[i$3].y);
         }
     }
 };
@@ -9288,7 +9367,8 @@ function SHZ(a, state) {
     for (var i = 0; i < pLen; i++)
     {
         p = z[i];
-        if (p !== rp) { fv.setRelative(p, p, d, pv); }
+        fv.setRelative(p, p, d, pv);
+        //if (p !== rp) fv.setRelative(p, p, d, pv);
     }
 }
 
@@ -9423,9 +9503,6 @@ function MIAP(round, state) {
     var pv = state.pv;
     var cv = state.cvt[n];
 
-    // TODO cvtcutin should be considered here
-    if (round) { cv = state.round(cv); }
-
     if (exports.DEBUG) {
         console.log(
             state.step,
@@ -9434,7 +9511,15 @@ function MIAP(round, state) {
         );
     }
 
-    fv.setRelative(p, HPZero, cv, pv);
+    var d = pv.distance(p, HPZero);
+
+    if (round) {
+        if (Math.abs(d - cv) < state.cvCutIn) { d = cv; }
+
+        d = state.round(d);
+    }
+
+    fv.setRelative(p, HPZero, d, pv);
 
     if (state.zp0 === 0) {
         p.xo = p.x;
@@ -9749,8 +9834,7 @@ function DELTAP123(b, state) {
 
     if (exports.DEBUG) { console.log(state.step, 'DELTAP[' + b + ']', n, stack); }
 
-    for (var i = 0; i < n; i++)
-    {
+    for (var i = 0; i < n; i++) {
         var pi = stack.pop();
         var arg = stack.pop();
         var appem = base + ((arg & 0xF0) >> 4);
@@ -10074,7 +10158,7 @@ function SDPVTL(a, state) {
     var p2 = state.z2[p2i];
     var p1 = state.z1[p1i];
 
-    if (exports.DEBUG) { console.log('SDPVTL[' + a + ']', p2i, p1i); }
+    if (exports.DEBUG) { console.log(state.step, 'SDPVTL[' + a + ']', p2i, p1i); }
 
     var dx;
     var dy;
@@ -10771,42 +10855,6 @@ vim: set ts=4 sw=4 expandtab:
 
 // The Font object
 
-/**
- * @typedef FontOptions
- * @type Object
- * @property {Boolean} empty - whether to create a new empty font
- * @property {string} familyName
- * @property {string} styleName
- * @property {string=} fullName
- * @property {string=} postScriptName
- * @property {string=} designer
- * @property {string=} designerURL
- * @property {string=} manufacturer
- * @property {string=} manufacturerURL
- * @property {string=} license
- * @property {string=} licenseURL
- * @property {string=} version
- * @property {string=} description
- * @property {string=} copyright
- * @property {string=} trademark
- * @property {Number} unitsPerEm
- * @property {Number} ascender
- * @property {Number} descender
- * @property {Number} createdTimestamp
- * @property {string=} weightClass
- * @property {string=} widthClass
- * @property {string=} fsSelection
- */
-
-/**
- * A Font represents a loaded OpenType font file.
- * It contains a set of glyphs and methods to draw text on a drawing context,
- * or to get a path representing the text.
- * @exports opentype.Font
- * @class
- * @param {FontOptions}
- * @constructor
- */
 function Font(options) {
     options = options || {};
 
@@ -11664,8 +11712,8 @@ function parseLookupTable(data, start) {
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 function parseGposTable(data, start, font) {
     var p = new parse.Parser(data, start);
-    var tableVersion = p.parseFixed();
-    check.argument(tableVersion === 1, 'Unsupported GPOS table version.');
+    var tableVersion = p.parseVersion(1);
+    check.argument(tableVersion === 1 || tableVersion === 1.1 , 'Unsupported GPOS table version.');
 
     // ScriptList and FeatureList - ignored for now
     parseTaggedListTable(data, start + p.parseUShort());
@@ -11756,12 +11804,6 @@ var kern = { parse: parseKernTable };
 // The `loca` table stores the offsets to the locations of the glyphs in the font.
 // https://www.microsoft.com/typography/OTSPEC/loca.htm
 
-// Parse the `loca` table. This table stores the offsets to the locations of the glyphs in the font,
-// relative to the beginning of the glyphData table.
-// The number of glyphs stored in the `loca` table is specified in the `maxp` table (under numGlyphs)
-// The loca table has two versions: a short version where offsets are stored as uShorts, and a long
-// version where offsets are stored as uLongs. The `head` table specifies which version to use
-// (under indexToLocFormat).
 function parseLocaTable(data, start, numGlyphs, shortVersion) {
     var p = new parse.Parser(data, start);
     var parseFn = shortVersion ? p.parseUShort : p.parseULong;
@@ -11790,18 +11832,6 @@ var loca = { parse: parseLocaTable };
 
 /* global DataView, Uint8Array, XMLHttpRequest  */
 
-/**
- * The opentype library.
- * @namespace opentype
- */
-
-// File loaders /////////////////////////////////////////////////////////
-/**
- * Loads a font from a file. The callback throws an error message as the first parameter if it fails
- * and the font as an ArrayBuffer in the second parameter if it succeeds.
- * @param  {string} path - The path of the file
- * @param  {Function} callback - The function to call when the font load completes
- */
 function loadFromFile(path, callback) {
     var fs = require('fs');
     fs.readFile(path, function(err, buffer) {
