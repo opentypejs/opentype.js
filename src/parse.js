@@ -173,7 +173,7 @@ Parser.prototype.parseLongDateTime = function() {
     return v;
 };
 
-Parser.prototype.parseVersion = function(minorBase = 0x1000) {
+Parser.prototype.parseVersion = function(minorBase) {
     const major = getUShort(this.data, this.offset + this.relativeOffset);
 
     // How to interpret the minor version is very vague in the spec. 0x5000 is 5, 0x1000 is 1
@@ -181,6 +181,7 @@ Parser.prototype.parseVersion = function(minorBase = 0x1000) {
     // Set minorBase to 1 for tables that use minor = N where N is 0-9
     const minor = getUShort(this.data, this.offset + this.relativeOffset + 2);
     this.relativeOffset += 4;
+    if ( minorBase === undefined ) minorBase = 0x1000;
     return major + minor / minorBase / 10;
 };
 

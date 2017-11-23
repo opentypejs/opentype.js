@@ -545,6 +545,13 @@ BoundingBox.prototype.addQuad = function(x0, y0, x1, y1, x, y) {
 
 // Geometric objects
 
+/**
+ * A bézier path containing a set of path commands similar to a SVG path.
+ * Paths can be drawn on a context using `draw`.
+ * @exports opentype.Path
+ * @class
+ * @constructor
+ */
 function Path() {
     this.commands = [];
     this.fill = 'black';
@@ -1844,6 +1851,14 @@ sizeOf.LITERAL = function(v) {
 
 // Table metadata
 
+/**
+ * @exports opentype.Table
+ * @class
+ * @param {string} tableName
+ * @param {Array} fields
+ * @param {Object} options
+ * @constructor
+ */
 function Table(tableName, fields, options) {
     var this$1 = this;
 
@@ -2034,6 +2049,7 @@ var table = {
 
 // Parsing utility functions
 
+// Retrieve an unsigned byte from the DataView.
 function getByte(dataView, offset) {
     return dataView.getUint8(offset);
 }
@@ -2205,8 +2221,6 @@ Parser.prototype.parseLongDateTime = function() {
 };
 
 Parser.prototype.parseVersion = function(minorBase) {
-    if ( minorBase === void 0 ) minorBase = 0x1000;
-
     var major = getUShort(this.data, this.offset + this.relativeOffset);
 
     // How to interpret the minor version is very vague in the spec. 0x5000 is 5, 0x1000 is 1
@@ -2214,6 +2228,7 @@ Parser.prototype.parseVersion = function(minorBase) {
     // Set minorBase to 1 for tables that use minor = N where N is 0-9
     var minor = getUShort(this.data, this.offset + this.relativeOffset + 2);
     this.relativeOffset += 4;
+    if ( minorBase === undefined ) { minorBase = 0x1000; }
     return major + minor / minorBase / 10;
 };
 
@@ -3122,6 +3137,7 @@ var draw = { line: line };
 // The `glyf` table describes the glyphs in TrueType outline format.
 // http://www.microsoft.com/typography/otspec/glyf.htm
 
+// Parse the coordinate data for a glyph.
 function parseGlyphCoordinate(p, flag, previousValue, shortVectorBitMask, sameBitMask) {
     var v;
     if ((flag & shortVectorBitMask) > 0) {
@@ -3801,6 +3817,7 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
 
 // The GlyphSet object
 
+// Define a property on the glyph that depends on the path being loaded.
 function defineDependentProperty(glyph, externalName, internalName) {
     Object.defineProperty(glyph, externalName, {
         get: function() {
@@ -3931,6 +3948,7 @@ var glyphset = { GlyphSet: GlyphSet, glyphLoader: glyphLoader, ttfGlyphLoader: t
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/type2.pdf
 
+// Custom equals function that can also check lists.
 function equals(a, b) {
     if (a === b) {
         return true;
@@ -5188,6 +5206,7 @@ var cff = { parse: parseCFFTable, make: makeCFFTable };
 // The `head` table contains global information about the font.
 // https://www.microsoft.com/typography/OTSPEC/head.htm
 
+// Parse the header `head` table
 function parseHeadTable(data, start) {
     var head = {};
     var p = new parse.Parser(data, start);
@@ -5247,6 +5266,7 @@ var head = { parse: parseHeadTable, make: makeHeadTable };
 // The `hhea` table contains information for horizontal layout.
 // https://www.microsoft.com/typography/OTSPEC/hhea.htm
 
+// Parse the horizontal header `hhea` table
 function parseHheaTable(data, start) {
     var hhea = {};
     var p = new parse.Parser(data, start);
@@ -5294,6 +5314,8 @@ var hhea = { parse: parseHheaTable, make: makeHheaTable };
 // The `hmtx` table contains the horizontal metrics for all glyphs.
 // https://www.microsoft.com/typography/OTSPEC/hmtx.htm
 
+// Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
+// This function augments the glyph array, adding the advanceWidth and leftSideBearing to each glyph.
 function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
     var advanceWidth;
     var leftSideBearing;
@@ -5385,6 +5407,7 @@ var ltag = { make: makeLtagTable, parse: parseLtagTable };
 // We need it just to get the number of glyphs in the font.
 // https://www.microsoft.com/typography/OTSPEC/maxp.htm
 
+// Parse the maximum profile `maxp` table.
 function parseMaxpTable(data, start) {
     var maxp = {};
     var p = new parse.Parser(data, start);
@@ -5421,6 +5444,7 @@ var maxp = { parse: parseMaxpTable, make: makeMaxpTable };
 // The `name` naming table.
 // https://www.microsoft.com/typography/OTSPEC/name.htm
 
+// NameIDs for the name table.
 var nameTableNames = [
     'copyright',              // 0
     'fontFamily',             // 1
@@ -6496,6 +6520,7 @@ var os2 = { parse: parseOS2Table, make: makeOS2Table, unicodeRanges: unicodeRang
 // The `post` table stores additional PostScript information, such as glyph names.
 // https://www.microsoft.com/typography/OTSPEC/post.htm
 
+// Parse the PostScript `post` table
 function parsePostTable(data, start) {
     var post = {};
     var p = new parse.Parser(data, start);
@@ -6823,6 +6848,8 @@ var gsub = { parse: parseGsubTable, make: makeGsubTable };
 // The `GPOS` table contains kerning pairs, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 
+// Parse the metadata `meta` table.
+// https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6meta.html
 function parseMetaTable(data, start) {
     var p = new parse.Parser(data, start);
     var tableVersion = p.parseULong();
@@ -7474,6 +7501,13 @@ Layout.prototype = {
 // The Substitution object provides utility methods to manipulate
 // the GSUB substitution table.
 
+/**
+ * @exports opentype.Substitution
+ * @class
+ * @extends opentype.Layout
+ * @param {opentype.Font}
+ * @constructor
+ */
 function Substitution(font) {
     Layout.call(this, font, 'gsub');
 }
@@ -10855,6 +10889,42 @@ vim: set ts=4 sw=4 expandtab:
 
 // The Font object
 
+/**
+ * @typedef FontOptions
+ * @type Object
+ * @property {Boolean} empty - whether to create a new empty font
+ * @property {string} familyName
+ * @property {string} styleName
+ * @property {string=} fullName
+ * @property {string=} postScriptName
+ * @property {string=} designer
+ * @property {string=} designerURL
+ * @property {string=} manufacturer
+ * @property {string=} manufacturerURL
+ * @property {string=} license
+ * @property {string=} licenseURL
+ * @property {string=} version
+ * @property {string=} description
+ * @property {string=} copyright
+ * @property {string=} trademark
+ * @property {Number} unitsPerEm
+ * @property {Number} ascender
+ * @property {Number} descender
+ * @property {Number} createdTimestamp
+ * @property {string=} weightClass
+ * @property {string=} widthClass
+ * @property {string=} fsSelection
+ */
+
+/**
+ * A Font represents a loaded OpenType font file.
+ * It contains a set of glyphs and methods to draw text on a drawing context,
+ * or to get a path representing the text.
+ * @exports opentype.Font
+ * @class
+ * @param {FontOptions}
+ * @constructor
+ */
 function Font(options) {
     options = options || {};
 
@@ -11804,6 +11874,12 @@ var kern = { parse: parseKernTable };
 // The `loca` table stores the offsets to the locations of the glyphs in the font.
 // https://www.microsoft.com/typography/OTSPEC/loca.htm
 
+// Parse the `loca` table. This table stores the offsets to the locations of the glyphs in the font,
+// relative to the beginning of the glyphData table.
+// The number of glyphs stored in the `loca` table is specified in the `maxp` table (under numGlyphs)
+// The loca table has two versions: a short version where offsets are stored as uShorts, and a long
+// version where offsets are stored as uLongs. The `head` table specifies which version to use
+// (under indexToLocFormat).
 function parseLocaTable(data, start, numGlyphs, shortVersion) {
     var p = new parse.Parser(data, start);
     var parseFn = shortVersion ? p.parseUShort : p.parseULong;
@@ -11832,6 +11908,18 @@ var loca = { parse: parseLocaTable };
 
 /* global DataView, Uint8Array, XMLHttpRequest  */
 
+/**
+ * The opentype library.
+ * @namespace opentype
+ */
+
+// File loaders /////////////////////////////////////////////////////////
+/**
+ * Loads a font from a file. The callback throws an error message as the first parameter if it fails
+ * and the font as an ArrayBuffer in the second parameter if it succeeds.
+ * @param  {string} path - The path of the file
+ * @param  {Function} callback - The function to call when the font load completes
+ */
 function loadFromFile(path, callback) {
     var fs = require('fs');
     fs.readFile(path, function(err, buffer) {
