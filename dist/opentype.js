@@ -7846,8 +7846,7 @@ var roundSuper = function (v) {
     v += phase;
 
     // according to http://xgridfit.sourceforge.net/round.html
-    if (sign > 0 && v < 0) { return phase; }
-    if (sign < 0 && v > 0) { return -phase; }
+    if (v < 0) { return phase * sign; }
 
     return v * sign;
 };
@@ -8465,7 +8464,7 @@ execGlyph = function(glyph, prepState) {
 
 /*
 * Executes the hinting program for a component of a multi-component glyph
-* or of the glyph itself by a non-component glyph.
+* or of the glyph itself for a non-component glyph.
 */
 execComponent = function(glyph, state, xScale, yScale)
 {
@@ -8513,6 +8512,13 @@ execComponent = function(glyph, state, xScale, yScale)
 
     if (state.inhibitGridFit) { return; }
 
+    if (exports.DEBUG) {
+        console.log('PROCESSING GLYPH', state.stack);
+        for (var i$2 = 0; i$2 < pLen; i$2++) {
+            console.log(i$2, gZone[i$2].x, gZone[i$2].y);
+        }
+    }
+
     gZone.push(
         new HPoint(0, 0),
         new HPoint(Math.round(glyph.advanceWidth * xScale), 0)
@@ -8525,8 +8531,8 @@ execComponent = function(glyph, state, xScale, yScale)
 
     if (exports.DEBUG) {
         console.log('FINISHED GLYPH', state.stack);
-        for (var i$2 = 0; i$2 < pLen; i$2++) {
-            console.log(i$2, gZone[i$2].x, gZone[i$2].y);
+        for (var i$3 = 0; i$3 < pLen; i$3++) {
+            console.log(i$3, gZone[i$3].x, gZone[i$3].y);
         }
     }
 };
@@ -9288,7 +9294,8 @@ function SHZ(a, state) {
     for (var i = 0; i < pLen; i++)
     {
         p = z[i];
-        if (p !== rp) { fv.setRelative(p, p, d, pv); }
+        fv.setRelative(p, p, d, pv);
+        //if (p !== rp) fv.setRelative(p, p, d, pv);
     }
 }
 
@@ -9423,9 +9430,6 @@ function MIAP(round, state) {
     var pv = state.pv;
     var cv = state.cvt[n];
 
-    // TODO cvtcutin should be considered here
-    if (round) { cv = state.round(cv); }
-
     if (exports.DEBUG) {
         console.log(
             state.step,
@@ -9434,7 +9438,15 @@ function MIAP(round, state) {
         );
     }
 
-    fv.setRelative(p, HPZero, cv, pv);
+    var d = pv.distance(p, HPZero);
+
+    if (round) {
+        if (Math.abs(d - cv) < state.cvCutIn) { d = cv; }
+
+        d = state.round(d);
+    }
+
+    fv.setRelative(p, HPZero, d, pv);
 
     if (state.zp0 === 0) {
         p.xo = p.x;
@@ -9749,8 +9761,7 @@ function DELTAP123(b, state) {
 
     if (exports.DEBUG) { console.log(state.step, 'DELTAP[' + b + ']', n, stack); }
 
-    for (var i = 0; i < n; i++)
-    {
+    for (var i = 0; i < n; i++) {
         var pi = stack.pop();
         var arg = stack.pop();
         var appem = base + ((arg & 0xF0) >> 4);
@@ -10074,7 +10085,7 @@ function SDPVTL(a, state) {
     var p2 = state.z2[p2i];
     var p1 = state.z1[p1i];
 
-    if (exports.DEBUG) { console.log('SDPVTL[' + a + ']', p2i, p1i); }
+    if (exports.DEBUG) { console.log(state.step, 'SDPVTL[' + a + ']', p2i, p1i); }
 
     var dx;
     var dy;
