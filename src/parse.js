@@ -136,6 +136,8 @@ Parser.prototype.parseULong = function() {
     return v;
 };
 
+Parser.prototype.parseOffset32 = Parser.prototype.parseULong;
+
 Parser.prototype.parseFixed = function() {
     const v = getFixed(this.data, this.offset + this.relativeOffset);
     this.relativeOffset += 4;
@@ -171,14 +173,16 @@ Parser.prototype.parseLongDateTime = function() {
     return v;
 };
 
-Parser.prototype.parseVersion = function() {
+Parser.prototype.parseVersion = function(minorBase) {
     const major = getUShort(this.data, this.offset + this.relativeOffset);
 
     // How to interpret the minor version is very vague in the spec. 0x5000 is 5, 0x1000 is 1
-    // This returns the correct number if minor = 0xN000 where N is 0-9
+    // Default returns the correct number if minor = 0xN000 where N is 0-9
+    // Set minorBase to 1 for tables that use minor = N where N is 0-9
     const minor = getUShort(this.data, this.offset + this.relativeOffset + 2);
     this.relativeOffset += 4;
-    return major + minor / 0x1000 / 10;
+    if (minorBase === undefined) minorBase = 0x1000;
+    return major + minor / minorBase / 10;
 };
 
 Parser.prototype.skip = function(type, amount) {
@@ -190,6 +194,21 @@ Parser.prototype.skip = function(type, amount) {
 };
 
 ///// Parsing lists and records ///////////////////////////////
+
+// Parse a list of 32 bit unsigned integers.
+Parser.prototype.parseULongList = function(count) {
+    if (count === undefined) { count = this.parseULong(); }
+    const offsets = new Array(count);
+    const dataView = this.data;
+    let offset = this.offset + this.relativeOffset;
+    for (let i = 0; i < count; i++) {
+        offsets[i] = dataView.getUint32(offset);
+        offset += 4;
+    }
+
+    this.relativeOffset += count * 4;
+    return offsets;
+};
 
 // Parse a list of 16 bit unsigned integers. The length of the list can be read on the stream
 // or provided as an argument.
@@ -252,6 +271,18 @@ Parser.prototype.parseList = function(count, itemCallback) {
     return list;
 };
 
+Parser.prototype.parseList32 = function(count, itemCallback) {
+    if (!itemCallback) {
+        itemCallback = count;
+        count = this.parseULong();
+    }
+    const list = new Array(count);
+    for (let i = 0; i < count; i++) {
+        list[i] = itemCallback.call(this);
+    }
+    return list;
+};
+
 /**
  * Parse a list of records.
  * Record count is optional, if omitted it is read from the stream.
@@ -262,6 +293,26 @@ Parser.prototype.parseRecordList = function(count, recordDescription) {
     if (!recordDescription) {
         recordDescription = count;
         count = this.parseUShort();
+    }
+    const records = new Array(count);
+    const fields = Object.keys(recordDescription);
+    for (let i = 0; i < count; i++) {
+        const rec = {};
+        for (let j = 0; j < fields.length; j++) {
+            const fieldName = fields[j];
+            const fieldType = recordDescription[fieldName];
+            rec[fieldName] = fieldType.call(this);
+        }
+        records[i] = rec;
+    }
+    return records;
+};
+
+Parser.prototype.parseRecordList32 = function(count, recordDescription) {
+    // If the count argument is absent, read it in the stream.
+    if (!recordDescription) {
+        recordDescription = count;
+        count = this.parseULong();
     }
     const records = new Array(count);
     const fields = Object.keys(recordDescription);
@@ -296,6 +347,14 @@ Parser.prototype.parseStruct = function(description) {
 
 Parser.prototype.parsePointer = function(description) {
     const structOffset = this.parseOffset16();
+    if (structOffset > 0) {                         // NULL offset => return undefined
+        return new Parser(this.data, this.offset + structOffset).parseStruct(description);
+    }
+    return undefined;
+};
+
+Parser.prototype.parsePointer32 = function(description) {
+    const structOffset = this.parseOffset32();
     if (structOffset > 0) {                         // NULL offset => return undefined
         return new Parser(this.data, this.offset + structOffset).parseStruct(description);
     }
@@ -401,9 +460,21 @@ Parser.list = function(count, itemCallback) {
     };
 };
 
+Parser.list32 = function(count, itemCallback) {
+    return function() {
+        return this.parseList32(count, itemCallback);
+    };
+};
+
 Parser.recordList = function(count, recordDescription) {
     return function() {
         return this.parseRecordList(count, recordDescription);
+    };
+};
+
+Parser.recordList32 = function(count, recordDescription) {
+    return function() {
+        return this.parseRecordList32(count, recordDescription);
     };
 };
 
@@ -413,10 +484,18 @@ Parser.pointer = function(description) {
     };
 };
 
+Parser.pointer32 = function(description) {
+    return function() {
+        return this.parsePointer32(description);
+    };
+};
+
 Parser.tag = Parser.prototype.parseTag;
 Parser.byte = Parser.prototype.parseByte;
 Parser.uShort = Parser.offset16 = Parser.prototype.parseUShort;
 Parser.uShortList = Parser.prototype.parseUShortList;
+Parser.uLong = Parser.offset32 = Parser.prototype.parseULong;
+Parser.uLongList = Parser.prototype.parseULongList;
 Parser.struct = Parser.prototype.parseStruct;
 Parser.coverage = Parser.prototype.parseCoverage;
 Parser.classDef = Parser.prototype.parseClassDef;
@@ -466,6 +545,19 @@ Parser.prototype.parseLookupList = function(lookupTableParsers) {
             markFilteringSet: useMarkFilteringSet ? this.parseUShort() : undefined
         };
     })));
+};
+
+Parser.prototype.parseFeatureVariationsList = function() {
+    return this.parsePointer32(function() {
+        const majorVersion = this.parseUShort();
+        const minorVersion = this.parseUShort();
+        check.argument(majorVersion === 1 && minorVersion < 1, 'GSUB feature variations table unknown.');
+        const featureVariations = this.parseRecordList32({
+            conditionSetOffset: Parser.offset32,
+            featureTableSubstitutionOffset: Parser.offset32
+        });
+        return featureVariations;
+    });
 };
 
 export default {

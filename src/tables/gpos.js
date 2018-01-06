@@ -214,8 +214,8 @@ function parseLookupTable(data, start) {
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 function parseGposTable(data, start, font) {
     const p = new parse.Parser(data, start);
-    const tableVersion = p.parseFixed();
-    check.argument(tableVersion === 1, 'Unsupported GPOS table version.');
+    const tableVersion = p.parseVersion(1);
+    check.argument(tableVersion === 1 || tableVersion === 1.1, 'Unsupported GPOS table version.');
 
     // ScriptList and FeatureList - ignored for now
     parseTaggedListTable(data, start + p.parseUShort());
