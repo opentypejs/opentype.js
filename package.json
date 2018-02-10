@@ -29,7 +29,7 @@
     "watch": "rollup -c -w",
     "test": "mocha --require reify --compilers js:buble/register --recursive && jshint . && jscs .",
     "build": "rollup -c",
-    "minify": "uglifyjs ./dist/opentype.js > ./dist/opentype.min.js",
+    "minify": "uglifyjs  --compress --mangle -- ./dist/opentype.js > ./dist/opentype.min.js",
     "dist": "npm run test && npm run build && npm run minify"
   },
   "devDependencies": {
@@ -45,8 +45,7 @@
     "rollup-plugin-license": "^0.4.0",
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-watch": "^3.2.2",
-    "uglify-js": "^3.0.14",
-    "uglifyjs": "^2.4.11"
+    "uglify-js": "^3.0.14"
   },
   "browser": {
     "fs": false
