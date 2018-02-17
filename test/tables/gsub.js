@@ -38,6 +38,13 @@ describe('tables/gsub.js', function() {
         assert.deepEqual(gsub.parse(data), { version: 1, scripts: [], features: [], lookups: [] });
     });
 
+    it('can parse a GSUB header with null pointers', function() {
+        const data = unhex(
+            '00010000 0000 0000 0000'
+        );
+        assert.deepEqual(gsub.parse(data), { version: 1, scripts: [], features: [], lookups: [] });
+    });
+
     //// Lookup type 1 ////////////////////////////////////////////////////////
     it('can parse lookup1 substFormat 1', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX2

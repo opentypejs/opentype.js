@@ -519,7 +519,7 @@ Parser.prototype.parseScriptList = function() {
                 langSys: Parser.pointer(langSysTable)
             })
         })
-    }));
+    })) || [];
 };
 
 Parser.prototype.parseFeatureList = function() {
@@ -529,7 +529,7 @@ Parser.prototype.parseFeatureList = function() {
             featureParams: Parser.offset16,
             lookupListIndexes: Parser.uShortList
         })
-    }));
+    })) || [];
 };
 
 Parser.prototype.parseLookupList = function(lookupTableParsers) {
@@ -544,7 +544,7 @@ Parser.prototype.parseLookupList = function(lookupTableParsers) {
             subtables: this.parseList(Parser.pointer(lookupTableParsers[lookupType])),
             markFilteringSet: useMarkFilteringSet ? this.parseUShort() : undefined
         };
-    })));
+    }))) || [];
 };
 
 Parser.prototype.parseFeatureVariationsList = function() {
@@ -557,7 +557,7 @@ Parser.prototype.parseFeatureVariationsList = function() {
             featureTableSubstitutionOffset: Parser.offset32
         });
         return featureVariations;
-    });
+    }) || [];
 };
 
 export default {
