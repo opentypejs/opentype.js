@@ -4,9 +4,9 @@ import { Font, Path, Glyph, load, loadSync } from '../src/opentype';
 describe('opentype.js', function() {
     it('can load a TrueType font', function() {
         const font = loadSync('./fonts/Roboto-Black.ttf');
-        assert.deepEqual(font.names.fontFamily, {en: 'Roboto Bk'});
+        assert.deepEqual(font.names.fontFamily, {en: 'Roboto Black'});
         assert.equal(font.unitsPerEm, 2048);
-        assert.equal(font.glyphs.length, 1037);
+        assert.equal(font.glyphs.length, 1294);
         const aGlyph = font.charToGlyph('A');
         assert.equal(aGlyph.name, 'A');
         assert.equal(aGlyph.unicode, 65);

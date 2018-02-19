@@ -218,6 +218,7 @@ function GlyphNames(post) {
 
             break;
         case 3:
+            // TODO?
             this.names = [];
             break;
         default:
