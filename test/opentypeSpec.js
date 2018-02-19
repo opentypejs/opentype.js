@@ -8,9 +8,8 @@ describe('opentype.js', function() {
         assert.equal(font.unitsPerEm, 2048);
         assert.equal(font.glyphs.length, 1294);
         const aGlyph = font.charToGlyph('A');
-        assert.equal(aGlyph.name, 'A');
         assert.equal(aGlyph.unicode, 65);
-        assert.equal(aGlyph.path.commands.length, 19);
+        assert.equal(aGlyph.path.commands.length, 15);
     });
 
     it('can load a OpenType/CFF font', function() {
