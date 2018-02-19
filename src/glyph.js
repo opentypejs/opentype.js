@@ -6,7 +6,7 @@ import Path from './path';
 import glyf from './tables/glyf';
 
 function getPathDefinition(glyph, path) {
-    let _path = path || {commands: []};
+    let _path = path || new Path();
     return {
         configurable: true,
 
