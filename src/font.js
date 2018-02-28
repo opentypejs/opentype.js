@@ -4,6 +4,7 @@ import Path from './path';
 import sfnt from './tables/sfnt';
 import { DefaultEncoding } from './encoding';
 import glyphset from './glyphset';
+import Position from './position';
 import Substitution from './substitution';
 import { isBrowser, checkArgument, arrayBufferToNodeBuffer } from './util';
 import HintingTrueType from './hintingtt';
@@ -87,6 +88,7 @@ function Font(options) {
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
     this.glyphs = new glyphset.GlyphSet(this, options.glyphs || []);
     this.encoding = new DefaultEncoding(this);
+    this.position = new Position(this);
     this.substitution = new Substitution(this);
     this.tables = this.tables || {};
 
@@ -234,9 +236,7 @@ Font.prototype.glyphIndexToName = function(gid) {
 Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
     leftGlyph = leftGlyph.index || leftGlyph;
     rightGlyph = rightGlyph.index || rightGlyph;
-    const gposKerning = this.getGposKerningValue;
-    return gposKerning ? gposKerning(leftGlyph, rightGlyph) :
-        (this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0);
+    return this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0;
 };
 
 /**
@@ -275,6 +275,11 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     options = options || this.defaultRenderOptions;
     const fontScale = 1 / this.unitsPerEm * fontSize;
     const glyphs = this.stringToGlyphs(text, options);
+    var kerningLookups;
+    if (options.kerning) {
+        const script = options.script || this.position.getDefaultScriptName();
+        kerningLookups = this.position.getKerningTables(script, options.language);
+    }
     for (let i = 0; i < glyphs.length; i += 1) {
         const glyph = glyphs[i];
         callback.call(this, glyph, x, y, fontSize, options);
@@ -283,7 +288,11 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
         }
 
         if (options.kerning && i < glyphs.length - 1) {
-            const kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
+            // We should apply position adjustment lookups in a more generic way.
+            // Here we only use the xAdvance value.
+            const kerningValue = kerningLookups ?
+                  this.position.getKerningValue(kerningLookups, glyph.index, glyphs[i + 1].index) :
+                  this.getKerningValue(glyph, glyphs[i + 1]);
             x += kerningValue * fontScale;
         }
 
