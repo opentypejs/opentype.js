@@ -275,7 +275,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     options = options || this.defaultRenderOptions;
     const fontScale = 1 / this.unitsPerEm * fontSize;
     const glyphs = this.stringToGlyphs(text, options);
-    var kerningLookups;
+    let kerningLookups;
     if (options.kerning) {
         const script = options.script || this.position.getDefaultScriptName();
         kerningLookups = this.position.getKerningTables(script, options.language);

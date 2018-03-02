@@ -357,7 +357,7 @@ Parser.prototype.parseValueRecord = function(valueFormat) {
     if (valueFormat === 0) {        // valueFormat2 in kerning pairs is most often 0
         return;                     // in this case return undefined instead of an empty object, to save space
     }
-    var valueRecord = {};
+    const valueRecord = {};
 
     if (valueFormat & 0x0001) { valueRecord.xPlacement = this.parseShort(); }
     if (valueFormat & 0x0002) { valueRecord.yPlacement = this.parseShort(); }
@@ -380,10 +380,10 @@ Parser.prototype.parseValueRecord = function(valueFormat) {
  * valueFormat and valueCount are read from the stream.
  */
 Parser.prototype.parseValueRecordList = function() {
-    var valueFormat = this.parseUShort();
-    var valueCount = this.parseUShort();
-    var values = new Array(valueCount);
-    for (var i = 0; i < valueCount; i++) {
+    const valueFormat = this.parseUShort();
+    const valueCount = this.parseUShort();
+    const values = new Array(valueCount);
+    for (let i = 0; i < valueCount; i++) {
         values[i] = this.parseValueRecord(valueFormat);
     }
     return values;

@@ -24,9 +24,9 @@ Position.prototype = Layout.prototype;
  * @returns {integer}
  */
 Position.prototype.getKerningValue = function(kerningLookups, leftIndex, rightIndex) {
-    for (var i = 0; i < kerningLookups.length; i++) {
-        var subtables = kerningLookups[i].subtables;
-        for (var j = 0; j < subtables.length; j++) {
+    for (let i = 0; i < kerningLookups.length; i++) {
+        const subtables = kerningLookups[i].subtables;
+        for (let j = 0; j < subtables.length; j++) {
             const subtable = subtables[j];
             const covIndex = this.getCoverageIndex(subtable.coverage, leftIndex);
             if (covIndex < 0) continue;
@@ -45,7 +45,7 @@ Position.prototype.getKerningValue = function(kerningLookups, leftIndex, rightIn
                     // Search Pair Adjustment Positioning Format 2
                     const class1 = this.getGlyphClass(subtable.classDef1, leftIndex);
                     const class2 = this.getGlyphClass(subtable.classDef2, rightIndex);
-                    var pair = subtable.classRecords[class1][class2];
+                    const pair = subtable.classRecords[class1][class2];
                     return pair.value1 && pair.value1.xAdvance || 0;
             }
         }

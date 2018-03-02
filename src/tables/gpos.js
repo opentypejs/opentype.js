@@ -51,10 +51,10 @@ subtableParsers[2] = function parseLookup2() {
             })))
         };
     } else if (posFormat === 2) {
-        let classDef1 = this.parsePointer(Parser.classDef);
-        let classDef2 = this.parsePointer(Parser.classDef);
-        let class1Count = this.parseUShort();
-        let class2Count = this.parseUShort();
+        const classDef1 = this.parsePointer(Parser.classDef);
+        const classDef2 = this.parsePointer(Parser.classDef);
+        const class1Count = this.parseUShort();
+        const class2Count = this.parseUShort();
         return {
             // Class Pair Adjustment
             posFormat: posFormat,

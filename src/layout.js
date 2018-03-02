@@ -40,13 +40,13 @@ function binSearch(arr, value) {
 // binary search in a list of ranges (coverage, class definition)
 function searchRange(ranges, value) {
     // jshint bitwise: false
-    var range;
-    var imin = 0;
-    var imax = ranges.length - 1;
+    let range;
+    let imin = 0;
+    let imax = ranges.length - 1;
     while (imin <= imax) {
-        var imid = (imin + imax) >>> 1;
+        const imid = (imin + imax) >>> 1;
         range = ranges[imid];
-        var start = range.start;
+        const start = range.start;
         if (start === value) {
             return range;
         } else if (start < value) {
@@ -287,7 +287,7 @@ Layout.prototype = {
                 }
                 return 0;
             case 2:
-                var range = searchRange(classDefTable.ranges, glyphIndex);
+                const range = searchRange(classDefTable.ranges, glyphIndex);
                 return range ? range.classId : 0;
         }
     },
@@ -300,13 +300,12 @@ Layout.prototype = {
      * @returns {number} -1 if not found
      */
     getCoverageIndex: function(coverageTable, glyphIndex) {
-        var index;
         switch (coverageTable.format) {
             case 1:
-                index = binSearch(coverageTable.glyphs, glyphIndex);
+                const index = binSearch(coverageTable.glyphs, glyphIndex);
                 return index >= 0 ? index : -1;
             case 2:
-                var range = searchRange(coverageTable.ranges, glyphIndex);
+                const range = searchRange(coverageTable.ranges, glyphIndex);
                 return range ? range.index + glyphIndex - range.start : -1;
         }
     },
