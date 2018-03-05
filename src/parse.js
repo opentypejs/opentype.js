@@ -345,6 +345,50 @@ Parser.prototype.parseStruct = function(description) {
     }
 };
 
+/**
+ * Parse a GPOS valueRecord
+ * https://docs.microsoft.com/en-us/typography/opentype/spec/gpos#value-record
+ * valueFormat is optional, if omitted it is read from the stream.
+ */
+Parser.prototype.parseValueRecord = function(valueFormat) {
+    if (valueFormat === undefined) {
+        valueFormat = this.parseUShort();
+    }
+    if (valueFormat === 0) {        // valueFormat2 in kerning pairs is most often 0
+        return;                     // in this case return undefined instead of an empty object, to save space
+    }
+    const valueRecord = {};
+
+    if (valueFormat & 0x0001) { valueRecord.xPlacement = this.parseShort(); }
+    if (valueFormat & 0x0002) { valueRecord.yPlacement = this.parseShort(); }
+    if (valueFormat & 0x0004) { valueRecord.xAdvance = this.parseShort(); }
+    if (valueFormat & 0x0008) { valueRecord.yAdvance = this.parseShort(); }
+
+    // Device table (non-variable font) / VariationIndex table (variable font) not supported
+    // https://docs.microsoft.com/fr-fr/typography/opentype/spec/chapter2#devVarIdxTbls
+    if (valueFormat & 0x0010) { valueRecord.xPlaDevice = undefined; this.parseShort(); }
+    if (valueFormat & 0x0020) { valueRecord.yPlaDevice = undefined; this.parseShort(); }
+    if (valueFormat & 0x0040) { valueRecord.xAdvDevice = undefined; this.parseShort(); }
+    if (valueFormat & 0x0080) { valueRecord.yAdvDevice = undefined; this.parseShort(); }
+
+    return valueRecord;
+};
+
+/**
+ * Parse a list of GPOS valueRecords
+ * https://docs.microsoft.com/en-us/typography/opentype/spec/gpos#value-record
+ * valueFormat and valueCount are read from the stream.
+ */
+Parser.prototype.parseValueRecordList = function() {
+    const valueFormat = this.parseUShort();
+    const valueCount = this.parseUShort();
+    const values = new Array(valueCount);
+    for (let i = 0; i < valueCount; i++) {
+        values[i] = this.parseValueRecord(valueFormat);
+    }
+    return values;
+};
+
 Parser.prototype.parsePointer = function(description) {
     const structOffset = this.parseOffset16();
     if (structOffset > 0) {                         // NULL offset => return undefined
@@ -535,7 +579,7 @@ Parser.prototype.parseFeatureList = function() {
 Parser.prototype.parseLookupList = function(lookupTableParsers) {
     return this.parsePointer(Parser.list(Parser.pointer(function() {
         const lookupType = this.parseUShort();
-        check.argument(1 <= lookupType && lookupType <= 8, 'GSUB lookup type ' + lookupType + ' unknown.');
+        check.argument(1 <= lookupType && lookupType <= 9, 'GPOS/GSUB lookup type ' + lookupType + ' unknown.');
         const lookupFlag = this.parseUShort();
         const useMarkFilteringSet = lookupFlag & 0x10;
         return {
@@ -551,7 +595,7 @@ Parser.prototype.parseFeatureVariationsList = function() {
     return this.parsePointer32(function() {
         const majorVersion = this.parseUShort();
         const minorVersion = this.parseUShort();
-        check.argument(majorVersion === 1 && minorVersion < 1, 'GSUB feature variations table unknown.');
+        check.argument(majorVersion === 1 && minorVersion < 1, 'GPOS/GSUB feature variations table unknown.');
         const featureVariations = this.parseRecordList32({
             conditionSetOffset: Parser.offset32,
             featureTableSubstitutionOffset: Parser.offset32
