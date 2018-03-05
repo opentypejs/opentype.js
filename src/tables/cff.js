@@ -970,9 +970,11 @@ function parseCFFTable(data, start, font) {
     font.nGlyphs = charStringsIndex.objects.length;
 
     const charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
-    if (topDict.encoding === 0) { // Standard encoding
+    if (topDict.encoding === 0) {
+        // Standard encoding
         font.cffEncoding = new CffEncoding(cffStandardEncoding, charset);
-    } else if (topDict.encoding === 1) { // Expert encoding
+    } else if (topDict.encoding === 1) {
+        // Expert encoding
         font.cffEncoding = new CffEncoding(cffExpertEncoding, charset);
     } else {
         font.cffEncoding = parseCFFEncoding(data, start + topDict.encoding, charset);

@@ -258,7 +258,8 @@ Substitution.prototype.addLigature = function(feature, ligature, script, languag
  * @return {Array} substitutions - The list of substitutions.
  */
 Substitution.prototype.getFeature = function(feature, script, language) {
-    if (/ss\d\d/.test(feature)) {               // ss01 - ss20
+    if (/ss\d\d/.test(feature)) {
+        // ss01 - ss20
         return this.getSingle(feature, script, language);
     }
     switch (feature) {
@@ -281,7 +282,8 @@ Substitution.prototype.getFeature = function(feature, script, language) {
  * @param {string} [language='dflt']
  */
 Substitution.prototype.add = function(feature, sub, script, language) {
-    if (/ss\d\d/.test(feature)) {               // ss01 - ss20
+    if (/ss\d\d/.test(feature)) {
+        // ss01 - ss20
         return this.addSingle(feature, sub, script, language);
     }
     switch (feature) {

@@ -354,8 +354,10 @@ Parser.prototype.parseValueRecord = function(valueFormat) {
     if (valueFormat === undefined) {
         valueFormat = this.parseUShort();
     }
-    if (valueFormat === 0) {        // valueFormat2 in kerning pairs is most often 0
-        return;                     // in this case return undefined instead of an empty object, to save space
+    if (valueFormat === 0) {
+        // valueFormat2 in kerning pairs is most often 0
+        // in this case return undefined instead of an empty object, to save space
+        return;
     }
     const valueRecord = {};
 
@@ -391,7 +393,8 @@ Parser.prototype.parseValueRecordList = function() {
 
 Parser.prototype.parsePointer = function(description) {
     const structOffset = this.parseOffset16();
-    if (structOffset > 0) {                         // NULL offset => return undefined
+    if (structOffset > 0) {
+        // NULL offset => return undefined
         return new Parser(this.data, this.offset + structOffset).parseStruct(description);
     }
     return undefined;
@@ -399,7 +402,8 @@ Parser.prototype.parsePointer = function(description) {
 
 Parser.prototype.parsePointer32 = function(description) {
     const structOffset = this.parseOffset32();
-    if (structOffset > 0) {                         // NULL offset => return undefined
+    if (structOffset > 0) {
+        // NULL offset => return undefined
         return new Parser(this.data, this.offset + structOffset).parseStruct(description);
     }
     return undefined;
@@ -419,8 +423,10 @@ Parser.prototype.parseListOfLists = function(itemCallback) {
     const list = new Array(count);
     for (let i = 0; i < count; i++) {
         const start = offsets[i];
-        if (start === 0) {                  // NULL offset
-            list[i] = undefined;            // Add i as owned property to list. Convenient with assert.
+        if (start === 0) {
+            // NULL offset
+            // Add i as owned property to list. Convenient with assert.
+            list[i] = undefined;
             continue;
         }
         this.relativeOffset = start;
