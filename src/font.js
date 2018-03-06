@@ -90,6 +90,10 @@ function Font(options) {
     this.substitution = new Substitution(this);
     this.tables = this.tables || {};
 
+    // needed for low memory mode only.
+    this._push = null;
+    this._hmtxTableData = {};
+
     Object.defineProperty(this, 'hinting', {
         get: function() {
             if (this._hinting) return this._hinting;

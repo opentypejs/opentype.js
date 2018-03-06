@@ -379,7 +379,7 @@ function onReadFile(e) {
     var reader = new FileReader();
     reader.onload = function(e) {
         try {
-            font = opentype.parse(e.target.result);
+            font = opentype.parse(e.target.result, {lowMemory:true});
             showErrorMessage('');
             onFontLoaded(font);
         } catch (err) {
@@ -438,7 +438,7 @@ opentype.load(fontFileName, function(err, font) {
         return;
     }
     onFontLoaded(font);
-});
+}, {lowMemory:true});
 </script>
 </body>
 </html>

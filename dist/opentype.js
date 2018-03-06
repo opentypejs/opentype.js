@@ -3166,11 +3166,7 @@ GlyphNames.prototype.glyphIndexToName = function(gid) {
     return this.names[gid];
 };
 
-/**
- * @alias opentype.addGlyphNames
- * @param {opentype.Font}
- */
-function addGlyphNames(font) {
+function addGlyphNamesAll(font) {
     var glyph;
     var glyphIndexMap = font.tables.cmap.glyphIndexMap;
     var charCodes = Object.keys(glyphIndexMap);
@@ -3194,6 +3190,38 @@ function addGlyphNames(font) {
             glyph.name = font.glyphNames.glyphIndexToName(i$1);
         }
     }
+}
+
+function addGlyphNamesToUnicodeMap(font) {
+    font._IndexToUnicodeMap = {};
+
+    var glyphIndexMap = font.tables.cmap.glyphIndexMap;
+    var charCodes = Object.keys(glyphIndexMap);
+
+    for (var i = 0; i < charCodes.length; i += 1) {
+        var c = charCodes[i];
+        
+        var glyphIndex = glyphIndexMap[c];
+        if (font._IndexToUnicodeMap[glyphIndex] === undefined) {
+            font._IndexToUnicodeMap[glyphIndex] = {
+                unicodes : [parseInt(c)]
+            };
+        }
+        else
+            { font._IndexToUnicodeMap[glyphIndex].unicodes.push(parseInt(c)); }
+    }
+}
+
+/**
+ * @alias opentype.addGlyphNames
+ * @param {opentype.Font}
+ * @param {Object}
+ */
+function addGlyphNames(font, opt) {
+    if (opt.lowMemory)
+        { addGlyphNamesToUnicodeMap(font); }
+    else
+        { addGlyphNamesAll(font); }
 }
 
 // Drawing utility functions.
@@ -3512,8 +3540,7 @@ function buildPath(glyphs, glyph) {
     return getPath(glyph.points);
 }
 
-// Parse all the glyphs according to the offsets from the `loca` table.
-function parseGlyfTable(data, start, loca, font) {
+function parseGlyfTableAll(data, start, loca, font) {
     var glyphs = new glyphset.GlyphSet(font);
 
     // The last element of the loca table is invalid.
@@ -3530,7 +3557,31 @@ function parseGlyfTable(data, start, loca, font) {
     return glyphs;
 }
 
-var glyf = { getPath: getPath, parse: parseGlyfTable };
+function parseGlyfTableOnLowMemory(data, start, loca, font) {
+    var glyphs = new glyphset.GlyphSet(font);
+
+    font._push = function(i) {
+        var offset = loca[i];
+        var nextOffset = loca[i + 1];
+        if (offset !== nextOffset) {
+            glyphs.push(i, glyphset.ttfGlyphLoader(font, i, parseGlyph, data, start + offset, buildPath));
+        } else {
+            glyphs.push(i, glyphset.glyphLoader(font, i));
+        }    
+    };
+
+    return glyphs;
+}
+
+// Parse all the glyphs according to the offsets from the `loca` table.
+function parseGlyfTable(data, start, loca, font, opt) {
+    if (opt.lowMemory)
+        { return parseGlyfTableOnLowMemory(data, start, loca, font); }
+    else
+        { return parseGlyfTableAll(data, start, loca, font); }
+}
+
+var glyf = { getPath: getPath, parse: parseGlyfTable};
 
 // The Glyph object
 
@@ -3935,8 +3986,38 @@ function GlyphSet(font, glyphs) {
  * @return {opentype.Glyph}
  */
 GlyphSet.prototype.get = function(index) {
-    if (typeof this.glyphs[index] === 'function') {
-        this.glyphs[index] = this.glyphs[index]();
+    // this.glyphs[index] is 'undefined' when low memory mode is on. glyph is pushed on request only.
+    if (this.glyphs[index] === undefined) {
+        this.font._push(index);
+        if (typeof this.glyphs[index] === 'function') {
+            this.glyphs[index] = this.glyphs[index]();
+        }
+        
+        var glyph = this.glyphs[index];
+                
+        var unicodeObj = this.font._IndexToUnicodeMap[index];
+        if (unicodeObj) {
+            for(var j=0; j<unicodeObj.unicodes.length; j++)
+                { glyph.addUnicode(unicodeObj.unicodes[j]); }
+        } 
+
+        if (this.font.cffEncoding) {
+            if (this.font.isCIDFont) {
+                glyph.name = 'gid' + index;
+            } else {
+                glyph.name = this.font.cffEncoding.charset[index];
+            }
+        } else if (this.font.glyphNames.names) {
+            glyph.name = this.font.glyphNames.glyphIndexToName(index);
+        }        
+
+        this.glyphs[index].advanceWidth = this.font._hmtxTableData[index].advanceWidth;
+        this.glyphs[index].leftSideBearing = this.font._hmtxTableData[index].leftSideBearing;
+    }
+    else {
+        if (typeof this.glyphs[index] === 'function') {
+            this.glyphs[index] = this.glyphs[index]();
+        }        
     }
 
     return this.glyphs[index];
@@ -4092,6 +4173,45 @@ function parseCFFIndex(data, start, conversionFn) {
 
     return {objects: objects, startOffset: start, endOffset: endOffset};
 }
+
+
+function parseCFFIndexLowMemory(data, start) {
+    var offsets = [];
+    var count = parse.getCard16(data, start);
+    var objectOffset;
+    var endOffset;
+    if (count !== 0) {
+        var offsetSize = parse.getByte(data, start + 2);
+        objectOffset = start + ((count + 1) * offsetSize) + 2;
+        var pos = start + 3;
+        for (var i = 0; i < count + 1; i += 1) {
+            offsets.push(parse.getOffset(data, pos, offsetSize));
+            pos += offsetSize;
+        }
+
+        // The total size of the index array is 4 header bytes + the value of the last offset.
+        endOffset = objectOffset + offsets[count];
+    } else {
+        endOffset = start + 2;
+    }
+
+    return {offsets: offsets, startOffset: start, endOffset: endOffset};
+}
+function getCffIndexObject(i, offsets, data, start, conversionFn) {
+    var count = parse.getCard16(data, start);    
+    var objectOffset = 0;
+    if (count !== 0) {
+        var offsetSize = parse.getByte(data, start + 2);
+        objectOffset = start + ((count + 1) * offsetSize) + 2;
+    }
+
+    var value = parse.getBytes(data, objectOffset + offsets[i], objectOffset + offsets[i + 1]);
+    if (conversionFn) {
+        value = conversionFn(value);
+    }
+    return value;    
+}
+
 
 // Parse a `CFF` DICT real value.
 function parseFloatOperand(parser) {
@@ -4922,7 +5042,7 @@ function parseCFFFDSelect(data, start, nGlyphs, fdArrayCount) {
 }
 
 // Parse the `CFF` table, which contains the glyph outlines in PostScript format.
-function parseCFFTable(data, start, font) {
+function parseCFFTable(data, start, font, opt) {
     font.tables.cff = {};
     var header = parseCFFHeader(data, start);
     var nameIndex = parseCFFIndex(data, header.endOffset, parse.bytesToString);
@@ -4979,8 +5099,16 @@ function parseCFFTable(data, start, font) {
     }
 
     // Offsets in the top dict are relative to the beginning of the CFF data, so add the CFF start offset.
-    var charStringsIndex = parseCFFIndex(data, start + topDict.charStrings);
-    font.nGlyphs = charStringsIndex.objects.length;
+    var charStringsIndex;
+    if (opt.lowMemory) {
+        charStringsIndex = parseCFFIndexLowMemory(data, start + topDict.charStrings);
+        font.nGlyphs = charStringsIndex.offsets.length;
+    }
+    else {
+        charStringsIndex = parseCFFIndex(data, start + topDict.charStrings);
+        font.nGlyphs = charStringsIndex.objects.length;
+    }
+        
 
     var charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
     if (topDict.encoding === 0) { // Standard encoding
@@ -4995,9 +5123,17 @@ function parseCFFTable(data, start, font) {
     font.encoding = font.encoding || font.cffEncoding;
 
     font.glyphs = new glyphset.GlyphSet(font);
-    for (var i = 0; i < font.nGlyphs; i += 1) {
-        var charString = charStringsIndex.objects[i];
-        font.glyphs.push(i, glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
+    if (opt.lowMemory) {
+        font._push = function(i) {
+            var charString = getCffIndexObject(i, charStringsIndex.offsets, data, start + topDict.charStrings);
+            font.glyphs.push(i, glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
+        };
+    }
+    else {
+        for (var i = 0; i < font.nGlyphs; i += 1) {
+            var charString = charStringsIndex.objects[i];
+            font.glyphs.push(i, glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
+        }
     }
 }
 
@@ -5388,9 +5524,7 @@ var hhea = { parse: parseHheaTable, make: makeHheaTable };
 // The `hmtx` table contains the horizontal metrics for all glyphs.
 // https://www.microsoft.com/typography/OTSPEC/hmtx.htm
 
-// Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
-// This function augments the glyph array, adding the advanceWidth and leftSideBearing to each glyph.
-function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
+function parseHmtxTableAll(data, start, numMetrics, numGlyphs, glyphs) {
     var advanceWidth;
     var leftSideBearing;
     var p = new parse.Parser(data, start);
@@ -5405,6 +5539,35 @@ function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
         glyph.advanceWidth = advanceWidth;
         glyph.leftSideBearing = leftSideBearing;
     }
+}
+
+function parseHmtxTableOnLowMemory(font, data, start, numMetrics, numGlyphs) {
+    font._hmtxTableData = {};
+
+    var advanceWidth;
+    var leftSideBearing;
+    var p = new parse.Parser(data, start);
+    for (var i = 0; i < numGlyphs; i += 1) {
+        // If the font is monospaced, only one entry is needed. This last entry applies to all subsequent glyphs.
+        if (i < numMetrics) {
+            advanceWidth = p.parseUShort();
+            leftSideBearing = p.parseShort();
+        }
+
+        font._hmtxTableData[i] = {
+            advanceWidth : advanceWidth,
+            leftSideBearing : leftSideBearing
+        };
+    }
+}
+
+// Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
+// This function augments the glyph array, adding the advanceWidth and leftSideBearing to each glyph.
+function parseHmtxTable(font, data, start, numMetrics, numGlyphs, glyphs, opt) {
+    if (opt.lowMemory)
+        { parseHmtxTableOnLowMemory(font, data, start, numMetrics, numGlyphs); }
+    else
+        { parseHmtxTableAll(data, start, numMetrics, numGlyphs, glyphs); }
 }
 
 function makeHmtxTable(glyphs) {
@@ -11045,6 +11208,10 @@ function Font(options) {
     this.substitution = new Substitution(this);
     this.tables = this.tables || {};
 
+    // needed for low memory mode only.
+    this._push = null;
+    this._hmtxTableData = {};
+
     Object.defineProperty(this, 'hinting', {
         get: function() {
             if (this._hinting) { return this._hinting; }
@@ -12114,9 +12281,12 @@ function uncompressTable(data, tableEntry) {
  * Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
  * Throws an error if the font could not be parsed.
  * @param  {ArrayBuffer}
+ * @param  {Object} opt - options for parsing
  * @return {opentype.Font}
  */
-function parseBuffer(buffer) {
+function parseBuffer(buffer, opt) {
+    if ( opt === void 0 ) opt={};
+
     var indexToLocFormat;
     var ltagTable;
 
@@ -12264,17 +12434,17 @@ function parseBuffer(buffer) {
         var locaTable = uncompressTable(data, locaTableEntry);
         var locaOffsets = loca.parse(locaTable.data, locaTable.offset, font.numGlyphs, shortVersion);
         var glyfTable = uncompressTable(data, glyfTableEntry);
-        font.glyphs = glyf.parse(glyfTable.data, glyfTable.offset, locaOffsets, font);
+        font.glyphs = glyf.parse(glyfTable.data, glyfTable.offset, locaOffsets, font, opt);
     } else if (cffTableEntry) {
         var cffTable = uncompressTable(data, cffTableEntry);
-        cff.parse(cffTable.data, cffTable.offset, font);
+        cff.parse(cffTable.data, cffTable.offset, font, opt);
     } else {
         throw new Error('Font doesn\'t contain TrueType or CFF outlines.');
     }
 
     var hmtxTable = uncompressTable(data, hmtxTableEntry);
-    hmtx.parse(hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
-    addGlyphNames(font);
+    hmtx.parse(font, hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs, opt);
+    addGlyphNames(font, opt);
 
     if (kernTableEntry) {
         var kernTable = uncompressTable(data, kernTableEntry);
@@ -12317,7 +12487,7 @@ function parseBuffer(buffer) {
  * @param  {string} url - The URL of the font to load.
  * @param  {Function} callback - The callback.
  */
-function load(url, callback) {
+function load(url, callback, opt) {
     var isNode$$1 = typeof window === 'undefined';
     var loadFn = isNode$$1 ? loadFromFile : loadFromUrl;
     loadFn(url, function(err, arrayBuffer) {
@@ -12326,7 +12496,7 @@ function load(url, callback) {
         }
         var font;
         try {
-            font = parseBuffer(arrayBuffer);
+            font = parseBuffer(arrayBuffer, opt);
         } catch (e) {
             return callback(e, null);
         }
@@ -12339,12 +12509,13 @@ function load(url, callback) {
  * When done, returns the font object or throws an error.
  * @alias opentype.loadSync
  * @param  {string} url - The URL of the font to load.
+ * @param  {Object} opt - opt.lowMemory
  * @return {opentype.Font}
  */
-function loadSync(url) {
+function loadSync(url, opt) {
     var fs = require('fs');
     var buffer = fs.readFileSync(url);
-    return parseBuffer(nodeBufferToArrayBuffer(buffer));
+    return parseBuffer(nodeBufferToArrayBuffer(buffer), opt);
 }
 
 exports.Font = Font;
