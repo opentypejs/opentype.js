@@ -134,7 +134,7 @@ describe('parse.js', function() {
 
     describe('parseClassDef', function() {
         it('should parse a ClassDefFormat1 table', function() {
-            // https://www.microsoft.com/typography/OTSPEC/chapter2.htm Example 7
+            // https://docs.microsoft.com/en-us/typography/opentype/spec/chapter2#example-7-classdefformat1-table-class-array
             const data = '0001 0032 001A' +
                 '0000 0001 0000 0001 0000 0001 0002 0001 0000 0002 0001 0001 0000' +
                 '0000 0000 0002 0002 0000 0000 0001 0000 0000 0000 0000 0002 0001';
@@ -151,7 +151,7 @@ describe('parse.js', function() {
         });
 
         it('should parse a ClassDefFormat2 table', function() {
-            // https://www.microsoft.com/typography/OTSPEC/chapter2.htm Example 8
+            // https://docs.microsoft.com/en-us/typography/opentype/spec/chapter2#example-8-classdefformat2-table-class-ranges
             const data = '0002 0003 0030 0031 0002 0040 0041 0003 00D2 00D3 0001';
             const p = new Parser(unhex(data), 0);
             assert.deepEqual(p.parseClassDef(), {

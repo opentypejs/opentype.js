@@ -1,5 +1,11 @@
 {
-    "excludeFiles": ["node_modules/**", "build/**", "dist/**", "experiments/**", ".reify-cache/**"],
+    "excludeFiles": [
+        "node_modules/**",
+        "build/**",
+        "dist/**",
+        "experiments/**",
+        ".reify-cache/**"
+    ],
     "preset": "airbnb",
     "validateIndentation": 4,
     "requirePaddingNewLinesBeforeLineComments": null,
@@ -7,5 +13,9 @@
     "requireSpacesInAnonymousFunctionExpression": null,
     "requireSpacesInsideObjectBrackets": null,
     "requireTrailingComma": null,
+    "requireBlocksOnNewline": {
+        "includeComments": true,
+        "minLines": 2
+    },
     "maximumLineLength": 200
 }
