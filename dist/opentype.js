@@ -12285,7 +12285,7 @@ function uncompressTable(data, tableEntry) {
  * @return {opentype.Font}
  */
 function parseBuffer(buffer, opt) {
-    if ( opt === void 0 ) opt={};
+    opt = (opt === undefined || opt === null) ?  {} : opt;
 
     var indexToLocFormat;
     var ltagTable;
