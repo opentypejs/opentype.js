@@ -1,3 +1,16 @@
+0.8.0 (March 6, 2018)
+=====================
+* Fix loading font file on Android devices (thanks @maoamid!).
+* Fix loading fonts from a local source (file://data/... for Android for example (thanks @IntuilabGit!).
+* Fixing 2 issues when hinting "mutlu.ttf" (thanks @axkibe!).
+* Add some support for OpenType font variations (thanks @taylorb-monotype!).
+* Make cmap table format 12 if needed (thanks @Jolg42!).
+* Enable uglify's mangle and compress optimizations for a ~30% smaller minified file. (thanks @lojjic & @Jolg42!).
+* Better parsing of NULL pointers (thanks @fpirsch!).
+* Fix bad path init (empty glyphs) (thanks @fpirsch!).
+* Rewrite GPOS parsing (thanks @fpirsch!).
+* Roboto-Black.ttf updated (thanks @Jolg42!).
+
 0.7.3 (July 18, 2017)
 =====================
 * Fix "Object x already has key" error in Safari (thanks @neiltron!).

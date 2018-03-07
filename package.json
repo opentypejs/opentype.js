@@ -1,7 +1,7 @@
 {
   "name": "opentype.js",
   "description": "OpenType font parser",
-  "version": "0.7.3",
+  "version": "0.8.0",
   "author": {
     "name": "Frederik De Bleser",
     "email": "frederik@debleser.be"
@@ -12,6 +12,7 @@
     "opentype",
     "otf",
     "ttf",
+    "woff",
     "type"
   ],
   "license": "MIT",
