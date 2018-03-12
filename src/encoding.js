@@ -1,3 +1,5 @@
+import { getFirstCodePoint } from './util';
+
 // Glyph encoding
 
 const cffStandardStrings = [
@@ -133,7 +135,7 @@ function DefaultEncoding(font) {
 }
 
 DefaultEncoding.prototype.charToGlyphIndex = function(c) {
-    const code = c.charCodeAt(0);
+    const code = getFirstCodePoint(c);
     const glyphs = this.font.glyphs;
     if (glyphs) {
         for (let i = 0; i < glyphs.length; i += 1) {
@@ -163,7 +165,7 @@ function CmapEncoding(cmap) {
  * @return {number} The glyph index.
  */
 CmapEncoding.prototype.charToGlyphIndex = function(c) {
-    return this.cmap.glyphIndexMap[c.charCodeAt(0)] || 0;
+    return this.cmap.glyphIndexMap[getFirstCodePoint(c)] || 0;
 };
 
 /**
@@ -183,7 +185,7 @@ function CffEncoding(encoding, charset) {
  * @return {number} The index.
  */
 CffEncoding.prototype.charToGlyphIndex = function(s) {
-    const code = s.charCodeAt(0);
+    const code = getFirstCodePoint(s);
     const charName = this.encoding[code];
     return this.charset.indexOf(charName);
 };
