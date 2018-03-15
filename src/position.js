@@ -17,6 +17,14 @@ function Position(font) {
 Position.prototype = Layout.prototype;
 
 /**
+ * Init some data for faster and easier access later.
+ */
+Position.prototype.init = function() {
+    const script = this.getDefaultScriptName();
+    this.defaultKerningTables = this.getKerningTables(script);
+};
+
+/**
  * Find a glyph pair in a list of lookup tables of type 2 and retrieve the xAdvance kerning value.
  *
  * @param {integer} leftIndex - left glyph index

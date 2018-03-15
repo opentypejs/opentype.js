@@ -335,6 +335,7 @@ function parseBuffer(buffer) {
     if (gposTableEntry) {
         const gposTable = uncompressTable(data, gposTableEntry);
         font.tables.gpos = gpos.parse(gposTable.data, gposTable.offset);
+        font.position.init();
     }
 
     if (gsubTableEntry) {
