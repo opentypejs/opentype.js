@@ -229,6 +229,8 @@ Font.prototype.glyphIndexToName = function(gid) {
  * and the right glyph (or its index). If no kerning pair is found, return 0.
  * The kerning value gets added to the advance width when calculating the spacing
  * between glyphs.
+ * For GPOS kerning, this method uses the default script and language, which covers
+ * most use cases. To have greater control, use font.position.getKerningValue .
  * @param  {opentype.Glyph} leftGlyph
  * @param  {opentype.Glyph} rightGlyph
  * @return {Number}
@@ -236,6 +238,11 @@ Font.prototype.glyphIndexToName = function(gid) {
 Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
     leftGlyph = leftGlyph.index || leftGlyph;
     rightGlyph = rightGlyph.index || rightGlyph;
+    const gposKerning = this.position.defaultKerningTables;
+    if (gposKerning) {
+        return this.position.getKerningValue(gposKerning, leftGlyph, rightGlyph);
+    }
+    // "kern" table
     return this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0;
 };
 
