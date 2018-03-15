@@ -6,7 +6,7 @@ import { DefaultEncoding } from './encoding';
 import glyphset from './glyphset';
 import Position from './position';
 import Substitution from './substitution';
-import { isBrowser, checkArgument, arrayBufferToNodeBuffer } from './util';
+import { isBrowser, checkArgument, arrayBufferToNodeBuffer, isHighSurrogate, isLowSurrogate } from './util';
 import HintingTrueType from './hintingtt';
 
 /**
@@ -154,8 +154,14 @@ Font.prototype.stringToGlyphs = function(s, options) {
     // Get glyph indexes
     const indexes = [];
     for (let i = 0; i < s.length; i += 1) {
-        const c = s[i];
-        indexes.push(this.charToGlyphIndex(c));
+        if ((i !== s.length - 1) && isHighSurrogate(s.charCodeAt(i)) && isLowSurrogate(s.charCodeAt(i + 1))) {
+            // Surrogate pair
+            indexes.push(this.charToGlyphIndex(s.substr(i, 2)));
+            i += 1;
+        } else {
+            const c = s[i];
+            indexes.push(this.charToGlyphIndex(c));
+        }
     }
     let length = indexes.length;
 

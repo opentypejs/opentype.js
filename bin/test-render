@@ -61,9 +61,9 @@ function renderSVG() {
 
     var glyphSet = new Set();
     let x = 0;
-    for (let i = 0; i < textToRender.length; i++) {
-        const c = textToRender[i];
-        const glyph = font.charToGlyph(c);
+    const glyphs = font.stringToGlyphs(textToRender);
+    for (let i = 0; i < glyphs.length; i++) {
+        const glyph = glyphs[i];
         const symbolId = testcase + '.' + glyph.name;
         if (!glyphSet.has(glyph)) {
             glyphSet.add(glyph);
