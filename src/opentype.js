@@ -5,6 +5,7 @@
 
 /* global DataView, Uint8Array, XMLHttpRequest  */
 
+import 'string.prototype.codepointat';
 import inflate from 'tiny-inflate';
 import Font from './font';
 import Glyph from './glyph';
