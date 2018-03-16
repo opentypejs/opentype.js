@@ -154,8 +154,15 @@ Font.prototype.stringToGlyphs = function(s, options) {
     // Get glyph indexes
     const indexes = [];
     for (let i = 0; i < s.length; i += 1) {
-        const c = s[i];
-        indexes.push(this.charToGlyphIndex(c));
+        const code = s.codePointAt(i);
+        if (code > 65535) {
+            // Surrogate pairs
+            indexes.push(this.charToGlyphIndex(s.substr(i, 2)));
+            i += 1;
+        } else {
+            const c = s[i];
+            indexes.push(this.charToGlyphIndex(c));
+        }
     }
     let length = indexes.length;
 
