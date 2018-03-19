@@ -9,6 +9,9 @@ import Substitution from './substitution';
 import { isBrowser, checkArgument, arrayBufferToNodeBuffer } from './util';
 import HintingTrueType from './hintingtt';
 
+// This code is based on Array.from implementation for strings in https://github.com/mathiasbynens/Array.from
+const arrayFromString = Array.from || (s => s.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]?|[^\uD800-\uDFFF]|./g) || []);
+
 /**
  * @typedef FontOptions
  * @type Object
@@ -152,9 +155,10 @@ Font.prototype.charToGlyph = function(c) {
 Font.prototype.stringToGlyphs = function(s, options) {
     options = options || this.defaultRenderOptions;
     // Get glyph indexes
+    const chars = arrayFromString(s);
     const indexes = [];
-    for (let i = 0; i < s.length; i += 1) {
-        const c = s[i];
+    for (let i = 0; i < chars.length; i += 1) {
+        const c = chars[i];
         indexes.push(this.charToGlyphIndex(c));
     }
     let length = indexes.length;
