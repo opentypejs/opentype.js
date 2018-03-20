@@ -65,7 +65,8 @@ function Font(options) {
             fontFamily: {en: options.familyName || ' '},
             fontSubfamily: {en: options.styleName || ' '},
             fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
-            postScriptName: {en: options.postScriptName || options.familyName + options.styleName},
+            // postScriptName may not contain any whitespace
+            postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
             designer: {en: options.designer || ' '},
             designerURL: {en: options.designerURL || ' '},
             manufacturer: {en: options.manufacturer || ' '},
