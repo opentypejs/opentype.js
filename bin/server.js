@@ -43,8 +43,8 @@ http.createServer(function(req, res) {
 }).listen(8080);
 console.log('Server running at http://localhost:8080/');
 
+// Watch changes and rebundle
 var watcher = rollup.watch(rollupConfig);
-
 watcher.on('event', e => {
     // event.code can be one of:
     //   START        — the watcher is (re)starting
@@ -58,12 +58,7 @@ watcher.on('event', e => {
         console.log('Bundling...');
     } else if (e.code === 'BUNDLE_END') {
         console.log('Bundled in ' + e.duration + 'ms.');
-    } else if (e.code === 'ERROR') {
+    } else if (e.code === 'ERROR' || e.code === 'FATAL') {
         console.error(e.error);
-    } else {
-        console.error('Unknown watch event', e);
     }
 });
-
-// Stop watching
-watcher.close();
