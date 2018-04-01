@@ -3312,6 +3312,7 @@
 	var draw = { line: line };
 
 	// The Glyph object
+	// import glyf from './tables/glyf' Can't be imported here, because it's a circular dependency
 
 	function getPathDefinition(glyph, path) {
 	    var _path = path || new Path();
@@ -3447,10 +3448,8 @@
 	    }
 
 	    if (hPoints) {
-	        console.log({'font.hinting': font.hinting});
+	        // Call font.hinting.getCommands instead of `glyf.getPath(hPoints).commands` to avoid a circular dependency
 	        commands = font.hinting.getCommands(hPoints);
-	        console.log({commands: commands});
-	        // commands = glyf.getPath(hPoints).commands;
 	        x = Math.round(x);
 	        y = Math.round(y);
 	        // TODO in case of hinting xyScaling is not yet supported
@@ -8172,7 +8171,6 @@
 	    this.font = font;
 
 	    this.getCommands = function (hPoints) {
-	        console.log({hPoints: hPoints});
 	        return glyf.getPath(hPoints).commands;
 	    };
 
