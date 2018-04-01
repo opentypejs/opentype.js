@@ -252,14 +252,12 @@ function getPath(points) {
 
                 if (!prev.onCurve) {
                     prev2 = { x: (curr.x + prev.x) * 0.5, y: (curr.y + prev.y) * 0.5 };
-                    p.lineTo(prev2.x, prev2.y);
                 }
 
                 if (!next.onCurve) {
                     next2 = { x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5 };
                 }
 
-                p.lineTo(prev2.x, prev2.y);
                 p.quadraticCurveTo(curr.x, curr.y, next2.x, next2.y);
             }
         }
