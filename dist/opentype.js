@@ -8,6 +8,61 @@
 	(factory((global.opentype = global.opentype || {})));
 }(this, (function (exports) { 'use strict';
 
+/*! https://mths.be/codepointat v0.2.0 by @mathias */
+if (!String.prototype.codePointAt) {
+	(function() {
+		'use strict'; // needed to support `apply`/`call` with `undefined`/`null`
+		var defineProperty = (function() {
+			// IE 8 only supports `Object.defineProperty` on DOM elements
+			try {
+				var object = {};
+				var $defineProperty = Object.defineProperty;
+				var result = $defineProperty(object, object, object) && $defineProperty;
+			} catch(error) {}
+			return result;
+		}());
+		var codePointAt = function(position) {
+			if (this == null) {
+				throw TypeError();
+			}
+			var string = String(this);
+			var size = string.length;
+			// `ToInteger`
+			var index = position ? Number(position) : 0;
+			if (index != index) { // better `isNaN`
+				index = 0;
+			}
+			// Account for out-of-bounds indices:
+			if (index < 0 || index >= size) {
+				return undefined;
+			}
+			// Get the first code unit
+			var first = string.charCodeAt(index);
+			var second;
+			if ( // check if it’s the start of a surrogate pair
+				first >= 0xD800 && first <= 0xDBFF && // high surrogate
+				size > index + 1 // there is a next code unit
+			) {
+				second = string.charCodeAt(index + 1);
+				if (second >= 0xDC00 && second <= 0xDFFF) { // low surrogate
+					// https://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
+					return (first - 0xD800) * 0x400 + second - 0xDC00 + 0x10000;
+				}
+			}
+			return first;
+		};
+		if (defineProperty) {
+			defineProperty(String.prototype, 'codePointAt', {
+				'value': codePointAt,
+				'configurable': true,
+				'writable': true
+			});
+		} else {
+			String.prototype.codePointAt = codePointAt;
+		}
+	}());
+}
+
 var TINF_OK = 0;
 var TINF_DATA_ERROR = -3;
 
@@ -3106,7 +3161,7 @@ function DefaultEncoding(font) {
 }
 
 DefaultEncoding.prototype.charToGlyphIndex = function(c) {
-    var code = c.charCodeAt(0);
+    var code = c.codePointAt(0);
     var glyphs = this.font.glyphs;
     if (glyphs) {
         for (var i = 0; i < glyphs.length; i += 1) {
@@ -3136,7 +3191,7 @@ function CmapEncoding(cmap) {
  * @return {number} The glyph index.
  */
 CmapEncoding.prototype.charToGlyphIndex = function(c) {
-    return this.cmap.glyphIndexMap[c.charCodeAt(0)] || 0;
+    return this.cmap.glyphIndexMap[c.codePointAt(0)] || 0;
 };
 
 /**
@@ -3156,7 +3211,7 @@ function CffEncoding(encoding, charset) {
  * @return {number} The index.
  */
 CffEncoding.prototype.charToGlyphIndex = function(s) {
-    var code = s.charCodeAt(0);
+    var code = s.codePointAt(0);
     var charName = this.encoding[code];
     return this.charset.indexOf(charName);
 };
@@ -3509,14 +3564,12 @@ function getPath(points) {
 
                 if (!prev.onCurve) {
                     prev2 = { x: (curr.x + prev.x) * 0.5, y: (curr.y + prev.y) * 0.5 };
-                    p.lineTo(prev2.x, prev2.y);
                 }
 
                 if (!next.onCurve) {
                     next2 = { x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5 };
                 }
 
-                p.lineTo(prev2.x, prev2.y);
                 p.quadraticCurveTo(curr.x, curr.y, next2.x, next2.y);
             }
         }
@@ -7704,6 +7757,14 @@ function Position(font) {
 Position.prototype = Layout.prototype;
 
 /**
+ * Init some data for faster and easier access later.
+ */
+Position.prototype.init = function() {
+    var script = this.getDefaultScriptName();
+    this.defaultKerningTables = this.getKerningTables(script);
+};
+
+/**
  * Find a glyph pair in a list of lookup tables of type 2 and retrieve the xAdvance kerning value.
  *
  * @param {integer} leftIndex - left glyph index
@@ -11148,6 +11209,9 @@ vim: set ts=4 sw=4 expandtab:
 
 // The Font object
 
+// This code is based on Array.from implementation for strings in https://github.com/mathiasbynens/Array.from
+var arrayFromString = Array.from || (function (s) { return s.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]?|[^\uD800-\uDFFF]|./g) || []; });
+
 /**
  * @typedef FontOptions
  * @type Object
@@ -11293,9 +11357,10 @@ Font.prototype.stringToGlyphs = function(s, options) {
 
     options = options || this.defaultRenderOptions;
     // Get glyph indexes
+    var chars = arrayFromString(s);
     var indexes = [];
-    for (var i = 0; i < s.length; i += 1) {
-        var c = s[i];
+    for (var i = 0; i < chars.length; i += 1) {
+        var c = chars[i];
         indexes.push(this$1.charToGlyphIndex(c));
     }
     var length = indexes.length;
@@ -11370,6 +11435,8 @@ Font.prototype.glyphIndexToName = function(gid) {
  * and the right glyph (or its index). If no kerning pair is found, return 0.
  * The kerning value gets added to the advance width when calculating the spacing
  * between glyphs.
+ * For GPOS kerning, this method uses the default script and language, which covers
+ * most use cases. To have greater control, use font.position.getKerningValue .
  * @param  {opentype.Glyph} leftGlyph
  * @param  {opentype.Glyph} rightGlyph
  * @return {Number}
@@ -11377,6 +11444,11 @@ Font.prototype.glyphIndexToName = function(gid) {
 Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
     leftGlyph = leftGlyph.index || leftGlyph;
     rightGlyph = rightGlyph.index || rightGlyph;
+    var gposKerning = this.position.defaultKerningTables;
+    if (gposKerning) {
+        return this.position.getKerningValue(gposKerning, leftGlyph, rightGlyph);
+    }
+    // "kern" table
     return this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0;
 };
 
@@ -11866,6 +11938,7 @@ subtableParsers$1[1] = function parseLookup1() {
 subtableParsers$1[2] = function parseLookup2() {
     var start = this.offset + this.relativeOffset;
     var posFormat = this.parseUShort();
+    check.assert(posFormat === 1 || posFormat === 2, '0x' + start.toString(16) + ': GPOS lookup type 2 format must be 1 or 2.');
     var coverage = this.parsePointer(Parser.coverage);
     var valueFormat1 = this.parseUShort();
     var valueFormat2 = this.parseUShort();
@@ -11907,7 +11980,6 @@ subtableParsers$1[2] = function parseLookup2() {
             }))
         };
     }
-    check.assert(false, '0x' + start.toString(16) + ': GPOS lookup type 2 format must be 1 or 2.');
 };
 
 subtableParsers$1[3] = function parseLookup3() { return { error: 'GPOS Lookup 3 not supported' }; };
@@ -12367,6 +12439,7 @@ function parseBuffer(buffer) {
     if (gposTableEntry) {
         var gposTable = uncompressTable(data, gposTableEntry);
         font.tables.gpos = gpos.parse(gposTable.data, gposTable.offset);
+        font.position.init();
     }
 
     if (gsubTableEntry) {
