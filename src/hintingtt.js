@@ -27,6 +27,8 @@
 */
 'use strict';
 
+import glyf from './tables/glyf';
+
 let instructionTable;
 let exec;
 let execGlyph;
@@ -41,6 +43,10 @@ let execComponent;
 function Hinting(font) {
     // the font this hinting object is for
     this.font = font;
+
+    this.getCommands = function (hPoints) {
+        return glyf.getPath(hPoints).commands;
+    };
 
     // cached states
     this._fpgmState  =

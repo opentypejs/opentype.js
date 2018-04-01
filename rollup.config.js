@@ -4,11 +4,13 @@ var commonjs = require('rollup-plugin-commonjs');
 var license = require('rollup-plugin-license');
 
 module.exports =  {
-    entry: 'src/opentype.js',
-    dest: 'dist/opentype.js',
-    moduleName: 'opentype',
-    format: 'umd',
-    sourceMap: true,
+    input: 'src/opentype.js',
+    output: {
+        file: 'dist/opentype.js',
+        format: 'umd',
+        name: 'opentype',
+        sourcemap: true
+    },
     plugins: [
         resolve({
             jsnext: true,
