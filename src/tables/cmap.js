@@ -87,13 +87,14 @@ function parseCmapTable(data, start) {
     check.argument(cmap.version === 0, 'cmap table version should be 0.');
 
     // The cmap table can contain many sub-tables, each with their own format.
-    // We're only interested in a "platform 3" table. This is a Windows format.
+    // We're only interested in a "platform 0" (Unicode format) and "platform 3" (Windows format) table.
     cmap.numTables = parse.getUShort(data, start + 2);
     let offset = -1;
     for (let i = cmap.numTables - 1; i >= 0; i -= 1) {
         const platformId = parse.getUShort(data, start + 4 + (i * 8));
         const encodingId = parse.getUShort(data, start + 4 + (i * 8) + 2);
-        if (platformId === 3 && (encodingId === 0 || encodingId === 1 || encodingId === 10)) {
+        if ((platformId === 3 && (encodingId === 0 || encodingId === 1 || encodingId === 10)) ||
+            (platformId === 0 && (encodingId === 0 || encodingId === 1 || encodingId === 2 || encodingId === 3 || encodingId === 4))) {
             offset = parse.getULong(data, start + 4 + (i * 8) + 4);
             break;
         }
