@@ -1,8 +1,9 @@
 opentype.js
 ===========
-[![Gitter](https://badges.gitter.im/nodebox/opentype.js.svg)](https://gitter.im/nodebox/opentype.js)&nbsp;
-[![npm](https://img.shields.io/npm/v/opentype.js.svg)](https://www.npmjs.com/package/opentype.js)&nbsp;
-[![david-dm](https://david-dm.org/nodebox/opentype.js.svg)](https://david-dm.org/nodebox/opentype.js)
+[![npm](https://img.shields.io/npm/v/opentype.js.svg)](https://www.npmjs.com/package/opentype.js) 
+[![Build Status](https://travis-ci.org/nodebox/opentype.js.svg?branch=master)](https://travis-ci.org/nodebox/opentype.js) 
+[![david-dm](https://david-dm.org/nodebox/opentype.js.svg)](https://david-dm.org/nodebox/opentype.js) 
+[![Gitter](https://badges.gitter.im/nodebox/opentype.js.svg)](https://gitter.im/nodebox/opentype.js) 
 
 opentype.js is a JavaScript parser and writer for TrueType and OpenType fonts.
 
