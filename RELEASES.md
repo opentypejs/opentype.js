@@ -1,3 +1,14 @@
+0.9.0 (June 21, 2018)
+=====================
+* Update/Migrate rollup, update all dependencies, add package-lock.json and fix circular dependency (thanks @jolg42!)
+* Parse cmap table with platform id 0 as well (PR #350, fixes #348) (thanks @moyogo!)
+* Prevent auto-generated postScriptName from containing whitespace (#339) (thanks @mqudsi!)
+* Support non-Basic-Multilingual-Plane (BMP) characters (#338) (thanks @antonytse!)
+* GPOS: display correct error message in some cases of malformed data (#336) (thanks @fpirsch!)
+* Restore simple GPOS kerning in font.getKerningValue (#335) (thanks @fpirsch!)
+* Fix duplicated lineTo when using `getPath` (#328) (thanks @jolg42!)
+* Change example generate-font-node.js to be compatible with any Node.js version (thanks @jolg42!)
+
 0.8.0 (March 6, 2018)
 =====================
 * Fix loading font file on Android devices (thanks @maoamid!).

@@ -1,5 +1,5 @@
 /**
- * https://opentype.js.org v0.8.0 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
+ * https://opentype.js.org v0.9.0 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
  */
 
 (function (global, factory) {
@@ -2824,13 +2824,14 @@
 	    check.argument(cmap.version === 0, 'cmap table version should be 0.');
 
 	    // The cmap table can contain many sub-tables, each with their own format.
-	    // We're only interested in a "platform 3" table. This is a Windows format.
+	    // We're only interested in a "platform 0" (Unicode format) and "platform 3" (Windows format) table.
 	    cmap.numTables = parse.getUShort(data, start + 2);
 	    var offset = -1;
 	    for (var i = cmap.numTables - 1; i >= 0; i -= 1) {
 	        var platformId = parse.getUShort(data, start + 4 + (i * 8));
 	        var encodingId = parse.getUShort(data, start + 4 + (i * 8) + 2);
-	        if (platformId === 3 && (encodingId === 0 || encodingId === 1 || encodingId === 10)) {
+	        if ((platformId === 3 && (encodingId === 0 || encodingId === 1 || encodingId === 10)) ||
+	            (platformId === 0 && (encodingId === 0 || encodingId === 1 || encodingId === 2 || encodingId === 3 || encodingId === 4))) {
 	            offset = parse.getULong(data, start + 4 + (i * 8) + 4);
 	            break;
 	        }
@@ -10092,7 +10093,6 @@
 	// 0x58
 	function IF(state) {
 	    var test = state.stack.pop();
-	    var ins;
 
 	    if (exports.DEBUG) { console.log(state.step, 'IF[]', test); }
 
@@ -10101,7 +10101,7 @@
 	    if (!test) {
 	        skip(state, true);
 
-	        if (exports.DEBUG) { console.log(state.step, ins === 0x1B ? 'ELSE[]' : 'EIF[]'); }
+	        if (exports.DEBUG) { console.log(state.step, 'EIF[]'); }
 	    }
 	}
 
@@ -11241,7 +11241,8 @@
 	            fontFamily: {en: options.familyName || ' '},
 	            fontSubfamily: {en: options.styleName || ' '},
 	            fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
-	            postScriptName: {en: options.postScriptName || options.familyName + options.styleName},
+	            // postScriptName may not contain any whitespace
+	            postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
 	            designer: {en: options.designer || ' '},
 	            designerURL: {en: options.designerURL || ' '},
 	            manufacturer: {en: options.manufacturer || ' '},
