@@ -1,3 +1,7 @@
+0.10.0 (August 14, 2018)
+=====================
+* font.download(): use window.URL instead of window.requestFileSystem, which works on a larger set of browsers : Chrome (32+), Opera (19+), Firefox (26+), Safari (7.1+), and all of Edge.
+
 0.9.0 (June 21, 2018)
 =====================
 * Update/Migrate rollup, update all dependencies, add package-lock.json and fix circular dependency (thanks @jolg42!)
