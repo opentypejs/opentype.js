@@ -11678,24 +11678,22 @@
 	    var arrayBuffer = this.toArrayBuffer();
 
 	    if (isBrowser()) {
-	        window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-	        window.requestFileSystem(window.TEMPORARY, arrayBuffer.byteLength, function(fs) {
-	            fs.root.getFile(fileName, {create: true}, function(fileEntry) {
-	                fileEntry.createWriter(function(writer) {
-	                    var dataView = new DataView(arrayBuffer);
-	                    var blob = new Blob([dataView], {type: 'font/opentype'});
-	                    writer.write(blob);
+	        window.URL = window.URL || window.webkitURL;
 
-	                    writer.addEventListener('writeend', function() {
-	                        // Navigating to the file will download it.
-	                        location.href = fileEntry.toURL();
-	                    }, false);
-	                });
-	            });
-	        },
-	        function(err) {
-	            throw new Error(err.name + ': ' + err.message);
-	        });
+	        if (window.URL) {
+	            var dataView = new DataView(arrayBuffer);
+	            var blob = new Blob([dataView], {type: 'font/opentype'});
+
+	            var link = document.createElement('a');
+	            link.href = window.URL.createObjectURL(blob);
+	            link.download = fileName;
+
+	            var event = document.createEvent('MouseEvents');
+	            event.initEvent('click', true, false);
+	            link.dispatchEvent(event);
+	        } else {
+	            console.warn('Font file could not be downloaded. Try using a different browser.');
+	        }
 	    } else {
 	        var fs = require('fs');
 	        var buffer = arrayBufferToNodeBuffer(arrayBuffer);
