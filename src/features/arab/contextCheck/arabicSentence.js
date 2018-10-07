@@ -1,6 +1,6 @@
-// ╭─┄┄┄─────────────┄──────────────────────────────────╮
-// ┊ Arabic Sentence ┊ Arabic sentence context checkers ┊
-// ╰─╾───────────────┄──────────────────────────────────╯
+/**
+ * Arabic sentence context checkers
+ */
 
 import { isArabicChar, isWhiteSpace, isTashkeelArabicChar } from '../../../char';
 

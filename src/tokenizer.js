@@ -1,6 +1,6 @@
-// ╭─┄┄┄────────────┄──────────────────────────────────────────╮
-// ┊ Text Tokenizer ┊ Converts a string into a list of tokens. ┊
-// ╰─╾──────────────┄──────────────────────────────────────────╯
+/**
+ * Converts a string into a list of tokens.
+ */
 
 /**
  * Create a new token
@@ -124,7 +124,7 @@ Token.prototype.setState = function(key, value) {
 
 Token.prototype.getState = function (stateId) {
     return this.state[stateId] || null;
-}
+};
 
 /**
  * Checks if an index exists in the tokens list.
@@ -141,9 +141,9 @@ Tokenizer.prototype.inboundIndex = function(index) {
  */
 Tokenizer.prototype.composeRUD = function (RUDs) {
     const silent = true;
-    const state = RUDs.map(RUD => {
-        return this[RUD[0]].apply(this, RUD.slice(1).concat(silent));
-    });
+    const state = RUDs.map(RUD => (
+        this[RUD[0]].apply(this, RUD.slice(1).concat(silent))
+    ));
     const hasFAILObject = obj => (
         typeof obj === 'object' &&
         obj.hasOwnProperty('FAIL')

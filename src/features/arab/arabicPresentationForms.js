@@ -1,6 +1,6 @@
-// ╭─┄┄┄────────────┄─────────────────────────────────────────────────────────────────╮
-// ┊ Arabic Presentation Forms ┊ Apply Arabic presentation forms to a range of tokens ┊
-// ╰─╾──────────────┄─────────────────────────────────────────────────────────────────╯
+/**
+ * Apply Arabic presentation forms to a range of tokens
+ */
 
 import { ContextParams } from '../../tokenizer';
 import { isIsolatedArabicChar, isTashkeelArabicChar } from '../../char';

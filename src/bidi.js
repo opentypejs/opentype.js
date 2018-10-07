@@ -1,6 +1,7 @@
-// ╭─┄┄┄───────────────────────┄───────────────────────────────────────────────────────────────────────────────────────────╮
-// ┊ Bidirectional Text Layout ┊ Infer bidirectional properties for a given text and apply the corresponding layout rules. ┊
-// ╰─╾─────────────────────────┄───────────────────────────────────────────────────────────────────────────────────────────╯
+/**
+ * Infer bidirectional properties for a given text and apply
+ * the corresponding layout rules.
+ */
 
 import Tokenizer from './tokenizer';
 import arabicWordCheck from './features/arab/contextCheck/arabicWord';

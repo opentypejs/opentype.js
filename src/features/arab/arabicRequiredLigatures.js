@@ -1,6 +1,6 @@
-// ╭─┄┄┄────────────┄────────────────────────────────────────────────────────────────────────╮
-// ┊ Arabic Required Ligature ┊ Apply Arabic required ligatures feature to a range of tokens ┊
-// ╰─╾──────────────┄────────────────────────────────────────────────────────────────────────╯
+/**
+ * Apply Arabic required ligatures feature to a range of tokens
+ */
 
 import { ContextParams } from '../../tokenizer';
 

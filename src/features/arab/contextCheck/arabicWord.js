@@ -1,6 +1,6 @@
-// ╭─┄┄┄─────────┄──────────────────────────────╮
-// ┊ Arabic Word ┊ Arabic word context checkers ┊
-// ╰─╾───────────┄──────────────────────────────╯
+/**
+ * Arabic word context checkers
+ */
 
 import { isArabicChar } from '../../../char';
 

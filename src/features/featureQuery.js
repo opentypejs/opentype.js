@@ -1,6 +1,6 @@
-// ╭─┄┄┄──────────────────┄────────────────────────────────────────────────────────────────────────────╮
-// ┊ Feature Query Engine ┊ Query a feature by some of it's properties to lookup a glyph substitution. ┊
-// ╰─╾────────────────────┄────────────────────────────────────────────────────────────────────────────╯
+/**
+ * Query a feature by some of it's properties to lookup a glyph substitution.
+ */
 
 import { ContextParams } from '../tokenizer';
 import { isTashkeelArabicChar } from '../char';
@@ -9,7 +9,7 @@ import { isTashkeelArabicChar } from '../char';
 let BASE_DIR = 'ltr';
 
 /**
- * 
+ * Create feature query instance
  * @param {Font} font opentype font instance
  * @param {string} baseDir text base direction
  */
@@ -39,20 +39,6 @@ function Feature(tag, feature, featureLookups, script) {
  */
 function Coverage(coverageTable) {
     this.table = coverageTable;
-}
-
-/**
- * Create a lookup table lookup
- * @param {number} index table index at gsub lookups
- * @param {any} lookups a reference to gsub lookups
- */
-function LookupTable(index, lookups) {
-    this.index = index;
-    this.subtables = lookups[index].subtables.map(
-        subtable => new Substitution(
-            lookups, lookups[index], subtable
-        )
-    );
 }
 
 /**
@@ -100,6 +86,7 @@ LigatureSets.prototype.lookup = function (contextParams, ligSetIndex) {
  * @param {any} subtable substitution table
  */
 function Substitution(lookups, lookupTable, subtable) {
+    this.lookups = lookups;
     this.subtable = subtable;
     this.lookupTable = lookupTable;
     if (subtable.hasOwnProperty('coverage')) {
@@ -122,14 +109,23 @@ function Substitution(lookups, lookupTable, subtable) {
             table => new Coverage(table)
         );
     }
-    if (subtable.hasOwnProperty('lookupRecords')) {
-        this.lookupRecords = subtable.lookupRecords.map(
-            record => new LookupTable(record.lookupListIndex, lookups)
-        );
-    }
     if (subtable.hasOwnProperty('ligatureSets')) {
         this.ligatureSets = new LigatureSets(subtable.ligatureSets);
     }
+}
+
+/**
+ * Create a lookup table lookup
+ * @param {number} index table index at gsub lookups
+ * @param {any} lookups a reference to gsub lookups
+ */
+function LookupTable(index, lookups) {
+    this.index = index;
+    this.subtables = lookups[index].subtables.map(
+        subtable => new Substitution(
+            lookups, lookups[index], subtable
+        )
+    );
 }
 
 function FeatureLookups(lookups, lookupListIndexes) {
@@ -231,11 +227,14 @@ function chainingSubstitutionFormat3(contextParams) {
     );
     let substitutions = [];
     if (contextRulesMatch) {
-        for (let i = 0; i < this.lookupRecords.length; i++) {
-            const lookupRecord = this.lookupRecords[i];
+        let lookupRecords = this.subtable.lookupRecords;
+        for (let i = 0; i < lookupRecords.length; i++) {
+            const lookupRecord = lookupRecords[i];
             for (let j = 0; j < inputLookups.length; j++) {
                 const inputContext = new ContextParams([contextParams.get(j)], 0);
-                let lookup = lookupRecord.lookup(inputContext);
+                let lookupIndex = lookupRecord.lookupListIndex;
+                const lookupTable = new LookupTable(lookupIndex, this.lookups);
+                let lookup = lookupTable.lookup(inputContext);
                 substitutions = substitutions.concat(lookup);
             }
         }
@@ -310,7 +309,7 @@ Coverage.prototype.lookup = function (glyphIndex) {
             let ranges = this.table.ranges;
             for (let i = 0; i < ranges.length; i++) {
                 const range = ranges[i];
-                if (glyphIndex >= range.start && glyphIndex <= range.end){
+                if (glyphIndex >= range.start && glyphIndex <= range.end) {
                     let offset = glyphIndex - range.start;
                     return range.index + offset;
                 }
