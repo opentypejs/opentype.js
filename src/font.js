@@ -11,9 +11,6 @@ import HintingTrueType from './hintingtt';
 import Bidi from './bidi';
 import FeatureQuery from './features/featureQuery';
 
-// This code is based on Array.from implementation for strings in https://github.com/mathiasbynens/Array.from
-// const arrayFromString = Array.from || (s => s.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]?|[^\uD800-\uDFFF]|./g) || []);
-
 /**
  * @typedef FontOptions
  * @type Object

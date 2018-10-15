@@ -297,7 +297,7 @@ Substitution.prototype.lookup = function (contextParams) {
 
 /**
  * Lookup a coverage table
- * @param {any} contextParams context params to lookup
+ * @param {number} glyphIndex to lookup
  */
 Coverage.prototype.lookup = function (glyphIndex) {
     if (!glyphIndex) return -1;
