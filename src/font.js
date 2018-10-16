@@ -161,7 +161,7 @@ Font.prototype.stringToGlyphs = function(s, options) {
     const charToGlyphIndexMod = token => this.charToGlyphIndex(token.char);
     bidi.registerModifier('glyphIndex', null, charToGlyphIndexMod);
 
-    const arabFeatureQuery = new FeatureQuery(this, 'rtl');
+    const arabFeatureQuery = new FeatureQuery(this);
     const arabFeatures = ['init', 'medi', 'fina', 'rlig'];
     bidi.applyFeatures(
         arabFeatures.map(tag => {
