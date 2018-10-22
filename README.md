@@ -7,7 +7,7 @@ opentype.js
 
 opentype.js is a JavaScript parser and writer for TrueType and OpenType fonts.
 
-It gives you access to the <strong>letterforms</strong> of text from the browser or node.js.
+It gives you access to the <strong>letterforms</strong> of text from the browser or Node.js.
 
 ![Example of opentype.js](https://raw.github.com/opentypejs/opentype.js/master/g/hello-world.png)
 
@@ -37,8 +37,9 @@ Features
 * Support for kerning (Using GPOS or the kern table).
 * Support for ligatures.
 * Support for TrueType font hinting.
+* Support rendering of arabic (See #359)
 * Very efficient.
-* Runs in the browser and node.js.
+* Runs in the browser and Node.js.
 
 Installation
 ============
