@@ -1,6 +1,6 @@
 {
   "name": "opentype.js",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "main": "dist/opentype.js",
   "keywords": [
     "graphics",

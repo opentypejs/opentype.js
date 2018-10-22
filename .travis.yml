@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-- '4'  # https://github.com/nodebox/opentype.js/pull/251#issuecomment-272175882
+- '4'  # https://github.com/opentypejs/opentype.js/pull/251#issuecomment-272175882
 - '10'
 deploy:
   provider: npm
@@ -8,4 +8,4 @@ deploy:
   api_key: "$NPM_TOKEN"
   on:
     tags: true
-    repo: nodebox/opentype.js
+    repo: opentypejs/opentype.js

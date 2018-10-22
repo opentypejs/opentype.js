@@ -8,9 +8,8 @@ import Position from './position';
 import Substitution from './substitution';
 import { isBrowser, checkArgument, arrayBufferToNodeBuffer } from './util';
 import HintingTrueType from './hintingtt';
-
-// This code is based on Array.from implementation for strings in https://github.com/mathiasbynens/Array.from
-const arrayFromString = Array.from || (s => s.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]?|[^\uD800-\uDFFF]|./g) || []);
+import Bidi from './bidi';
+import FeatureQuery from './features/featureQuery';
 
 /**
  * @typedef FontOptions
@@ -155,13 +154,24 @@ Font.prototype.charToGlyph = function(c) {
  */
 Font.prototype.stringToGlyphs = function(s, options) {
     options = options || this.defaultRenderOptions;
-    // Get glyph indexes
-    const chars = arrayFromString(s);
-    const indexes = [];
-    for (let i = 0; i < chars.length; i += 1) {
-        const c = chars[i];
-        indexes.push(this.charToGlyphIndex(c));
-    }
+
+    const bidi = new Bidi();
+
+    // Create and register 'glyphIndex' state modifier
+    const charToGlyphIndexMod = token => this.charToGlyphIndex(token.char);
+    bidi.registerModifier('glyphIndex', null, charToGlyphIndexMod);
+
+    const arabFeatureQuery = new FeatureQuery(this);
+    const arabFeatures = ['init', 'medi', 'fina', 'rlig'];
+    bidi.applyFeatures(
+        arabFeatures.map(tag => {
+            let query = { tag, script: 'arab' };
+            let feature = arabFeatureQuery.getFeature(query);
+            if (!!feature) return feature;
+        })
+    );
+    const indexes = bidi.getTextGlyphs(s);
+
     let length = indexes.length;
 
     // Apply substitutions on glyph indexes
