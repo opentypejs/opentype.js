@@ -4,6 +4,9 @@
 
 import { ContextParams } from '../../tokenizer';
 import { isIsolatedArabicChar, isTashkeelArabicChar } from '../../char';
+import { SubstitutionAction } from '../featureQuery';
+import applySubstitution from '../applySubstitution';
+
 /**
  * Check if a char can be connected to it's preceding char
  * @param {ContextParams} charContextParams context params of a char
@@ -39,44 +42,40 @@ function willConnectNext(charContextParams) {
  * @param {ContextRange} range a range of tokens
  */
 function arabicPresentationForms(range) {
-    const features = this.features.arab;
-    const rangeTokens = this.tokenizer.getRangeTokens(range);
-    if (rangeTokens.length === 1) return;
-    const getSubstitutionIndex = substitution => (
-        substitution.length === 1 &&
-        substitution[0].id === 12 &&
-        substitution[0].substitution
-    );
-    const applyForm = (tag, token, params) => {
-        if (!features.hasOwnProperty(tag)) return;
-        let substitution = features[tag].lookup(params) || null;
-        let substIndex = getSubstitutionIndex(substitution)[0];
-        if (substIndex >= 0) {
-            return token.setState(tag, substIndex);
-        }
-    };
-    const tokensParams = new ContextParams(rangeTokens, 0);
-    const charContextParams = new ContextParams(rangeTokens.map(t=>t.char), 0);
-    rangeTokens.forEach((token, i) => {
+    const script = 'arab';
+    const tags = this.featuresTags[script];
+    const tokens = this.tokenizer.getRangeTokens(range);
+    if (tokens.length === 1) return;
+    let contextParams = new ContextParams(
+        tokens.map(token => token.getState('glyphIndex')
+    ), 0);
+    const charContextParams = new ContextParams(
+        tokens.map(token => token.char
+    ), 0);
+    tokens.forEach((token, index) => {
         if (isTashkeelArabicChar(token.char)) return;
-        tokensParams.setCurrentIndex(i);
-        charContextParams.setCurrentIndex(i);
+        contextParams.setCurrentIndex(index);
+        charContextParams.setCurrentIndex(index);
         let CONNECT = 0; // 2 bits 00 (10: can connect next) (01: can connect prev)
         if (willConnectPrev(charContextParams)) CONNECT |= 1;
         if (willConnectNext(charContextParams)) CONNECT |= 2;
+        let tag;
         switch (CONNECT) {
-            case 0: // isolated * original form
-                return;
-            case 1: // fina
-                applyForm('fina', token, tokensParams);
-                break;
-            case 2: // init
-                applyForm('init', token, tokensParams);
-                break;
-            case 3: // medi
-                applyForm('medi', token, tokensParams);
-                break;
+            case 1: (tag = 'fina'); break;
+            case 2: (tag = 'init'); break;
+            case 3: (tag = 'medi'); break;
         }
+        if (tags.indexOf(tag) === -1) return;
+        let substitutions = this.query.lookupFeature({
+            tag, script, contextParams
+        });
+        if (substitutions instanceof Error) return console.info(substitutions.message);
+        substitutions.forEach((action, index) => {
+            if (action instanceof SubstitutionAction) {
+                applySubstitution(action, tokens, index);
+                contextParams.context[index] = action.substitution;
+            }
+        });
     });
 }
 
