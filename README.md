@@ -1,15 +1,15 @@
 opentype.js
 ===========
-[![npm](https://img.shields.io/npm/v/opentype.js.svg)](https://www.npmjs.com/package/opentype.js) 
-[![Build Status](https://travis-ci.org/nodebox/opentype.js.svg?branch=master)](https://travis-ci.org/nodebox/opentype.js) 
-[![david-dm](https://david-dm.org/nodebox/opentype.js.svg)](https://david-dm.org/nodebox/opentype.js) 
-[![Gitter](https://badges.gitter.im/nodebox/opentype.js.svg)](https://gitter.im/nodebox/opentype.js) 
+[![npm](https://img.shields.io/npm/v/opentype.js.svg)](https://www.npmjs.com/package/opentype.js)
+[![Build Status](https://travis-ci.org/opentypejs/opentype.js.svg?branch=master)](https://travis-ci.org/opentypejs/opentype.js)
+[![david-dm](https://david-dm.org/opentypejs/opentype.js.svg)](https://david-dm.org/opentypejs/opentype.js)
+[![Gitter](https://badges.gitter.im/opentypejs/opentype.js.svg)](https://gitter.im/opentypejs/opentype.js)
 
 opentype.js is a JavaScript parser and writer for TrueType and OpenType fonts.
 
 It gives you access to the <strong>letterforms</strong> of text from the browser or node.js.
 
-![Example of opentype.js](https://raw.github.com/nodebox/opentype.js/master/g/hello-world.png)
+![Example of opentype.js](https://raw.github.com/opentypejs/opentype.js/master/g/hello-world.png)
 
 Here's an example. We load a font, then display it on a canvas with id "canvas":
 
@@ -45,7 +45,7 @@ Installation
 
 ### Directly
 
-[Download the latest ZIP](https://github.com/nodebox/opentype.js/archive/master.zip) and grab the files in the `dist`
+[Download the latest ZIP](https://github.com/opentypejs/opentype.js/archive/master.zip) and grab the files in the `dist`
 folder. These are compiled.
 
 ### Using npm
@@ -63,7 +63,7 @@ To install using [Bower](http://bower.io/), enter the following command in your 
 You can then include them in your scripts using:
 
     <script src="/bower_components/opentype.js/dist/opentype.js"></script>
-    
+
 ### Using via a CDN
 
 To use via a CDN, include the following code in your html:
@@ -292,4 +292,4 @@ I would like to acknowledge the work of others without which opentype.js wouldn'
 * [tiny-inflate](https://github.com/devongovett/tiny-inflate): for WOFF decompression.
 * [Microsoft Typography](https://www.microsoft.com/typography/OTSPEC/otff.htm): the go-to reference for all things OpenType.
 * [Adobe Compact Font Format spec](http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf) and the [Adobe Type 2 Charstring spec](http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/type2.pdf): explains the data structures and commands for the CFF glyph format.
-* All contributing authors mentioned in the [AUTHORS](https://github.com/nodebox/opentype.js/blob/master/AUTHORS) file.
+* All contributing authors mentioned in the [AUTHORS](https://github.com/opentypejs/opentype.js/blob/master/AUTHORS) file.

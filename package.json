@@ -18,7 +18,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git://github.com/nodebox/opentype.js.git"
+    "url": "git://github.com/opentypejs/opentype.js.git"
   },
   "main": "dist/opentype.js",
   "module": "src/opentype.js",
