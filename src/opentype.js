@@ -1,5 +1,5 @@
 // opentype.js
-// https://github.com/nodebox/opentype.js
+// https://github.com/opentypejs/opentype.js
 // (c) 2015 Frederik De Bleser
 // opentype.js may be freely distributed under the MIT license.
 

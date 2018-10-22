@@ -1,5 +1,5 @@
 /**
- * https://opentype.js.org v0.9.0 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
+ * https://opentype.js.org v0.11.0 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
  */
 
 (function (global, factory) {
@@ -11183,10 +11183,1392 @@
 	vim: set ts=4 sw=4 expandtab:
 	*****/
 
-	// The Font object
+	/**
+	 * Converts a string into a list of tokens.
+	 */
 
-	// This code is based on Array.from implementation for strings in https://github.com/mathiasbynens/Array.from
-	var arrayFromString = Array.from || (function (s) { return s.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]?|[^\uD800-\uDFFF]|./g) || []; });
+	/**
+	 * Create a new token
+	 * @param {string} char a single char
+	 */
+	function Token(char) {
+	    this.char = char;
+	    this.state = {};
+	    this.activeState = null;
+	}
+
+	/**
+	 * Create a new context range
+	 * @param {number} startIndex range start index
+	 * @param {number} endOffset range end index offset
+	 * @param {string} contextName owner context name
+	 */
+	function ContextRange(startIndex, endOffset, contextName) {
+	    this.contextName = contextName;
+	    this.startIndex = startIndex;
+	    this.endOffset = endOffset;
+	}
+
+	/**
+	 * Check context start and end
+	 * @param {string} contextName a unique context name
+	 * @param {function} checkStart a predicate function the indicates a context's start
+	 * @param {function} checkEnd a predicate function the indicates a context's end
+	 */
+	function ContextChecker(contextName, checkStart, checkEnd) {
+	    this.contextName = contextName;
+	    this.openRange = null;
+	    this.ranges = [];
+	    this.checkStart = checkStart;
+	    this.checkEnd = checkEnd;
+	}
+
+	/**
+	 * Create a context params
+	 * @param {array} context a list of items
+	 * @param {number} currentIndex current item index
+	 */
+	function ContextParams(context, currentIndex) {
+	    this.context = context;
+	    this.index = currentIndex;
+	    this.length = context.length;
+	    this.current = context[currentIndex];
+	    this.backtrack = context.slice(0, currentIndex);
+	    this.lookahead = context.slice(currentIndex + 1);
+	}
+
+	/**
+	 * Create an event instance
+	 * @param {string} eventId event unique id
+	 */
+	function Event(eventId) {
+	    this.eventId = eventId;
+	    this.subscribers = [];
+	}
+
+	/**
+	 * Initialize a core events and auto subscribe required event handlers
+	 * @param {any} events an object that enlists core events handlers
+	 */
+	function initializeCoreEvents(events) {
+	    var this$1 = this;
+
+	    var coreEvents = [
+	        'start', 'end', 'next', 'newToken', 'contextStart',
+	        'contextEnd', 'insertToken', 'removeToken', 'removeRange',
+	        'replaceToken', 'replaceRange', 'composeRUD', 'updateContextsRanges'
+	    ];
+
+	    coreEvents.forEach(function (eventId) {
+	        Object.defineProperty(this$1.events, eventId, {
+	            value: new Event(eventId)
+	        });
+	    });
+
+	    if (!!events) {
+	        coreEvents.forEach(function (eventId) {
+	            var event = events[eventId];
+	            if (typeof event === 'function') {
+	                this$1.events[eventId].subscribe(event);
+	            }
+	        });
+	    }
+	    var requiresContextUpdate = [
+	        'insertToken', 'removeToken', 'removeRange',
+	        'replaceToken', 'replaceRange', 'composeRUD'
+	    ];
+	    requiresContextUpdate.forEach(function (eventId) {
+	        this$1.events[eventId].subscribe(
+	            this$1.updateContextsRanges
+	        );
+	    });
+	}
+
+	/**
+	 * Converts a string into a list of tokens
+	 * @param {any} events tokenizer core events
+	 */
+	function Tokenizer(events) {
+	    this.tokens = [];
+	    this.registeredContexts = {};
+	    this.contextCheckers = [];
+	    this.events = {};
+	    this.registeredModifiers = [];
+
+	    initializeCoreEvents.call(this, events);
+	}
+
+	/**
+	 * Sets the state of a token, usually called by a state modifier.
+	 * @param {string} key state item key
+	 * @param {any} value state item value
+	 */
+	Token.prototype.setState = function(key, value) {
+	    this.state[key] = value;
+	    this.activeState = { key: key, value: this.state[key] };
+	    return this.activeState;
+	};
+
+	Token.prototype.getState = function (stateId) {
+	    return this.state[stateId] || null;
+	};
+
+	/**
+	 * Checks if an index exists in the tokens list.
+	 * @param {number} index token index
+	 */
+	Tokenizer.prototype.inboundIndex = function(index) {
+	    return index >= 0 && index < this.tokens.length;
+	};
+
+	/**
+	 * Compose and apply a list of operations (replace, update, delete)
+	 * @param {array} RUDs replace, update and delete operations
+	 * TODO: Perf. Optimization (lengthBefore === lengthAfter ? dispatch once)
+	 */
+	Tokenizer.prototype.composeRUD = function (RUDs) {
+	    var this$1 = this;
+
+	    var silent = true;
+	    var state = RUDs.map(function (RUD) { return (
+	        this$1[RUD[0]].apply(this$1, RUD.slice(1).concat(silent))
+	    ); });
+	    var hasFAILObject = function (obj) { return (
+	        typeof obj === 'object' &&
+	        obj.hasOwnProperty('FAIL')
+	    ); };
+	    if (state.every(hasFAILObject)) {
+	        return {
+	            FAIL: "composeRUD: one or more operations hasn't completed successfully",
+	            report: state.filter(hasFAILObject)
+	        };
+	    }
+	    this.dispatch('composeRUD', [state.filter(function (op) { return !hasFAILObject(op); })]);
+	};
+
+	/**
+	 * Replace a range of tokens with a list of tokens
+	 * @param {number} startIndex range start index
+	 * @param {number} offset range offset
+	 * @param {token} tokens a list of tokens to replace
+	 * @param {boolean} silent dispatch events and update context ranges
+	 */
+	Tokenizer.prototype.replaceRange = function (startIndex, offset, tokens, silent) {
+	    offset = offset !== null ? offset : this.tokens.length;
+	    var isTokenType = tokens.every(function (token) { return token instanceof Token; });
+	    if (!isNaN(startIndex) && this.inboundIndex(startIndex) && isTokenType) {
+	        var replaced = this.tokens.splice.apply(
+	            this.tokens, [startIndex, offset].concat(tokens)
+	        );
+	        if (!silent) { this.dispatch('replaceToken', [startIndex, offset, tokens]); }
+	        return [replaced, tokens];
+	    } else {
+	        return { FAIL: 'replaceRange: invalid tokens or startIndex.' };
+	    }
+	};
+
+	/**
+	 * Replace a token with another token
+	 * @param {number} index token index
+	 * @param {token} token a token to replace
+	 * @param {boolean} silent dispatch events and update context ranges
+	 */
+	Tokenizer.prototype.replaceToken = function (index, token, silent) {
+	    if (!isNaN(index) && this.inboundIndex(index) && token instanceof Token) {
+	        var replaced = this.tokens.splice(index, 1, token);
+	        if (!silent) { this.dispatch('replaceToken', [index, token]); }
+	        return [replaced[0], token];
+	    } else {
+	        return { FAIL: 'replaceToken: invalid token or index.' };
+	    }
+	};
+
+	/**
+	 * Removes a range of tokens
+	 * @param {number} startIndex range start index
+	 * @param {number} offset range offset
+	 * @param {boolean} silent dispatch events and update context ranges
+	 */
+	Tokenizer.prototype.removeRange = function(startIndex, offset, silent) {
+	    offset = !isNaN(offset) ? offset : this.tokens.length;
+	    var tokens = this.tokens.splice(startIndex, offset);
+	    if (!silent) { this.dispatch('removeRange', [tokens, startIndex, offset]); }
+	    return tokens;
+	};
+
+	/**
+	 * Remove a token at a certain index
+	 * @param {number} index token index
+	 * @param {boolean} silent dispatch events and update context ranges
+	 */
+	Tokenizer.prototype.removeToken = function(index, silent) {
+	    if (!isNaN(index) && this.inboundIndex(index)) {
+	        var token = this.tokens.splice(index, 1);
+	        if (!silent) { this.dispatch('removeToken', [token, index]); }
+	        return token;
+	    } else {
+	        return { FAIL: 'removeToken: invalid token index.' };
+	    }
+	};
+
+	/**
+	 * Insert a list of tokens at a certain index
+	 * @param {array} tokens a list of tokens to insert
+	 * @param {number} index insert the list of tokens at index
+	 * @param {boolean} silent dispatch events and update context ranges
+	 */
+	Tokenizer.prototype.insertToken = function (tokens, index, silent) {
+	    var tokenType = tokens.every(
+	        function (token) { return token instanceof Token; }
+	    );
+	    if (tokenType) {
+	        this.tokens.splice.apply(
+	            this.tokens, [index, 0].concat(tokens)
+	        );
+	        if (!silent) { this.dispatch('insertToken', [tokens, index]); }
+	        return tokens;
+	    } else {
+	        return { FAIL: 'insertToken: invalid token(s).' };
+	    }
+	};
+
+	/**
+	 * A state modifier that is called on 'newToken' event
+	 * @param {string} modifierId state modifier id
+	 * @param {function} condition a predicate function that returns true or false
+	 * @param {function} modifier a function to update token state
+	 */
+	Tokenizer.prototype.registerModifier = function(modifierId, condition, modifier) {
+	    this.events.newToken.subscribe(function(token, contextParams) {
+	        var conditionParams = [token, contextParams];
+	        var canApplyModifier = (
+	            condition === null ||
+	            condition.apply(this, conditionParams) === true
+	        );
+	        var modifierParams = [token, contextParams];
+	        if (canApplyModifier) {
+	            var newStateValue = modifier.apply(this, modifierParams);
+	            token.setState(modifierId, newStateValue);
+	        }
+	    });
+	    this.registeredModifiers.push(modifierId);
+	};
+
+	/**
+	 * Subscribe a handler to an event
+	 * @param {function} eventHandler an event handler function
+	 */
+	Event.prototype.subscribe = function (eventHandler) {
+	    if (typeof eventHandler === 'function') {
+	        return ((this.subscribers.push(eventHandler)) - 1);
+	    } else {
+	        return { FAIL: ("invalid '" + (this.eventId) + "' event handler")};
+	    }
+	};
+
+	/**
+	 * Unsubscribe an event handler
+	 * @param {string} subsId subscription id
+	 */
+	Event.prototype.unsubscribe = function (subsId) {
+	    this.subscribers.splice(subsId, 1);
+	};
+
+	/**
+	 * Sets context params current value index
+	 * @param {number} index context params current value index
+	 */
+	ContextParams.prototype.setCurrentIndex = function(index) {
+	    this.index = index;
+	    this.current = this.context[index];
+	    this.backtrack = this.context.slice(0, index);
+	    this.lookahead = this.context.slice(index + 1);
+	};
+
+	/**
+	 * Get an item at an offset from the current value
+	 * example (current value is 3):
+	 *  1    2   [3]   4    5   |   items values
+	 * -2   -1    0    1    2   |   offset values
+	 * @param {number} offset an offset from current value index
+	 */
+	ContextParams.prototype.get = function (offset) {
+	    switch (true) {
+	        case (offset === 0):
+	            return this.current;
+	        case (offset < 0 && Math.abs(offset) <= this.backtrack.length):
+	            return this.backtrack.slice(offset)[0];
+	        case (offset > 0 && offset <= this.lookahead.length):
+	            return this.lookahead[offset - 1];
+	        default:
+	            return null;
+	    }
+	};
+
+	/**
+	 * Converts a context range into a string value
+	 * @param {contextRange} range a context range
+	 */
+	Tokenizer.prototype.rangeToText = function (range) {
+	    if (range instanceof ContextRange) {
+	        return (
+	            this.getRangeTokens(range)
+	                .map(function (token) { return token.char; }).join('')
+	        );
+	    }
+	};
+
+	/**
+	 * Converts all tokens into a string
+	 */
+	Tokenizer.prototype.getText = function () {
+	    return this.tokens.map(function (token) { return token.char; }).join('');
+	};
+
+	/**
+	 * Get a context by name
+	 * @param {string} contextName context name to get
+	 */
+	Tokenizer.prototype.getContext = function (contextName) {
+	    var context = this.registeredContexts[contextName];
+	    return !!context ? context : null;
+	};
+
+	/**
+	 * Subscribes a new event handler to an event
+	 * @param {string} eventName event name to subscribe to
+	 * @param {function} eventHandler a function to be invoked on event
+	 */
+	Tokenizer.prototype.on = function(eventName, eventHandler) {
+	    var event = this.events[eventName];
+	    if (!!event) {
+	        return event.subscribe(eventHandler);
+	    } else {
+	        return null;
+	    }
+	};
+
+	/**
+	 * Dispatches an event
+	 * @param {string} eventName event name
+	 * @param {any} args event handler arguments
+	 */
+	Tokenizer.prototype.dispatch = function(eventName, args) {
+	    var this$1 = this;
+
+	    var event = this.events[eventName];
+	    if (event instanceof Event) {
+	        event.subscribers.forEach(function (subscriber) {
+	            subscriber.apply(this$1, args || []);
+	        });
+	    }
+	};
+
+	/**
+	 * Register a new context checker
+	 * @param {string} contextName a unique context name
+	 * @param {function} contextStartCheck a predicate function that returns true on context start
+	 * @param {function} contextEndCheck  a predicate function that returns true on context end
+	 * TODO: call tokenize on registration to update context ranges with the new context.
+	 */
+	Tokenizer.prototype.registerContextChecker = function(contextName, contextStartCheck, contextEndCheck) {
+	    if (!!this.getContext(contextName)) { return {
+	        FAIL:
+	        ("context name '" + contextName + "' is already registered.")
+	    }; }
+	    if (typeof contextStartCheck !== 'function') { return {
+	        FAIL:
+	        "missing context start check."
+	    }; }
+	    if (typeof contextEndCheck !== 'function') { return {
+	        FAIL:
+	        "missing context end check."
+	    }; }
+	    var contextCheckers = new ContextChecker(
+	        contextName, contextStartCheck, contextEndCheck
+	    );
+	    this.registeredContexts[contextName] = contextCheckers;
+	    this.contextCheckers.push(contextCheckers);
+	    return contextCheckers;
+	};
+
+	/**
+	 * Gets a context range tokens
+	 * @param {contextRange} range a context range
+	 */
+	Tokenizer.prototype.getRangeTokens = function(range) {
+	    var endIndex = range.startIndex + range.endOffset;
+	    return [].concat(
+	        this.tokens
+	            .slice(range.startIndex, endIndex)
+	    );
+	};
+
+	/**
+	 * Gets the ranges of a context
+	 * @param {string} contextName context name
+	 */
+	Tokenizer.prototype.getContextRanges = function(contextName) {
+	    var context = this.getContext(contextName);
+	    if (!!context) {
+	        return context.ranges;
+	    } else {
+	        return { FAIL: ("context checker '" + contextName + "' is not registered.") };
+	    }
+	};
+
+	/**
+	 * Resets context ranges to run context update
+	 */
+	Tokenizer.prototype.resetContextsRanges = function () {
+	    var registeredContexts = this.registeredContexts;
+	    for (var contextName in registeredContexts) {
+	        if (registeredContexts.hasOwnProperty(contextName)) {
+	            var context = registeredContexts[contextName];
+	            context.ranges = [];
+	        }
+	    }
+	};
+
+	/**
+	 * Updates context ranges
+	 */
+	Tokenizer.prototype.updateContextsRanges = function () {
+	    var this$1 = this;
+
+	    this.resetContextsRanges();
+	    var chars = this.tokens.map(function (token) { return token.char; });
+	    for (var i = 0; i < chars.length; i++) {
+	        var contextParams = new ContextParams(chars, i);
+	        this$1.runContextCheck(contextParams);
+	    }
+	    this.dispatch('updateContextsRanges', [this.registeredContexts]);
+	};
+
+	/**
+	 * Sets the end offset of an open range
+	 * @param {number} offset range end offset
+	 * @param {string} contextName context name
+	 */
+	Tokenizer.prototype.setEndOffset = function (offset, contextName) {
+	    var startIndex = this.getContext(contextName).openRange.startIndex;
+	    var range = new ContextRange(startIndex, offset, contextName);
+	    var ranges = this.getContext(contextName).ranges;
+	    range.rangeId = contextName + "." + (ranges.length);
+	    ranges.push(range);
+	    this.getContext(contextName).openRange = null;
+	    return range;
+	};
+
+	/**
+	 * Runs a context check on the current context
+	 * @param {contextParams} contextParams current context params
+	 */
+	Tokenizer.prototype.runContextCheck = function(contextParams) {
+	    var this$1 = this;
+
+	    var index = contextParams.index;
+	    this.contextCheckers.forEach(function (contextChecker) {
+	        var contextName = contextChecker.contextName;
+	        var openRange = this$1.getContext(contextName).openRange;
+	        if (!openRange && contextChecker.checkStart(contextParams)) {
+	            openRange = new ContextRange(index, null, contextName);
+	            this$1.getContext(contextName).openRange = openRange;
+	            this$1.dispatch('contextStart', [contextName, index]);
+	        }
+	        if (!!openRange && contextChecker.checkEnd(contextParams)) {
+	            var offset = (index - openRange.startIndex) + 1;
+	            var range = this$1.setEndOffset(offset, contextName);
+	            this$1.dispatch('contextEnd', [contextName, range]);
+	        }
+	    });
+	};
+
+	/**
+	 * Converts a text into a list of tokens
+	 * @param {string} text a text to tokenize
+	 */
+	Tokenizer.prototype.tokenize = function (text) {
+	    var this$1 = this;
+
+	    this.tokens = [];
+	    this.resetContextsRanges();
+	    var chars = Array.from(text);
+	    this.dispatch('start');
+	    for (var i = 0; i < chars.length; i++) {
+	        var char = chars[i];
+	        var contextParams = new ContextParams(chars, i);
+	        this$1.dispatch('next', [contextParams]);
+	        this$1.runContextCheck(contextParams);
+	        var token = new Token(char);
+	        this$1.tokens.push(token);
+	        this$1.dispatch('newToken', [token, contextParams]);
+	    }
+	    this.dispatch('end', [this.tokens]);
+	    return this.tokens;
+	};
+
+	// ╭─┄┄┄────────────────────────┄─────────────────────────────────────────────╮
+	// ┊ Character Class Assertions ┊ Checks if a char belongs to a certain class ┊
+	// ╰─╾──────────────────────────┄─────────────────────────────────────────────╯
+	// jscs:disable maximumLineLength
+	/**
+	 * Check if a char is Arabic
+	 * @param {string} c a single char
+	 */
+	function isArabicChar(c) {
+	    return /[\u0600-\u065F\u066A-\u06D2\u06FA-\u06FF]/.test(c);
+	}
+
+	/**
+	 * Check if a char is an isolated arabic char
+	 * @param {string} c a single char
+	 */
+	function isIsolatedArabicChar(char) {
+	    return /[\u0630\u0690\u0621\u0631\u0661\u0671\u0622\u0632\u0672\u0692\u06C2\u0623\u0673\u0693\u06C3\u0624\u0694\u06C4\u0625\u0675\u0695\u06C5\u06E5\u0676\u0696\u06C6\u0627\u0677\u0697\u06C7\u0648\u0688\u0698\u06C8\u0689\u0699\u06C9\u068A\u06CA\u066B\u068B\u06CB\u068C\u068D\u06CD\u06FD\u068E\u06EE\u06FE\u062F\u068F\u06CF\u06EF]/.test(char);
+	}
+
+	/**
+	 * Check if a char is an Arabic Tashkeel char
+	 * @param {string} c a single char
+	 */
+	function isTashkeelArabicChar(char) {
+	    return /[\u0600-\u0605\u060C-\u060E\u0610-\u061B\u061E\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/.test(char);
+	}
+
+	/**
+	 * Check if a char is whitespace char
+	 * @param {string} c a single char
+	 */
+	function isWhiteSpace(c) {
+	    return /\s/.test(c);
+	}
+
+	/**
+	 * Arabic word context checkers
+	 */
+
+	function arabicWordStartCheck(contextParams) {
+	    var char = contextParams.current;
+	    var prevChar = contextParams.get(-1);
+	    return (
+	        // ? arabic first char
+	        (prevChar === null && isArabicChar(char)) ||
+	        // ? arabic char preceded with a non arabic char
+	        (!isArabicChar(prevChar) && isArabicChar(char))
+	    );
+	}
+
+	function arabicWordEndCheck(contextParams) {
+	    var nextChar = contextParams.get(1);
+	    return (
+	        // ? last arabic char
+	        (nextChar === null) ||
+	        // ? next char is not arabic
+	        (!isArabicChar(nextChar))
+	    );
+	}
+	var arabicWordCheck = { arabicWordStartCheck: arabicWordStartCheck, arabicWordEndCheck: arabicWordEndCheck };
+
+	/**
+	 * Arabic sentence context checkers
+	 */
+
+	function arabicSentenceStartCheck(contextParams) {
+	    var char = contextParams.current;
+	    var prevChar = contextParams.get(-1);
+	    return (
+	        // ? an arabic char preceded with a non arabic char
+	        (isArabicChar(char) || isTashkeelArabicChar(char)) &&
+	        !isArabicChar(prevChar)
+	    );
+	}
+
+	function arabicSentenceEndCheck(contextParams) {
+	    var nextChar = contextParams.get(1);
+	    switch (true) {
+	        case nextChar === null:
+	            return true;
+	        case (!isArabicChar(nextChar) && !isTashkeelArabicChar(nextChar)):
+	            var nextIsWhitespace = isWhiteSpace(nextChar);
+	            if (!nextIsWhitespace) { return true; }
+	            if (nextIsWhitespace) {
+	                var arabicCharAhead = false;
+	                arabicCharAhead = (
+	                    contextParams.lookahead.some(
+	                        function (c) { return isArabicChar(c) || isTashkeelArabicChar(c); }
+	                    )
+	                );
+	                if (!arabicCharAhead) { return true; }
+	            }
+	            break;
+	        default:
+	            return false;
+	    }
+	}
+	var arabicSentenceCheck = { arabicSentenceStartCheck: arabicSentenceStartCheck, arabicSentenceEndCheck: arabicSentenceEndCheck };
+
+	/**
+	 * Apply Arabic presentation forms to a range of tokens
+	 */
+	/**
+	 * Check if a char can be connected to it's preceding char
+	 * @param {ContextParams} charContextParams context params of a char
+	 */
+	function willConnectPrev(charContextParams) {
+	    var backtrack = [].concat(charContextParams.backtrack);
+	    for (var i = backtrack.length - 1; i >= 0; i--) {
+	        var prevChar = backtrack[i];
+	        var isolated = isIsolatedArabicChar(prevChar);
+	        var tashkeel = isTashkeelArabicChar(prevChar);
+	        if (!isolated && !tashkeel) { return true; }
+	        if (isolated) { return false; }
+	    }
+	    return false;
+	}
+
+	/**
+	 * Check if a char can be connected to it's proceeding char
+	 * @param {ContextParams} charContextParams context params of a char
+	 */
+	function willConnectNext(charContextParams) {
+	    if (isIsolatedArabicChar(charContextParams.current)) { return false; }
+	    for (var i = 0; i < charContextParams.lookahead.length; i++) {
+	        var nextChar = charContextParams.lookahead[i];
+	        var tashkeel = isTashkeelArabicChar(nextChar);
+	        if (!tashkeel) { return true; }
+	    }
+	    return false;
+	}
+
+	/**
+	 * Apply arabic presentation forms to a list of tokens
+	 * @param {ContextRange} range a range of tokens
+	 */
+	function arabicPresentationForms(range) {
+	    var features = this.features.arab;
+	    var rangeTokens = this.tokenizer.getRangeTokens(range);
+	    if (rangeTokens.length === 1) { return; }
+	    var getSubstitutionIndex = function (substitution) { return (
+	        substitution.length === 1 &&
+	        substitution[0].id === 12 &&
+	        substitution[0].substitution
+	    ); };
+	    var applyForm = function (tag, token, params) {
+	        if (!features.hasOwnProperty(tag)) { return; }
+	        var substitution = features[tag].lookup(params) || null;
+	        var substIndex = getSubstitutionIndex(substitution)[0];
+	        if (substIndex >= 0) {
+	            return token.setState(tag, substIndex);
+	        }
+	    };
+	    var tokensParams = new ContextParams(rangeTokens, 0);
+	    var charContextParams = new ContextParams(rangeTokens.map(function (t){ return t.char; }), 0);
+	    rangeTokens.forEach(function (token, i) {
+	        if (isTashkeelArabicChar(token.char)) { return; }
+	        tokensParams.setCurrentIndex(i);
+	        charContextParams.setCurrentIndex(i);
+	        var CONNECT = 0; // 2 bits 00 (10: can connect next) (01: can connect prev)
+	        if (willConnectPrev(charContextParams)) { CONNECT |= 1; }
+	        if (willConnectNext(charContextParams)) { CONNECT |= 2; }
+	        switch (CONNECT) {
+	            case 0: // isolated * original form
+	                return;
+	            case 1: // fina
+	                applyForm('fina', token, tokensParams);
+	                break;
+	            case 2: // init
+	                applyForm('init', token, tokensParams);
+	                break;
+	            case 3: // medi
+	                applyForm('medi', token, tokensParams);
+	                break;
+	        }
+	    });
+	}
+
+	/**
+	 * Apply Arabic required ligatures feature to a range of tokens
+	 */
+
+	/**
+	 * Apply Arabic required ligatures to a context range
+	 * @param {ContextRange} range a range of tokens
+	 */
+	function arabicRequiredLigatures(range) {
+	    var features = this.features.arab;
+	    if (!features.hasOwnProperty('rlig')) { return; }
+	    var tokens = this.tokenizer.getRangeTokens(range);
+	    for (var i = 0; i < tokens.length; i++) {
+	        var lookupParams = new ContextParams(tokens, i);
+	        var substitution = features.rlig.lookup(lookupParams) || null;
+	        var chainingContext = (
+	            substitution.length === 1 &&
+	            substitution[0].id === 63 &&
+	            substitution[0].substitution
+	        );
+	        var ligature = (
+	            substitution.length === 1 &&
+	            substitution[0].id === 41 &&
+	            substitution[0].substitution[0]
+	        );
+	        var token = tokens[i];
+	        if (!!ligature) {
+	            token.setState('rlig', [ligature.ligGlyph]);
+	            for (var c = 0; c < ligature.components.length; c++) {
+	                var component = ligature.components[c];
+	                var lookaheadToken = lookupParams.get(c + 1);
+	                if (lookaheadToken.activeState.value === component) {
+	                    lookaheadToken.state.deleted = true;
+	                }
+	            }
+	        } else if (chainingContext) {
+	            var substIndex = (
+	                chainingContext &&
+	                chainingContext.length === 1 &&
+	                chainingContext[0].id === 12 &&
+	                chainingContext[0].substitution
+	            );
+	            if (!!substIndex && substIndex >= 0) { token.setState('rlig', substIndex); }
+	        }
+	    }
+	}
+
+	/**
+	 * Infer bidirectional properties for a given text and apply
+	 * the corresponding layout rules.
+	 */
+
+	/**
+	 * Create Bidi. features
+	 * @param {string} baseDir text base direction. value either 'ltr' or 'rtl'
+	 */
+	function Bidi(baseDir) {
+	    this.baseDir = baseDir || 'ltr';
+	    this.tokenizer = new Tokenizer();
+	    this.features = [];
+	}
+
+	/**
+	 * Sets Bidi text
+	 * @param {string} text a text input
+	 */
+	Bidi.prototype.setText = function (text) {
+	    this.text = text;
+	};
+
+	/**
+	 * Store essential context checks:
+	 * arabic word check for applying gsub features
+	 * arabic sentence check for adjusting arabic layout
+	 */
+	Bidi.prototype.contextChecks = ({
+	    arabicWordCheck: arabicWordCheck,
+	    arabicSentenceCheck: arabicSentenceCheck
+	});
+
+	/**
+	 * Register arabic word check
+	 */
+	function registerArabicWordCheck() {
+	    var checks = this.contextChecks.arabicWordCheck;
+	    return this.tokenizer.registerContextChecker(
+	        'arabicWord',
+	        checks.arabicWordStartCheck,
+	        checks.arabicWordEndCheck
+	    );
+	}
+
+	/**
+	 * Register arabic sentence check
+	 */
+	function registerArabicSentenceCheck() {
+	    var checks = this.contextChecks.arabicSentenceCheck;
+	    return this.tokenizer.registerContextChecker(
+	        'arabicSentence',
+	        checks.arabicSentenceStartCheck,
+	        checks.arabicSentenceEndCheck
+	    );
+	}
+
+	/**
+	 * Perform pre tokenization procedure then
+	 * tokenize text input
+	 */
+	function tokenizeText() {
+	    registerArabicWordCheck.call(this);
+	    registerArabicSentenceCheck.call(this);
+	    return this.tokenizer.tokenize(this.text);
+	}
+
+	/**
+	 * Reverse arabic sentence layout
+	 * TODO: check base dir before applying adjustments - priority low
+	 */
+	function reverseArabicSentences() {
+	    var this$1 = this;
+
+	    var ranges = this.tokenizer.getContextRanges('arabicSentence');
+	    ranges.forEach(function (range) {
+	        var rangeTokens = this$1.tokenizer.getRangeTokens(range);
+	        this$1.tokenizer.replaceRange(
+	            range.startIndex,
+	            range.endOffset,
+	            rangeTokens.reverse()
+	        );
+	    });
+	}
+
+	/**
+	 * Subscribe arabic presentation form features
+	 * @param {feature} feature a feature to apply
+	 */
+	Bidi.prototype.subscribeArabicForms = function(feature) {
+	    var this$1 = this;
+
+	    this.tokenizer.events.contextEnd.subscribe(
+	        function (contextName, range) {
+	            if (contextName === 'arabicWord') {
+	                return arabicPresentationForms.call(
+	                    this$1.tokenizer, range, feature
+	                );
+	            }
+	        }
+	    );
+	};
+
+	/**
+	 * Apply Gsub features
+	 * @param {feature} features a list of features
+	 */
+	Bidi.prototype.applyFeatures = function (features) {
+	    var this$1 = this;
+
+	    for (var i = 0; i < features.length; i++) {
+	        var feature = features[i];
+	        if (feature) {
+	            var script = feature.script;
+	            if (!this$1.features[script]) {
+	                this$1.features[script] = {};
+	            }
+	            this$1.features[script][feature.tag] = feature;
+	        }
+	    }
+	};
+
+	/**
+	 * Register a state modifier
+	 * @param {string} modifierId state modifier id
+	 * @param {function} condition a predicate function that returns true or false
+	 * @param {function} modifier a modifier function to set token state
+	 */
+	Bidi.prototype.registerModifier = function (modifierId, condition, modifier) {
+	    this.tokenizer.registerModifier(modifierId, condition, modifier);
+	};
+
+	/**
+	 * Check if 'glyphIndex' is registered
+	 */
+	function checkGlyphIndexStatus() {
+	    if (this.tokenizer.registeredModifiers.indexOf('glyphIndex') === -1) {
+	        throw new Error(
+	            'glyphIndex modifier is required to apply ' +
+	            'arabic presentation features.'
+	        );
+	    }
+	}
+
+	/**
+	 * Apply arabic presentation forms features
+	 */
+	function applyArabicPresentationForms() {
+	    var this$1 = this;
+
+	    if (!this.features.hasOwnProperty('arab')) { return; }
+	    checkGlyphIndexStatus.call(this);
+	    var ranges = this.tokenizer.getContextRanges('arabicWord');
+	    ranges.forEach(function (range) {
+	        arabicPresentationForms.call(this$1, range);
+	    });
+	}
+
+	/**
+	 * Apply required arabic ligatures
+	 */
+	function applyArabicRequireLigatures() {
+	    var this$1 = this;
+
+	    if (!this.features.hasOwnProperty('arab')) { return; }
+	    if (!this.features.arab.hasOwnProperty('rlig')) { return; }
+	    checkGlyphIndexStatus.call(this);
+	    var ranges = this.tokenizer.getContextRanges('arabicWord');
+	    ranges.forEach(function (range) {
+	        arabicRequiredLigatures.call(this$1, range);
+	    });
+	}
+
+	/**
+	 * process text input
+	 * @param {string} text an input text
+	 */
+	Bidi.prototype.processText = function(text) {
+	    if (!this.text || this.text !== text) {
+	        this.setText(text);
+	        tokenizeText.call(this);
+	        applyArabicPresentationForms.call(this);
+	        applyArabicRequireLigatures.call(this);
+	        reverseArabicSentences.call(this);
+	    }
+	};
+
+	/**
+	 * Process a string of text to identify and adjust
+	 * bidirectional text entities.
+	 * @param {string} text input text
+	 */
+	Bidi.prototype.getBidiText = function (text) {
+	    this.processText(text);
+	    return this.tokenizer.getText();
+	};
+
+	/**
+	 * Get the current state index of each token
+	 * @param {text} text an input text
+	 */
+	Bidi.prototype.getTextGlyphs = function (text) {
+	    var this$1 = this;
+
+	    this.processText(text);
+	    var indexes = [];
+	    for (var i = 0; i < this.tokenizer.tokens.length; i++) {
+	        var token = this$1.tokenizer.tokens[i];
+	        if (token.state.deleted) { continue; }
+	        var index = token.activeState.value;
+	        indexes.push(Array.isArray(index) ? index[0] : index);
+	    }
+	    return indexes;
+	};
+
+	/**
+	 * Query a feature by some of it's properties to lookup a glyph substitution.
+	 */
+
+	// DEFAULT TEXT BASE DIRECTION
+	var BASE_DIR = 'ltr';
+
+	/**
+	 * Create feature query instance
+	 * @param {Font} font opentype font instance
+	 * @param {string} baseDir text base direction
+	 */
+	function FeatureQuery(font, baseDir) {
+	    this.font = font;
+	    this.features = {};
+	    BASE_DIR = !!baseDir ? baseDir : BASE_DIR;
+	}
+
+	/**
+	 * Create a new feature lookup
+	 * @param {string} tag feature tag
+	 * @param {feature} feature reference to feature at gsub table
+	 * @param {FeatureLookups} feature lookups associated with this feature
+	 * @param {string} script gsub script tag
+	 */
+	function Feature(tag, feature, featureLookups, script) {
+	    this.tag = tag;
+	    this.featureRef = feature;
+	    this.lookups = featureLookups.lookups;
+	    this.script = script;
+	}
+
+	/**
+	 * Create a coverage table lookup
+	 * @param {any} coverageTable gsub coverage table
+	 */
+	function Coverage$1(coverageTable) {
+	    this.table = coverageTable;
+	}
+
+	/**
+	 * Create a ligature set lookup
+	 * @param {any} ligatureSets gsub ligature set
+	 */
+	function LigatureSets(ligatureSets) {
+	    this.ligatureSets = ligatureSets;
+	}
+
+	/**
+	 * Lookup a glyph ligature
+	 * @param {ContextParams} contextParams context params to lookup
+	 * @param {number} ligSetIndex ligature set index at ligature sets
+	 */
+	LigatureSets.prototype.lookup = function (contextParams, ligSetIndex) {
+	    var ligatureSet = this.ligatureSets[ligSetIndex];
+	    var matchComponents = function (components, indexes) {
+	        if (components.length > indexes.length) { return null; }
+	        for (var c = 0; c < components.length; c++) {
+	            var component = components[c];
+	            var index = indexes[c];
+	            if (component !== index) { return false; }
+	        }
+	        return true;
+	    };
+	    for (var s = 0; s < ligatureSet.length; s++) {
+	        var ligSetItem = ligatureSet[s];
+	        var lookaheadIndexes = contextParams.lookahead.map(
+	            function (token) { return token.activeState.value; }
+	        );
+	        if (BASE_DIR === 'rtl') { lookaheadIndexes.reverse(); }
+	        var componentsMatch = matchComponents(
+	            ligSetItem.components, lookaheadIndexes
+	        );
+	        if (componentsMatch) { return ligSetItem; }
+	    }
+	    return null;
+	};
+
+	/**
+	 * Create a feature substitution
+	 * @param {any} lookups a reference to gsub lookups
+	 * @param {Lookuptable} lookupTable a feature lookup table
+	 * @param {any} subtable substitution table
+	 */
+	function Substitution$1(lookups, lookupTable, subtable) {
+	    this.lookups = lookups;
+	    this.subtable = subtable;
+	    this.lookupTable = lookupTable;
+	    if (subtable.hasOwnProperty('coverage')) {
+	        this.coverage = new Coverage$1(
+	            subtable.coverage
+	        );
+	    }
+	    if (subtable.hasOwnProperty('inputCoverage')) {
+	        this.inputCoverage = subtable.inputCoverage.map(
+	            function (table) { return new Coverage$1(table); }
+	        );
+	    }
+	    if (subtable.hasOwnProperty('backtrackCoverage')) {
+	        this.backtrackCoverage = subtable.backtrackCoverage.map(
+	            function (table) { return new Coverage$1(table); }
+	        );
+	    }
+	    if (subtable.hasOwnProperty('lookaheadCoverage')) {
+	        this.lookaheadCoverage = subtable.lookaheadCoverage.map(
+	            function (table) { return new Coverage$1(table); }
+	        );
+	    }
+	    if (subtable.hasOwnProperty('ligatureSets')) {
+	        this.ligatureSets = new LigatureSets(subtable.ligatureSets);
+	    }
+	}
+
+	/**
+	 * Create a lookup table lookup
+	 * @param {number} index table index at gsub lookups
+	 * @param {any} lookups a reference to gsub lookups
+	 */
+	function LookupTable(index, lookups) {
+	    this.index = index;
+	    this.subtables = lookups[index].subtables.map(
+	        function (subtable) { return new Substitution$1(
+	            lookups, lookups[index], subtable
+	        ); }
+	    );
+	}
+
+	function FeatureLookups(lookups, lookupListIndexes) {
+	    this.lookups = lookupListIndexes.map(
+	        function (index) { return new LookupTable(index, lookups); }
+	    );
+	}
+
+	/**
+	 * Lookup a lookup table subtables
+	 * @param {ContextParams} contextParams context params to lookup
+	 */
+	LookupTable.prototype.lookup = function (contextParams) {
+	    var this$1 = this;
+
+	    var substitutions = [];
+	    for (var i = 0; i < this.subtables.length; i++) {
+	        var subsTable = this$1.subtables[i];
+	        var substitution = subsTable.lookup(contextParams);
+	        if (substitution !== null || substitution.length) {
+	            substitutions = substitutions.concat(substitution);
+	        }
+	    }
+	    return substitutions;
+	};
+
+	/**
+	 * Handle a single substitution - format 2
+	 * @param {ContextParams} contextParams context params to lookup
+	 */
+	function singleSubstitutionFormat2(contextParams) {
+	    var glyphIndex = contextParams.current.activeState.value;
+	    glyphIndex = Array.isArray(glyphIndex) ? glyphIndex[0] : glyphIndex;
+	    var substituteIndex = this.coverage.lookup(glyphIndex);
+	    if (substituteIndex === -1) { return []; }
+	    return [this.subtable.substitute[substituteIndex]];
+	}
+
+	/**
+	 * Lookup a list of coverage tables
+	 * @param {any} coverageList a list of coverage tables
+	 * @param {any} contextParams context params to lookup
+	 */
+	function lookupCoverageList(coverageList, contextParams) {
+	    var lookupList = [];
+	    for (var i = 0; i < coverageList.length; i++) {
+	        var coverage = coverageList[i];
+	        var glyphIndex = contextParams.current.activeState.value;
+	        glyphIndex = Array.isArray(glyphIndex) ? glyphIndex[0] : glyphIndex;
+	        var lookupIndex = coverage.lookup(glyphIndex);
+	        if (lookupIndex !== -1) {
+	            lookupList.push(lookupIndex);
+	        }
+	    }
+	    if (lookupList.length !== coverageList.length) { return -1; }
+	    return lookupList;
+	}
+
+	/**
+	 * Handle chaining context substitution - format 3
+	 * @param {any} contextParams context params to lookup
+	 */
+	function chainingSubstitutionFormat3(contextParams) {
+	    var this$1 = this;
+
+	    var lookupsCount = (
+	        this.inputCoverage.length +
+	        this.lookaheadCoverage.length +
+	        this.backtrackCoverage.length
+	    );
+	    if (contextParams.context.length < lookupsCount) { return []; }
+	    // INPUT LOOKUP //
+	    var inputLookups = lookupCoverageList(
+	        this.inputCoverage, contextParams
+	    );
+	    if (inputLookups === -1) { return []; }
+	    // LOOKAHEAD LOOKUP //
+	    var lookaheadOffset = this.inputCoverage.length - 1;
+	    if (contextParams.lookahead.length < this.lookaheadCoverage.length) { return []; }
+	    var lookaheadContext = contextParams.lookahead.slice(lookaheadOffset);
+	    while (lookaheadContext.length && isTashkeelArabicChar(lookaheadContext[0].char)) {
+	        lookaheadContext.shift();
+	    }
+	    var lookaheadParams = new ContextParams(lookaheadContext, 0);
+	    var lookaheadLookups = lookupCoverageList(
+	        this.lookaheadCoverage, lookaheadParams
+	    );
+	    // BACKTRACK LOOKUP //
+	    var backtrackContext = [].concat(contextParams.backtrack);
+	    backtrackContext.reverse();
+	    while (backtrackContext.length && isTashkeelArabicChar(backtrackContext[0].char)) {
+	        backtrackContext.shift();
+	    }
+	    if (backtrackContext.length < this.backtrackCoverage.length) { return []; }
+	    var backtrackParams = new ContextParams(backtrackContext, 0);
+	    var backtrackLookups = lookupCoverageList(
+	        this.backtrackCoverage, backtrackParams
+	    );
+	    var contextRulesMatch = (
+	        inputLookups.length === this.inputCoverage.length &&
+	        lookaheadLookups.length === this.lookaheadCoverage.length &&
+	        backtrackLookups.length === this.backtrackCoverage.length
+	    );
+	    var substitutions = [];
+	    if (contextRulesMatch) {
+	        var lookupRecords = this.subtable.lookupRecords;
+	        for (var i = 0; i < lookupRecords.length; i++) {
+	            var lookupRecord = lookupRecords[i];
+	            for (var j = 0; j < inputLookups.length; j++) {
+	                var inputContext = new ContextParams([contextParams.get(j)], 0);
+	                var lookupIndex = lookupRecord.lookupListIndex;
+	                var lookupTable = new LookupTable(lookupIndex, this$1.lookups);
+	                var lookup = lookupTable.lookup(inputContext);
+	                substitutions = substitutions.concat(lookup);
+	            }
+	        }
+	    }
+	    return substitutions;
+	}
+
+	/**
+	 * Handle ligature substitution - format 1
+	 * @param {any} contextParams context params to lookup
+	 */
+	function ligatureSubstitutionFormat1(contextParams) {
+	    // COVERAGE LOOKUP //
+	    var glyphIndex = contextParams.current.activeState.value;
+	    var ligSetIndex = this.coverage.lookup(glyphIndex);
+	    if (ligSetIndex === -1) { return []; }
+	    // COMPONENTS LOOKUP * note that components is logically ordered
+	    var ligGlyphs = this.ligatureSets.lookup(contextParams, ligSetIndex);
+	    return ligGlyphs ? [ligGlyphs] : [];
+	}
+
+	/**
+	 * [ LOOKUP TYPES ]
+	 * -------------------------------
+	 * Single                        1;
+	 * Multiple                      2;
+	 * Alternate                     3;
+	 * Ligature                      4;
+	 * Context                       5;
+	 * ChainingContext               6;
+	 * ExtensionSubstitution         7;
+	 * ReverseChainingContext        8;
+	 * -------------------------------
+	 * @param {any} contextParams context params to lookup
+	 */
+	Substitution$1.prototype.lookup = function (contextParams) {
+	    var substitutions = [];
+	    var lookupType = this.lookupTable.lookupType;
+	    var substFormat = this.subtable.substFormat;
+	    if (lookupType === 1 && substFormat === 2) {
+	        var substitution = singleSubstitutionFormat2.call(this, contextParams);
+	        if (substitution.length > 0) {
+	            substitutions.push({ id: 12, substitution: substitution });
+	        }
+	    }
+	    if (lookupType === 6 && substFormat === 3) {
+	        var substitution$1 = chainingSubstitutionFormat3.call(this, contextParams);
+	        if (substitution$1.length > 0) {
+	            substitutions.push({ id: 63, substitution: substitution$1 });
+	        }
+	    }
+	    if (lookupType === 4 && substFormat === 1) {
+	        var substitution$2 = ligatureSubstitutionFormat1.call(this, contextParams);
+	        if (substitution$2.length > 0) {
+	            substitutions.push({ id: 41, substitution: substitution$2 });
+	        }
+	    }
+	    return substitutions;
+	};
+
+	/**
+	 * Lookup a coverage table
+	 * @param {number} glyphIndex to lookup
+	 */
+	Coverage$1.prototype.lookup = function (glyphIndex) {
+	    if (!glyphIndex) { return -1; }
+	    switch (this.table.format) {
+	        case 1:
+	            return this.table.glyphs.indexOf(glyphIndex);
+
+	        case 2:
+	            var ranges = this.table.ranges;
+	            for (var i = 0; i < ranges.length; i++) {
+	                var range = ranges[i];
+	                if (glyphIndex >= range.start && glyphIndex <= range.end) {
+	                    var offset = glyphIndex - range.start;
+	                    return range.index + offset;
+	                }
+	            }
+	            break;
+	        default:
+	            return -1; // not found
+	    }
+	    return -1;
+	};
+
+	/**
+	 * Lookup a feature for a substitution or more
+	 * @param {any} contextParams context params to lookup
+	 */
+	Feature.prototype.lookup = function(contextParams) {
+	    var this$1 = this;
+
+	    var lookups = [];
+	    for (var i = 0; i < this.lookups.length; i++) {
+	        var lookupTable = this$1.lookups[i];
+	        var lookup = lookupTable.lookup(contextParams);
+	        if (lookup !== null || lookup.length) {
+	            lookups = lookups.concat(lookup);
+	        }
+	    }
+	    return lookups;
+	};
+
+	/**
+	 * Get feature indexes of a specific script
+	 * @param {string} scriptTag script tag
+	 */
+	FeatureQuery.prototype.getScriptFeaturesIndexes = function(scriptTag) {
+	    if (!scriptTag) { return []; }
+	    var tables = this.font.tables;
+	    if (!tables.gsub) { return []; }
+	    var scripts = this.font.tables.gsub.scripts;
+	    for (var i = 0; i < scripts.length; i++) {
+	        var script = scripts[i];
+	        if (script.tag === scriptTag) {
+	            var defaultLangSys = script.script.defaultLangSys;
+	            return defaultLangSys.featureIndexes;
+	        } else {
+	            var langSysRecords = script.langSysRecords;
+	            if (!!langSysRecords) {
+	                for (var j = 0; j < langSysRecords.length; j++) {
+	                    var langSysRecord = langSysRecords[j];
+	                    if (langSysRecord.tag === scriptTag) {
+	                        var langSys = langSysRecord.langSys;
+	                        return langSys.featureIndexes;
+	                    }
+	                }
+	            }
+	        }
+	    }
+	    return [];
+	};
+
+	/**
+	 * Map a feature tag to a gsub feature
+	 * @param {any} features gsub features
+	 * @param {*} scriptTag script tag
+	 */
+	FeatureQuery.prototype.mapTagsToFeatures = function (features, scriptTag) {
+	    var this$1 = this;
+
+	    var tags = {};
+	    for (var i = 0; i < features.length; i++) {
+	        var feature = features[i].feature;
+	        var tag = features[i].tag;
+	        var lookups = this$1.font.tables.gsub.lookups;
+	        var featureLookups = new FeatureLookups(lookups, feature.lookupListIndexes);
+	        tags[tag] = new Feature(tag, feature, featureLookups, scriptTag);
+	    }
+	    this.features[scriptTag].tags = tags;
+	};
+
+	/**
+	 * Get features of a specific script
+	 * @param {string} scriptTag script tag
+	 */
+	FeatureQuery.prototype.getScriptFeatures = function (scriptTag) {
+	    var features = this.features[scriptTag];
+	    if (this.features.hasOwnProperty(scriptTag)) { return features; }
+	    var featuresIndexes = this.getScriptFeaturesIndexes(scriptTag);
+	    if (!featuresIndexes) { return null; }
+	    var gsub = this.font.tables.gsub;
+	    features = featuresIndexes.map(function (index) { return gsub.features[index]; });
+	    this.features[scriptTag] = features;
+	    this.mapTagsToFeatures(features, scriptTag);
+	    return features;
+	};
+
+	/**
+	 * Query a feature by it's properties
+	 * @param {any} query an object that describes the properties of a query
+	 */
+	FeatureQuery.prototype.getFeature = function (query) {
+	    if (!this.font) { return { FAIL: "No font was found"}; }
+	    if (!this.features.hasOwnProperty(query.script)) {
+	        this.getScriptFeatures(query.script);
+	    }
+	    return this.features[query.script].tags[query.tag] || null;
+	};
+
+	// The Font object
 
 	/**
 	 * @typedef FontOptions
@@ -11333,13 +12715,24 @@
 	    var this$1 = this;
 
 	    options = options || this.defaultRenderOptions;
-	    // Get glyph indexes
-	    var chars = arrayFromString(s);
-	    var indexes = [];
-	    for (var i = 0; i < chars.length; i += 1) {
-	        var c = chars[i];
-	        indexes.push(this$1.charToGlyphIndex(c));
-	    }
+
+	    var bidi = new Bidi();
+
+	    // Create and register 'glyphIndex' state modifier
+	    var charToGlyphIndexMod = function (token) { return this$1.charToGlyphIndex(token.char); };
+	    bidi.registerModifier('glyphIndex', null, charToGlyphIndexMod);
+
+	    var arabFeatureQuery = new FeatureQuery(this);
+	    var arabFeatures = ['init', 'medi', 'fina', 'rlig'];
+	    bidi.applyFeatures(
+	        arabFeatures.map(function (tag) {
+	            var query = { tag: tag, script: 'arab' };
+	            var feature = arabFeatureQuery.getFeature(query);
+	            if (!!feature) { return feature; }
+	        })
+	    );
+	    var indexes = bidi.getTextGlyphs(s);
+
 	    var length = indexes.length;
 
 	    // Apply substitutions on glyph indexes
@@ -11348,15 +12741,15 @@
 	        var manyToOne = [];
 	        if (options.features.liga) { manyToOne = manyToOne.concat(this.substitution.getFeature('liga', script, options.language)); }
 	        if (options.features.rlig) { manyToOne = manyToOne.concat(this.substitution.getFeature('rlig', script, options.language)); }
-	        for (var i$1 = 0; i$1 < length; i$1 += 1) {
+	        for (var i = 0; i < length; i += 1) {
 	            for (var j = 0; j < manyToOne.length; j++) {
 	                var ligature = manyToOne[j];
 	                var components = ligature.sub;
 	                var compCount = components.length;
 	                var k = 0;
-	                while (k < compCount && components[k] === indexes[i$1 + k]) { k++; }
+	                while (k < compCount && components[k] === indexes[i + k]) { k++; }
 	                if (k === compCount) {
-	                    indexes.splice(i$1, compCount, ligature.by);
+	                    indexes.splice(i, compCount, ligature.by);
 	                    length = length - compCount + 1;
 	                }
 	            }
@@ -11366,8 +12759,8 @@
 	    // convert glyph indexes to glyph objects
 	    var glyphs = new Array(length);
 	    var notdef = this.glyphs.get(0);
-	    for (var i$2 = 0; i$2 < length; i$2 += 1) {
-	        glyphs[i$2] = this$1.glyphs.get(indexes[i$2]) || notdef;
+	    for (var i$1 = 0; i$1 < length; i$1 += 1) {
+	        glyphs[i$1] = this$1.glyphs.get(indexes[i$1]) || notdef;
 	    }
 	    return glyphs;
 	};
