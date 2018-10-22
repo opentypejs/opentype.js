@@ -1,3 +1,7 @@
+0.11.0 (October 22, 2018)
+=====================
+* Support Arabic text rendering (PR #359, fixes #46) (thanks @solomancode!)
+
 0.10.0 (August 14, 2018)
 =====================
 * font.download(): use window.URL instead of window.requestFileSystem, which works on a larger set of browsers : Chrome (32+), Opera (19+), Firefox (26+), Safari (7.1+), and all of Edge.
