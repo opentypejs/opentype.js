@@ -37,7 +37,7 @@ Features
 * Support for kerning (Using GPOS or the kern table).
 * Support for ligatures.
 * Support for TrueType font hinting.
-* Support rendering of arabic (See #359)
+* Support arabic text rendering (See #359)
 * Very efficient.
 * Runs in the browser and Node.js.
 
