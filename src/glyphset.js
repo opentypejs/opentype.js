@@ -32,7 +32,9 @@ function GlyphSet(font, glyphs) {
     this.glyphs = {};
     if (Array.isArray(glyphs)) {
         for (let i = 0; i < glyphs.length; i++) {
-            this.glyphs[i] = glyphs[i];
+            const glyph = glyphs[i];
+            glyph.path.unitsPerEm = font.unitsPerEm;
+            this.glyphs[i] = glyph;
         }
     }
 
