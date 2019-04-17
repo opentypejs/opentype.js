@@ -9,7 +9,6 @@ import Substitution from './substitution';
 import { isBrowser, checkArgument, arrayBufferToNodeBuffer } from './util';
 import HintingTrueType from './hintingtt';
 import Bidi from './bidi';
-import FeatureQuery from './features/featureQuery';
 
 /**
  * @typedef FontOptions
@@ -148,6 +147,24 @@ Font.prototype.charToGlyph = function(c) {
 };
 
 /**
+ * Update features
+ * @param {any} options features options
+ */
+Font.prototype.updateFeatures = function (options) {
+    // TODO: update all features options not only 'latn'.
+    return this.defaultRenderOptions.features.map(feature => {
+        if (feature.script === 'latn') {
+            return {
+                script: 'latn',
+                tags: feature.tags.filter(tag => options[tag])
+            };
+        } else {
+            return feature;
+        }
+    });
+};
+
+/**
  * Convert the given text to a list of Glyph objects.
  * Note that there is no strict one-to-one mapping between characters and
  * glyphs, so the list of returned glyphs can be larger or smaller than the
@@ -157,7 +174,6 @@ Font.prototype.charToGlyph = function(c) {
  * @return {opentype.Glyph[]}
  */
 Font.prototype.stringToGlyphs = function(s, options) {
-    options = options || this.defaultRenderOptions;
 
     const bidi = new Bidi();
 
@@ -165,39 +181,16 @@ Font.prototype.stringToGlyphs = function(s, options) {
     const charToGlyphIndexMod = token => this.charToGlyphIndex(token.char);
     bidi.registerModifier('glyphIndex', null, charToGlyphIndexMod);
 
-    const arabFeatureQuery = new FeatureQuery(this);
-    const arabFeatures = ['init', 'medi', 'fina', 'rlig'];
-    bidi.applyFeatures(
-        arabFeatures.map(tag => {
-            let query = { tag, script: 'arab' };
-            let feature = arabFeatureQuery.getFeature(query);
-            if (!!feature) return feature;
-        })
-    );
+    // roll-back to default features
+    let features = options ?
+    this.updateFeatures(options.features) :
+    this.defaultRenderOptions.features;
+
+    bidi.applyFeatures(this, features);
+
     const indexes = bidi.getTextGlyphs(s);
 
     let length = indexes.length;
-
-    // Apply substitutions on glyph indexes
-    if (options.features) {
-        const script = options.script || this.substitution.getDefaultScriptName();
-        let manyToOne = [];
-        if (options.features.liga) manyToOne = manyToOne.concat(this.substitution.getFeature('liga', script, options.language));
-        if (options.features.rlig) manyToOne = manyToOne.concat(this.substitution.getFeature('rlig', script, options.language));
-        for (let i = 0; i < length; i += 1) {
-            for (let j = 0; j < manyToOne.length; j++) {
-                const ligature = manyToOne[j];
-                const components = ligature.sub;
-                const compCount = components.length;
-                let k = 0;
-                while (k < compCount && components[k] === indexes[i + k]) k++;
-                if (k === compCount) {
-                    indexes.splice(i, compCount, ligature.by);
-                    length = length - compCount + 1;
-                }
-            }
-        }
-    }
 
     // convert glyph indexes to glyph objects
     const glyphs = new Array(length);
@@ -278,10 +271,14 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
  */
 Font.prototype.defaultRenderOptions = {
     kerning: true,
-    features: {
-        liga: true,
-        rlig: true
-    }
+    features: [
+        /**
+         * these 4 features are required to render Arabic text properly
+         * and shouldn't be turned off when rendering arabic text.
+         */
+        { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
+        { script: 'latn', tags: ['liga', 'rlig'] }
+    ]
 };
 
 /**

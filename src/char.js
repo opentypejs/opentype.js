@@ -27,6 +27,14 @@ export function isTashkeelArabicChar(char) {
 }
 
 /**
+ * Check if a char is Latin
+ * @param {string} c a single char
+ */
+export function isLatinChar(c) {
+    return /[A-z]/.test(c);
+}
+
+/**
  * Check if a char is whitespace char
  * @param {string} c a single char
  */

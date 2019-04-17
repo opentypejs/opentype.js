@@ -1,5 +1,5 @@
 /**
- * Apply Arabic required ligatures feature to a range of tokens
+ * Apply Latin ligature feature to a range of tokens
  */
 
 import { ContextParams } from '../../tokenizer';
@@ -19,14 +19,14 @@ function getContextParams(tokens, index) {
  * Apply Arabic required ligatures to a context range
  * @param {ContextRange} range a range of tokens
  */
-function arabicRequiredLigatures(range) {
-    const script = 'arab';
+function latinLigature(range) {
+    const script = 'latn';
     let tokens = this.tokenizer.getRangeTokens(range);
     let contextParams = getContextParams(tokens);
     contextParams.context.forEach((glyphIndex, index) => {
         contextParams.setCurrentIndex(index);
         let substitutions = this.query.lookupFeature({
-            tag: 'rlig', script, contextParams
+            tag: 'liga', script, contextParams
         });
         if (substitutions.length) {
             substitutions.forEach(
@@ -37,5 +37,4 @@ function arabicRequiredLigatures(range) {
     });
 }
 
-export default arabicRequiredLigatures;
-export { arabicRequiredLigatures };
+export default latinLigature;

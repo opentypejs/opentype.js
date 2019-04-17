@@ -4,10 +4,13 @@
  */
 
 import Tokenizer from './tokenizer';
+import FeatureQuery from './features/featureQuery';
 import arabicWordCheck from './features/arab/contextCheck/arabicWord';
 import arabicSentenceCheck from './features/arab/contextCheck/arabicSentence';
 import arabicPresentationForms from './features/arab/arabicPresentationForms';
 import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures';
+import latinWordCheck from './features/latn/contextCheck/latinWord';
+import latinLigature from './features/latn/latinLigatures';
 
 /**
  * Create Bidi. features
@@ -16,7 +19,7 @@ import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures';
 function Bidi(baseDir) {
     this.baseDir = baseDir || 'ltr';
     this.tokenizer = new Tokenizer();
-    this.features = [];
+    this.featuresTags = {};
 }
 
 /**
@@ -33,6 +36,7 @@ Bidi.prototype.setText = function (text) {
  * arabic sentence check for adjusting arabic layout
  */
 Bidi.prototype.contextChecks = ({
+    latinWordCheck,
     arabicWordCheck,
     arabicSentenceCheck
 });
@@ -40,24 +44,10 @@ Bidi.prototype.contextChecks = ({
 /**
  * Register arabic word check
  */
-function registerArabicWordCheck() {
-    const checks = this.contextChecks.arabicWordCheck;
+function registerContextChecker(checkId) {
+    const check = this.contextChecks[`${checkId}Check`];
     return this.tokenizer.registerContextChecker(
-        'arabicWord',
-        checks.arabicWordStartCheck,
-        checks.arabicWordEndCheck
-    );
-}
-
-/**
- * Register arabic sentence check
- */
-function registerArabicSentenceCheck() {
-    const checks = this.contextChecks.arabicSentenceCheck;
-    return this.tokenizer.registerContextChecker(
-        'arabicSentence',
-        checks.arabicSentenceStartCheck,
-        checks.arabicSentenceEndCheck
+        checkId, check.startCheck, check.endCheck
     );
 }
 
@@ -66,8 +56,9 @@ function registerArabicSentenceCheck() {
  * tokenize text input
  */
 function tokenizeText() {
-    registerArabicWordCheck.call(this);
-    registerArabicSentenceCheck.call(this);
+    registerContextChecker.call(this, 'latinWord');
+    registerContextChecker.call(this, 'arabicWord');
+    registerContextChecker.call(this, 'arabicSentence');
     return this.tokenizer.tokenize(this.text);
 }
 
@@ -88,35 +79,37 @@ function reverseArabicSentences() {
 }
 
 /**
- * Subscribe arabic presentation form features
- * @param {feature} feature a feature to apply
+ * Register supported features tags
+ * @param {script} script script tag
+ * @param {Array} tags features tags list
  */
-Bidi.prototype.subscribeArabicForms = function(feature) {
-    this.tokenizer.events.contextEnd.subscribe(
-        (contextName, range) => {
-            if (contextName === 'arabicWord') {
-                return arabicPresentationForms.call(
-                    this.tokenizer, range, feature
-                );
-            }
-        }
+Bidi.prototype.registerFeatures = function (script, tags) {
+    const supportedTags = tags.filter(
+        tag => this.query.supports({script, tag})
     );
+    if (!this.featuresTags.hasOwnProperty(script)) {
+        this.featuresTags[script] = supportedTags;
+    } else {
+        this.featuresTags[script] =
+        this.featuresTags[script].concat(supportedTags);
+    }
 };
 
 /**
- * Apply Gsub features
- * @param {feature} features a list of features
+ * Apply GSUB features
+ * @param {Array} tagsList a list of features tags
+ * @param {string} script a script tag
+ * @param {Font} font opentype font instance
  */
-Bidi.prototype.applyFeatures = function (features) {
-    for (let i = 0; i < features.length; i++) {
-        const feature = features[i];
-        if (feature) {
-            const script = feature.script;
-            if (!this.features[script]) {
-                this.features[script] = {};
-            }
-            this.features[script][feature.tag] = feature;
-        }
+Bidi.prototype.applyFeatures = function (font, features) {
+    if (!font) throw new Error(
+        'No valid font was provided to apply features'
+    );
+    if (!this.query) this.query = new FeatureQuery(font);
+    for (let f = 0; f < features.length; f++) {
+        const feature = features[f];
+        if (!this.query.supports({script: feature.script})) continue;
+        this.registerFeatures(feature.script, feature.tags);
     }
 };
 
@@ -146,7 +139,8 @@ function checkGlyphIndexStatus() {
  * Apply arabic presentation forms features
  */
 function applyArabicPresentationForms() {
-    if (!this.features.hasOwnProperty('arab')) return;
+    const script = 'arab';
+    if (!this.featuresTags.hasOwnProperty(script)) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('arabicWord');
     ranges.forEach(range => {
@@ -158,14 +152,55 @@ function applyArabicPresentationForms() {
  * Apply required arabic ligatures
  */
 function applyArabicRequireLigatures() {
-    if (!this.features.hasOwnProperty('arab')) return;
-    if (!this.features.arab.hasOwnProperty('rlig')) return;
+    const script = 'arab';
+    if (!this.featuresTags.hasOwnProperty(script)) return;
+    const tags = this.featuresTags[script];
+    if (tags.indexOf('rlig') === -1) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('arabicWord');
     ranges.forEach(range => {
         arabicRequiredLigatures.call(this, range);
     });
 }
+
+/**
+ * Apply required arabic ligatures
+ */
+function applyLatinLigatures() {
+    const script = 'latn';
+    if (!this.featuresTags.hasOwnProperty(script)) return;
+    const tags = this.featuresTags[script];
+    if (tags.indexOf('liga') === -1) return;
+    checkGlyphIndexStatus.call(this);
+    const ranges = this.tokenizer.getContextRanges('latinWord');
+    ranges.forEach(range => {
+        latinLigature.call(this, range);
+    });
+}
+
+/**
+ * Check if a context is registered
+ * @param {string} contextId context id
+ */
+Bidi.prototype.checkContextReady = function (contextId) {
+    return !!this.tokenizer.getContext(contextId);
+};
+
+/**
+ * Apply features to registered contexts
+ */
+Bidi.prototype.applyFeaturesToContexts = function () {
+    if (this.checkContextReady('arabicWord')) {
+        applyArabicPresentationForms.call(this);
+        applyArabicRequireLigatures.call(this);
+    }
+    if (this.checkContextReady('latinWord')) {
+        applyLatinLigatures.call(this);
+    }
+    if (this.checkContextReady('arabicSentence')) {
+        reverseArabicSentences.call(this);
+    }
+};
 
 /**
  * process text input
@@ -175,9 +210,7 @@ Bidi.prototype.processText = function(text) {
     if (!this.text || this.text !== text) {
         this.setText(text);
         tokenizeText.call(this);
-        applyArabicPresentationForms.call(this);
-        applyArabicRequireLigatures.call(this);
-        reverseArabicSentences.call(this);
+        this.applyFeaturesToContexts();
     }
 };
 
