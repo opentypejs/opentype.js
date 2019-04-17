@@ -3,8 +3,8 @@
 
 opentype.js is a JavaScript parser and writer for TrueType and OpenType fonts.
 
-It gives you access to the <strong>letterforms</strong> of text from the browser or Node.js.  
-See [the project website](https://opentype.js.org/) for a live demo.
+It gives you access to the <strong>letterforms</strong> of text from the browser or Node.js.
+See [https://opentype.js.org/](https://opentype.js.org/) for a live demo.
 
 Features
 ========
@@ -14,8 +14,8 @@ Features
 * Support for kerning (Using GPOS or the kern table).
 * Support for ligatures.
 * Support for TrueType font hinting.
-* Support arabic text rendering (See #359)
-* Very efficient.
+* Support arabic text rendering (See issue #364 & PR #359 #361)
+* A low memory mode is available as an option (see #329)
 * Runs in the browser and Node.js.
 
 Installation
@@ -25,7 +25,9 @@ Installation
 
     npm install opentype.js
 
-OpenType.js uses ES6-style imports, so debugging it in Node.js requires running `npm run build` first. Use `npm run watch` to automatically rebuild when files change.
+    var fontkit = require('fontkit');
+
+Note: OpenType.js uses ES6-style imports, so if you want to edit it and debug it in Node.js run `npm run build` first and use `npm run watch` to automatically rebuild when files change.
 
 ### Directly
 
@@ -37,7 +39,7 @@ folder. These are compiled.
 To use via a CDN, include the following code in your html:
 
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
-    
+
 ### Using Bower (Deprecated [see official post](https://bower.io/blog/2017/how-to-migrate-away-from-bower/))
 
 To install using [Bower](https://bower.io/), enter the following command in your project directory:
@@ -57,22 +59,22 @@ API
 Use `opentype.load(url, callback)` to load a font from a URL. Since this method goes out the network, it is asynchronous.
 The callback gets `(err, font)` where `font` is a `Font` object. Check if the `err` is null before using the font.
 ```javascript
-    opentype.load('fonts/Roboto-Black.ttf', function(err, font) {
-        if (err) {
-            alert('Font could not be loaded: ' + err);
-        } else {
-            // Now let's display it on a canvas with id "canvas"
-            var ctx = document.getElementById('canvas').getContext('2d');
-            
-            // Construct a Path object containing the letter shapes of the given text.
-            // The other parameters are x, y and fontSize.
-            // Note that y is the position of the baseline.
-            var path = font.getPath('Hello, World!', 0, 150, 72);
-            
-            // If you just want to draw the text you can also use font.draw(ctx, text, x, y, fontSize).
-            path.draw(ctx);
-        }
-    });
+opentype.load('fonts/Roboto-Black.ttf', function(err, font) {
+    if (err) {
+        alert('Font could not be loaded: ' + err);
+    } else {
+        // Now let's display it on a canvas with id "canvas"
+        var ctx = document.getElementById('canvas').getContext('2d');
+
+        // Construct a Path object containing the letter shapes of the given text.
+        // The other parameters are x, y and fontSize.
+        // Note that y is the position of the baseline.
+        var path = font.getPath('Hello, World!', 0, 150, 72);
+
+        // If you just want to draw the text you can also use font.draw(ctx, text, x, y, fontSize).
+        path.draw(ctx);
+    }
+});
 ```
 
 If you already have an `ArrayBuffer`, you can use `opentype.parse(buffer)` to parse the buffer. This method always
@@ -94,35 +96,35 @@ back out as a binary file.
 In the browser, you can use `Font.download()` to instruct the browser to download a binary .OTF file. The name is based
 on the font name.
 ```javascript
-    // Create the bézier paths for each of the glyphs.
-    // Note that the .notdef glyph is required.
-    var notdefGlyph = new opentype.Glyph({
-        name: '.notdef',
-        unicode: 0,
-        advanceWidth: 650,
-        path: new opentype.Path()
-    });
+// Create the bézier paths for each of the glyphs.
+// Note that the .notdef glyph is required.
+var notdefGlyph = new opentype.Glyph({
+    name: '.notdef',
+    unicode: 0,
+    advanceWidth: 650,
+    path: new opentype.Path()
+});
 
-    var aPath = new opentype.Path();
-    aPath.moveTo(100, 0);
-    aPath.lineTo(100, 700);
-    // more drawing instructions...
-    var aGlyph = new opentype.Glyph({
-        name: 'A',
-        unicode: 65,
-        advanceWidth: 650,
-        path: aPath
-    });
+var aPath = new opentype.Path();
+aPath.moveTo(100, 0);
+aPath.lineTo(100, 700);
+// more drawing instructions...
+var aGlyph = new opentype.Glyph({
+    name: 'A',
+    unicode: 65,
+    advanceWidth: 650,
+    path: aPath
+});
 
-    var glyphs = [notdefGlyph, aGlyph];
-    var font = new opentype.Font({
-        familyName: 'OpenTypeSans',
-        styleName: 'Medium',
-        unitsPerEm: 1000,
-        ascender: 800,
-        descender: -200,
-        glyphs: glyphs});
-    font.download();
+var glyphs = [notdefGlyph, aGlyph];
+var font = new opentype.Font({
+    familyName: 'OpenTypeSans',
+    styleName: 'Medium',
+    unitsPerEm: 1000,
+    ascender: 800,
+    descender: -200,
+    glyphs: glyphs});
+font.download();
 ```
 
 If you want to inspect the font, use `font.toTables()` to generate an object showing the data structures that map
