@@ -70,9 +70,8 @@ describe('glyph.js', function() {
     });
 });
 
-
 describe('glyph.js on low memory mode', function() {
-    let opt = {lowMemory:true};
+    let opt = {lowMemory: true};
 
     describe('lazy loading', function() {
         let font;

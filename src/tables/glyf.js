@@ -332,7 +332,7 @@ function parseGlyfTableOnLowMemory(data, start, loca, font) {
             glyphs.push(i, glyphset.ttfGlyphLoader(font, i, parseGlyph, data, start + offset, buildPath));
         } else {
             glyphs.push(i, glyphset.glyphLoader(font, i));
-        }    
+        }
     };
 
     return glyphs;

@@ -277,15 +277,14 @@ function addGlyphNamesToUnicodeMap(font) {
 
     for (let i = 0; i < charCodes.length; i += 1) {
         const c = charCodes[i];
-        
         let glyphIndex = glyphIndexMap[c];
         if (font._IndexToUnicodeMap[glyphIndex] === undefined) {
             font._IndexToUnicodeMap[glyphIndex] = {
-                unicodes : [parseInt(c)]
+                unicodes: [parseInt(c)]
             };
-        }
-        else
+        } else {
             font._IndexToUnicodeMap[glyphIndex].unicodes.push(parseInt(c));
+        }
     }
 }
 
@@ -295,12 +294,12 @@ function addGlyphNamesToUnicodeMap(font) {
  * @param {Object}
  */
 function addGlyphNames(font, opt) {
-    if (opt.lowMemory)
+    if (opt.lowMemory) {
         addGlyphNamesToUnicodeMap(font);
-    else
+    } else {
         addGlyphNamesAll(font);
+    }
 }
-
 
 export {
     cffStandardStrings,

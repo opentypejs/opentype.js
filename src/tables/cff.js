@@ -80,7 +80,6 @@ function parseCFFIndex(data, start, conversionFn) {
     return {objects: objects, startOffset: start, endOffset: endOffset};
 }
 
-
 function parseCFFIndexLowMemory(data, start) {
     const offsets = [];
     const count = parse.getCard16(data, start);
@@ -104,7 +103,7 @@ function parseCFFIndexLowMemory(data, start) {
     return {offsets: offsets, startOffset: start, endOffset: endOffset};
 }
 function getCffIndexObject(i, offsets, data, start, conversionFn) {
-    const count = parse.getCard16(data, start);    
+    const count = parse.getCard16(data, start);
     let objectOffset = 0;
     if (count !== 0) {
         const offsetSize = parse.getByte(data, start + 2);
@@ -115,9 +114,8 @@ function getCffIndexObject(i, offsets, data, start, conversionFn) {
     if (conversionFn) {
         value = conversionFn(value);
     }
-    return value;    
+    return value;
 }
-
 
 // Parse a `CFF` DICT real value.
 function parseFloatOperand(parser) {
@@ -1009,12 +1007,10 @@ function parseCFFTable(data, start, font, opt) {
     if (opt.lowMemory) {
         charStringsIndex = parseCFFIndexLowMemory(data, start + topDict.charStrings);
         font.nGlyphs = charStringsIndex.offsets.length;
-    }
-    else {
+    } else {
         charStringsIndex = parseCFFIndex(data, start + topDict.charStrings);
         font.nGlyphs = charStringsIndex.objects.length;
     }
-        
 
     const charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
     if (topDict.encoding === 0) {
@@ -1036,8 +1032,7 @@ function parseCFFTable(data, start, font, opt) {
             const charString = getCffIndexObject(i, charStringsIndex.offsets, data, start + topDict.charStrings);
             font.glyphs.push(i, glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
         };
-    }
-    else {
+    } else {
         for (let i = 0; i < font.nGlyphs; i += 1) {
             const charString = charStringsIndex.objects[i];
             font.glyphs.push(i, glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));

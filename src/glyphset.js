@@ -52,14 +52,14 @@ GlyphSet.prototype.get = function(index) {
         if (typeof this.glyphs[index] === 'function') {
             this.glyphs[index] = this.glyphs[index]();
         }
-        
+
         let glyph = this.glyphs[index];
-                
         let unicodeObj = this.font._IndexToUnicodeMap[index];
+
         if (unicodeObj) {
-            for(let j=0; j<unicodeObj.unicodes.length; j++)
+            for (let j = 0; j < unicodeObj.unicodes.length; j++)
                 glyph.addUnicode(unicodeObj.unicodes[j]);
-        } 
+        }
 
         if (this.font.cffEncoding) {
             if (this.font.isCIDFont) {
@@ -69,15 +69,14 @@ GlyphSet.prototype.get = function(index) {
             }
         } else if (this.font.glyphNames.names) {
             glyph.name = this.font.glyphNames.glyphIndexToName(index);
-        }        
+        }
 
         this.glyphs[index].advanceWidth = this.font._hmtxTableData[index].advanceWidth;
         this.glyphs[index].leftSideBearing = this.font._hmtxTableData[index].leftSideBearing;
-    }
-    else {
+    } else {
         if (typeof this.glyphs[index] === 'function') {
             this.glyphs[index] = this.glyphs[index]();
-        }        
+        }
     }
 
     return this.glyphs[index];

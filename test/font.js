@@ -46,7 +46,7 @@ describe('font.js', function() {
         });
 
         it('works on fonts with coverage table format 2 on low memory mode', function() {
-            const vibur = loadSync('./fonts/Vibur.woff', {lowMemory:true});
+            const vibur = loadSync('./fonts/Vibur.woff', {lowMemory: true});
             const glyphs = vibur.stringToGlyphs('er');
             assert.equal(glyphs.length, 1);
             assert.equal(glyphs[0].name, 'er');

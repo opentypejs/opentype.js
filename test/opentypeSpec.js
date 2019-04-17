@@ -76,11 +76,8 @@ describe('opentype.js', function() {
     });
 });
 
-
-
-
 describe('opentype.js on low memory mode', function() {
-    const opt = { lowMemory:true };
+    const opt = { lowMemory: true };
 
     it('can load a TrueType font', function() {
         const font = loadSync('./fonts/Roboto-Black.ttf', opt);

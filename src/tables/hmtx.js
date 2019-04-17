@@ -35,8 +35,8 @@ function parseHmtxTableOnLowMemory(font, data, start, numMetrics, numGlyphs) {
         }
 
         font._hmtxTableData[i] = {
-            advanceWidth : advanceWidth,
-            leftSideBearing : leftSideBearing
+            advanceWidth: advanceWidth,
+            leftSideBearing: leftSideBearing
         };
     }
 }
