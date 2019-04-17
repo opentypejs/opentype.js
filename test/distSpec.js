@@ -32,7 +32,7 @@ describe('opentype.js dist on low memory mode', function() {
         var font = opentype.loadSync('./fonts/Roboto-Black.ttf', {lowMemory: true});
         assert.deepEqual(font.names.fontFamily, {en: 'Roboto Black'});
         assert.equal(font.unitsPerEm, 2048);
-        assert.equal(font.glyphs.length, 1294);
+        assert.equal(font.glyphs.length, 0);
     });
 });
 
