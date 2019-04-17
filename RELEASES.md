@@ -1,6 +1,7 @@
 0.12.0 (April 17, 2019)
 =====================
 * Fix Glyph.getPath() issue (PR #362, fixes #363) (thanks @solomancode!)
+* Add lowMemory mode (PR #329) (thanks @debussy2k!)
 * Update README (PR #377) (thanks @jolg42!)
 
 0.11.0 (October 22, 2018)
