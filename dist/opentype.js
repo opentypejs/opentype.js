@@ -3457,7 +3457,7 @@
 	        xScale = yScale = 1;
 	    } else {
 	        commands = this.path.commands;
-	        var scale = 1 / this.path.unitsPerEm * fontSize;
+	        var scale = 1 / (this.path.unitsPerEm || 1000) * fontSize;
 	        if (xScale === undefined) { xScale = scale; }
 	        if (yScale === undefined) { yScale = scale; }
 	    }
@@ -3705,7 +3705,9 @@
 	    this.glyphs = {};
 	    if (Array.isArray(glyphs)) {
 	        for (var i = 0; i < glyphs.length; i++) {
-	            this$1.glyphs[i] = glyphs[i];
+	            var glyph = glyphs[i];
+	            glyph.path.unitsPerEm = font.unitsPerEm;
+	            this$1.glyphs[i] = glyph;
 	        }
 	    }
 
