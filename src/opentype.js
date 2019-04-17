@@ -164,9 +164,12 @@ function uncompressTable(data, tableEntry) {
  * Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
  * Throws an error if the font could not be parsed.
  * @param  {ArrayBuffer}
+ * @param  {Object} opt - options for parsing
  * @return {opentype.Font}
  */
-function parseBuffer(buffer) {
+function parseBuffer(buffer, opt) {
+    opt = (opt === undefined || opt === null) ?  {} : opt;
+
     let indexToLocFormat;
     let ltagTable;
 
@@ -314,17 +317,17 @@ function parseBuffer(buffer) {
         const locaTable = uncompressTable(data, locaTableEntry);
         const locaOffsets = loca.parse(locaTable.data, locaTable.offset, font.numGlyphs, shortVersion);
         const glyfTable = uncompressTable(data, glyfTableEntry);
-        font.glyphs = glyf.parse(glyfTable.data, glyfTable.offset, locaOffsets, font);
+        font.glyphs = glyf.parse(glyfTable.data, glyfTable.offset, locaOffsets, font, opt);
     } else if (cffTableEntry) {
         const cffTable = uncompressTable(data, cffTableEntry);
-        cff.parse(cffTable.data, cffTable.offset, font);
+        cff.parse(cffTable.data, cffTable.offset, font, opt);
     } else {
         throw new Error('Font doesn\'t contain TrueType or CFF outlines.');
     }
 
     const hmtxTable = uncompressTable(data, hmtxTableEntry);
-    hmtx.parse(hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
-    addGlyphNames(font);
+    hmtx.parse(font, hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs, opt);
+    addGlyphNames(font, opt);
 
     if (kernTableEntry) {
         const kernTable = uncompressTable(data, kernTableEntry);
@@ -368,7 +371,7 @@ function parseBuffer(buffer) {
  * @param  {string} url - The URL of the font to load.
  * @param  {Function} callback - The callback.
  */
-function load(url, callback) {
+function load(url, callback, opt) {
     const isNode = typeof window === 'undefined';
     const loadFn = isNode ? loadFromFile : loadFromUrl;
     loadFn(url, function(err, arrayBuffer) {
@@ -377,7 +380,7 @@ function load(url, callback) {
         }
         let font;
         try {
-            font = parseBuffer(arrayBuffer);
+            font = parseBuffer(arrayBuffer, opt);
         } catch (e) {
             return callback(e, null);
         }
@@ -390,12 +393,13 @@ function load(url, callback) {
  * When done, returns the font object or throws an error.
  * @alias opentype.loadSync
  * @param  {string} url - The URL of the font to load.
+ * @param  {Object} opt - opt.lowMemory
  * @return {opentype.Font}
  */
-function loadSync(url) {
+function loadSync(url, opt) {
     const fs = require('fs');
     const buffer = fs.readFileSync(url);
-    return parseBuffer(nodeBufferToArrayBuffer(buffer));
+    return parseBuffer(nodeBufferToArrayBuffer(buffer), opt);
 }
 
 export {
