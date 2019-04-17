@@ -1,3 +1,35 @@
+1.0.0 (April 17, 2019)
+
+* Render arabic rtl text properly (PR #361, partial fix of #364) (thanks @solomancode!)
+* #361 introduced a breaking change to `Font.prototype.defaultRenderOptions`
+Before
+```js
+Font.prototype.defaultRenderOptions = {
+    kerning: true,
+    features: {
+        liga: true,
+        rlig: true
+    }
+};
+```
+
+Now
+```js
+Font.prototype.defaultRenderOptions = {
+    kerning: true,
+    features: [
+        /**
+         * these 4 features are required to render Arabic text properly
+         * and shouldn't be turned off when rendering arabic text.
+         */
+        { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
+        { script: 'latn', tags: ['liga', 'rlig'] }
+    ]
+};
+```
+
+Also as this project is now using SemVer, the breaking change required a new major version, 1.0.0!
+
 0.12.0 (April 17, 2019)
 =====================
 * Fix Glyph.getPath() issue (PR #362, fixes #363) (thanks @solomancode!)
