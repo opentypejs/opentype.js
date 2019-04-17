@@ -1,31 +1,9 @@
-opentype.js
-===========
-[![Gitter](https://badges.gitter.im/nodebox/opentype.js.svg)](https://gitter.im/nodebox/opentype.js)&nbsp;
-[![npm](https://img.shields.io/npm/v/opentype.js.svg)](https://www.npmjs.com/package/opentype.js)&nbsp;
-[![david-dm](https://david-dm.org/nodebox/opentype.js.svg)](https://david-dm.org/nodebox/opentype.js)
+
+# opentype.js &middot; [![Build Status](https://img.shields.io/travis/opentypejs/opentype.js.svg?style=flat-square)](https://travis-ci.org/opentypejs/opentype.js) [![npm](https://img.shields.io/npm/v/opentype.js.svg?style=flat-square)](https://www.npmjs.com/package/opentype.js) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/opentypejs/opentype.js/blob/master/LICENSE) [![david-dm](https://david-dm.org/opentypejs/opentype.js.svg)](https://david-dm.org/opentypejs/opentype.js) [![Gitter](https://badges.gitter.im/opentypejs/opentype.js.svg)](https://gitter.im/opentypejs/opentype.js)
 
 opentype.js is a JavaScript parser and writer for TrueType and OpenType fonts.
 
-It gives you access to the <strong>letterforms</strong> of text from the browser or node.js.
-
-![Example of opentype.js](https://raw.github.com/nodebox/opentype.js/master/g/hello-world.png)
-
-Here's an example. We load a font, then display it on a canvas with id "canvas":
-
-    opentype.load('fonts/Roboto-Black.ttf', function(err, font) {
-        if (err) {
-             alert('Font could not be loaded: ' + err);
-        } else {
-            var ctx = document.getElementById('canvas').getContext('2d');
-            // Construct a Path object containing the letter shapes of the given text.
-            // The other parameters are x, y and fontSize.
-            // Note that y is the position of the baseline.
-            var path = font.getPath('Hello, World!', 0, 150, 72);
-            // If you just want to draw the text you can also use font.draw(ctx, text, x, y, fontSize).
-            path.draw(ctx);
-        }
-    });
-
+It gives you access to the <strong>letterforms</strong> of text from the browser or Node.js.  
 See [the project website](https://opentype.js.org/) for a live demo.
 
 Features
@@ -36,52 +14,66 @@ Features
 * Support for kerning (Using GPOS or the kern table).
 * Support for ligatures.
 * Support for TrueType font hinting.
+* Support arabic text rendering (See #359)
 * Very efficient.
-* Runs in the browser and node.js.
+* Runs in the browser and Node.js.
 
 Installation
 ============
 
-### Directly
+### Using [npm](http://npmjs.org/) package manager
 
-[Download the latest ZIP](https://github.com/nodebox/opentype.js/archive/master.zip) and grab the files in the `dist`
-folder. These are compiled.
-
-### Using npm
-
-    npm install --save opentype.js
+    npm install opentype.js
 
 OpenType.js uses ES6-style imports, so debugging it in Node.js requires running `npm run build` first. Use `npm run watch` to automatically rebuild when files change.
 
-### Using Bower
+### Directly
 
-To install using [Bower](http://bower.io/), enter the following command in your project directory:
+[Download the latest ZIP](https://github.com/opentypejs/opentype.js/archive/master.zip) and grab the files in the `dist`
+folder. These are compiled.
+
+### Using via a CDN
+
+To use via a CDN, include the following code in your html:
+
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
+    
+### Using Bower (Deprecated [see official post](https://bower.io/blog/2017/how-to-migrate-away-from-bower/))
+
+To install using [Bower](https://bower.io/), enter the following command in your project directory:
 
     bower install opentype.js
 
 You can then include them in your scripts using:
 
     <script src="/bower_components/opentype.js/dist/opentype.js"></script>
-    
-### Using via a CDN
 
-To use via a CDN, include the following code in your html:
-
-    <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
 
 API
 ===
 ### Loading a font
+![OpenType.js example Hello World](https://raw.github.com/opentypejs/opentype.js/master/g/hello-world.png)
+
 Use `opentype.load(url, callback)` to load a font from a URL. Since this method goes out the network, it is asynchronous.
 The callback gets `(err, font)` where `font` is a `Font` object. Check if the `err` is null before using the font.
-
+```javascript
     opentype.load('fonts/Roboto-Black.ttf', function(err, font) {
         if (err) {
-            alert('Could not load font: ' + err);
+            alert('Font could not be loaded: ' + err);
         } else {
-            // Use your font here.
+            // Now let's display it on a canvas with id "canvas"
+            var ctx = document.getElementById('canvas').getContext('2d');
+            
+            // Construct a Path object containing the letter shapes of the given text.
+            // The other parameters are x, y and fontSize.
+            // Note that y is the position of the baseline.
+            var path = font.getPath('Hello, World!', 0, 150, 72);
+            
+            // If you just want to draw the text you can also use font.draw(ctx, text, x, y, fontSize).
+            path.draw(ctx);
         }
     });
+```
 
 If you already have an `ArrayBuffer`, you can use `opentype.parse(buffer)` to parse the buffer. This method always
 returns a Font, but check `font.supported` to see if the font is in a supported format. (Fonts can be marked unsupported
@@ -101,7 +93,7 @@ back out as a binary file.
 
 In the browser, you can use `Font.download()` to instruct the browser to download a binary .OTF file. The name is based
 on the font name.
-
+```javascript
     // Create the bézier paths for each of the glyphs.
     // Note that the .notdef glyph is required.
     var notdefGlyph = new opentype.Glyph({
@@ -131,6 +123,7 @@ on the font name.
         descender: -200,
         glyphs: glyphs});
     font.download();
+```
 
 If you want to inspect the font, use `font.toTables()` to generate an object showing the data structures that map
 directly to binary values. If you want to get an `ArrayBuffer`, use `font.toArrayBuffer()`.
@@ -152,7 +145,7 @@ Create a Path that represents the given text.
 
 Options is an optional object containing:
 * `kerning`: if true takes kerning information into account (default: true)
-* `features`: an object with [OpenType feature tags](https://www.microsoft.com/typography/otspec/featuretags.htm) as keys, and a boolean value to enable each feature.
+* `features`: an object with [OpenType feature tags](https://docs.microsoft.com/en-us/typography/opentype/spec/featuretags) as keys, and a boolean value to enable each feature.
 Currently only ligature features "liga" and "rlig" are supported (default: true).
 * `hinting`: if true uses TrueType font hinting if available (default: false).
 
@@ -167,7 +160,7 @@ Create a Path that represents the given text.
 
 Options is an optional object containing:
 * `kerning`: if true takes kerning information into account (default: true)
-* `features`: an object with [OpenType feature tags](https://www.microsoft.com/typography/otspec/featuretags.htm) as keys, and a boolean value to enable each feature.
+* `features`: an object with [OpenType feature tags](https://docs.microsoft.com/en-us/typography/opentype/spec/featuretags) as keys, and a boolean value to enable each feature.
 Currently only ligature features "liga" and "rlig" are supported (default: true).
 * `hinting`: if true uses TrueType font hinting if available (default: false).
 
@@ -262,7 +255,7 @@ If the path is empty (e.g. a space character), all coordinates will be zero.
 
 ##### `Path.toPathData(decimalPlaces)`
 Convert the Path to a string of path data instructions.
-See http://www.w3.org/TR/SVG/paths.html#PathData
+See https://www.w3.org/TR/SVG/paths.html#PathData
 * `decimalPlaces`: The amount of decimal places for floating-point values. (default: 2)
 
 ##### `Path.toSVG(decimalPlaces)`
@@ -276,19 +269,26 @@ Convert the path to a SVG &lt;path&gt; element, as a string.
 * **Quad To**: Draw a quadratic bézier curve from the current position to the given coordinate. Example: `{type: 'Q', x1: 0, y1: 50, x: 100, y: 200}`
 * **Close**: Close the path. If stroked, this will draw a line from the first to the last point of the contour. Example: `{type: 'Z'}`
 
-Planned
-=======
-* Support for contextual alternates.
+
+## Versioning
+
+We use [SemVer](https://semver.org/) for versioning.
+
+
+## License
+
+MIT
+
 
 Thanks
 ======
 I would like to acknowledge the work of others without which opentype.js wouldn't be possible:
 
-* [pdf.js](http://mozilla.github.io/pdf.js/): for an awesome implementation of font parsing in the browser.
-* [FreeType](http://www.freetype.org/): for the nitty-gritty details and filling in the gaps when the spec was incomplete.
-* [ttf.js](http://ynakajima.github.io/ttf.js/demo/glyflist/): for hints about the TrueType parsing code.
+* [pdf.js](https://mozilla.github.io/pdf.js/): for an awesome implementation of font parsing in the browser.
+* [FreeType](https://www.freetype.org/): for the nitty-gritty details and filling in the gaps when the spec was incomplete.
+* [ttf.js](https://ynakajima.github.io/ttf.js/demo/glyflist/): for hints about the TrueType parsing code.
 * [CFF-glyphlet-fonts](https://pomax.github.io/CFF-glyphlet-fonts/): for a great explanation/implementation of CFF font writing.
-* [tiny-inflate](https://github.com/devongovett/tiny-inflate): for WOFF decompression.
-* [Microsoft Typography](https://www.microsoft.com/typography/OTSPEC/otff.htm): the go-to reference for all things OpenType.
+* [tiny-inflate](https://github.com/foliojs/tiny-inflate): for WOFF decompression.
+* [Microsoft Typography](https://docs.microsoft.com/en-us/typography/opentype/spec/otff): the go-to reference for all things OpenType.
 * [Adobe Compact Font Format spec](http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf) and the [Adobe Type 2 Charstring spec](http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/type2.pdf): explains the data structures and commands for the CFF glyph format.
-* All contributing authors mentioned in the [AUTHORS](https://github.com/nodebox/opentype.js/blob/master/AUTHORS) file.
+* All contributing authors mentioned in the [AUTHORS](https://github.com/opentypejs/opentype.js/blob/master/AUTHORS.md) file.

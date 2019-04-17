@@ -1,11 +1,11 @@
 language: node_js
 node_js:
-- '4'  # https://github.com/nodebox/opentype.js/pull/251#issuecomment-272175882
+- '4'  # https://github.com/opentypejs/opentype.js/pull/251#issuecomment-272175882
+- '10'
 deploy:
   provider: npm
-  email: frederik@debleser.be
-  api_key:
-    secure: kY5M8vLhDDQjGypwAyAWDjmdCHi4iuNQ2y+fms3OckN3lu6T2X+VLoXN4o1dj7uoSEhBd/bywOTPeqhTWHd6tcE3gLqtJ1/reoVKIRBfBwvZEBPkFKmPD7yZec9FMlZGEj9VcaAItUTxBJXc3tP3iElnsgbRaj7TTvPYjMDVn48=
+  email: "$NPM_EMAIL"
+  api_key: "$NPM_TOKEN"
   on:
     tags: true
-    repo: nodebox/opentype.js
+    repo: opentypejs/opentype.js

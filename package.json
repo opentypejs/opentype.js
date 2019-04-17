@@ -1,7 +1,7 @@
 {
   "name": "opentype.js",
   "description": "OpenType font parser",
-  "version": "0.7.3",
+  "version": "0.11.0",
   "author": {
     "name": "Frederik De Bleser",
     "email": "frederik@debleser.be"
@@ -12,12 +12,13 @@
     "opentype",
     "otf",
     "ttf",
+    "woff",
     "type"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git://github.com/nodebox/opentype.js.git"
+    "url": "git://github.com/opentypejs/opentype.js.git"
   },
   "main": "dist/opentype.js",
   "module": "src/opentype.js",
@@ -33,24 +34,25 @@
     "dist": "npm run test && npm run build && npm run minify"
   },
   "devDependencies": {
-    "buble": "^0.15.2",
-    "cross-env": "^5.0.0",
-    "jscs": "^3.0.3",
-    "jshint": "^2.9.2",
-    "mocha": "^2.5.3",
-    "reify": "^0.11.0",
-    "rollup": "^0.41.6",
-    "rollup-plugin-buble": "^0.15.0",
-    "rollup-plugin-commonjs": "^8.0.2",
-    "rollup-plugin-license": "^0.4.0",
-    "rollup-plugin-node-resolve": "^3.0.0",
-    "rollup-watch": "^3.2.2",
-    "uglify-js": "^3.3.10"
+    "@babel/preset-env": "^7.1.0",
+    "buble": "^0.19.4",
+    "cross-env": "^5.2.0",
+    "jscs": "^3.0.7",
+    "jshint": "^2.9.6",
+    "mocha": "^5.2.0",
+    "reify": "^0.18.1",
+    "rollup": "^0.66.6",
+    "rollup-plugin-buble": "^0.19.4",
+    "rollup-plugin-commonjs": "^9.2.0",
+    "rollup-plugin-license": "^0.7.0",
+    "rollup-plugin-node-resolve": "^3.4.0",
+    "uglify-js": "^3.4.9"
   },
   "browser": {
     "fs": false
   },
   "dependencies": {
+    "string.prototype.codepointat": "^0.2.1",
     "tiny-inflate": "^1.0.2"
   }
 }

@@ -1,11 +1,11 @@
 /**
- * https://opentype.js.org v0.7.3 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett
+ * https://opentype.js.org v0.11.0 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
  */
 
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(factory((global.opentype = global.opentype || {})));
+	(factory((global.opentype = {})));
 }(this, (function (exports) { 'use strict';
 
 var TINF_OK = 0;
@@ -9614,1652 +9614,1671 @@ function LOOPCALL(state) {
         ); }
     }
 
-    // restores the callers program
-    state.ip = cip;
-    state.prog = cprog;
-}
+	    if (exports.DEBUG) { console.log(state.step, 'DUP[]'); }
 
-// CALL[] CALL function
-// 0x2B
-function CALL(state) {
-    var fn = state.stack.pop();
+	    stack.push(stack[stack.length - 1]);
+	}
 
-    if (exports.DEBUG) { console.log(state.step, 'CALL[]', fn); }
+	// POP[] POP top stack element
+	// 0x21
+	function POP(state) {
+	    if (exports.DEBUG) { console.log(state.step, 'POP[]'); }
 
-    // saves callers program
-    var cip = state.ip;
-    var cprog = state.prog;
+	    state.stack.pop();
+	}
 
-    state.prog = state.funcs[fn];
+	// CLEAR[] CLEAR the stack
+	// 0x22
+	function CLEAR(state) {
+	    if (exports.DEBUG) { console.log(state.step, 'CLEAR[]'); }
 
-    // executes the function
-    exec(state);
+	    state.stack.length = 0;
+	}
 
-    // restores the callers program
-    state.ip = cip;
-    state.prog = cprog;
+	// SWAP[] SWAP the top two elements on the stack
+	// 0x23
+	function SWAP(state) {
+	    var stack = state.stack;
 
-    if (exports.DEBUG) { console.log(++state.step, 'returning from', fn); }
-}
+	    var a = stack.pop();
+	    var b = stack.pop();
 
-// CINDEX[] Copy the INDEXed element to the top of the stack
-// 0x25
-function CINDEX(state) {
-    var stack = state.stack;
-    var k = stack.pop();
+	    if (exports.DEBUG) { console.log(state.step, 'SWAP[]'); }
 
-    if (exports.DEBUG) { console.log(state.step, 'CINDEX[]', k); }
+	    stack.push(a);
+	    stack.push(b);
+	}
 
-    // In case of k == 1, it copies the last element after popping
-    // thus stack.length - k.
-    stack.push(stack[stack.length - k]);
-}
+	// DEPTH[] DEPTH of the stack
+	// 0x24
+	function DEPTH(state) {
+	    var stack = state.stack;
 
-// MINDEX[] Move the INDEXed element to the top of the stack
-// 0x26
-function MINDEX(state) {
-    var stack = state.stack;
-    var k = stack.pop();
+	    if (exports.DEBUG) { console.log(state.step, 'DEPTH[]'); }
 
-    if (exports.DEBUG) { console.log(state.step, 'MINDEX[]', k); }
+	    stack.push(stack.length);
+	}
 
-    stack.push(stack.splice(stack.length - k, 1)[0]);
-}
+	// LOOPCALL[] LOOPCALL function
+	// 0x2A
+	function LOOPCALL(state) {
+	    var stack = state.stack;
+	    var fn = stack.pop();
+	    var c = stack.pop();
 
-// FDEF[] Function DEFinition
-// 0x2C
-function FDEF(state) {
-    if (state.env !== 'fpgm') { throw new Error('FDEF not allowed here'); }
-    var stack = state.stack;
-    var prog = state.prog;
-    var ip = state.ip;
-
-    var fn = stack.pop();
-    var ipBegin = ip;
-
-    if (exports.DEBUG) { console.log(state.step, 'FDEF[]', fn); }
-
-    while (prog[++ip] !== 0x2D){  }
-
-    state.ip = ip;
-    state.funcs[fn] = prog.slice(ipBegin + 1, ip);
-}
-
-// MDAP[a] Move Direct Absolute Point
-// 0x2E-0x2F
-function MDAP(round, state) {
-    var pi = state.stack.pop();
-    var p = state.z0[pi];
-    var fv = state.fv;
-    var pv = state.pv;
-
-    if (exports.DEBUG) { console.log(state.step, 'MDAP[' + round + ']', pi); }
-
-    var d = pv.distance(p, HPZero);
-
-    if (round) { d = state.round(d); }
-
-    fv.setRelative(p, HPZero, d, pv);
-    fv.touch(p);
-
-    state.rp0 = state.rp1 = pi;
-}
-
-// IUP[a] Interpolate Untouched Points through the outline
-// 0x30
-function IUP(v, state) {
-    var z2 = state.z2;
-    var pLen = z2.length - 2;
-    var cp;
-    var pp;
-    var np;
-
-    if (exports.DEBUG) { console.log(state.step, 'IUP[' + v.axis + ']'); }
-
-    for (var i = 0; i < pLen; i++) {
-        cp = z2[i]; // current point
-
-        // if this point has been touched go on
-        if (v.touched(cp)) { continue; }
-
-        pp = cp.prevTouched(v);
-
-        // no point on the contour has been touched?
-        if (pp === cp) { continue; }
-
-        np = cp.nextTouched(v);
-
-        if (pp === np) {
-            // only one point on the contour has been touched
-            // so simply moves the point like that
-
-            v.setRelative(cp, cp, v.distance(pp, pp, false, true), v, true);
-        }
-
-        v.interpolate(cp, pp, np, v);
-    }
-}
-
-// SHP[] SHift Point using reference point
-// 0x32-0x33
-function SHP(a, state) {
-    var stack = state.stack;
-    var rpi = a ? state.rp1 : state.rp2;
-    var rp = (a ? state.z0 : state.z1)[rpi];
-    var fv = state.fv;
-    var pv = state.pv;
-    var loop = state.loop;
-    var z2 = state.z2;
-
-    while (loop--)
-    {
-        var pi = stack.pop();
-        var p = z2[pi];
-
-        var d = pv.distance(rp, rp, false, true);
-        fv.setRelative(p, p, d, pv);
-        fv.touch(p);
-
-        if (exports.DEBUG) {
-            console.log(
-                state.step,
-                (state.loop > 1 ?
-                   'loop ' + (state.loop - loop) + ': ' :
-                   ''
-                ) +
-                'SHP[' + (a ? 'rp1' : 'rp2') + ']', pi
-            );
-        }
-    }
-
-    state.loop = 1;
-}
-
-// SHC[] SHift Contour using reference point
-// 0x36-0x37
-function SHC(a, state) {
-    var stack = state.stack;
-    var rpi = a ? state.rp1 : state.rp2;
-    var rp = (a ? state.z0 : state.z1)[rpi];
-    var fv = state.fv;
-    var pv = state.pv;
-    var ci = stack.pop();
-    var sp = state.z2[state.contours[ci]];
-    var p = sp;
-
-    if (exports.DEBUG) { console.log(state.step, 'SHC[' + a + ']', ci); }
-
-    var d = pv.distance(rp, rp, false, true);
-
-    do {
-        if (p !== rp) { fv.setRelative(p, p, d, pv); }
-        p = p.nextPointOnContour;
-    } while (p !== sp);
-}
-
-// SHZ[] SHift Zone using reference point
-// 0x36-0x37
-function SHZ(a, state) {
-    var stack = state.stack;
-    var rpi = a ? state.rp1 : state.rp2;
-    var rp = (a ? state.z0 : state.z1)[rpi];
-    var fv = state.fv;
-    var pv = state.pv;
-
-    var e = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'SHZ[' + a + ']', e); }
-
-    var z;
-    switch (e) {
-        case 0 : z = state.tZone; break;
-        case 1 : z = state.gZone; break;
-        default : throw new Error('Invalid zone');
-    }
-
-    var p;
-    var d = pv.distance(rp, rp, false, true);
-    var pLen = z.length - 2;
-    for (var i = 0; i < pLen; i++)
-    {
-        p = z[i];
-        fv.setRelative(p, p, d, pv);
-        //if (p !== rp) fv.setRelative(p, p, d, pv);
-    }
-}
-
-// SHPIX[] SHift point by a PIXel amount
-// 0x38
-function SHPIX(state) {
-    var stack = state.stack;
-    var loop = state.loop;
-    var fv = state.fv;
-    var d = stack.pop() / 0x40;
-    var z2 = state.z2;
-
-    while (loop--) {
-        var pi = stack.pop();
-        var p = z2[pi];
-
-        if (exports.DEBUG) {
-            console.log(
-                state.step,
-                (state.loop > 1 ? 'loop ' + (state.loop - loop) + ': ' : '') +
-                'SHPIX[]', pi, d
-            );
-        }
-
-        fv.setRelative(p, p, d);
-        fv.touch(p);
-    }
-
-    state.loop = 1;
-}
-
-// IP[] Interpolate Point
-// 0x39
-function IP(state) {
-    var stack = state.stack;
-    var rp1i = state.rp1;
-    var rp2i = state.rp2;
-    var loop = state.loop;
-    var rp1 = state.z0[rp1i];
-    var rp2 = state.z1[rp2i];
-    var fv = state.fv;
-    var pv = state.dpv;
-    var z2 = state.z2;
-
-    while (loop--) {
-        var pi = stack.pop();
-        var p = z2[pi];
-
-        if (exports.DEBUG) {
-            console.log(
-                state.step,
-                (state.loop > 1 ? 'loop ' + (state.loop - loop) + ': ' : '') +
-                'IP[]', pi, rp1i, '<->', rp2i
-            );
-        }
-
-        fv.interpolate(p, rp1, rp2, pv);
-
-        fv.touch(p);
-    }
-
-    state.loop = 1;
-}
-
-// MSIRP[a] Move Stack Indirect Relative Point
-// 0x3A-0x3B
-function MSIRP(a, state) {
-    var stack = state.stack;
-    var d = stack.pop() / 64;
-    var pi = stack.pop();
-    var p = state.z1[pi];
-    var rp0 = state.z0[state.rp0];
-    var fv = state.fv;
-    var pv = state.pv;
-
-    fv.setRelative(p, rp0, d, pv);
-    fv.touch(p);
-
-    if (exports.DEBUG) { console.log(state.step, 'MSIRP[' + a + ']', d, pi); }
-
-    state.rp1 = state.rp0;
-    state.rp2 = pi;
-    if (a) { state.rp0 = pi; }
-}
-
-// ALIGNRP[] Align to reference point.
-// 0x3C
-function ALIGNRP(state) {
-    var stack = state.stack;
-    var rp0i = state.rp0;
-    var rp0 = state.z0[rp0i];
-    var loop = state.loop;
-    var fv = state.fv;
-    var pv = state.pv;
-    var z1 = state.z1;
-
-    while (loop--) {
-        var pi = stack.pop();
-        var p = z1[pi];
-
-        if (exports.DEBUG) {
-            console.log(
-                state.step,
-                (state.loop > 1 ? 'loop ' + (state.loop - loop) + ': ' : '') +
-                'ALIGNRP[]', pi
-            );
-        }
-
-        fv.setRelative(p, rp0, 0, pv);
-        fv.touch(p);
-    }
-
-    state.loop = 1;
-}
-
-// RTG[] Round To Double Grid
-// 0x3D
-function RTDG(state) {
-    if (exports.DEBUG) { console.log(state.step, 'RTDG[]'); }
-
-    state.round = roundToDoubleGrid;
-}
-
-// MIAP[a] Move Indirect Absolute Point
-// 0x3E-0x3F
-function MIAP(round, state) {
-    var stack = state.stack;
-    var n = stack.pop();
-    var pi = stack.pop();
-    var p = state.z0[pi];
-    var fv = state.fv;
-    var pv = state.pv;
-    var cv = state.cvt[n];
-
-    if (exports.DEBUG) {
-        console.log(
-            state.step,
-            'MIAP[' + round + ']',
-            n, '(', cv, ')', pi
-        );
-    }
-
-    var d = pv.distance(p, HPZero);
-
-    if (round) {
-        if (Math.abs(d - cv) < state.cvCutIn) { d = cv; }
-
-        d = state.round(d);
-    }
-
-    fv.setRelative(p, HPZero, d, pv);
-
-    if (state.zp0 === 0) {
-        p.xo = p.x;
-        p.yo = p.y;
-    }
-
-    fv.touch(p);
-
-    state.rp0 = state.rp1 = pi;
-}
-
-// NPUSB[] PUSH N Bytes
-// 0x40
-function NPUSHB(state) {
-    var prog = state.prog;
-    var ip = state.ip;
-    var stack = state.stack;
-
-    var n = prog[++ip];
-
-    if (exports.DEBUG) { console.log(state.step, 'NPUSHB[]', n); }
-
-    for (var i = 0; i < n; i++) { stack.push(prog[++ip]); }
-
-    state.ip = ip;
-}
-
-// NPUSHW[] PUSH N Words
-// 0x41
-function NPUSHW(state) {
-    var ip = state.ip;
-    var prog = state.prog;
-    var stack = state.stack;
-    var n = prog[++ip];
-
-    if (exports.DEBUG) { console.log(state.step, 'NPUSHW[]', n); }
-
-    for (var i = 0; i < n; i++) {
-        var w = (prog[++ip] << 8) | prog[++ip];
-        if (w & 0x8000) { w = -((w ^ 0xffff) + 1); }
-        stack.push(w);
-    }
-
-    state.ip = ip;
-}
-
-// WS[] Write Store
-// 0x42
-function WS(state) {
-    var stack = state.stack;
-    var store = state.store;
-
-    if (!store) { store = state.store = []; }
-
-    var v = stack.pop();
-    var l = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'WS', v, l); }
-
-    store[l] = v;
-}
-
-// RS[] Read Store
-// 0x43
-function RS(state) {
-    var stack = state.stack;
-    var store = state.store;
-
-    var l = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'RS', l); }
-
-    var v = (store && store[l]) || 0;
-
-    stack.push(v);
-}
-
-// WCVTP[] Write Control Value Table in Pixel units
-// 0x44
-function WCVTP(state) {
-    var stack = state.stack;
-
-    var v = stack.pop();
-    var l = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'WCVTP', v, l); }
-
-    state.cvt[l] = v / 0x40;
-}
-
-// RCVT[] Read Control Value Table entry
-// 0x45
-function RCVT(state) {
-    var stack = state.stack;
-    var cvte = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'RCVT', cvte); }
-
-    stack.push(state.cvt[cvte] * 0x40);
-}
-
-// GC[] Get Coordinate projected onto the projection vector
-// 0x46-0x47
-function GC(a, state) {
-    var stack = state.stack;
-    var pi = stack.pop();
-    var p = state.z2[pi];
-
-    if (exports.DEBUG) { console.log(state.step, 'GC[' + a + ']', pi); }
-
-    stack.push(state.dpv.distance(p, HPZero, a, false) * 0x40);
-}
-
-// MD[a] Measure Distance
-// 0x49-0x4A
-function MD(a, state) {
-    var stack = state.stack;
-    var pi2 = stack.pop();
-    var pi1 = stack.pop();
-    var p2 = state.z1[pi2];
-    var p1 = state.z0[pi1];
-    var d = state.dpv.distance(p1, p2, a, a);
-
-    if (exports.DEBUG) { console.log(state.step, 'MD[' + a + ']', pi2, pi1, '->', d); }
-
-    state.stack.push(Math.round(d * 64));
-}
-
-// MPPEM[] Measure Pixels Per EM
-// 0x4B
-function MPPEM(state) {
-    if (exports.DEBUG) { console.log(state.step, 'MPPEM[]'); }
-    state.stack.push(state.ppem);
-}
-
-// FLIPON[] set the auto FLIP Boolean to ON
-// 0x4D
-function FLIPON(state) {
-    if (exports.DEBUG) { console.log(state.step, 'FLIPON[]'); }
-    state.autoFlip = true;
-}
-
-// LT[] Less Than
-// 0x50
-function LT(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'LT[]', e2, e1); }
-
-    stack.push(e1 < e2 ? 1 : 0);
-}
-
-// LTEQ[] Less Than or EQual
-// 0x53
-function LTEQ(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'LTEQ[]', e2, e1); }
-
-    stack.push(e1 <= e2 ? 1 : 0);
-}
-
-// GTEQ[] Greater Than
-// 0x52
-function GT(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'GT[]', e2, e1); }
-
-    stack.push(e1 > e2 ? 1 : 0);
-}
-
-// GTEQ[] Greater Than or EQual
-// 0x53
-function GTEQ(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'GTEQ[]', e2, e1); }
-
-    stack.push(e1 >= e2 ? 1 : 0);
-}
-
-// EQ[] EQual
-// 0x54
-function EQ(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'EQ[]', e2, e1); }
-
-    stack.push(e2 === e1 ? 1 : 0);
-}
-
-// NEQ[] Not EQual
-// 0x55
-function NEQ(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'NEQ[]', e2, e1); }
-
-    stack.push(e2 !== e1 ? 1 : 0);
-}
-
-// ODD[] ODD
-// 0x56
-function ODD(state) {
-    var stack = state.stack;
-    var n = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'ODD[]', n); }
-
-    stack.push(Math.trunc(n) % 2 ? 1 : 0);
-}
-
-// EVEN[] EVEN
-// 0x57
-function EVEN(state) {
-    var stack = state.stack;
-    var n = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'EVEN[]', n); }
-
-    stack.push(Math.trunc(n) % 2 ? 0 : 1);
-}
-
-// IF[] IF test
-// 0x58
-function IF(state) {
-    var test = state.stack.pop();
-    var ins;
-
-    if (exports.DEBUG) { console.log(state.step, 'IF[]', test); }
-
-    // if test is true it just continues
-    // if not the ip is skipped until matching ELSE or EIF
-    if (!test) {
-        skip(state, true);
-
-        if (exports.DEBUG) { console.log(state.step, ins === 0x1B ? 'ELSE[]' : 'EIF[]'); }
-    }
-}
-
-// EIF[] End IF
-// 0x59
-function EIF(state) {
-    // this can be reached normally when
-    // executing an else branch.
-    // -> just ignore it
-
-    if (exports.DEBUG) { console.log(state.step, 'EIF[]'); }
-}
-
-// AND[] logical AND
-// 0x5A
-function AND(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'AND[]', e2, e1); }
-
-    stack.push(e2 && e1 ? 1 : 0);
-}
-
-// OR[] logical OR
-// 0x5B
-function OR(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'OR[]', e2, e1); }
-
-    stack.push(e2 || e1 ? 1 : 0);
-}
-
-// NOT[] logical NOT
-// 0x5C
-function NOT(state) {
-    var stack = state.stack;
-    var e = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'NOT[]', e); }
-
-    stack.push(e ? 0 : 1);
-}
-
-// DELTAP1[] DELTA exception P1
-// DELTAP2[] DELTA exception P2
-// DELTAP3[] DELTA exception P3
-// 0x5D, 0x71, 0x72
-function DELTAP123(b, state) {
-    var stack = state.stack;
-    var n = stack.pop();
-    var fv = state.fv;
-    var pv = state.pv;
-    var ppem = state.ppem;
-    var base = state.deltaBase + (b - 1) * 16;
-    var ds = state.deltaShift;
-    var z0 = state.z0;
-
-    if (exports.DEBUG) { console.log(state.step, 'DELTAP[' + b + ']', n, stack); }
-
-    for (var i = 0; i < n; i++) {
-        var pi = stack.pop();
-        var arg = stack.pop();
-        var appem = base + ((arg & 0xF0) >> 4);
-        if (appem !== ppem) { continue; }
-
-        var mag = (arg & 0x0F) - 8;
-        if (mag >= 0) { mag++; }
-        if (exports.DEBUG) { console.log(state.step, 'DELTAPFIX', pi, 'by', mag * ds); }
-
-        var p = z0[pi];
-        fv.setRelative(p, p, mag * ds, pv);
-    }
-}
-
-// SDB[] Set Delta Base in the graphics state
-// 0x5E
-function SDB(state) {
-    var stack = state.stack;
-    var n = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'SDB[]', n); }
-
-    state.deltaBase = n;
-}
-
-// SDS[] Set Delta Shift in the graphics state
-// 0x5F
-function SDS(state) {
-    var stack = state.stack;
-    var n = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'SDS[]', n); }
-
-    state.deltaShift = Math.pow(0.5, n);
-}
-
-// ADD[] ADD
-// 0x60
-function ADD(state) {
-    var stack = state.stack;
-    var n2 = stack.pop();
-    var n1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'ADD[]', n2, n1); }
-
-    stack.push(n1 + n2);
-}
-
-// SUB[] SUB
-// 0x61
-function SUB(state) {
-    var stack = state.stack;
-    var n2 = stack.pop();
-    var n1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'SUB[]', n2, n1); }
-
-    stack.push(n1 - n2);
-}
-
-// DIV[] DIV
-// 0x62
-function DIV(state) {
-    var stack = state.stack;
-    var n2 = stack.pop();
-    var n1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'DIV[]', n2, n1); }
-
-    stack.push(n1 * 64 / n2);
-}
-
-// MUL[] MUL
-// 0x63
-function MUL(state) {
-    var stack = state.stack;
-    var n2 = stack.pop();
-    var n1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'MUL[]', n2, n1); }
-
-    stack.push(n1 * n2 / 64);
-}
-
-// ABS[] ABSolute value
-// 0x64
-function ABS(state) {
-    var stack = state.stack;
-    var n = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'ABS[]', n); }
-
-    stack.push(Math.abs(n));
-}
-
-// NEG[] NEGate
-// 0x65
-function NEG(state) {
-    var stack = state.stack;
-    var n = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'NEG[]', n); }
-
-    stack.push(-n);
-}
-
-// FLOOR[] FLOOR
-// 0x66
-function FLOOR(state) {
-    var stack = state.stack;
-    var n = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'FLOOR[]', n); }
-
-    stack.push(Math.floor(n / 0x40) * 0x40);
-}
-
-// CEILING[] CEILING
-// 0x67
-function CEILING(state) {
-    var stack = state.stack;
-    var n = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'CEILING[]', n); }
-
-    stack.push(Math.ceil(n / 0x40) * 0x40);
-}
-
-// ROUND[ab] ROUND value
-// 0x68-0x6B
-function ROUND(dt, state) {
-    var stack = state.stack;
-    var n = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'ROUND[]'); }
-
-    stack.push(state.round(n / 0x40) * 0x40);
-}
-
-// WCVTF[] Write Control Value Table in Funits
-// 0x70
-function WCVTF(state) {
-    var stack = state.stack;
-    var v = stack.pop();
-    var l = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'WCVTF[]', v, l); }
-
-    state.cvt[l] = v * state.ppem / state.font.unitsPerEm;
-}
-
-// DELTAC1[] DELTA exception C1
-// DELTAC2[] DELTA exception C2
-// DELTAC3[] DELTA exception C3
-// 0x73, 0x74, 0x75
-function DELTAC123(b, state) {
-    var stack = state.stack;
-    var n = stack.pop();
-    var ppem = state.ppem;
-    var base = state.deltaBase + (b - 1) * 16;
-    var ds = state.deltaShift;
-
-    if (exports.DEBUG) { console.log(state.step, 'DELTAC[' + b + ']', n, stack); }
-
-    for (var i = 0; i < n; i++) {
-        var c = stack.pop();
-        var arg = stack.pop();
-        var appem = base + ((arg & 0xF0) >> 4);
-        if (appem !== ppem) { continue; }
-
-        var mag = (arg & 0x0F) - 8;
-        if (mag >= 0) { mag++; }
-
-        var delta = mag * ds;
-
-        if (exports.DEBUG) { console.log(state.step, 'DELTACFIX', c, 'by', delta); }
-
-        state.cvt[c] += delta;
-    }
-}
-
-// SROUND[] Super ROUND
-// 0x76
-function SROUND(state) {
-    var n = state.stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'SROUND[]', n); }
-
-    state.round = roundSuper;
-
-    var period;
-
-    switch (n & 0xC0) {
-        case 0x00:
-            period = 0.5;
-            break;
-        case 0x40:
-            period = 1;
-            break;
-        case 0x80:
-            period = 2;
-            break;
-        default:
-            throw new Error('invalid SROUND value');
-    }
-
-    state.srPeriod = period;
-
-    switch (n & 0x30) {
-        case 0x00:
-            state.srPhase = 0;
-            break;
-        case 0x10:
-            state.srPhase = 0.25 * period;
-            break;
-        case 0x20:
-            state.srPhase = 0.5  * period;
-            break;
-        case 0x30:
-            state.srPhase = 0.75 * period;
-            break;
-        default: throw new Error('invalid SROUND value');
-    }
-
-    n &= 0x0F;
-
-    if (n === 0) { state.srThreshold = 0; }
-    else { state.srThreshold = (n / 8 - 0.5) * period; }
-}
-
-// S45ROUND[] Super ROUND 45 degrees
-// 0x77
-function S45ROUND(state) {
-    var n = state.stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'S45ROUND[]', n); }
-
-    state.round = roundSuper;
-
-    var period;
-
-    switch (n & 0xC0) {
-        case 0x00:
-            period = Math.sqrt(2) / 2;
-            break;
-        case 0x40:
-            period = Math.sqrt(2);
-            break;
-        case 0x80:
-            period = 2 * Math.sqrt(2);
-            break;
-        default:
-            throw new Error('invalid S45ROUND value');
-    }
-
-    state.srPeriod = period;
-
-    switch (n & 0x30) {
-        case 0x00:
-            state.srPhase = 0;
-            break;
-        case 0x10:
-            state.srPhase = 0.25 * period;
-            break;
-        case 0x20:
-            state.srPhase = 0.5  * period;
-            break;
-        case 0x30:
-            state.srPhase = 0.75 * period;
-            break;
-        default:
-            throw new Error('invalid S45ROUND value');
-    }
-
-    n &= 0x0F;
-
-    if (n === 0) { state.srThreshold = 0; }
-    else { state.srThreshold = (n / 8 - 0.5) * period; }
-}
-
-// ROFF[] Round Off
-// 0x7A
-function ROFF(state) {
-    if (exports.DEBUG) { console.log(state.step, 'ROFF[]'); }
-
-    state.round = roundOff;
-}
-
-// RUTG[] Round Up To Grid
-// 0x7C
-function RUTG(state) {
-    if (exports.DEBUG) { console.log(state.step, 'RUTG[]'); }
-
-    state.round = roundUpToGrid;
-}
-
-// RDTG[] Round Down To Grid
-// 0x7D
-function RDTG(state) {
-    if (exports.DEBUG) { console.log(state.step, 'RDTG[]'); }
-
-    state.round = roundDownToGrid;
-}
-
-// SCANCTRL[] SCAN conversion ConTRoL
-// 0x85
-function SCANCTRL(state) {
-    var n = state.stack.pop();
-
-    // ignored by opentype.js
-
-    if (exports.DEBUG) { console.log(state.step, 'SCANCTRL[]', n); }
-}
-
-// SDPVTL[a] Set Dual Projection Vector To Line
-// 0x86-0x87
-function SDPVTL(a, state) {
-    var stack = state.stack;
-    var p2i = stack.pop();
-    var p1i = stack.pop();
-    var p2 = state.z2[p2i];
-    var p1 = state.z1[p1i];
-
-    if (exports.DEBUG) { console.log(state.step, 'SDPVTL[' + a + ']', p2i, p1i); }
-
-    var dx;
-    var dy;
-
-    if (!a) {
-        dx = p1.x - p2.x;
-        dy = p1.y - p2.y;
-    } else {
-        dx = p2.y - p1.y;
-        dy = p1.x - p2.x;
-    }
-
-    state.dpv = getUnitVector(dx, dy);
-}
-
-// GETINFO[] GET INFOrmation
-// 0x88
-function GETINFO(state) {
-    var stack = state.stack;
-    var sel = stack.pop();
-    var r = 0;
-
-    if (exports.DEBUG) { console.log(state.step, 'GETINFO[]', sel); }
-
-    // v35 as in no subpixel hinting
-    if (sel & 0x01) { r = 35; }
-
-    // TODO rotation and stretch currently not supported
-    // and thus those GETINFO are always 0.
-
-    // opentype.js is always gray scaling
-    if (sel & 0x20) { r |= 0x1000; }
-
-    stack.push(r);
-}
-
-// ROLL[] ROLL the top three stack elements
-// 0x8A
-function ROLL(state) {
-    var stack = state.stack;
-    var a = stack.pop();
-    var b = stack.pop();
-    var c = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'ROLL[]'); }
-
-    stack.push(b);
-    stack.push(a);
-    stack.push(c);
-}
-
-// MAX[] MAXimum of top two stack elements
-// 0x8B
-function MAX(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'MAX[]', e2, e1); }
-
-    stack.push(Math.max(e1, e2));
-}
-
-// MIN[] MINimum of top two stack elements
-// 0x8C
-function MIN(state) {
-    var stack = state.stack;
-    var e2 = stack.pop();
-    var e1 = stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'MIN[]', e2, e1); }
-
-    stack.push(Math.min(e1, e2));
-}
-
-// SCANTYPE[] SCANTYPE
-// 0x8D
-function SCANTYPE(state) {
-    var n = state.stack.pop();
-    // ignored by opentype.js
-    if (exports.DEBUG) { console.log(state.step, 'SCANTYPE[]', n); }
-}
-
-// INSTCTRL[] INSTCTRL
-// 0x8D
-function INSTCTRL(state) {
-    var s = state.stack.pop();
-    var v = state.stack.pop();
-
-    if (exports.DEBUG) { console.log(state.step, 'INSTCTRL[]', s, v); }
-
-    switch (s) {
-        case 1 : state.inhibitGridFit = !!v; return;
-        case 2 : state.ignoreCvt = !!v; return;
-        default: throw new Error('invalid INSTCTRL[] selector');
-    }
-}
-
-// PUSHB[abc] PUSH Bytes
-// 0xB0-0xB7
-function PUSHB(n, state) {
-    var stack = state.stack;
-    var prog = state.prog;
-    var ip = state.ip;
-
-    if (exports.DEBUG) { console.log(state.step, 'PUSHB[' + n + ']'); }
-
-    for (var i = 0; i < n; i++) { stack.push(prog[++ip]); }
-
-    state.ip = ip;
-}
-
-// PUSHW[abc] PUSH Words
-// 0xB8-0xBF
-function PUSHW(n, state) {
-    var ip = state.ip;
-    var prog = state.prog;
-    var stack = state.stack;
-
-    if (exports.DEBUG) { console.log(state.ip, 'PUSHW[' + n + ']'); }
-
-    for (var i = 0; i < n; i++) {
-        var w = (prog[++ip] << 8) | prog[++ip];
-        if (w & 0x8000) { w = -((w ^ 0xffff) + 1); }
-        stack.push(w);
-    }
-
-    state.ip = ip;
-}
-
-// MDRP[abcde] Move Direct Relative Point
-// 0xD0-0xEF
-// (if indirect is 0)
-//
-// and
-//
-// MIRP[abcde] Move Indirect Relative Point
-// 0xE0-0xFF
-// (if indirect is 1)
-
-function MDRP_MIRP(indirect, setRp0, keepD, ro, dt, state) {
-    var stack = state.stack;
-    var cvte = indirect && stack.pop();
-    var pi = stack.pop();
-    var rp0i = state.rp0;
-    var rp = state.z0[rp0i];
-    var p = state.z1[pi];
-
-    var md = state.minDis;
-    var fv = state.fv;
-    var pv = state.dpv;
-    var od; // original distance
-    var d; // moving distance
-    var sign; // sign of distance
-    var cv;
-
-    d = od = pv.distance(p, rp, true, true);
-    sign = d >= 0 ? 1 : -1; // Math.sign would be 0 in case of 0
-
-    // TODO consider autoFlip
-    d = Math.abs(d);
-
-    if (indirect) {
-        cv = state.cvt[cvte];
-
-        if (ro && Math.abs(d - cv) < state.cvCutIn) { d = cv; }
-    }
-
-    if (keepD && d < md) { d = md; }
-
-    if (ro) { d = state.round(d); }
-
-    fv.setRelative(p, rp, sign * d, pv);
-    fv.touch(p);
-
-    if (exports.DEBUG) {
-        console.log(
-            state.step,
-            (indirect ? 'MIRP[' : 'MDRP[') +
-            (setRp0 ? 'M' : 'm') +
-            (keepD ? '>' : '_') +
-            (ro ? 'R' : '_') +
-            (dt === 0 ? 'Gr' : (dt === 1 ? 'Bl' : (dt === 2 ? 'Wh' : ''))) +
-            ']',
-            indirect ?
-                cvte + '(' + state.cvt[cvte] + ',' +  cv + ')' :
-                '',
-            pi,
-            '(d =', od, '->', sign * d, ')'
-        );
-    }
-
-    state.rp1 = state.rp0;
-    state.rp2 = pi;
-    if (setRp0) { state.rp0 = pi; }
-}
-
-/*
-* The instruction table.
-*/
-instructionTable = [
-    /* 0x00 */ SVTCA.bind(undefined, yUnitVector),
-    /* 0x01 */ SVTCA.bind(undefined, xUnitVector),
-    /* 0x02 */ SPVTCA.bind(undefined, yUnitVector),
-    /* 0x03 */ SPVTCA.bind(undefined, xUnitVector),
-    /* 0x04 */ SFVTCA.bind(undefined, yUnitVector),
-    /* 0x05 */ SFVTCA.bind(undefined, xUnitVector),
-    /* 0x06 */ SPVTL.bind(undefined, 0),
-    /* 0x07 */ SPVTL.bind(undefined, 1),
-    /* 0x08 */ SFVTL.bind(undefined, 0),
-    /* 0x09 */ SFVTL.bind(undefined, 1),
-    /* 0x0A */ SPVFS,
-    /* 0x0B */ SFVFS,
-    /* 0x0C */ GPV,
-    /* 0x0D */ GFV,
-    /* 0x0E */ SFVTPV,
-    /* 0x0F */ ISECT,
-    /* 0x10 */ SRP0,
-    /* 0x11 */ SRP1,
-    /* 0x12 */ SRP2,
-    /* 0x13 */ SZP0,
-    /* 0x14 */ SZP1,
-    /* 0x15 */ SZP2,
-    /* 0x16 */ SZPS,
-    /* 0x17 */ SLOOP,
-    /* 0x18 */ RTG,
-    /* 0x19 */ RTHG,
-    /* 0x1A */ SMD,
-    /* 0x1B */ ELSE,
-    /* 0x1C */ JMPR,
-    /* 0x1D */ SCVTCI,
-    /* 0x1E */ undefined,   // TODO SSWCI
-    /* 0x1F */ undefined,   // TODO SSW
-    /* 0x20 */ DUP,
-    /* 0x21 */ POP,
-    /* 0x22 */ CLEAR,
-    /* 0x23 */ SWAP,
-    /* 0x24 */ DEPTH,
-    /* 0x25 */ CINDEX,
-    /* 0x26 */ MINDEX,
-    /* 0x27 */ undefined,   // TODO ALIGNPTS
-    /* 0x28 */ undefined,
-    /* 0x29 */ undefined,   // TODO UTP
-    /* 0x2A */ LOOPCALL,
-    /* 0x2B */ CALL,
-    /* 0x2C */ FDEF,
-    /* 0x2D */ undefined,   // ENDF (eaten by FDEF)
-    /* 0x2E */ MDAP.bind(undefined, 0),
-    /* 0x2F */ MDAP.bind(undefined, 1),
-    /* 0x30 */ IUP.bind(undefined, yUnitVector),
-    /* 0x31 */ IUP.bind(undefined, xUnitVector),
-    /* 0x32 */ SHP.bind(undefined, 0),
-    /* 0x33 */ SHP.bind(undefined, 1),
-    /* 0x34 */ SHC.bind(undefined, 0),
-    /* 0x35 */ SHC.bind(undefined, 1),
-    /* 0x36 */ SHZ.bind(undefined, 0),
-    /* 0x37 */ SHZ.bind(undefined, 1),
-    /* 0x38 */ SHPIX,
-    /* 0x39 */ IP,
-    /* 0x3A */ MSIRP.bind(undefined, 0),
-    /* 0x3B */ MSIRP.bind(undefined, 1),
-    /* 0x3C */ ALIGNRP,
-    /* 0x3D */ RTDG,
-    /* 0x3E */ MIAP.bind(undefined, 0),
-    /* 0x3F */ MIAP.bind(undefined, 1),
-    /* 0x40 */ NPUSHB,
-    /* 0x41 */ NPUSHW,
-    /* 0x42 */ WS,
-    /* 0x43 */ RS,
-    /* 0x44 */ WCVTP,
-    /* 0x45 */ RCVT,
-    /* 0x46 */ GC.bind(undefined, 0),
-    /* 0x47 */ GC.bind(undefined, 1),
-    /* 0x48 */ undefined,   // TODO SCFS
-    /* 0x49 */ MD.bind(undefined, 0),
-    /* 0x4A */ MD.bind(undefined, 1),
-    /* 0x4B */ MPPEM,
-    /* 0x4C */ undefined,   // TODO MPS
-    /* 0x4D */ FLIPON,
-    /* 0x4E */ undefined,   // TODO FLIPOFF
-    /* 0x4F */ undefined,   // TODO DEBUG
-    /* 0x50 */ LT,
-    /* 0x51 */ LTEQ,
-    /* 0x52 */ GT,
-    /* 0x53 */ GTEQ,
-    /* 0x54 */ EQ,
-    /* 0x55 */ NEQ,
-    /* 0x56 */ ODD,
-    /* 0x57 */ EVEN,
-    /* 0x58 */ IF,
-    /* 0x59 */ EIF,
-    /* 0x5A */ AND,
-    /* 0x5B */ OR,
-    /* 0x5C */ NOT,
-    /* 0x5D */ DELTAP123.bind(undefined, 1),
-    /* 0x5E */ SDB,
-    /* 0x5F */ SDS,
-    /* 0x60 */ ADD,
-    /* 0x61 */ SUB,
-    /* 0x62 */ DIV,
-    /* 0x63 */ MUL,
-    /* 0x64 */ ABS,
-    /* 0x65 */ NEG,
-    /* 0x66 */ FLOOR,
-    /* 0x67 */ CEILING,
-    /* 0x68 */ ROUND.bind(undefined, 0),
-    /* 0x69 */ ROUND.bind(undefined, 1),
-    /* 0x6A */ ROUND.bind(undefined, 2),
-    /* 0x6B */ ROUND.bind(undefined, 3),
-    /* 0x6C */ undefined,   // TODO NROUND[ab]
-    /* 0x6D */ undefined,   // TODO NROUND[ab]
-    /* 0x6E */ undefined,   // TODO NROUND[ab]
-    /* 0x6F */ undefined,   // TODO NROUND[ab]
-    /* 0x70 */ WCVTF,
-    /* 0x71 */ DELTAP123.bind(undefined, 2),
-    /* 0x72 */ DELTAP123.bind(undefined, 3),
-    /* 0x73 */ DELTAC123.bind(undefined, 1),
-    /* 0x74 */ DELTAC123.bind(undefined, 2),
-    /* 0x75 */ DELTAC123.bind(undefined, 3),
-    /* 0x76 */ SROUND,
-    /* 0x77 */ S45ROUND,
-    /* 0x78 */ undefined,   // TODO JROT[]
-    /* 0x79 */ undefined,   // TODO JROF[]
-    /* 0x7A */ ROFF,
-    /* 0x7B */ undefined,
-    /* 0x7C */ RUTG,
-    /* 0x7D */ RDTG,
-    /* 0x7E */ POP, // actually SANGW, supposed to do only a pop though
-    /* 0x7F */ POP, // actually AA, supposed to do only a pop though
-    /* 0x80 */ undefined,   // TODO FLIPPT
-    /* 0x81 */ undefined,   // TODO FLIPRGON
-    /* 0x82 */ undefined,   // TODO FLIPRGOFF
-    /* 0x83 */ undefined,
-    /* 0x84 */ undefined,
-    /* 0x85 */ SCANCTRL,
-    /* 0x86 */ SDPVTL.bind(undefined, 0),
-    /* 0x87 */ SDPVTL.bind(undefined, 1),
-    /* 0x88 */ GETINFO,
-    /* 0x89 */ undefined,   // TODO IDEF
-    /* 0x8A */ ROLL,
-    /* 0x8B */ MAX,
-    /* 0x8C */ MIN,
-    /* 0x8D */ SCANTYPE,
-    /* 0x8E */ INSTCTRL,
-    /* 0x8F */ undefined,
-    /* 0x90 */ undefined,
-    /* 0x91 */ undefined,
-    /* 0x92 */ undefined,
-    /* 0x93 */ undefined,
-    /* 0x94 */ undefined,
-    /* 0x95 */ undefined,
-    /* 0x96 */ undefined,
-    /* 0x97 */ undefined,
-    /* 0x98 */ undefined,
-    /* 0x99 */ undefined,
-    /* 0x9A */ undefined,
-    /* 0x9B */ undefined,
-    /* 0x9C */ undefined,
-    /* 0x9D */ undefined,
-    /* 0x9E */ undefined,
-    /* 0x9F */ undefined,
-    /* 0xA0 */ undefined,
-    /* 0xA1 */ undefined,
-    /* 0xA2 */ undefined,
-    /* 0xA3 */ undefined,
-    /* 0xA4 */ undefined,
-    /* 0xA5 */ undefined,
-    /* 0xA6 */ undefined,
-    /* 0xA7 */ undefined,
-    /* 0xA8 */ undefined,
-    /* 0xA9 */ undefined,
-    /* 0xAA */ undefined,
-    /* 0xAB */ undefined,
-    /* 0xAC */ undefined,
-    /* 0xAD */ undefined,
-    /* 0xAE */ undefined,
-    /* 0xAF */ undefined,
-    /* 0xB0 */ PUSHB.bind(undefined, 1),
-    /* 0xB1 */ PUSHB.bind(undefined, 2),
-    /* 0xB2 */ PUSHB.bind(undefined, 3),
-    /* 0xB3 */ PUSHB.bind(undefined, 4),
-    /* 0xB4 */ PUSHB.bind(undefined, 5),
-    /* 0xB5 */ PUSHB.bind(undefined, 6),
-    /* 0xB6 */ PUSHB.bind(undefined, 7),
-    /* 0xB7 */ PUSHB.bind(undefined, 8),
-    /* 0xB8 */ PUSHW.bind(undefined, 1),
-    /* 0xB9 */ PUSHW.bind(undefined, 2),
-    /* 0xBA */ PUSHW.bind(undefined, 3),
-    /* 0xBB */ PUSHW.bind(undefined, 4),
-    /* 0xBC */ PUSHW.bind(undefined, 5),
-    /* 0xBD */ PUSHW.bind(undefined, 6),
-    /* 0xBE */ PUSHW.bind(undefined, 7),
-    /* 0xBF */ PUSHW.bind(undefined, 8),
-    /* 0xC0 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 0, 0),
-    /* 0xC1 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 0, 1),
-    /* 0xC2 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 0, 2),
-    /* 0xC3 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 0, 3),
-    /* 0xC4 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 1, 0),
-    /* 0xC5 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 1, 1),
-    /* 0xC6 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 1, 2),
-    /* 0xC7 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 1, 3),
-    /* 0xC8 */ MDRP_MIRP.bind(undefined, 0, 0, 1, 0, 0),
-    /* 0xC9 */ MDRP_MIRP.bind(undefined, 0, 0, 1, 0, 1),
-    /* 0xCA */ MDRP_MIRP.bind(undefined, 0, 0, 1, 0, 2),
-    /* 0xCB */ MDRP_MIRP.bind(undefined, 0, 0, 1, 0, 3),
-    /* 0xCC */ MDRP_MIRP.bind(undefined, 0, 0, 1, 1, 0),
-    /* 0xCD */ MDRP_MIRP.bind(undefined, 0, 0, 1, 1, 1),
-    /* 0xCE */ MDRP_MIRP.bind(undefined, 0, 0, 1, 1, 2),
-    /* 0xCF */ MDRP_MIRP.bind(undefined, 0, 0, 1, 1, 3),
-    /* 0xD0 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 0, 0),
-    /* 0xD1 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 0, 1),
-    /* 0xD2 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 0, 2),
-    /* 0xD3 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 0, 3),
-    /* 0xD4 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 1, 0),
-    /* 0xD5 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 1, 1),
-    /* 0xD6 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 1, 2),
-    /* 0xD7 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 1, 3),
-    /* 0xD8 */ MDRP_MIRP.bind(undefined, 0, 1, 1, 0, 0),
-    /* 0xD9 */ MDRP_MIRP.bind(undefined, 0, 1, 1, 0, 1),
-    /* 0xDA */ MDRP_MIRP.bind(undefined, 0, 1, 1, 0, 2),
-    /* 0xDB */ MDRP_MIRP.bind(undefined, 0, 1, 1, 0, 3),
-    /* 0xDC */ MDRP_MIRP.bind(undefined, 0, 1, 1, 1, 0),
-    /* 0xDD */ MDRP_MIRP.bind(undefined, 0, 1, 1, 1, 1),
-    /* 0xDE */ MDRP_MIRP.bind(undefined, 0, 1, 1, 1, 2),
-    /* 0xDF */ MDRP_MIRP.bind(undefined, 0, 1, 1, 1, 3),
-    /* 0xE0 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 0, 0),
-    /* 0xE1 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 0, 1),
-    /* 0xE2 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 0, 2),
-    /* 0xE3 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 0, 3),
-    /* 0xE4 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 1, 0),
-    /* 0xE5 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 1, 1),
-    /* 0xE6 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 1, 2),
-    /* 0xE7 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 1, 3),
-    /* 0xE8 */ MDRP_MIRP.bind(undefined, 1, 0, 1, 0, 0),
-    /* 0xE9 */ MDRP_MIRP.bind(undefined, 1, 0, 1, 0, 1),
-    /* 0xEA */ MDRP_MIRP.bind(undefined, 1, 0, 1, 0, 2),
-    /* 0xEB */ MDRP_MIRP.bind(undefined, 1, 0, 1, 0, 3),
-    /* 0xEC */ MDRP_MIRP.bind(undefined, 1, 0, 1, 1, 0),
-    /* 0xED */ MDRP_MIRP.bind(undefined, 1, 0, 1, 1, 1),
-    /* 0xEE */ MDRP_MIRP.bind(undefined, 1, 0, 1, 1, 2),
-    /* 0xEF */ MDRP_MIRP.bind(undefined, 1, 0, 1, 1, 3),
-    /* 0xF0 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 0, 0),
-    /* 0xF1 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 0, 1),
-    /* 0xF2 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 0, 2),
-    /* 0xF3 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 0, 3),
-    /* 0xF4 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 1, 0),
-    /* 0xF5 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 1, 1),
-    /* 0xF6 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 1, 2),
-    /* 0xF7 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 1, 3),
-    /* 0xF8 */ MDRP_MIRP.bind(undefined, 1, 1, 1, 0, 0),
-    /* 0xF9 */ MDRP_MIRP.bind(undefined, 1, 1, 1, 0, 1),
-    /* 0xFA */ MDRP_MIRP.bind(undefined, 1, 1, 1, 0, 2),
-    /* 0xFB */ MDRP_MIRP.bind(undefined, 1, 1, 1, 0, 3),
-    /* 0xFC */ MDRP_MIRP.bind(undefined, 1, 1, 1, 1, 0),
-    /* 0xFD */ MDRP_MIRP.bind(undefined, 1, 1, 1, 1, 1),
-    /* 0xFE */ MDRP_MIRP.bind(undefined, 1, 1, 1, 1, 2),
-    /* 0xFF */ MDRP_MIRP.bind(undefined, 1, 1, 1, 1, 3)
-];
-
-
-
-/*****************************
-  Mathematical Considerations
-******************************
-
-fv ... refers to freedom vector
-pv ... refers to projection vector
-rp ... refers to reference point
-p  ... refers to to point being operated on
-d  ... refers to distance
-
-SETRELATIVE:
-============
-
-case freedom vector == x-axis:
-------------------------------
-
-                        (pv)
-                     .-'
-              rpd .-'
-               .-*
-          d .-'90°'
-         .-'       '
-      .-'           '
-   *-'               ' b
-  rp                  '
-                       '
-                        '
-            p *----------*-------------- (fv)
-                          pm
-
-  rpdx = rpx + d * pv.x
-  rpdy = rpy + d * pv.y
-
-  equation of line b
-
-   y - rpdy = pvns * (x- rpdx)
-
-   y = p.y
-
-   x = rpdx + ( p.y - rpdy ) / pvns
-
-
-case freedom vector == y-axis:
-------------------------------
-
-    * pm
-    |\
-    | \
-    |  \
-    |   \
-    |    \
-    |     \
-    |      \
-    |       \
-    |        \
-    |         \ b
-    |          \
-    |           \
-    |            \    .-' (pv)
-    |         90° \.-'
-    |           .-'* rpd
-    |        .-'
-    *     *-'  d
-    p     rp
-
-  rpdx = rpx + d * pv.x
-  rpdy = rpy + d * pv.y
-
-  equation of line b:
-           pvns ... normal slope to pv
-
-   y - rpdy = pvns * (x - rpdx)
-
-   x = p.x
-
-   y = rpdy +  pvns * (p.x - rpdx)
-
-
-
-generic case:
--------------
-
-
-                              .'(fv)
-                            .'
-                          .* pm
-                        .' !
-                      .'    .
-                    .'      !
-                  .'         . b
-                .'           !
-               *              .
-              p               !
-                         90°   .    ... (pv)
-                           ...-*-'''
-                  ...---'''    rpd
-         ...---'''   d
-   *--'''
-  rp
-
-    rpdx = rpx + d * pv.x
-    rpdy = rpy + d * pv.y
-
- equation of line b:
-    pvns... normal slope to pv
-
-    y - rpdy = pvns * (x - rpdx)
-
- equation of freedom vector line:
-    fvs ... slope of freedom vector (=fy/fx)
-
-    y - py = fvs * (x - px)
-
-
-  on pm both equations are true for same x/y
-
-    y - rpdy = pvns * (x - rpdx)
-
-    y - py = fvs * (x - px)
-
-  form to y and set equal:
-
-    pvns * (x - rpdx) + rpdy = fvs * (x - px) + py
-
-  expand:
-
-    pvns * x - pvns * rpdx + rpdy = fvs * x - fvs * px + py
-
-  switch:
-
-    fvs * x - fvs * px + py = pvns * x - pvns * rpdx + rpdy
-
-  solve for x:
-
-    fvs * x - pvns * x = fvs * px - pvns * rpdx - py + rpdy
-
-
-
-          fvs * px - pvns * rpdx + rpdy - py
-    x =  -----------------------------------
-                 fvs - pvns
-
-  and:
-
-    y = fvs * (x - px) + py
-
-
-
-INTERPOLATE:
-============
-
-Examples of point interpolation.
-
-The weight of the movement of the reference point gets bigger
-the further the other reference point is away, thus the safest
-option (that is avoiding 0/0 divisions) is to weight the
-original distance of the other point by the sum of both distances.
-
-If the sum of both distances is 0, then move the point by the
-arithmetic average of the movement of both reference points.
-
-
-
-
-           (+6)
-    rp1o *---->*rp1
-         .     .                          (+12)
-         .     .                  rp2o *---------->* rp2
-         .     .                       .           .
-         .     .                       .           .
-         .    10          20           .           .
-         |.........|...................|           .
-               .   .                               .
-               .   . (+8)                          .
-                po *------>*p                      .
-               .           .                       .
-               .    12     .          24           .
-               |...........|.......................|
-                                  36
-
-
--------
+	    if (exports.DEBUG) { console.log(state.step, 'LOOPCALL[]', fn, c); }
 
+	    // saves callers program
+	    var cip = state.ip;
+	    var cprog = state.prog;
 
+	    state.prog = state.funcs[fn];
+
+	    // executes the function
+	    for (var i = 0; i < c; i++) {
+	        exec(state);
+
+	        if (exports.DEBUG) { console.log(
+	            ++state.step,
+	            i + 1 < c ? 'next loopcall' : 'done loopcall',
+	            i
+	        ); }
+	    }
+
+	    // restores the callers program
+	    state.ip = cip;
+	    state.prog = cprog;
+	}
+
+	// CALL[] CALL function
+	// 0x2B
+	function CALL(state) {
+	    var fn = state.stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'CALL[]', fn); }
+
+	    // saves callers program
+	    var cip = state.ip;
+	    var cprog = state.prog;
+
+	    state.prog = state.funcs[fn];
+
+	    // executes the function
+	    exec(state);
+
+	    // restores the callers program
+	    state.ip = cip;
+	    state.prog = cprog;
+
+	    if (exports.DEBUG) { console.log(++state.step, 'returning from', fn); }
+	}
+
+	// CINDEX[] Copy the INDEXed element to the top of the stack
+	// 0x25
+	function CINDEX(state) {
+	    var stack = state.stack;
+	    var k = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'CINDEX[]', k); }
+
+	    // In case of k == 1, it copies the last element after popping
+	    // thus stack.length - k.
+	    stack.push(stack[stack.length - k]);
+	}
+
+	// MINDEX[] Move the INDEXed element to the top of the stack
+	// 0x26
+	function MINDEX(state) {
+	    var stack = state.stack;
+	    var k = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'MINDEX[]', k); }
+
+	    stack.push(stack.splice(stack.length - k, 1)[0]);
+	}
+
+	// FDEF[] Function DEFinition
+	// 0x2C
+	function FDEF(state) {
+	    if (state.env !== 'fpgm') { throw new Error('FDEF not allowed here'); }
+	    var stack = state.stack;
+	    var prog = state.prog;
+	    var ip = state.ip;
+
+	    var fn = stack.pop();
+	    var ipBegin = ip;
+
+	    if (exports.DEBUG) { console.log(state.step, 'FDEF[]', fn); }
+
+	    while (prog[++ip] !== 0x2D){ }
+
+	    state.ip = ip;
+	    state.funcs[fn] = prog.slice(ipBegin + 1, ip);
+	}
+
+	// MDAP[a] Move Direct Absolute Point
+	// 0x2E-0x2F
+	function MDAP(round, state) {
+	    var pi = state.stack.pop();
+	    var p = state.z0[pi];
+	    var fv = state.fv;
+	    var pv = state.pv;
+
+	    if (exports.DEBUG) { console.log(state.step, 'MDAP[' + round + ']', pi); }
+
+	    var d = pv.distance(p, HPZero);
+
+	    if (round) { d = state.round(d); }
+
+	    fv.setRelative(p, HPZero, d, pv);
+	    fv.touch(p);
+
+	    state.rp0 = state.rp1 = pi;
+	}
+
+	// IUP[a] Interpolate Untouched Points through the outline
+	// 0x30
+	function IUP(v, state) {
+	    var z2 = state.z2;
+	    var pLen = z2.length - 2;
+	    var cp;
+	    var pp;
+	    var np;
+
+	    if (exports.DEBUG) { console.log(state.step, 'IUP[' + v.axis + ']'); }
+
+	    for (var i = 0; i < pLen; i++) {
+	        cp = z2[i]; // current point
+
+	        // if this point has been touched go on
+	        if (v.touched(cp)) { continue; }
+
+	        pp = cp.prevTouched(v);
+
+	        // no point on the contour has been touched?
+	        if (pp === cp) { continue; }
+
+	        np = cp.nextTouched(v);
+
+	        if (pp === np) {
+	            // only one point on the contour has been touched
+	            // so simply moves the point like that
+
+	            v.setRelative(cp, cp, v.distance(pp, pp, false, true), v, true);
+	        }
+
+	        v.interpolate(cp, pp, np, v);
+	    }
+	}
+
+	// SHP[] SHift Point using reference point
+	// 0x32-0x33
+	function SHP(a, state) {
+	    var stack = state.stack;
+	    var rpi = a ? state.rp1 : state.rp2;
+	    var rp = (a ? state.z0 : state.z1)[rpi];
+	    var fv = state.fv;
+	    var pv = state.pv;
+	    var loop = state.loop;
+	    var z2 = state.z2;
+
+	    while (loop--)
+	    {
+	        var pi = stack.pop();
+	        var p = z2[pi];
+
+	        var d = pv.distance(rp, rp, false, true);
+	        fv.setRelative(p, p, d, pv);
+	        fv.touch(p);
+
+	        if (exports.DEBUG) {
+	            console.log(
+	                state.step,
+	                (state.loop > 1 ?
+	                   'loop ' + (state.loop - loop) + ': ' :
+	                   ''
+	                ) +
+	                'SHP[' + (a ? 'rp1' : 'rp2') + ']', pi
+	            );
+	        }
+	    }
+
+	    state.loop = 1;
+	}
+
+	// SHC[] SHift Contour using reference point
+	// 0x36-0x37
+	function SHC(a, state) {
+	    var stack = state.stack;
+	    var rpi = a ? state.rp1 : state.rp2;
+	    var rp = (a ? state.z0 : state.z1)[rpi];
+	    var fv = state.fv;
+	    var pv = state.pv;
+	    var ci = stack.pop();
+	    var sp = state.z2[state.contours[ci]];
+	    var p = sp;
+
+	    if (exports.DEBUG) { console.log(state.step, 'SHC[' + a + ']', ci); }
+
+	    var d = pv.distance(rp, rp, false, true);
+
+	    do {
+	        if (p !== rp) { fv.setRelative(p, p, d, pv); }
+	        p = p.nextPointOnContour;
+	    } while (p !== sp);
+	}
+
+	// SHZ[] SHift Zone using reference point
+	// 0x36-0x37
+	function SHZ(a, state) {
+	    var stack = state.stack;
+	    var rpi = a ? state.rp1 : state.rp2;
+	    var rp = (a ? state.z0 : state.z1)[rpi];
+	    var fv = state.fv;
+	    var pv = state.pv;
+
+	    var e = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'SHZ[' + a + ']', e); }
+
+	    var z;
+	    switch (e) {
+	        case 0 : z = state.tZone; break;
+	        case 1 : z = state.gZone; break;
+	        default : throw new Error('Invalid zone');
+	    }
+
+	    var p;
+	    var d = pv.distance(rp, rp, false, true);
+	    var pLen = z.length - 2;
+	    for (var i = 0; i < pLen; i++)
+	    {
+	        p = z[i];
+	        fv.setRelative(p, p, d, pv);
+	        //if (p !== rp) fv.setRelative(p, p, d, pv);
+	    }
+	}
+
+	// SHPIX[] SHift point by a PIXel amount
+	// 0x38
+	function SHPIX(state) {
+	    var stack = state.stack;
+	    var loop = state.loop;
+	    var fv = state.fv;
+	    var d = stack.pop() / 0x40;
+	    var z2 = state.z2;
+
+	    while (loop--) {
+	        var pi = stack.pop();
+	        var p = z2[pi];
+
+	        if (exports.DEBUG) {
+	            console.log(
+	                state.step,
+	                (state.loop > 1 ? 'loop ' + (state.loop - loop) + ': ' : '') +
+	                'SHPIX[]', pi, d
+	            );
+	        }
+
+	        fv.setRelative(p, p, d);
+	        fv.touch(p);
+	    }
+
+	    state.loop = 1;
+	}
+
+	// IP[] Interpolate Point
+	// 0x39
+	function IP(state) {
+	    var stack = state.stack;
+	    var rp1i = state.rp1;
+	    var rp2i = state.rp2;
+	    var loop = state.loop;
+	    var rp1 = state.z0[rp1i];
+	    var rp2 = state.z1[rp2i];
+	    var fv = state.fv;
+	    var pv = state.dpv;
+	    var z2 = state.z2;
+
+	    while (loop--) {
+	        var pi = stack.pop();
+	        var p = z2[pi];
+
+	        if (exports.DEBUG) {
+	            console.log(
+	                state.step,
+	                (state.loop > 1 ? 'loop ' + (state.loop - loop) + ': ' : '') +
+	                'IP[]', pi, rp1i, '<->', rp2i
+	            );
+	        }
+
+	        fv.interpolate(p, rp1, rp2, pv);
+
+	        fv.touch(p);
+	    }
+
+	    state.loop = 1;
+	}
+
+	// MSIRP[a] Move Stack Indirect Relative Point
+	// 0x3A-0x3B
+	function MSIRP(a, state) {
+	    var stack = state.stack;
+	    var d = stack.pop() / 64;
+	    var pi = stack.pop();
+	    var p = state.z1[pi];
+	    var rp0 = state.z0[state.rp0];
+	    var fv = state.fv;
+	    var pv = state.pv;
+
+	    fv.setRelative(p, rp0, d, pv);
+	    fv.touch(p);
+
+	    if (exports.DEBUG) { console.log(state.step, 'MSIRP[' + a + ']', d, pi); }
+
+	    state.rp1 = state.rp0;
+	    state.rp2 = pi;
+	    if (a) { state.rp0 = pi; }
+	}
+
+	// ALIGNRP[] Align to reference point.
+	// 0x3C
+	function ALIGNRP(state) {
+	    var stack = state.stack;
+	    var rp0i = state.rp0;
+	    var rp0 = state.z0[rp0i];
+	    var loop = state.loop;
+	    var fv = state.fv;
+	    var pv = state.pv;
+	    var z1 = state.z1;
+
+	    while (loop--) {
+	        var pi = stack.pop();
+	        var p = z1[pi];
+
+	        if (exports.DEBUG) {
+	            console.log(
+	                state.step,
+	                (state.loop > 1 ? 'loop ' + (state.loop - loop) + ': ' : '') +
+	                'ALIGNRP[]', pi
+	            );
+	        }
+
+	        fv.setRelative(p, rp0, 0, pv);
+	        fv.touch(p);
+	    }
+
+	    state.loop = 1;
+	}
+
+	// RTG[] Round To Double Grid
+	// 0x3D
+	function RTDG(state) {
+	    if (exports.DEBUG) { console.log(state.step, 'RTDG[]'); }
+
+	    state.round = roundToDoubleGrid;
+	}
+
+	// MIAP[a] Move Indirect Absolute Point
+	// 0x3E-0x3F
+	function MIAP(round, state) {
+	    var stack = state.stack;
+	    var n = stack.pop();
+	    var pi = stack.pop();
+	    var p = state.z0[pi];
+	    var fv = state.fv;
+	    var pv = state.pv;
+	    var cv = state.cvt[n];
+
+	    if (exports.DEBUG) {
+	        console.log(
+	            state.step,
+	            'MIAP[' + round + ']',
+	            n, '(', cv, ')', pi
+	        );
+	    }
+
+	    var d = pv.distance(p, HPZero);
+
+	    if (round) {
+	        if (Math.abs(d - cv) < state.cvCutIn) { d = cv; }
+
+	        d = state.round(d);
+	    }
+
+	    fv.setRelative(p, HPZero, d, pv);
+
+	    if (state.zp0 === 0) {
+	        p.xo = p.x;
+	        p.yo = p.y;
+	    }
+
+	    fv.touch(p);
+
+	    state.rp0 = state.rp1 = pi;
+	}
+
+	// NPUSB[] PUSH N Bytes
+	// 0x40
+	function NPUSHB(state) {
+	    var prog = state.prog;
+	    var ip = state.ip;
+	    var stack = state.stack;
+
+	    var n = prog[++ip];
+
+	    if (exports.DEBUG) { console.log(state.step, 'NPUSHB[]', n); }
+
+	    for (var i = 0; i < n; i++) { stack.push(prog[++ip]); }
+
+	    state.ip = ip;
+	}
+
+	// NPUSHW[] PUSH N Words
+	// 0x41
+	function NPUSHW(state) {
+	    var ip = state.ip;
+	    var prog = state.prog;
+	    var stack = state.stack;
+	    var n = prog[++ip];
+
+	    if (exports.DEBUG) { console.log(state.step, 'NPUSHW[]', n); }
+
+	    for (var i = 0; i < n; i++) {
+	        var w = (prog[++ip] << 8) | prog[++ip];
+	        if (w & 0x8000) { w = -((w ^ 0xffff) + 1); }
+	        stack.push(w);
+	    }
+
+	    state.ip = ip;
+	}
+
+	// WS[] Write Store
+	// 0x42
+	function WS(state) {
+	    var stack = state.stack;
+	    var store = state.store;
+
+	    if (!store) { store = state.store = []; }
+
+	    var v = stack.pop();
+	    var l = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'WS', v, l); }
+
+	    store[l] = v;
+	}
+
+	// RS[] Read Store
+	// 0x43
+	function RS(state) {
+	    var stack = state.stack;
+	    var store = state.store;
+
+	    var l = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'RS', l); }
+
+	    var v = (store && store[l]) || 0;
+
+	    stack.push(v);
+	}
+
+	// WCVTP[] Write Control Value Table in Pixel units
+	// 0x44
+	function WCVTP(state) {
+	    var stack = state.stack;
+
+	    var v = stack.pop();
+	    var l = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'WCVTP', v, l); }
+
+	    state.cvt[l] = v / 0x40;
+	}
+
+	// RCVT[] Read Control Value Table entry
+	// 0x45
+	function RCVT(state) {
+	    var stack = state.stack;
+	    var cvte = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'RCVT', cvte); }
+
+	    stack.push(state.cvt[cvte] * 0x40);
+	}
+
+	// GC[] Get Coordinate projected onto the projection vector
+	// 0x46-0x47
+	function GC(a, state) {
+	    var stack = state.stack;
+	    var pi = stack.pop();
+	    var p = state.z2[pi];
+
+	    if (exports.DEBUG) { console.log(state.step, 'GC[' + a + ']', pi); }
+
+	    stack.push(state.dpv.distance(p, HPZero, a, false) * 0x40);
+	}
+
+	// MD[a] Measure Distance
+	// 0x49-0x4A
+	function MD(a, state) {
+	    var stack = state.stack;
+	    var pi2 = stack.pop();
+	    var pi1 = stack.pop();
+	    var p2 = state.z1[pi2];
+	    var p1 = state.z0[pi1];
+	    var d = state.dpv.distance(p1, p2, a, a);
+
+	    if (exports.DEBUG) { console.log(state.step, 'MD[' + a + ']', pi2, pi1, '->', d); }
+
+	    state.stack.push(Math.round(d * 64));
+	}
+
+	// MPPEM[] Measure Pixels Per EM
+	// 0x4B
+	function MPPEM(state) {
+	    if (exports.DEBUG) { console.log(state.step, 'MPPEM[]'); }
+	    state.stack.push(state.ppem);
+	}
+
+	// FLIPON[] set the auto FLIP Boolean to ON
+	// 0x4D
+	function FLIPON(state) {
+	    if (exports.DEBUG) { console.log(state.step, 'FLIPON[]'); }
+	    state.autoFlip = true;
+	}
+
+	// LT[] Less Than
+	// 0x50
+	function LT(state) {
+	    var stack = state.stack;
+	    var e2 = stack.pop();
+	    var e1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'LT[]', e2, e1); }
+
+	    stack.push(e1 < e2 ? 1 : 0);
+	}
+
+	// LTEQ[] Less Than or EQual
+	// 0x53
+	function LTEQ(state) {
+	    var stack = state.stack;
+	    var e2 = stack.pop();
+	    var e1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'LTEQ[]', e2, e1); }
+
+	    stack.push(e1 <= e2 ? 1 : 0);
+	}
+
+	// GTEQ[] Greater Than
+	// 0x52
+	function GT(state) {
+	    var stack = state.stack;
+	    var e2 = stack.pop();
+	    var e1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'GT[]', e2, e1); }
+
+	    stack.push(e1 > e2 ? 1 : 0);
+	}
+
+	// GTEQ[] Greater Than or EQual
+	// 0x53
+	function GTEQ(state) {
+	    var stack = state.stack;
+	    var e2 = stack.pop();
+	    var e1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'GTEQ[]', e2, e1); }
+
+	    stack.push(e1 >= e2 ? 1 : 0);
+	}
+
+	// EQ[] EQual
+	// 0x54
+	function EQ(state) {
+	    var stack = state.stack;
+	    var e2 = stack.pop();
+	    var e1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'EQ[]', e2, e1); }
+
+	    stack.push(e2 === e1 ? 1 : 0);
+	}
+
+	// NEQ[] Not EQual
+	// 0x55
+	function NEQ(state) {
+	    var stack = state.stack;
+	    var e2 = stack.pop();
+	    var e1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'NEQ[]', e2, e1); }
+
+	    stack.push(e2 !== e1 ? 1 : 0);
+	}
+
+	// ODD[] ODD
+	// 0x56
+	function ODD(state) {
+	    var stack = state.stack;
+	    var n = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'ODD[]', n); }
+
+	    stack.push(Math.trunc(n) % 2 ? 1 : 0);
+	}
+
+	// EVEN[] EVEN
+	// 0x57
+	function EVEN(state) {
+	    var stack = state.stack;
+	    var n = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'EVEN[]', n); }
+
+	    stack.push(Math.trunc(n) % 2 ? 0 : 1);
+	}
+
+	// IF[] IF test
+	// 0x58
+	function IF(state) {
+	    var test = state.stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'IF[]', test); }
+
+	    // if test is true it just continues
+	    // if not the ip is skipped until matching ELSE or EIF
+	    if (!test) {
+	        skip(state, true);
+
+	        if (exports.DEBUG) { console.log(state.step, 'EIF[]'); }
+	    }
+	}
+
+	// EIF[] End IF
+	// 0x59
+	function EIF(state) {
+	    // this can be reached normally when
+	    // executing an else branch.
+	    // -> just ignore it
+
+	    if (exports.DEBUG) { console.log(state.step, 'EIF[]'); }
+	}
+
+	// AND[] logical AND
+	// 0x5A
+	function AND(state) {
+	    var stack = state.stack;
+	    var e2 = stack.pop();
+	    var e1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'AND[]', e2, e1); }
+
+	    stack.push(e2 && e1 ? 1 : 0);
+	}
+
+	// OR[] logical OR
+	// 0x5B
+	function OR(state) {
+	    var stack = state.stack;
+	    var e2 = stack.pop();
+	    var e1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'OR[]', e2, e1); }
+
+	    stack.push(e2 || e1 ? 1 : 0);
+	}
+
+	// NOT[] logical NOT
+	// 0x5C
+	function NOT(state) {
+	    var stack = state.stack;
+	    var e = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'NOT[]', e); }
+
+	    stack.push(e ? 0 : 1);
+	}
+
+	// DELTAP1[] DELTA exception P1
+	// DELTAP2[] DELTA exception P2
+	// DELTAP3[] DELTA exception P3
+	// 0x5D, 0x71, 0x72
+	function DELTAP123(b, state) {
+	    var stack = state.stack;
+	    var n = stack.pop();
+	    var fv = state.fv;
+	    var pv = state.pv;
+	    var ppem = state.ppem;
+	    var base = state.deltaBase + (b - 1) * 16;
+	    var ds = state.deltaShift;
+	    var z0 = state.z0;
+
+	    if (exports.DEBUG) { console.log(state.step, 'DELTAP[' + b + ']', n, stack); }
+
+	    for (var i = 0; i < n; i++) {
+	        var pi = stack.pop();
+	        var arg = stack.pop();
+	        var appem = base + ((arg & 0xF0) >> 4);
+	        if (appem !== ppem) { continue; }
+
+	        var mag = (arg & 0x0F) - 8;
+	        if (mag >= 0) { mag++; }
+	        if (exports.DEBUG) { console.log(state.step, 'DELTAPFIX', pi, 'by', mag * ds); }
+
+	        var p = z0[pi];
+	        fv.setRelative(p, p, mag * ds, pv);
+	    }
+	}
+
+	// SDB[] Set Delta Base in the graphics state
+	// 0x5E
+	function SDB(state) {
+	    var stack = state.stack;
+	    var n = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'SDB[]', n); }
+
+	    state.deltaBase = n;
+	}
+
+	// SDS[] Set Delta Shift in the graphics state
+	// 0x5F
+	function SDS(state) {
+	    var stack = state.stack;
+	    var n = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'SDS[]', n); }
+
+	    state.deltaShift = Math.pow(0.5, n);
+	}
+
+	// ADD[] ADD
+	// 0x60
+	function ADD(state) {
+	    var stack = state.stack;
+	    var n2 = stack.pop();
+	    var n1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'ADD[]', n2, n1); }
+
+	    stack.push(n1 + n2);
+	}
+
+	// SUB[] SUB
+	// 0x61
+	function SUB(state) {
+	    var stack = state.stack;
+	    var n2 = stack.pop();
+	    var n1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'SUB[]', n2, n1); }
+
+	    stack.push(n1 - n2);
+	}
+
+	// DIV[] DIV
+	// 0x62
+	function DIV(state) {
+	    var stack = state.stack;
+	    var n2 = stack.pop();
+	    var n1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'DIV[]', n2, n1); }
+
+	    stack.push(n1 * 64 / n2);
+	}
+
+	// MUL[] MUL
+	// 0x63
+	function MUL(state) {
+	    var stack = state.stack;
+	    var n2 = stack.pop();
+	    var n1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'MUL[]', n2, n1); }
+
+	    stack.push(n1 * n2 / 64);
+	}
+
+	// ABS[] ABSolute value
+	// 0x64
+	function ABS(state) {
+	    var stack = state.stack;
+	    var n = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'ABS[]', n); }
+
+	    stack.push(Math.abs(n));
+	}
+
+	// NEG[] NEGate
+	// 0x65
+	function NEG(state) {
+	    var stack = state.stack;
+	    var n = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'NEG[]', n); }
+
+	    stack.push(-n);
+	}
+
+	// FLOOR[] FLOOR
+	// 0x66
+	function FLOOR(state) {
+	    var stack = state.stack;
+	    var n = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'FLOOR[]', n); }
+
+	    stack.push(Math.floor(n / 0x40) * 0x40);
+	}
+
+	// CEILING[] CEILING
+	// 0x67
+	function CEILING(state) {
+	    var stack = state.stack;
+	    var n = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'CEILING[]', n); }
+
+	    stack.push(Math.ceil(n / 0x40) * 0x40);
+	}
+
+	// ROUND[ab] ROUND value
+	// 0x68-0x6B
+	function ROUND(dt, state) {
+	    var stack = state.stack;
+	    var n = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'ROUND[]'); }
+
+	    stack.push(state.round(n / 0x40) * 0x40);
+	}
+
+	// WCVTF[] Write Control Value Table in Funits
+	// 0x70
+	function WCVTF(state) {
+	    var stack = state.stack;
+	    var v = stack.pop();
+	    var l = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'WCVTF[]', v, l); }
+
+	    state.cvt[l] = v * state.ppem / state.font.unitsPerEm;
+	}
+
+	// DELTAC1[] DELTA exception C1
+	// DELTAC2[] DELTA exception C2
+	// DELTAC3[] DELTA exception C3
+	// 0x73, 0x74, 0x75
+	function DELTAC123(b, state) {
+	    var stack = state.stack;
+	    var n = stack.pop();
+	    var ppem = state.ppem;
+	    var base = state.deltaBase + (b - 1) * 16;
+	    var ds = state.deltaShift;
+
+	    if (exports.DEBUG) { console.log(state.step, 'DELTAC[' + b + ']', n, stack); }
+
+	    for (var i = 0; i < n; i++) {
+	        var c = stack.pop();
+	        var arg = stack.pop();
+	        var appem = base + ((arg & 0xF0) >> 4);
+	        if (appem !== ppem) { continue; }
+
+	        var mag = (arg & 0x0F) - 8;
+	        if (mag >= 0) { mag++; }
+
+	        var delta = mag * ds;
+
+	        if (exports.DEBUG) { console.log(state.step, 'DELTACFIX', c, 'by', delta); }
+
+	        state.cvt[c] += delta;
+	    }
+	}
+
+	// SROUND[] Super ROUND
+	// 0x76
+	function SROUND(state) {
+	    var n = state.stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'SROUND[]', n); }
+
+	    state.round = roundSuper;
+
+	    var period;
+
+	    switch (n & 0xC0) {
+	        case 0x00:
+	            period = 0.5;
+	            break;
+	        case 0x40:
+	            period = 1;
+	            break;
+	        case 0x80:
+	            period = 2;
+	            break;
+	        default:
+	            throw new Error('invalid SROUND value');
+	    }
+
+	    state.srPeriod = period;
+
+	    switch (n & 0x30) {
+	        case 0x00:
+	            state.srPhase = 0;
+	            break;
+	        case 0x10:
+	            state.srPhase = 0.25 * period;
+	            break;
+	        case 0x20:
+	            state.srPhase = 0.5  * period;
+	            break;
+	        case 0x30:
+	            state.srPhase = 0.75 * period;
+	            break;
+	        default: throw new Error('invalid SROUND value');
+	    }
+
+	    n &= 0x0F;
+
+	    if (n === 0) { state.srThreshold = 0; }
+	    else { state.srThreshold = (n / 8 - 0.5) * period; }
+	}
+
+	// S45ROUND[] Super ROUND 45 degrees
+	// 0x77
+	function S45ROUND(state) {
+	    var n = state.stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'S45ROUND[]', n); }
+
+	    state.round = roundSuper;
+
+	    var period;
+
+	    switch (n & 0xC0) {
+	        case 0x00:
+	            period = Math.sqrt(2) / 2;
+	            break;
+	        case 0x40:
+	            period = Math.sqrt(2);
+	            break;
+	        case 0x80:
+	            period = 2 * Math.sqrt(2);
+	            break;
+	        default:
+	            throw new Error('invalid S45ROUND value');
+	    }
+
+	    state.srPeriod = period;
+
+	    switch (n & 0x30) {
+	        case 0x00:
+	            state.srPhase = 0;
+	            break;
+	        case 0x10:
+	            state.srPhase = 0.25 * period;
+	            break;
+	        case 0x20:
+	            state.srPhase = 0.5  * period;
+	            break;
+	        case 0x30:
+	            state.srPhase = 0.75 * period;
+	            break;
+	        default:
+	            throw new Error('invalid S45ROUND value');
+	    }
+
+	    n &= 0x0F;
+
+	    if (n === 0) { state.srThreshold = 0; }
+	    else { state.srThreshold = (n / 8 - 0.5) * period; }
+	}
+
+	// ROFF[] Round Off
+	// 0x7A
+	function ROFF(state) {
+	    if (exports.DEBUG) { console.log(state.step, 'ROFF[]'); }
+
+	    state.round = roundOff;
+	}
+
+	// RUTG[] Round Up To Grid
+	// 0x7C
+	function RUTG(state) {
+	    if (exports.DEBUG) { console.log(state.step, 'RUTG[]'); }
+
+	    state.round = roundUpToGrid;
+	}
+
+	// RDTG[] Round Down To Grid
+	// 0x7D
+	function RDTG(state) {
+	    if (exports.DEBUG) { console.log(state.step, 'RDTG[]'); }
+
+	    state.round = roundDownToGrid;
+	}
+
+	// SCANCTRL[] SCAN conversion ConTRoL
+	// 0x85
+	function SCANCTRL(state) {
+	    var n = state.stack.pop();
+
+	    // ignored by opentype.js
+
+	    if (exports.DEBUG) { console.log(state.step, 'SCANCTRL[]', n); }
+	}
+
+	// SDPVTL[a] Set Dual Projection Vector To Line
+	// 0x86-0x87
+	function SDPVTL(a, state) {
+	    var stack = state.stack;
+	    var p2i = stack.pop();
+	    var p1i = stack.pop();
+	    var p2 = state.z2[p2i];
+	    var p1 = state.z1[p1i];
+
+	    if (exports.DEBUG) { console.log(state.step, 'SDPVTL[' + a + ']', p2i, p1i); }
+
+	    var dx;
+	    var dy;
+
+	    if (!a) {
+	        dx = p1.x - p2.x;
+	        dy = p1.y - p2.y;
+	    } else {
+	        dx = p2.y - p1.y;
+	        dy = p1.x - p2.x;
+	    }
+
+	    state.dpv = getUnitVector(dx, dy);
+	}
+
+	// GETINFO[] GET INFOrmation
+	// 0x88
+	function GETINFO(state) {
+	    var stack = state.stack;
+	    var sel = stack.pop();
+	    var r = 0;
+
+	    if (exports.DEBUG) { console.log(state.step, 'GETINFO[]', sel); }
+
+	    // v35 as in no subpixel hinting
+	    if (sel & 0x01) { r = 35; }
+
+	    // TODO rotation and stretch currently not supported
+	    // and thus those GETINFO are always 0.
+
+	    // opentype.js is always gray scaling
+	    if (sel & 0x20) { r |= 0x1000; }
+
+	    stack.push(r);
+	}
+
+	// ROLL[] ROLL the top three stack elements
+	// 0x8A
+	function ROLL(state) {
+	    var stack = state.stack;
+	    var a = stack.pop();
+	    var b = stack.pop();
+	    var c = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'ROLL[]'); }
+
+	    stack.push(b);
+	    stack.push(a);
+	    stack.push(c);
+	}
+
+	// MAX[] MAXimum of top two stack elements
+	// 0x8B
+	function MAX(state) {
+	    var stack = state.stack;
+	    var e2 = stack.pop();
+	    var e1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'MAX[]', e2, e1); }
+
+	    stack.push(Math.max(e1, e2));
+	}
+
+	// MIN[] MINimum of top two stack elements
+	// 0x8C
+	function MIN(state) {
+	    var stack = state.stack;
+	    var e2 = stack.pop();
+	    var e1 = stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'MIN[]', e2, e1); }
+
+	    stack.push(Math.min(e1, e2));
+	}
+
+	// SCANTYPE[] SCANTYPE
+	// 0x8D
+	function SCANTYPE(state) {
+	    var n = state.stack.pop();
+	    // ignored by opentype.js
+	    if (exports.DEBUG) { console.log(state.step, 'SCANTYPE[]', n); }
+	}
+
+	// INSTCTRL[] INSTCTRL
+	// 0x8D
+	function INSTCTRL(state) {
+	    var s = state.stack.pop();
+	    var v = state.stack.pop();
+
+	    if (exports.DEBUG) { console.log(state.step, 'INSTCTRL[]', s, v); }
+
+	    switch (s) {
+	        case 1 : state.inhibitGridFit = !!v; return;
+	        case 2 : state.ignoreCvt = !!v; return;
+	        default: throw new Error('invalid INSTCTRL[] selector');
+	    }
+	}
+
+	// PUSHB[abc] PUSH Bytes
+	// 0xB0-0xB7
+	function PUSHB(n, state) {
+	    var stack = state.stack;
+	    var prog = state.prog;
+	    var ip = state.ip;
+
+	    if (exports.DEBUG) { console.log(state.step, 'PUSHB[' + n + ']'); }
+
+	    for (var i = 0; i < n; i++) { stack.push(prog[++ip]); }
+
+	    state.ip = ip;
+	}
+
+	// PUSHW[abc] PUSH Words
+	// 0xB8-0xBF
+	function PUSHW(n, state) {
+	    var ip = state.ip;
+	    var prog = state.prog;
+	    var stack = state.stack;
+
+	    if (exports.DEBUG) { console.log(state.ip, 'PUSHW[' + n + ']'); }
+
+	    for (var i = 0; i < n; i++) {
+	        var w = (prog[++ip] << 8) | prog[++ip];
+	        if (w & 0x8000) { w = -((w ^ 0xffff) + 1); }
+	        stack.push(w);
+	    }
+
+	    state.ip = ip;
+	}
+
+	// MDRP[abcde] Move Direct Relative Point
+	// 0xD0-0xEF
+	// (if indirect is 0)
+	//
+	// and
+	//
+	// MIRP[abcde] Move Indirect Relative Point
+	// 0xE0-0xFF
+	// (if indirect is 1)
+
+	function MDRP_MIRP(indirect, setRp0, keepD, ro, dt, state) {
+	    var stack = state.stack;
+	    var cvte = indirect && stack.pop();
+	    var pi = stack.pop();
+	    var rp0i = state.rp0;
+	    var rp = state.z0[rp0i];
+	    var p = state.z1[pi];
+
+	    var md = state.minDis;
+	    var fv = state.fv;
+	    var pv = state.dpv;
+	    var od; // original distance
+	    var d; // moving distance
+	    var sign; // sign of distance
+	    var cv;
+
+	    d = od = pv.distance(p, rp, true, true);
+	    sign = d >= 0 ? 1 : -1; // Math.sign would be 0 in case of 0
+
+	    // TODO consider autoFlip
+	    d = Math.abs(d);
+
+	    if (indirect) {
+	        cv = state.cvt[cvte];
+
+	        if (ro && Math.abs(d - cv) < state.cvCutIn) { d = cv; }
+	    }
+
+	    if (keepD && d < md) { d = md; }
+
+	    if (ro) { d = state.round(d); }
+
+	    fv.setRelative(p, rp, sign * d, pv);
+	    fv.touch(p);
+
+	    if (exports.DEBUG) {
+	        console.log(
+	            state.step,
+	            (indirect ? 'MIRP[' : 'MDRP[') +
+	            (setRp0 ? 'M' : 'm') +
+	            (keepD ? '>' : '_') +
+	            (ro ? 'R' : '_') +
+	            (dt === 0 ? 'Gr' : (dt === 1 ? 'Bl' : (dt === 2 ? 'Wh' : ''))) +
+	            ']',
+	            indirect ?
+	                cvte + '(' + state.cvt[cvte] + ',' +  cv + ')' :
+	                '',
+	            pi,
+	            '(d =', od, '->', sign * d, ')'
+	        );
+	    }
+
+	    state.rp1 = state.rp0;
+	    state.rp2 = pi;
+	    if (setRp0) { state.rp0 = pi; }
+	}
+
+	/*
+	* The instruction table.
+	*/
+	instructionTable = [
+	    /* 0x00 */ SVTCA.bind(undefined, yUnitVector),
+	    /* 0x01 */ SVTCA.bind(undefined, xUnitVector),
+	    /* 0x02 */ SPVTCA.bind(undefined, yUnitVector),
+	    /* 0x03 */ SPVTCA.bind(undefined, xUnitVector),
+	    /* 0x04 */ SFVTCA.bind(undefined, yUnitVector),
+	    /* 0x05 */ SFVTCA.bind(undefined, xUnitVector),
+	    /* 0x06 */ SPVTL.bind(undefined, 0),
+	    /* 0x07 */ SPVTL.bind(undefined, 1),
+	    /* 0x08 */ SFVTL.bind(undefined, 0),
+	    /* 0x09 */ SFVTL.bind(undefined, 1),
+	    /* 0x0A */ SPVFS,
+	    /* 0x0B */ SFVFS,
+	    /* 0x0C */ GPV,
+	    /* 0x0D */ GFV,
+	    /* 0x0E */ SFVTPV,
+	    /* 0x0F */ ISECT,
+	    /* 0x10 */ SRP0,
+	    /* 0x11 */ SRP1,
+	    /* 0x12 */ SRP2,
+	    /* 0x13 */ SZP0,
+	    /* 0x14 */ SZP1,
+	    /* 0x15 */ SZP2,
+	    /* 0x16 */ SZPS,
+	    /* 0x17 */ SLOOP,
+	    /* 0x18 */ RTG,
+	    /* 0x19 */ RTHG,
+	    /* 0x1A */ SMD,
+	    /* 0x1B */ ELSE,
+	    /* 0x1C */ JMPR,
+	    /* 0x1D */ SCVTCI,
+	    /* 0x1E */ undefined,   // TODO SSWCI
+	    /* 0x1F */ undefined,   // TODO SSW
+	    /* 0x20 */ DUP,
+	    /* 0x21 */ POP,
+	    /* 0x22 */ CLEAR,
+	    /* 0x23 */ SWAP,
+	    /* 0x24 */ DEPTH,
+	    /* 0x25 */ CINDEX,
+	    /* 0x26 */ MINDEX,
+	    /* 0x27 */ undefined,   // TODO ALIGNPTS
+	    /* 0x28 */ undefined,
+	    /* 0x29 */ undefined,   // TODO UTP
+	    /* 0x2A */ LOOPCALL,
+	    /* 0x2B */ CALL,
+	    /* 0x2C */ FDEF,
+	    /* 0x2D */ undefined,   // ENDF (eaten by FDEF)
+	    /* 0x2E */ MDAP.bind(undefined, 0),
+	    /* 0x2F */ MDAP.bind(undefined, 1),
+	    /* 0x30 */ IUP.bind(undefined, yUnitVector),
+	    /* 0x31 */ IUP.bind(undefined, xUnitVector),
+	    /* 0x32 */ SHP.bind(undefined, 0),
+	    /* 0x33 */ SHP.bind(undefined, 1),
+	    /* 0x34 */ SHC.bind(undefined, 0),
+	    /* 0x35 */ SHC.bind(undefined, 1),
+	    /* 0x36 */ SHZ.bind(undefined, 0),
+	    /* 0x37 */ SHZ.bind(undefined, 1),
+	    /* 0x38 */ SHPIX,
+	    /* 0x39 */ IP,
+	    /* 0x3A */ MSIRP.bind(undefined, 0),
+	    /* 0x3B */ MSIRP.bind(undefined, 1),
+	    /* 0x3C */ ALIGNRP,
+	    /* 0x3D */ RTDG,
+	    /* 0x3E */ MIAP.bind(undefined, 0),
+	    /* 0x3F */ MIAP.bind(undefined, 1),
+	    /* 0x40 */ NPUSHB,
+	    /* 0x41 */ NPUSHW,
+	    /* 0x42 */ WS,
+	    /* 0x43 */ RS,
+	    /* 0x44 */ WCVTP,
+	    /* 0x45 */ RCVT,
+	    /* 0x46 */ GC.bind(undefined, 0),
+	    /* 0x47 */ GC.bind(undefined, 1),
+	    /* 0x48 */ undefined,   // TODO SCFS
+	    /* 0x49 */ MD.bind(undefined, 0),
+	    /* 0x4A */ MD.bind(undefined, 1),
+	    /* 0x4B */ MPPEM,
+	    /* 0x4C */ undefined,   // TODO MPS
+	    /* 0x4D */ FLIPON,
+	    /* 0x4E */ undefined,   // TODO FLIPOFF
+	    /* 0x4F */ undefined,   // TODO DEBUG
+	    /* 0x50 */ LT,
+	    /* 0x51 */ LTEQ,
+	    /* 0x52 */ GT,
+	    /* 0x53 */ GTEQ,
+	    /* 0x54 */ EQ,
+	    /* 0x55 */ NEQ,
+	    /* 0x56 */ ODD,
+	    /* 0x57 */ EVEN,
+	    /* 0x58 */ IF,
+	    /* 0x59 */ EIF,
+	    /* 0x5A */ AND,
+	    /* 0x5B */ OR,
+	    /* 0x5C */ NOT,
+	    /* 0x5D */ DELTAP123.bind(undefined, 1),
+	    /* 0x5E */ SDB,
+	    /* 0x5F */ SDS,
+	    /* 0x60 */ ADD,
+	    /* 0x61 */ SUB,
+	    /* 0x62 */ DIV,
+	    /* 0x63 */ MUL,
+	    /* 0x64 */ ABS,
+	    /* 0x65 */ NEG,
+	    /* 0x66 */ FLOOR,
+	    /* 0x67 */ CEILING,
+	    /* 0x68 */ ROUND.bind(undefined, 0),
+	    /* 0x69 */ ROUND.bind(undefined, 1),
+	    /* 0x6A */ ROUND.bind(undefined, 2),
+	    /* 0x6B */ ROUND.bind(undefined, 3),
+	    /* 0x6C */ undefined,   // TODO NROUND[ab]
+	    /* 0x6D */ undefined,   // TODO NROUND[ab]
+	    /* 0x6E */ undefined,   // TODO NROUND[ab]
+	    /* 0x6F */ undefined,   // TODO NROUND[ab]
+	    /* 0x70 */ WCVTF,
+	    /* 0x71 */ DELTAP123.bind(undefined, 2),
+	    /* 0x72 */ DELTAP123.bind(undefined, 3),
+	    /* 0x73 */ DELTAC123.bind(undefined, 1),
+	    /* 0x74 */ DELTAC123.bind(undefined, 2),
+	    /* 0x75 */ DELTAC123.bind(undefined, 3),
+	    /* 0x76 */ SROUND,
+	    /* 0x77 */ S45ROUND,
+	    /* 0x78 */ undefined,   // TODO JROT[]
+	    /* 0x79 */ undefined,   // TODO JROF[]
+	    /* 0x7A */ ROFF,
+	    /* 0x7B */ undefined,
+	    /* 0x7C */ RUTG,
+	    /* 0x7D */ RDTG,
+	    /* 0x7E */ POP, // actually SANGW, supposed to do only a pop though
+	    /* 0x7F */ POP, // actually AA, supposed to do only a pop though
+	    /* 0x80 */ undefined,   // TODO FLIPPT
+	    /* 0x81 */ undefined,   // TODO FLIPRGON
+	    /* 0x82 */ undefined,   // TODO FLIPRGOFF
+	    /* 0x83 */ undefined,
+	    /* 0x84 */ undefined,
+	    /* 0x85 */ SCANCTRL,
+	    /* 0x86 */ SDPVTL.bind(undefined, 0),
+	    /* 0x87 */ SDPVTL.bind(undefined, 1),
+	    /* 0x88 */ GETINFO,
+	    /* 0x89 */ undefined,   // TODO IDEF
+	    /* 0x8A */ ROLL,
+	    /* 0x8B */ MAX,
+	    /* 0x8C */ MIN,
+	    /* 0x8D */ SCANTYPE,
+	    /* 0x8E */ INSTCTRL,
+	    /* 0x8F */ undefined,
+	    /* 0x90 */ undefined,
+	    /* 0x91 */ undefined,
+	    /* 0x92 */ undefined,
+	    /* 0x93 */ undefined,
+	    /* 0x94 */ undefined,
+	    /* 0x95 */ undefined,
+	    /* 0x96 */ undefined,
+	    /* 0x97 */ undefined,
+	    /* 0x98 */ undefined,
+	    /* 0x99 */ undefined,
+	    /* 0x9A */ undefined,
+	    /* 0x9B */ undefined,
+	    /* 0x9C */ undefined,
+	    /* 0x9D */ undefined,
+	    /* 0x9E */ undefined,
+	    /* 0x9F */ undefined,
+	    /* 0xA0 */ undefined,
+	    /* 0xA1 */ undefined,
+	    /* 0xA2 */ undefined,
+	    /* 0xA3 */ undefined,
+	    /* 0xA4 */ undefined,
+	    /* 0xA5 */ undefined,
+	    /* 0xA6 */ undefined,
+	    /* 0xA7 */ undefined,
+	    /* 0xA8 */ undefined,
+	    /* 0xA9 */ undefined,
+	    /* 0xAA */ undefined,
+	    /* 0xAB */ undefined,
+	    /* 0xAC */ undefined,
+	    /* 0xAD */ undefined,
+	    /* 0xAE */ undefined,
+	    /* 0xAF */ undefined,
+	    /* 0xB0 */ PUSHB.bind(undefined, 1),
+	    /* 0xB1 */ PUSHB.bind(undefined, 2),
+	    /* 0xB2 */ PUSHB.bind(undefined, 3),
+	    /* 0xB3 */ PUSHB.bind(undefined, 4),
+	    /* 0xB4 */ PUSHB.bind(undefined, 5),
+	    /* 0xB5 */ PUSHB.bind(undefined, 6),
+	    /* 0xB6 */ PUSHB.bind(undefined, 7),
+	    /* 0xB7 */ PUSHB.bind(undefined, 8),
+	    /* 0xB8 */ PUSHW.bind(undefined, 1),
+	    /* 0xB9 */ PUSHW.bind(undefined, 2),
+	    /* 0xBA */ PUSHW.bind(undefined, 3),
+	    /* 0xBB */ PUSHW.bind(undefined, 4),
+	    /* 0xBC */ PUSHW.bind(undefined, 5),
+	    /* 0xBD */ PUSHW.bind(undefined, 6),
+	    /* 0xBE */ PUSHW.bind(undefined, 7),
+	    /* 0xBF */ PUSHW.bind(undefined, 8),
+	    /* 0xC0 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 0, 0),
+	    /* 0xC1 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 0, 1),
+	    /* 0xC2 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 0, 2),
+	    /* 0xC3 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 0, 3),
+	    /* 0xC4 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 1, 0),
+	    /* 0xC5 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 1, 1),
+	    /* 0xC6 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 1, 2),
+	    /* 0xC7 */ MDRP_MIRP.bind(undefined, 0, 0, 0, 1, 3),
+	    /* 0xC8 */ MDRP_MIRP.bind(undefined, 0, 0, 1, 0, 0),
+	    /* 0xC9 */ MDRP_MIRP.bind(undefined, 0, 0, 1, 0, 1),
+	    /* 0xCA */ MDRP_MIRP.bind(undefined, 0, 0, 1, 0, 2),
+	    /* 0xCB */ MDRP_MIRP.bind(undefined, 0, 0, 1, 0, 3),
+	    /* 0xCC */ MDRP_MIRP.bind(undefined, 0, 0, 1, 1, 0),
+	    /* 0xCD */ MDRP_MIRP.bind(undefined, 0, 0, 1, 1, 1),
+	    /* 0xCE */ MDRP_MIRP.bind(undefined, 0, 0, 1, 1, 2),
+	    /* 0xCF */ MDRP_MIRP.bind(undefined, 0, 0, 1, 1, 3),
+	    /* 0xD0 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 0, 0),
+	    /* 0xD1 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 0, 1),
+	    /* 0xD2 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 0, 2),
+	    /* 0xD3 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 0, 3),
+	    /* 0xD4 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 1, 0),
+	    /* 0xD5 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 1, 1),
+	    /* 0xD6 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 1, 2),
+	    /* 0xD7 */ MDRP_MIRP.bind(undefined, 0, 1, 0, 1, 3),
+	    /* 0xD8 */ MDRP_MIRP.bind(undefined, 0, 1, 1, 0, 0),
+	    /* 0xD9 */ MDRP_MIRP.bind(undefined, 0, 1, 1, 0, 1),
+	    /* 0xDA */ MDRP_MIRP.bind(undefined, 0, 1, 1, 0, 2),
+	    /* 0xDB */ MDRP_MIRP.bind(undefined, 0, 1, 1, 0, 3),
+	    /* 0xDC */ MDRP_MIRP.bind(undefined, 0, 1, 1, 1, 0),
+	    /* 0xDD */ MDRP_MIRP.bind(undefined, 0, 1, 1, 1, 1),
+	    /* 0xDE */ MDRP_MIRP.bind(undefined, 0, 1, 1, 1, 2),
+	    /* 0xDF */ MDRP_MIRP.bind(undefined, 0, 1, 1, 1, 3),
+	    /* 0xE0 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 0, 0),
+	    /* 0xE1 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 0, 1),
+	    /* 0xE2 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 0, 2),
+	    /* 0xE3 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 0, 3),
+	    /* 0xE4 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 1, 0),
+	    /* 0xE5 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 1, 1),
+	    /* 0xE6 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 1, 2),
+	    /* 0xE7 */ MDRP_MIRP.bind(undefined, 1, 0, 0, 1, 3),
+	    /* 0xE8 */ MDRP_MIRP.bind(undefined, 1, 0, 1, 0, 0),
+	    /* 0xE9 */ MDRP_MIRP.bind(undefined, 1, 0, 1, 0, 1),
+	    /* 0xEA */ MDRP_MIRP.bind(undefined, 1, 0, 1, 0, 2),
+	    /* 0xEB */ MDRP_MIRP.bind(undefined, 1, 0, 1, 0, 3),
+	    /* 0xEC */ MDRP_MIRP.bind(undefined, 1, 0, 1, 1, 0),
+	    /* 0xED */ MDRP_MIRP.bind(undefined, 1, 0, 1, 1, 1),
+	    /* 0xEE */ MDRP_MIRP.bind(undefined, 1, 0, 1, 1, 2),
+	    /* 0xEF */ MDRP_MIRP.bind(undefined, 1, 0, 1, 1, 3),
+	    /* 0xF0 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 0, 0),
+	    /* 0xF1 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 0, 1),
+	    /* 0xF2 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 0, 2),
+	    /* 0xF3 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 0, 3),
+	    /* 0xF4 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 1, 0),
+	    /* 0xF5 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 1, 1),
+	    /* 0xF6 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 1, 2),
+	    /* 0xF7 */ MDRP_MIRP.bind(undefined, 1, 1, 0, 1, 3),
+	    /* 0xF8 */ MDRP_MIRP.bind(undefined, 1, 1, 1, 0, 0),
+	    /* 0xF9 */ MDRP_MIRP.bind(undefined, 1, 1, 1, 0, 1),
+	    /* 0xFA */ MDRP_MIRP.bind(undefined, 1, 1, 1, 0, 2),
+	    /* 0xFB */ MDRP_MIRP.bind(undefined, 1, 1, 1, 0, 3),
+	    /* 0xFC */ MDRP_MIRP.bind(undefined, 1, 1, 1, 1, 0),
+	    /* 0xFD */ MDRP_MIRP.bind(undefined, 1, 1, 1, 1, 1),
+	    /* 0xFE */ MDRP_MIRP.bind(undefined, 1, 1, 1, 1, 2),
+	    /* 0xFF */ MDRP_MIRP.bind(undefined, 1, 1, 1, 1, 3)
+	];
+
+	/*****************************
+	  Mathematical Considerations
+	******************************
+
+	fv ... refers to freedom vector
+	pv ... refers to projection vector
+	rp ... refers to reference point
+	p  ... refers to to point being operated on
+	d  ... refers to distance
+
+	SETRELATIVE:
+	============
+
+	case freedom vector == x-axis:
+	------------------------------
+
+	                        (pv)
+	                     .-'
+	              rpd .-'
+	               .-*
+	          d .-'90°'
+	         .-'       '
+	      .-'           '
+	   *-'               ' b
+	  rp                  '
+	                       '
+	                        '
+	            p *----------*-------------- (fv)
+	                          pm
+
+	  rpdx = rpx + d * pv.x
+	  rpdy = rpy + d * pv.y
+
+	  equation of line b
+
+	   y - rpdy = pvns * (x- rpdx)
+
+	   y = p.y
+
+	   x = rpdx + ( p.y - rpdy ) / pvns
+
+
+	case freedom vector == y-axis:
+	------------------------------
+
+	    * pm
+	    |\
+	    | \
+	    |  \
+	    |   \
+	    |    \
+	    |     \
+	    |      \
+	    |       \
+	    |        \
+	    |         \ b
+	    |          \
+	    |           \
+	    |            \    .-' (pv)
+	    |         90° \.-'
+	    |           .-'* rpd
+	    |        .-'
+	    *     *-'  d
+	    p     rp
+
+	  rpdx = rpx + d * pv.x
+	  rpdy = rpy + d * pv.y
+
+	  equation of line b:
+	           pvns ... normal slope to pv
+
+	   y - rpdy = pvns * (x - rpdx)
+
+	   x = p.x
+
+	   y = rpdy +  pvns * (p.x - rpdx)
+
+
+
+	generic case:
+	-------------
+
+
+	                              .'(fv)
+	                            .'
+	                          .* pm
+	                        .' !
+	                      .'    .
+	                    .'      !
+	                  .'         . b
+	                .'           !
+	               *              .
+	              p               !
+	                         90°   .    ... (pv)
+	                           ...-*-'''
+	                  ...---'''    rpd
+	         ...---'''   d
+	   *--'''
+	  rp
+
+	    rpdx = rpx + d * pv.x
+	    rpdy = rpy + d * pv.y
+
+	 equation of line b:
+	    pvns... normal slope to pv
+
+	    y - rpdy = pvns * (x - rpdx)
+
+	 equation of freedom vector line:
+	    fvs ... slope of freedom vector (=fy/fx)
+
+	    y - py = fvs * (x - px)
+
+
+	  on pm both equations are true for same x/y
+
+	    y - rpdy = pvns * (x - rpdx)
+
+	    y - py = fvs * (x - px)
+
+	  form to y and set equal:
+
+	    pvns * (x - rpdx) + rpdy = fvs * (x - px) + py
+
+	  expand:
+
+	    pvns * x - pvns * rpdx + rpdy = fvs * x - fvs * px + py
+
+	  switch:
+
+	    fvs * x - fvs * px + py = pvns * x - pvns * rpdx + rpdy
+
+	  solve for x:
+
+	    fvs * x - pvns * x = fvs * px - pvns * rpdx - py + rpdy
 
            (+10)
     rp1o *-------->*rp1
@@ -11497,866 +11516,85 @@ Font.prototype.stringToGlyphs = function(s, options) {
     return glyphs;
 };
 
-/**
- * @param  {string}
- * @return {Number}
- */
-Font.prototype.nameToGlyphIndex = function(name) {
-    return this.glyphNames.nameToGlyphIndex(name);
-};
 
-/**
- * @param  {string}
- * @return {opentype.Glyph}
- */
-Font.prototype.nameToGlyph = function(name) {
-    var glyphIndex = this.nameToGlyphIndex(name);
-    var glyph = this.glyphs.get(glyphIndex);
-    if (!glyph) {
-        // .notdef
-        glyph = this.glyphs.get(0);
-    }
+	          fvs * px - pvns * rpdx + rpdy - py
+	    x =  -----------------------------------
+	                 fvs - pvns
 
-    return glyph;
-};
+	  and:
 
-/**
- * @param  {Number}
- * @return {String}
- */
-Font.prototype.glyphIndexToName = function(gid) {
-    if (!this.glyphNames.glyphIndexToName) {
-        return '';
-    }
+	    y = fvs * (x - px) + py
 
-    return this.glyphNames.glyphIndexToName(gid);
-};
 
-/**
- * Retrieve the value of the kerning pair between the left glyph (or its index)
- * and the right glyph (or its index). If no kerning pair is found, return 0.
- * The kerning value gets added to the advance width when calculating the spacing
- * between glyphs.
- * @param  {opentype.Glyph} leftGlyph
- * @param  {opentype.Glyph} rightGlyph
- * @return {Number}
- */
-Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
-    leftGlyph = leftGlyph.index || leftGlyph;
-    rightGlyph = rightGlyph.index || rightGlyph;
-    return this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0;
-};
 
-/**
- * @typedef GlyphRenderOptions
- * @type Object
- * @property {string} [script] - script used to determine which features to apply. By default, 'DFLT' or 'latn' is used.
- *                               See https://www.microsoft.com/typography/otspec/scripttags.htm
- * @property {string} [language='dflt'] - language system used to determine which features to apply.
- *                                        See https://www.microsoft.com/typography/developers/opentype/languagetags.aspx
- * @property {boolean} [kerning=true] - whether to include kerning values
- * @property {object} [features] - OpenType Layout feature tags. Used to enable or disable the features of the given script/language system.
- *                                 See https://www.microsoft.com/typography/otspec/featuretags.htm
- */
-Font.prototype.defaultRenderOptions = {
-    kerning: true,
-    features: {
-        liga: true,
-        rlig: true
-    }
-};
+	INTERPOLATE:
+	============
 
-/**
- * Helper function that invokes the given callback for each glyph in the given text.
- * The callback gets `(glyph, x, y, fontSize, options)`.* @param  {string} text
- * @param {string} text - The text to apply.
- * @param  {number} [x=0] - Horizontal position of the beginning of the text.
- * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
- * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options
- * @param  {Function} callback
- */
-Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) {
-    var this$1 = this;
+	Examples of point interpolation.
 
-    x = x !== undefined ? x : 0;
-    y = y !== undefined ? y : 0;
-    fontSize = fontSize !== undefined ? fontSize : 72;
-    options = options || this.defaultRenderOptions;
-    var fontScale = 1 / this.unitsPerEm * fontSize;
-    var glyphs = this.stringToGlyphs(text, options);
-    var kerningLookups;
-    if (options.kerning) {
-        var script = options.script || this.position.getDefaultScriptName();
-        kerningLookups = this.position.getKerningTables(script, options.language);
-    }
-    for (var i = 0; i < glyphs.length; i += 1) {
-        var glyph = glyphs[i];
-        callback.call(this$1, glyph, x, y, fontSize, options);
-        if (glyph.advanceWidth) {
-            x += glyph.advanceWidth * fontScale;
-        }
+	The weight of the movement of the reference point gets bigger
+	the further the other reference point is away, thus the safest
+	option (that is avoiding 0/0 divisions) is to weight the
+	original distance of the other point by the sum of both distances.
 
-        if (options.kerning && i < glyphs.length - 1) {
-            // We should apply position adjustment lookups in a more generic way.
-            // Here we only use the xAdvance value.
-            var kerningValue = kerningLookups ?
-                  this$1.position.getKerningValue(kerningLookups, glyph.index, glyphs[i + 1].index) :
-                  this$1.getKerningValue(glyph, glyphs[i + 1]);
-            x += kerningValue * fontScale;
-        }
+	If the sum of both distances is 0, then move the point by the
+	arithmetic average of the movement of both reference points.
 
-        if (options.letterSpacing) {
-            x += options.letterSpacing * fontSize;
-        } else if (options.tracking) {
-            x += (options.tracking / 1000) * fontSize;
-        }
-    }
-    return x;
-};
 
-/**
- * Create a Path object that represents the given text.
- * @param  {string} text - The text to create.
- * @param  {number} [x=0] - Horizontal position of the beginning of the text.
- * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
- * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options
- * @return {opentype.Path}
- */
-Font.prototype.getPath = function(text, x, y, fontSize, options) {
-    var fullPath = new Path();
-    this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        var glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
-        fullPath.extend(glyphPath);
-    });
-    return fullPath;
-};
 
-/**
- * Create an array of Path objects that represent the glyphs of a given text.
- * @param  {string} text - The text to create.
- * @param  {number} [x=0] - Horizontal position of the beginning of the text.
- * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
- * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options
- * @return {opentype.Path[]}
- */
-Font.prototype.getPaths = function(text, x, y, fontSize, options) {
-    var glyphPaths = [];
-    this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        var glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
-        glyphPaths.push(glyphPath);
-    });
 
-    return glyphPaths;
-};
+	           (+6)
+	    rp1o *---->*rp1
+	         .     .                          (+12)
+	         .     .                  rp2o *---------->* rp2
+	         .     .                       .           .
+	         .     .                       .           .
+	         .    10          20           .           .
+	         |.........|...................|           .
+	               .   .                               .
+	               .   . (+8)                          .
+	                po *------>*p                      .
+	               .           .                       .
+	               .    12     .          24           .
+	               |...........|.......................|
+	                                  36
 
-/**
- * Returns the advance width of a text.
- *
- * This is something different than Path.getBoundingBox() as for example a
- * suffixed whitespace increases the advanceWidth but not the bounding box
- * or an overhanging letter like a calligraphic 'f' might have a quite larger
- * bounding box than its advance width.
- *
- * This corresponds to canvas2dContext.measureText(text).width
- *
- * @param  {string} text - The text to create.
- * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options
- * @return advance width
- */
-Font.prototype.getAdvanceWidth = function(text, fontSize, options) {
-    return this.forEachGlyph(text, 0, 0, fontSize, options, function() {});
-};
 
-/**
- * Draw the text on the given drawing context.
- * @param  {CanvasRenderingContext2D} ctx - A 2D drawing context, like Canvas.
- * @param  {string} text - The text to create.
- * @param  {number} [x=0] - Horizontal position of the beginning of the text.
- * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
- * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options
- */
-Font.prototype.draw = function(ctx, text, x, y, fontSize, options) {
-    this.getPath(text, x, y, fontSize, options).draw(ctx);
-};
+	-------
 
-/**
- * Draw the points of all glyphs in the text.
- * On-curve points will be drawn in blue, off-curve points will be drawn in red.
- * @param {CanvasRenderingContext2D} ctx - A 2D drawing context, like Canvas.
- * @param {string} text - The text to create.
- * @param {number} [x=0] - Horizontal position of the beginning of the text.
- * @param {number} [y=0] - Vertical position of the *baseline* of the text.
- * @param {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param {GlyphRenderOptions=} options
- */
-Font.prototype.drawPoints = function(ctx, text, x, y, fontSize, options) {
-    this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        glyph.drawPoints(ctx, gX, gY, gFontSize);
-    });
-};
 
-/**
- * Draw lines indicating important font measurements for all glyphs in the text.
- * Black lines indicate the origin of the coordinate system (point 0,0).
- * Blue lines indicate the glyph bounding box.
- * Green line indicates the advance width of the glyph.
- * @param {CanvasRenderingContext2D} ctx - A 2D drawing context, like Canvas.
- * @param {string} text - The text to create.
- * @param {number} [x=0] - Horizontal position of the beginning of the text.
- * @param {number} [y=0] - Vertical position of the *baseline* of the text.
- * @param {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param {GlyphRenderOptions=} options
- */
-Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
-    this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        glyph.drawMetrics(ctx, gX, gY, gFontSize);
-    });
-};
 
-/**
- * @param  {string}
- * @return {string}
- */
-Font.prototype.getEnglishName = function(name) {
-    var translations = this.names[name];
-    if (translations) {
-        return translations.en;
-    }
-};
+	           (+10)
+	    rp1o *-------->*rp1
+	         .         .                      (-10)
+	         .         .              rp2 *<---------* rpo2
+	         .         .                   .         .
+	         .         .                   .         .
+	         .    10   .          30       .         .
+	         |.........|.............................|
+	                   .                   .
+	                   . (+5)              .
+	                po *--->* p            .
+	                   .    .              .
+	                   .    .   20         .
+	                   |....|..............|
+	                     5        15
 
-/**
- * Validate
- */
-Font.prototype.validate = function() {
-    var warnings = [];
-    var _this = this;
 
-    function assert(predicate, message) {
-        if (!predicate) {
-            warnings.push(message);
-        }
-    }
+	-------
 
-    function assertNamePresent(name) {
-        var englishName = _this.getEnglishName(name);
-        assert(englishName && englishName.trim().length > 0,
-               'No English ' + name + ' specified.');
-    }
 
-    // Identification information
-    assertNamePresent('fontFamily');
-    assertNamePresent('weightName');
-    assertNamePresent('manufacturer');
-    assertNamePresent('copyright');
-    assertNamePresent('version');
+	           (+10)
+	    rp1o *-------->*rp1
+	         .         .
+	         .         .
+	    rp2o *-------->*rp2
 
-    // Dimension information
-    assert(this.unitsPerEm > 0, 'No unitsPerEm specified.');
-};
 
-/**
- * Convert the font object to a SFNT data structure.
- * This structure contains all the necessary tables and metadata to create a binary OTF file.
- * @return {opentype.Table}
- */
-Font.prototype.toTables = function() {
-    return sfnt.fontToTable(this);
-};
-/**
- * @deprecated Font.toBuffer is deprecated. Use Font.toArrayBuffer instead.
- */
-Font.prototype.toBuffer = function() {
-    console.warn('Font.toBuffer is deprecated. Use Font.toArrayBuffer instead.');
-    return this.toArrayBuffer();
-};
-/**
- * Converts a `opentype.Font` into an `ArrayBuffer`
- * @return {ArrayBuffer}
- */
-Font.prototype.toArrayBuffer = function() {
-    var sfntTable = this.toTables();
-    var bytes = sfntTable.encode();
-    var buffer = new ArrayBuffer(bytes.length);
-    var intArray = new Uint8Array(buffer);
-    for (var i = 0; i < bytes.length; i++) {
-        intArray[i] = bytes[i];
-    }
+	                               (+10)
+	                          po *-------->* p
 
-    return buffer;
-};
-
-/**
- * Initiate a download of the OpenType font.
- */
-Font.prototype.download = function(fileName) {
-    var familyName = this.getEnglishName('fontFamily');
-    var styleName = this.getEnglishName('fontSubfamily');
-    fileName = fileName || familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
-    var arrayBuffer = this.toArrayBuffer();
-
-    if (isBrowser()) {
-        window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-        window.requestFileSystem(window.TEMPORARY, arrayBuffer.byteLength, function(fs) {
-            fs.root.getFile(fileName, {create: true}, function(fileEntry) {
-                fileEntry.createWriter(function(writer) {
-                    var dataView = new DataView(arrayBuffer);
-                    var blob = new Blob([dataView], {type: 'font/opentype'});
-                    writer.write(blob);
-
-                    writer.addEventListener('writeend', function() {
-                        // Navigating to the file will download it.
-                        location.href = fileEntry.toURL();
-                    }, false);
-                });
-            });
-        },
-        function(err) {
-            throw new Error(err.name + ': ' + err.message);
-        });
-    } else {
-        var fs = require('fs');
-        var buffer = arrayBufferToNodeBuffer(arrayBuffer);
-        fs.writeFileSync(fileName, buffer);
-    }
-};
-/**
- * @private
- */
-Font.prototype.fsSelectionValues = {
-    ITALIC:              0x001, //1
-    UNDERSCORE:          0x002, //2
-    NEGATIVE:            0x004, //4
-    OUTLINED:            0x008, //8
-    STRIKEOUT:           0x010, //16
-    BOLD:                0x020, //32
-    REGULAR:             0x040, //64
-    USER_TYPO_METRICS:   0x080, //128
-    WWS:                 0x100, //256
-    OBLIQUE:             0x200  //512
-};
-
-/**
- * @private
- */
-Font.prototype.usWidthClasses = {
-    ULTRA_CONDENSED: 1,
-    EXTRA_CONDENSED: 2,
-    CONDENSED: 3,
-    SEMI_CONDENSED: 4,
-    MEDIUM: 5,
-    SEMI_EXPANDED: 6,
-    EXPANDED: 7,
-    EXTRA_EXPANDED: 8,
-    ULTRA_EXPANDED: 9
-};
-
-/**
- * @private
- */
-Font.prototype.usWeightClasses = {
-    THIN: 100,
-    EXTRA_LIGHT: 200,
-    LIGHT: 300,
-    NORMAL: 400,
-    MEDIUM: 500,
-    SEMI_BOLD: 600,
-    BOLD: 700,
-    EXTRA_BOLD: 800,
-    BLACK:    900
-};
-
-// The `fvar` table stores font variation axes and instances.
-// https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6fvar.html
-
-function addName(name, names) {
-    var nameString = JSON.stringify(name);
-    var nameID = 256;
-    for (var nameKey in names) {
-        var n = parseInt(nameKey);
-        if (!n || n < 256) {
-            continue;
-        }
-
-        if (JSON.stringify(names[nameKey]) === nameString) {
-            return n;
-        }
-
-        if (nameID <= n) {
-            nameID = n + 1;
-        }
-    }
-
-    names[nameID] = name;
-    return nameID;
-}
-
-function makeFvarAxis(n, axis, names) {
-    var nameID = addName(axis.name, names);
-    return [
-        {name: 'tag_' + n, type: 'TAG', value: axis.tag},
-        {name: 'minValue_' + n, type: 'FIXED', value: axis.minValue << 16},
-        {name: 'defaultValue_' + n, type: 'FIXED', value: axis.defaultValue << 16},
-        {name: 'maxValue_' + n, type: 'FIXED', value: axis.maxValue << 16},
-        {name: 'flags_' + n, type: 'USHORT', value: 0},
-        {name: 'nameID_' + n, type: 'USHORT', value: nameID}
-    ];
-}
-
-function parseFvarAxis(data, start, names) {
-    var axis = {};
-    var p = new parse.Parser(data, start);
-    axis.tag = p.parseTag();
-    axis.minValue = p.parseFixed();
-    axis.defaultValue = p.parseFixed();
-    axis.maxValue = p.parseFixed();
-    p.skip('uShort', 1);  // reserved for flags; no values defined
-    axis.name = names[p.parseUShort()] || {};
-    return axis;
-}
-
-function makeFvarInstance(n, inst, axes, names) {
-    var nameID = addName(inst.name, names);
-    var fields = [
-        {name: 'nameID_' + n, type: 'USHORT', value: nameID},
-        {name: 'flags_' + n, type: 'USHORT', value: 0}
-    ];
-
-    for (var i = 0; i < axes.length; ++i) {
-        var axisTag = axes[i].tag;
-        fields.push({
-            name: 'axis_' + n + ' ' + axisTag,
-            type: 'FIXED',
-            value: inst.coordinates[axisTag] << 16
-        });
-    }
-
-    return fields;
-}
-
-function parseFvarInstance(data, start, axes, names) {
-    var inst = {};
-    var p = new parse.Parser(data, start);
-    inst.name = names[p.parseUShort()] || {};
-    p.skip('uShort', 1);  // reserved for flags; no values defined
-
-    inst.coordinates = {};
-    for (var i = 0; i < axes.length; ++i) {
-        inst.coordinates[axes[i].tag] = p.parseFixed();
-    }
-
-    return inst;
-}
-
-function makeFvarTable(fvar, names) {
-    var result = new table.Table('fvar', [
-        {name: 'version', type: 'ULONG', value: 0x10000},
-        {name: 'offsetToData', type: 'USHORT', value: 0},
-        {name: 'countSizePairs', type: 'USHORT', value: 2},
-        {name: 'axisCount', type: 'USHORT', value: fvar.axes.length},
-        {name: 'axisSize', type: 'USHORT', value: 20},
-        {name: 'instanceCount', type: 'USHORT', value: fvar.instances.length},
-        {name: 'instanceSize', type: 'USHORT', value: 4 + fvar.axes.length * 4}
-    ]);
-    result.offsetToData = result.sizeOf();
-
-    for (var i = 0; i < fvar.axes.length; i++) {
-        result.fields = result.fields.concat(makeFvarAxis(i, fvar.axes[i], names));
-    }
-
-    for (var j = 0; j < fvar.instances.length; j++) {
-        result.fields = result.fields.concat(makeFvarInstance(j, fvar.instances[j], fvar.axes, names));
-    }
-
-    return result;
-}
-
-function parseFvarTable(data, start, names) {
-    var p = new parse.Parser(data, start);
-    var tableVersion = p.parseULong();
-    check.argument(tableVersion === 0x00010000, 'Unsupported fvar table version.');
-    var offsetToData = p.parseOffset16();
-    // Skip countSizePairs.
-    p.skip('uShort', 1);
-    var axisCount = p.parseUShort();
-    var axisSize = p.parseUShort();
-    var instanceCount = p.parseUShort();
-    var instanceSize = p.parseUShort();
-
-    var axes = [];
-    for (var i = 0; i < axisCount; i++) {
-        axes.push(parseFvarAxis(data, start + offsetToData + i * axisSize, names));
-    }
-
-    var instances = [];
-    var instanceStart = start + offsetToData + axisCount * axisSize;
-    for (var j = 0; j < instanceCount; j++) {
-        instances.push(parseFvarInstance(data, instanceStart + j * instanceSize, axes, names));
-    }
-
-    return {axes: axes, instances: instances};
-}
-
-var fvar = { make: makeFvarTable, parse: parseFvarTable };
-
-// The `GPOS` table contains kerning pairs, among other things.
-// https://docs.microsoft.com/en-us/typography/opentype/spec/gpos
-
-var subtableParsers$1 = new Array(10);         // subtableParsers[0] is unused
-
-// https://docs.microsoft.com/en-us/typography/opentype/spec/gpos#lookup-type-1-single-adjustment-positioning-subtable
-// this = Parser instance
-subtableParsers$1[1] = function parseLookup1() {
-    var start = this.offset + this.relativeOffset;
-    var posformat = this.parseUShort();
-    if (posformat === 1) {
-        return {
-            posFormat: 1,
-            coverage: this.parsePointer(Parser.coverage),
-            value: this.parseValueRecord()
-        };
-    } else if (posformat === 2) {
-        return {
-            posFormat: 2,
-            coverage: this.parsePointer(Parser.coverage),
-            values: this.parseValueRecordList()
-        };
-    }
-    check.assert(false, '0x' + start.toString(16) + ': GPOS lookup type 1 format must be 1 or 2.');
-};
-
-// https://docs.microsoft.com/en-us/typography/opentype/spec/gpos#lookup-type-2-pair-adjustment-positioning-subtable
-subtableParsers$1[2] = function parseLookup2() {
-    var start = this.offset + this.relativeOffset;
-    var posFormat = this.parseUShort();
-    var coverage = this.parsePointer(Parser.coverage);
-    var valueFormat1 = this.parseUShort();
-    var valueFormat2 = this.parseUShort();
-    if (posFormat === 1) {
-        // Adjustments for Glyph Pairs
-        return {
-            posFormat: posFormat,
-            coverage: coverage,
-            valueFormat1: valueFormat1,
-            valueFormat2: valueFormat2,
-            pairSets: this.parseList(Parser.pointer(Parser.list(function() {
-                return {        // pairValueRecord
-                    secondGlyph: this.parseUShort(),
-                    value1: this.parseValueRecord(valueFormat1),
-                    value2: this.parseValueRecord(valueFormat2)
-                };
-            })))
-        };
-    } else if (posFormat === 2) {
-        var classDef1 = this.parsePointer(Parser.classDef);
-        var classDef2 = this.parsePointer(Parser.classDef);
-        var class1Count = this.parseUShort();
-        var class2Count = this.parseUShort();
-        return {
-            // Class Pair Adjustment
-            posFormat: posFormat,
-            coverage: coverage,
-            valueFormat1: valueFormat1,
-            valueFormat2: valueFormat2,
-            classDef1: classDef1,
-            classDef2: classDef2,
-            class1Count: class1Count,
-            class2Count: class2Count,
-            classRecords: this.parseList(class1Count, Parser.list(class2Count, function() {
-                return {
-                    value1: this.parseValueRecord(valueFormat1),
-                    value2: this.parseValueRecord(valueFormat2)
-                };
-            }))
-        };
-    }
-    check.assert(false, '0x' + start.toString(16) + ': GPOS lookup type 2 format must be 1 or 2.');
-};
-
-subtableParsers$1[3] = function parseLookup3() { return { error: 'GPOS Lookup 3 not supported' }; };
-subtableParsers$1[4] = function parseLookup4() { return { error: 'GPOS Lookup 4 not supported' }; };
-subtableParsers$1[5] = function parseLookup5() { return { error: 'GPOS Lookup 5 not supported' }; };
-subtableParsers$1[6] = function parseLookup6() { return { error: 'GPOS Lookup 6 not supported' }; };
-subtableParsers$1[7] = function parseLookup7() { return { error: 'GPOS Lookup 7 not supported' }; };
-subtableParsers$1[8] = function parseLookup8() { return { error: 'GPOS Lookup 8 not supported' }; };
-subtableParsers$1[9] = function parseLookup9() { return { error: 'GPOS Lookup 9 not supported' }; };
-
-// https://docs.microsoft.com/en-us/typography/opentype/spec/gpos
-function parseGposTable(data, start) {
-    start = start || 0;
-    var p = new Parser(data, start);
-    var tableVersion = p.parseVersion(1);
-    check.argument(tableVersion === 1 || tableVersion === 1.1, 'Unsupported GPOS table version ' + tableVersion);
-
-    if (tableVersion === 1) {
-        return {
-            version: tableVersion,
-            scripts: p.parseScriptList(),
-            features: p.parseFeatureList(),
-            lookups: p.parseLookupList(subtableParsers$1)
-        };
-    } else {
-        return {
-            version: tableVersion,
-            scripts: p.parseScriptList(),
-            features: p.parseFeatureList(),
-            lookups: p.parseLookupList(subtableParsers$1),
-            variations: p.parseFeatureVariationsList()
-        };
-    }
-
-}
-
-// GPOS Writing //////////////////////////////////////////////
-// NOT SUPPORTED
-var subtableMakers$1 = new Array(10);
-
-function makeGposTable(gpos) {
-    return new table.Table('GPOS', [
-        {name: 'version', type: 'ULONG', value: 0x10000},
-        {name: 'scripts', type: 'TABLE', value: new table.ScriptList(gpos.scripts)},
-        {name: 'features', type: 'TABLE', value: new table.FeatureList(gpos.features)},
-        {name: 'lookups', type: 'TABLE', value: new table.LookupList(gpos.lookups, subtableMakers$1)}
-    ]);
-}
-
-var gpos = { parse: parseGposTable, make: makeGposTable };
-
-// The `kern` table contains kerning pairs.
-// Note that some fonts use the GPOS OpenType layout table to specify kerning.
-// https://www.microsoft.com/typography/OTSPEC/kern.htm
-
-function parseWindowsKernTable(p) {
-    var pairs = {};
-    // Skip nTables.
-    p.skip('uShort');
-    var subtableVersion = p.parseUShort();
-    check.argument(subtableVersion === 0, 'Unsupported kern sub-table version.');
-    // Skip subtableLength, subtableCoverage
-    p.skip('uShort', 2);
-    var nPairs = p.parseUShort();
-    // Skip searchRange, entrySelector, rangeShift.
-    p.skip('uShort', 3);
-    for (var i = 0; i < nPairs; i += 1) {
-        var leftIndex = p.parseUShort();
-        var rightIndex = p.parseUShort();
-        var value = p.parseShort();
-        pairs[leftIndex + ',' + rightIndex] = value;
-    }
-    return pairs;
-}
-
-function parseMacKernTable(p) {
-    var pairs = {};
-    // The Mac kern table stores the version as a fixed (32 bits) but we only loaded the first 16 bits.
-    // Skip the rest.
-    p.skip('uShort');
-    var nTables = p.parseULong();
-    //check.argument(nTables === 1, 'Only 1 subtable is supported (got ' + nTables + ').');
-    if (nTables > 1) {
-        console.warn('Only the first kern subtable is supported.');
-    }
-    p.skip('uLong');
-    var coverage = p.parseUShort();
-    var subtableVersion = coverage & 0xFF;
-    p.skip('uShort');
-    if (subtableVersion === 0) {
-        var nPairs = p.parseUShort();
-        // Skip searchRange, entrySelector, rangeShift.
-        p.skip('uShort', 3);
-        for (var i = 0; i < nPairs; i += 1) {
-            var leftIndex = p.parseUShort();
-            var rightIndex = p.parseUShort();
-            var value = p.parseShort();
-            pairs[leftIndex + ',' + rightIndex] = value;
-        }
-    }
-    return pairs;
-}
-
-// Parse the `kern` table which contains kerning pairs.
-function parseKernTable(data, start) {
-    var p = new parse.Parser(data, start);
-    var tableVersion = p.parseUShort();
-    if (tableVersion === 0) {
-        return parseWindowsKernTable(p);
-    } else if (tableVersion === 1) {
-        return parseMacKernTable(p);
-    } else {
-        throw new Error('Unsupported kern table version (' + tableVersion + ').');
-    }
-}
-
-var kern = { parse: parseKernTable };
-
-// The `loca` table stores the offsets to the locations of the glyphs in the font.
-// https://www.microsoft.com/typography/OTSPEC/loca.htm
-
-// Parse the `loca` table. This table stores the offsets to the locations of the glyphs in the font,
-// relative to the beginning of the glyphData table.
-// The number of glyphs stored in the `loca` table is specified in the `maxp` table (under numGlyphs)
-// The loca table has two versions: a short version where offsets are stored as uShorts, and a long
-// version where offsets are stored as uLongs. The `head` table specifies which version to use
-// (under indexToLocFormat).
-function parseLocaTable(data, start, numGlyphs, shortVersion) {
-    var p = new parse.Parser(data, start);
-    var parseFn = shortVersion ? p.parseUShort : p.parseULong;
-    // There is an extra entry after the last index element to compute the length of the last glyph.
-    // That's why we use numGlyphs + 1.
-    var glyphOffsets = [];
-    for (var i = 0; i < numGlyphs + 1; i += 1) {
-        var glyphOffset = parseFn.call(p);
-        if (shortVersion) {
-            // The short table version stores the actual offset divided by 2.
-            glyphOffset *= 2;
-        }
-
-        glyphOffsets.push(glyphOffset);
-    }
-
-    return glyphOffsets;
-}
-
-var loca = { parse: parseLocaTable };
-
-// opentype.js
-// https://github.com/nodebox/opentype.js
-// (c) 2015 Frederik De Bleser
-// opentype.js may be freely distributed under the MIT license.
-
-/* global DataView, Uint8Array, XMLHttpRequest  */
-
-/**
- * The opentype library.
- * @namespace opentype
- */
-
-// File loaders /////////////////////////////////////////////////////////
-/**
- * Loads a font from a file. The callback throws an error message as the first parameter if it fails
- * and the font as an ArrayBuffer in the second parameter if it succeeds.
- * @param  {string} path - The path of the file
- * @param  {Function} callback - The function to call when the font load completes
- */
-function loadFromFile(path, callback) {
-    var fs = require('fs');
-    fs.readFile(path, function(err, buffer) {
-        if (err) {
-            return callback(err.message);
-        }
-
-        callback(null, nodeBufferToArrayBuffer(buffer));
-    });
-}
-/**
- * Loads a font from a URL. The callback throws an error message as the first parameter if it fails
- * and the font as an ArrayBuffer in the second parameter if it succeeds.
- * @param  {string} url - The URL of the font file.
- * @param  {Function} callback - The function to call when the font load completes
- */
-function loadFromUrl(url, callback) {
-    var request = new XMLHttpRequest();
-    request.open('get', url, true);
-    request.responseType = 'arraybuffer';
-    request.onload = function() {
-        if (request.response) {
-            return callback(null, request.response);
-        } else {
-            return callback('Font could not be loaded: ' + request.statusText);
-        }
-    };
-
-    request.onerror = function () {
-        callback('Font could not be loaded');
-    };
-
-    request.send();
-}
-
-// Table Directory Entries //////////////////////////////////////////////
-/**
- * Parses OpenType table entries.
- * @param  {DataView}
- * @param  {Number}
- * @return {Object[]}
- */
-function parseOpenTypeTableEntries(data, numTables) {
-    var tableEntries = [];
-    var p = 12;
-    for (var i = 0; i < numTables; i += 1) {
-        var tag = parse.getTag(data, p);
-        var checksum = parse.getULong(data, p + 4);
-        var offset = parse.getULong(data, p + 8);
-        var length = parse.getULong(data, p + 12);
-        tableEntries.push({tag: tag, checksum: checksum, offset: offset, length: length, compression: false});
-        p += 16;
-    }
-
-    return tableEntries;
-}
-
-/**
- * Parses WOFF table entries.
- * @param  {DataView}
- * @param  {Number}
- * @return {Object[]}
- */
-function parseWOFFTableEntries(data, numTables) {
-    var tableEntries = [];
-    var p = 44; // offset to the first table directory entry.
-    for (var i = 0; i < numTables; i += 1) {
-        var tag = parse.getTag(data, p);
-        var offset = parse.getULong(data, p + 4);
-        var compLength = parse.getULong(data, p + 8);
-        var origLength = parse.getULong(data, p + 12);
-        var compression = (void 0);
-        if (compLength < origLength) {
-            compression = 'WOFF';
-        } else {
-            compression = false;
-        }
-
-        tableEntries.push({tag: tag, offset: offset, compression: compression,
-            compressedLength: compLength, length: origLength});
-        p += 20;
-    }
-
-    return tableEntries;
-}
-
-/**
- * @typedef TableData
- * @type Object
- * @property {DataView} data - The DataView
- * @property {number} offset - The data offset.
- */
-
-/**
- * @param  {DataView}
- * @param  {Object}
- * @return {TableData}
- */
-function uncompressTable(data, tableEntry) {
-    if (tableEntry.compression === 'WOFF') {
-        var inBuffer = new Uint8Array(data.buffer, tableEntry.offset + 2, tableEntry.compressedLength - 2);
-        var outBuffer = new Uint8Array(tableEntry.length);
-        tinyInflate(inBuffer, outBuffer);
-        if (outBuffer.byteLength !== tableEntry.length) {
-            throw new Error('Decompression error: ' + tableEntry.tag + ' decompressed length doesn\'t match recorded length');
-        }
-
-        var view = new DataView(outBuffer.buffer, 0);
-        return {data: view, offset: 0};
-    } else {
-        return {data: data, offset: tableEntry.offset};
-    }
-}
-
-// Public API ///////////////////////////////////////////////////////////
+	-------
 
 /**
  * Parse the OpenType file data (as an ArrayBuffer) and return a Font object.

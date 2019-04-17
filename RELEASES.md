@@ -1,3 +1,35 @@
+0.11.0 (October 22, 2018)
+=====================
+* Support Arabic text rendering (PR #359, fixes #46) (thanks @solomancode!)
+
+0.10.0 (August 14, 2018)
+=====================
+* font.download(): use window.URL instead of window.requestFileSystem, which works on a larger set of browsers : Chrome (32+), Opera (19+), Firefox (26+), Safari (7.1+), and all of Edge.
+
+0.9.0 (June 21, 2018)
+=====================
+* Update/Migrate rollup, update all dependencies, add package-lock.json and fix circular dependency (thanks @jolg42!)
+* Parse cmap table with platform id 0 as well (PR #350, fixes #348) (thanks @moyogo!)
+* Prevent auto-generated postScriptName from containing whitespace (#339) (thanks @mqudsi!)
+* Support non-Basic-Multilingual-Plane (BMP) characters (#338) (thanks @antonytse!)
+* GPOS: display correct error message in some cases of malformed data (#336) (thanks @fpirsch!)
+* Restore simple GPOS kerning in font.getKerningValue (#335) (thanks @fpirsch!)
+* Fix duplicated lineTo when using `getPath` (#328) (thanks @jolg42!)
+* Change example generate-font-node.js to be compatible with any Node.js version (thanks @jolg42!)
+
+0.8.0 (March 6, 2018)
+=====================
+* Fix loading font file on Android devices (thanks @maoamid!).
+* Fix loading fonts from a local source (file://data/... for Android for example (thanks @IntuilabGit!).
+* Fixing 2 issues when hinting "mutlu.ttf" (thanks @axkibe!).
+* Add some support for OpenType font variations (thanks @taylorb-monotype!).
+* Make cmap table format 12 if needed (thanks @Jolg42!).
+* Enable uglify's mangle and compress optimizations for a ~30% smaller minified file. (thanks @lojjic & @Jolg42!).
+* Better parsing of NULL pointers (thanks @fpirsch!).
+* Fix bad path init (empty glyphs) (thanks @fpirsch!).
+* Rewrite GPOS parsing (thanks @fpirsch!).
+* Roboto-Black.ttf updated (thanks @Jolg42!).
+
 0.7.3 (July 18, 2017)
 =====================
 * Fix "Object x already has key" error in Safari (thanks @neiltron!).

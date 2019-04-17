@@ -4,7 +4,6 @@ var fs = require('fs');
 var http = require('http');
 var path = require('path');
 var rollup = require('rollup');
-var watch = require('rollup-watch');
 var rollupConfig = require('../rollup.config');
 
 var CONTENT_TYPES = {
@@ -44,15 +43,22 @@ http.createServer(function(req, res) {
 }).listen(8080);
 console.log('Server running at http://localhost:8080/');
 
-var watcher = watch(rollup, rollupConfig);
-watcher.on('event', function(e) {
-    if (e.code === 'BUILD_START') {
+// Watch changes and rebundle
+var watcher = rollup.watch(rollupConfig);
+watcher.on('event', e => {
+    // event.code can be one of:
+    //   START        — the watcher is (re)starting
+    //   BUNDLE_START — building an individual bundle
+    //   BUNDLE_END   — finished building a bundle
+    //   END          — finished building all bundles
+    //   ERROR        — encountered an error while bundling
+    //   FATAL        — encountered an unrecoverable error
+
+    if (e.code === 'BUNDLE_START') {
         console.log('Bundling...');
-    } else if (e.code === 'BUILD_END') {
+    } else if (e.code === 'BUNDLE_END') {
         console.log('Bundled in ' + e.duration + 'ms.');
-    } else if (e.code === 'ERROR') {
+    } else if (e.code === 'ERROR' || e.code === 'FATAL') {
         console.error(e.error);
-    } else {
-        console.error('Unknown watch event', e);
     }
 });

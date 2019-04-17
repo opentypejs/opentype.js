@@ -32,6 +32,7 @@ subtableParsers[1] = function parseLookup1() {
 subtableParsers[2] = function parseLookup2() {
     const start = this.offset + this.relativeOffset;
     const posFormat = this.parseUShort();
+    check.assert(posFormat === 1 || posFormat === 2, '0x' + start.toString(16) + ': GPOS lookup type 2 format must be 1 or 2.');
     const coverage = this.parsePointer(Parser.coverage);
     const valueFormat1 = this.parseUShort();
     const valueFormat2 = this.parseUShort();
@@ -73,7 +74,6 @@ subtableParsers[2] = function parseLookup2() {
             }))
         };
     }
-    check.assert(false, '0x' + start.toString(16) + ': GPOS lookup type 2 format must be 1 or 2.');
 };
 
 subtableParsers[3] = function parseLookup3() { return { error: 'GPOS Lookup 3 not supported' }; };

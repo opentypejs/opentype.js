@@ -1,12 +1,15 @@
 {
   "name": "opentype.js",
-  "version": "0.7.3",
+  "version": "0.11.0",
   "main": "dist/opentype.js",
   "keywords": [
-    "vector",
     "graphics",
-    "canvas",
-    "2d"
+    "fonts",
+    "opentype",
+    "otf",
+    "ttf",
+    "woff",
+    "type"
   ],
   "ignore": [
     ".jshintignore",

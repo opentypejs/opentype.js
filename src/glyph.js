@@ -3,7 +3,7 @@
 import check from './check';
 import draw from './draw';
 import Path from './path';
-import glyf from './tables/glyf';
+// import glyf from './tables/glyf' Can't be imported here, because it's a circular dependency
 
 function getPathDefinition(glyph, path) {
     let _path = path || new Path();
@@ -139,14 +139,15 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     }
 
     if (hPoints) {
-        commands = glyf.getPath(hPoints).commands;
+        // Call font.hinting.getCommands instead of `glyf.getPath(hPoints).commands` to avoid a circular dependency
+        commands = font.hinting.getCommands(hPoints);
         x = Math.round(x);
         y = Math.round(y);
         // TODO in case of hinting xyScaling is not yet supported
         xScale = yScale = 1;
     } else {
         commands = this.path.commands;
-        const scale = 1 / this.path.unitsPerEm * fontSize;
+        const scale = 1 / (this.path.unitsPerEm || 1000) * fontSize;
         if (xScale === undefined) xScale = scale;
         if (yScale === undefined) yScale = scale;
     }

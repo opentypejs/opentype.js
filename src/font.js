@@ -8,6 +8,8 @@ import Position from './position';
 import Substitution from './substitution';
 import { isBrowser, checkArgument, arrayBufferToNodeBuffer } from './util';
 import HintingTrueType from './hintingtt';
+import Bidi from './bidi';
+import FeatureQuery from './features/featureQuery';
 
 /**
  * @typedef FontOptions
@@ -62,7 +64,8 @@ function Font(options) {
             fontFamily: {en: options.familyName || ' '},
             fontSubfamily: {en: options.styleName || ' '},
             fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
-            postScriptName: {en: options.postScriptName || options.familyName + options.styleName},
+            // postScriptName may not contain any whitespace
+            postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
             designer: {en: options.designer || ' '},
             designerURL: {en: options.designerURL || ' '},
             manufacturer: {en: options.manufacturer || ' '},
@@ -155,12 +158,24 @@ Font.prototype.charToGlyph = function(c) {
  */
 Font.prototype.stringToGlyphs = function(s, options) {
     options = options || this.defaultRenderOptions;
-    // Get glyph indexes
-    const indexes = [];
-    for (let i = 0; i < s.length; i += 1) {
-        const c = s[i];
-        indexes.push(this.charToGlyphIndex(c));
-    }
+
+    const bidi = new Bidi();
+
+    // Create and register 'glyphIndex' state modifier
+    const charToGlyphIndexMod = token => this.charToGlyphIndex(token.char);
+    bidi.registerModifier('glyphIndex', null, charToGlyphIndexMod);
+
+    const arabFeatureQuery = new FeatureQuery(this);
+    const arabFeatures = ['init', 'medi', 'fina', 'rlig'];
+    bidi.applyFeatures(
+        arabFeatures.map(tag => {
+            let query = { tag, script: 'arab' };
+            let feature = arabFeatureQuery.getFeature(query);
+            if (!!feature) return feature;
+        })
+    );
+    const indexes = bidi.getTextGlyphs(s);
+
     let length = indexes.length;
 
     // Apply substitutions on glyph indexes
@@ -233,6 +248,8 @@ Font.prototype.glyphIndexToName = function(gid) {
  * and the right glyph (or its index). If no kerning pair is found, return 0.
  * The kerning value gets added to the advance width when calculating the spacing
  * between glyphs.
+ * For GPOS kerning, this method uses the default script and language, which covers
+ * most use cases. To have greater control, use font.position.getKerningValue .
  * @param  {opentype.Glyph} leftGlyph
  * @param  {opentype.Glyph} rightGlyph
  * @return {Number}
@@ -240,6 +257,11 @@ Font.prototype.glyphIndexToName = function(gid) {
 Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
     leftGlyph = leftGlyph.index || leftGlyph;
     rightGlyph = rightGlyph.index || rightGlyph;
+    const gposKerning = this.position.defaultKerningTables;
+    if (gposKerning) {
+        return this.position.getKerningValue(gposKerning, leftGlyph, rightGlyph);
+    }
+    // "kern" table
     return this.kerningPairs[leftGlyph + ',' + rightGlyph] || 0;
 };
 
@@ -494,24 +516,22 @@ Font.prototype.download = function(fileName) {
     const arrayBuffer = this.toArrayBuffer();
 
     if (isBrowser()) {
-        window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-        window.requestFileSystem(window.TEMPORARY, arrayBuffer.byteLength, function(fs) {
-            fs.root.getFile(fileName, {create: true}, function(fileEntry) {
-                fileEntry.createWriter(function(writer) {
-                    const dataView = new DataView(arrayBuffer);
-                    const blob = new Blob([dataView], {type: 'font/opentype'});
-                    writer.write(blob);
+        window.URL = window.URL || window.webkitURL;
 
-                    writer.addEventListener('writeend', function() {
-                        // Navigating to the file will download it.
-                        location.href = fileEntry.toURL();
-                    }, false);
-                });
-            });
-        },
-        function(err) {
-            throw new Error(err.name + ': ' + err.message);
-        });
+        if (window.URL) {
+            const dataView = new DataView(arrayBuffer);
+            const blob = new Blob([dataView], {type: 'font/opentype'});
+
+            let link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = fileName;
+
+            let event = document.createEvent('MouseEvents');
+            event.initEvent('click', true, false);
+            link.dispatchEvent(event);
+        } else {
+            console.warn('Font file could not be downloaded. Try using a different browser.');
+        }
     } else {
         const fs = require('fs');
         const buffer = arrayBufferToNodeBuffer(arrayBuffer);

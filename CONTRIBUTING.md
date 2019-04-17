@@ -10,12 +10,12 @@ When creating a pull request, you **don't** need to run `npm run dist` -- we'll 
 
 ## How to hack on the source
 
-1. On our [GitHub page](https://github.com/nodebox/opentype.js), click the "Fork" button to create your personal fork
+1. On our [GitHub page](https://github.com/opentypejs/opentype.js), click the "Fork" button to create your personal fork
    of the opentype.js repository.
 
 2. Clone your repository:
 
-    `git clone git://github.com/nodebox/opentype.js.git`
+    `git clone git://github.com/opentypejs/opentype.js.git`
 
 3. Create a new branch for your feature. For example: `git checkout -b my-awesome-feature`.
     A dedicated branch for your pull request means you can develop multiple features at the same time, and ensures
