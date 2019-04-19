@@ -216,9 +216,8 @@ FeatureQuery.prototype.getScriptFeaturesIndexes = function(scriptTag) {
     const scripts = this.font.tables.gsub.scripts;
     for (let i = 0; i < scripts.length; i++) {
         const script = scripts[i];
-        if (script.tag === scriptTag) {
-            let defaultLangSys = script.script.defaultLangSys;
-            return defaultLangSys.featureIndexes;
+        if (script.tag === scriptTag && script.script.defaultLangSys) {
+            return script.script.defaultLangSys.featureIndexes;
         } else {
             let langSysRecords = script.langSysRecords;
             if (!!langSysRecords) {
