@@ -1,5 +1,5 @@
 /**
- * https://opentype.js.org v1.0.0 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
+ * https://opentype.js.org v1.0.1 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
  */
 
 (function (global, factory) {
@@ -12135,9 +12135,8 @@
 	    var scripts = this.font.tables.gsub.scripts;
 	    for (var i = 0; i < scripts.length; i++) {
 	        var script = scripts[i];
-	        if (script.tag === scriptTag) {
-	            var defaultLangSys = script.script.defaultLangSys;
-	            return defaultLangSys.featureIndexes;
+	        if (script.tag === scriptTag && script.script.defaultLangSys) {
+	            return script.script.defaultLangSys.featureIndexes;
 	        } else {
 	            var langSysRecords = script.langSysRecords;
 	            if (!!langSysRecords) {

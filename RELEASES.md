@@ -1,3 +1,6 @@
+1.0.1 (April 19, 2019)
+* Fix error if defaultLangSys is undefined (Issue #378)
+
 1.0.0 (April 17, 2019)
 
 * Render arabic rtl text properly (PR #361, partial fix of #364) (thanks @solomancode!)
