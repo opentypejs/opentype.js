@@ -25,7 +25,7 @@ Installation
 
     npm install opentype.js
 
-    var fontkit = require('fontkit');
+    var opentype = require('opentype.js');
 
 Note: OpenType.js uses ES6-style imports, so if you want to edit it and debug it in Node.js run `npm run build` first and use `npm run watch` to automatically rebuild when files change.
 
