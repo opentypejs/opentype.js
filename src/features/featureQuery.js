@@ -170,7 +170,6 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
  * @param {ContextParams} contextParams context params to lookup
  */
 function ligatureSubstitutionFormat1(contextParams, subtable) {
-    // console.log({contextParams})
     // COVERAGE LOOKUP //
     let glyphIndex = contextParams.current;
     let ligSetIndex = lookupCoverage(glyphIndex, subtable.coverage);
