@@ -60,6 +60,16 @@ function lookupCoverage(glyphIndex, coverage) {
 }
 
 /**
+ * Handle a single substitution - format 1
+ * @param {ContextParams} contextParams context params to lookup
+ */
+function singleSubstitutionFormat1(glyphIndex, subtable) {
+    let substituteIndex = lookupCoverage(glyphIndex, subtable.coverage);
+    if (substituteIndex === -1) return null;
+    return glyphIndex + subtable.deltaGlyphId;
+}
+
+/**
  * Handle a single substitution - format 2
  * @param {ContextParams} contextParams context params to lookup
  */
@@ -284,6 +294,10 @@ FeatureQuery.prototype.getSubstitutionType = function(lookupTable, subtable) {
 FeatureQuery.prototype.getLookupMethod = function(lookupTable, subtable) {
     let substitutionType = this.getSubstitutionType(lookupTable, subtable);
     switch (substitutionType) {
+        case '11':
+            return glyphIndex => singleSubstitutionFormat1.apply(
+                this, [glyphIndex, subtable]
+            );
         case '12':
             return glyphIndex => singleSubstitutionFormat2.apply(
                 this, [glyphIndex, subtable]
@@ -358,6 +372,14 @@ FeatureQuery.prototype.lookupFeature = function (query) {
             const lookup = this.getLookupMethod(lookupTable, subtable);
             let substitution;
             switch (substType) {
+                case '11':
+                    substitution = lookup(contextParams.current);
+                    if (substitution) {
+                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
+                            id: 11, tag: query.tag, substitution
+                        }));
+                    }
+                    break;
                 case '12':
                     substitution = lookup(contextParams.current);
                     if (substitution) {

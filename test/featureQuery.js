@@ -5,6 +5,7 @@ import { ContextParams } from '../src/tokenizer';
 
 describe('featureQuery.js', function() {
     let arabicFont;
+    let arabicFontChanga;
     let latinFont;
     let query = {};
     before(function () {
@@ -12,7 +13,9 @@ describe('featureQuery.js', function() {
          * arab
          */
         arabicFont = loadSync('./fonts/Scheherazade-Bold.ttf');
+        arabicFontChanga = loadSync('./fonts/Changa-Regular.ttf');
         query.arabic = new FeatureQuery(arabicFont);
+        query.arabicChanga = new FeatureQuery(arabicFontChanga);
         /**
          * latin
          */
@@ -81,6 +84,16 @@ describe('featureQuery.js', function() {
             const ligaLookupFn = query.latin.getLookupMethod(ligaLookupTable, ligaSubtable);
             assert.deepEqual(ligaSubsType, 41); // supported: ligature substitution '41'
             assert.deepEqual(typeof ligaLookupFn, 'function');
+        });
+        it.only('should find a substitute - single substitution format 1 (11)', function () {
+            const feature = query.arabicChanga.getFeature({tag: 'init', script: 'arab'});
+            const featureLookups = query.arabicChanga.getFeatureLookups(feature);
+            const lookupSubtables = query.arabicChanga.getLookupSubtables(featureLookups[0]);
+            const substitutionType = query.arabicChanga.getSubstitutionType(featureLookups[0], lookupSubtables[0]);
+            assert.equal(substitutionType, 11);
+            const lookup = query.arabicChanga.getLookupMethod(featureLookups[0], lookupSubtables[0]);
+            const substitution = lookup(291);
+            assert.equal(substitution, 294);
         });
         it('should find a substitute - single substitution format 2 (12)', function () {
             const feature = query.arabic.getFeature({tag: 'init', script: 'arab'});
