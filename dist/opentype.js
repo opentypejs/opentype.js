@@ -11977,6 +11977,16 @@
 	}
 
 	/**
+	 * Handle a single substitution - format 1
+	 * @param {ContextParams} contextParams context params to lookup
+	 */
+	function singleSubstitutionFormat1(glyphIndex, subtable) {
+	    var substituteIndex = lookupCoverage(glyphIndex, subtable.coverage);
+	    if (substituteIndex === -1) { return null; }
+	    return glyphIndex + subtable.deltaGlyphId;
+	}
+
+	/**
 	 * Handle a single substitution - format 2
 	 * @param {ContextParams} contextParams context params to lookup
 	 */
@@ -12205,6 +12215,10 @@
 
 	    var substitutionType = this.getSubstitutionType(lookupTable, subtable);
 	    switch (substitutionType) {
+	        case '11':
+	            return function (glyphIndex) { return singleSubstitutionFormat1.apply(
+	                this$1, [glyphIndex, subtable]
+	            ); };
 	        case '12':
 	            return function (glyphIndex) { return singleSubstitutionFormat2.apply(
 	                this$1, [glyphIndex, subtable]
@@ -12281,6 +12295,14 @@
 	            var lookup = this$1.getLookupMethod(lookupTable, subtable);
 	            var substitution = (void 0);
 	            switch (substType) {
+	                case '11':
+	                    substitution = lookup(contextParams.current);
+	                    if (substitution) {
+	                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
+	                            id: 11, tag: query.tag, substitution: substitution
+	                        }));
+	                    }
+	                    break;
 	                case '12':
 	                    substitution = lookup(contextParams.current);
 	                    if (substitution) {
@@ -12453,6 +12475,16 @@
 	};
 
 	/**
+	 * Apply single substitution format 1
+	 * @param {Array} substitutions substitutions
+	 * @param {any} tokens a list of tokens
+	 * @param {number} index token index
+	 */
+	function singleSubstitutionFormat1$1(action, tokens, index) {
+	    tokens[index].setState(action.tag, action.substitution);
+	}
+
+	/**
 	 * Apply single substitution format 2
 	 * @param {Array} substitutions substitutions
 	 * @param {any} tokens a list of tokens
@@ -12495,6 +12527,7 @@
 	 * Supported substitutions
 	 */
 	var SUBSTITUTIONS = {
+	    11: singleSubstitutionFormat1$1,
 	    12: singleSubstitutionFormat2$1,
 	    63: chainingSubstitutionFormat3$1,
 	    41: ligatureSubstitutionFormat1$1
