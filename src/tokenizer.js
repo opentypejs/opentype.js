@@ -39,6 +39,13 @@ function ContextChecker(contextName, checkStart, checkEnd) {
 }
 
 /**
+ * @typedef ContextParams
+ * @type Object
+ * @property {array} context context items
+ * @property {number} currentIndex current item index
+ */
+
+/**
  * Create a context params
  * @param {array} context a list of items
  * @param {number} currentIndex current item index

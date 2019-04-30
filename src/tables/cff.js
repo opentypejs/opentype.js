@@ -80,6 +80,43 @@ function parseCFFIndex(data, start, conversionFn) {
     return {objects: objects, startOffset: start, endOffset: endOffset};
 }
 
+function parseCFFIndexLowMemory(data, start) {
+    const offsets = [];
+    const count = parse.getCard16(data, start);
+    let objectOffset;
+    let endOffset;
+    if (count !== 0) {
+        const offsetSize = parse.getByte(data, start + 2);
+        objectOffset = start + ((count + 1) * offsetSize) + 2;
+        let pos = start + 3;
+        for (let i = 0; i < count + 1; i += 1) {
+            offsets.push(parse.getOffset(data, pos, offsetSize));
+            pos += offsetSize;
+        }
+
+        // The total size of the index array is 4 header bytes + the value of the last offset.
+        endOffset = objectOffset + offsets[count];
+    } else {
+        endOffset = start + 2;
+    }
+
+    return {offsets: offsets, startOffset: start, endOffset: endOffset};
+}
+function getCffIndexObject(i, offsets, data, start, conversionFn) {
+    const count = parse.getCard16(data, start);
+    let objectOffset = 0;
+    if (count !== 0) {
+        const offsetSize = parse.getByte(data, start + 2);
+        objectOffset = start + ((count + 1) * offsetSize) + 2;
+    }
+
+    let value = parse.getBytes(data, objectOffset + offsets[i], objectOffset + offsets[i + 1]);
+    if (conversionFn) {
+        value = conversionFn(value);
+    }
+    return value;
+}
+
 // Parse a `CFF` DICT real value.
 function parseFloatOperand(parser) {
     let s = '';
@@ -909,7 +946,7 @@ function parseCFFFDSelect(data, start, nGlyphs, fdArrayCount) {
 }
 
 // Parse the `CFF` table, which contains the glyph outlines in PostScript format.
-function parseCFFTable(data, start, font) {
+function parseCFFTable(data, start, font, opt) {
     font.tables.cff = {};
     const header = parseCFFHeader(data, start);
     const nameIndex = parseCFFIndex(data, header.endOffset, parse.bytesToString);
@@ -966,8 +1003,14 @@ function parseCFFTable(data, start, font) {
     }
 
     // Offsets in the top dict are relative to the beginning of the CFF data, so add the CFF start offset.
-    const charStringsIndex = parseCFFIndex(data, start + topDict.charStrings);
-    font.nGlyphs = charStringsIndex.objects.length;
+    let charStringsIndex;
+    if (opt.lowMemory) {
+        charStringsIndex = parseCFFIndexLowMemory(data, start + topDict.charStrings);
+        font.nGlyphs = charStringsIndex.offsets.length;
+    } else {
+        charStringsIndex = parseCFFIndex(data, start + topDict.charStrings);
+        font.nGlyphs = charStringsIndex.objects.length;
+    }
 
     const charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
     if (topDict.encoding === 0) {
@@ -984,9 +1027,16 @@ function parseCFFTable(data, start, font) {
     font.encoding = font.encoding || font.cffEncoding;
 
     font.glyphs = new glyphset.GlyphSet(font);
-    for (let i = 0; i < font.nGlyphs; i += 1) {
-        const charString = charStringsIndex.objects[i];
-        font.glyphs.push(i, glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
+    if (opt.lowMemory) {
+        font._push = function(i) {
+            const charString = getCffIndexObject(i, charStringsIndex.offsets, data, start + topDict.charStrings);
+            font.glyphs.push(i, glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
+        };
+    } else {
+        for (let i = 0; i < font.nGlyphs; i += 1) {
+            const charString = charStringsIndex.objects[i];
+            font.glyphs.push(i, glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
+        }
     }
 }
 

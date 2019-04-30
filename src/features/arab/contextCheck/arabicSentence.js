@@ -37,5 +37,7 @@ function arabicSentenceEndCheck(contextParams) {
     }
 }
 
-export { arabicSentenceStartCheck, arabicSentenceEndCheck };
-export default { arabicSentenceStartCheck, arabicSentenceEndCheck };
+export default {
+    startCheck: arabicSentenceStartCheck,
+    endCheck: arabicSentenceEndCheck
+};

@@ -25,5 +25,7 @@ function arabicWordEndCheck(contextParams) {
     );
 }
 
-export { arabicWordStartCheck, arabicWordEndCheck };
-export default { arabicWordStartCheck, arabicWordEndCheck };
+export default {
+    startCheck: arabicWordStartCheck,
+    endCheck: arabicWordEndCheck
+};

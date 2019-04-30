@@ -1,3 +1,44 @@
+1.0.1 (April 19, 2019)
+* Fix error if defaultLangSys is undefined (Issue #378)
+
+1.0.0 (April 17, 2019)
+
+* Render arabic rtl text properly (PR #361, partial fix of #364) (thanks @solomancode!)
+* #361 introduced a breaking change to `Font.prototype.defaultRenderOptions`
+Before
+```js
+Font.prototype.defaultRenderOptions = {
+    kerning: true,
+    features: {
+        liga: true,
+        rlig: true
+    }
+};
+```
+
+Now
+```js
+Font.prototype.defaultRenderOptions = {
+    kerning: true,
+    features: [
+        /**
+         * these 4 features are required to render Arabic text properly
+         * and shouldn't be turned off when rendering arabic text.
+         */
+        { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
+        { script: 'latn', tags: ['liga', 'rlig'] }
+    ]
+};
+```
+
+Also as this project is now using SemVer, the breaking change required a new major version, 1.0.0!
+
+0.12.0 (April 17, 2019)
+=====================
+* Fix Glyph.getPath() issue (PR #362, fixes #363) (thanks @solomancode!)
+* Add lowMemory mode (PR #329) (thanks @debussy2k!)
+* Update README (PR #377) (thanks @jolg42!)
+
 0.11.0 (October 22, 2018)
 =====================
 * Support Arabic text rendering (PR #359, fixes #46) (thanks @solomancode!)

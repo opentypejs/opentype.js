@@ -1,5 +1,5 @@
 /**
- * https://opentype.js.org v0.11.0 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
+ * https://opentype.js.org v1.0.1 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
  */
 
 (function (global, factory) {
@@ -3270,11 +3270,7 @@
 	    return this.names[gid];
 	};
 
-	/**
-	 * @alias opentype.addGlyphNames
-	 * @param {opentype.Font}
-	 */
-	function addGlyphNames(font) {
+	function addGlyphNamesAll(font) {
 	    var glyph;
 	    var glyphIndexMap = font.tables.cmap.glyphIndexMap;
 	    var charCodes = Object.keys(glyphIndexMap);
@@ -3297,6 +3293,38 @@
 	        } else if (font.glyphNames.names) {
 	            glyph.name = font.glyphNames.glyphIndexToName(i$1);
 	        }
+	    }
+	}
+
+	function addGlyphNamesToUnicodeMap(font) {
+	    font._IndexToUnicodeMap = {};
+
+	    var glyphIndexMap = font.tables.cmap.glyphIndexMap;
+	    var charCodes = Object.keys(glyphIndexMap);
+
+	    for (var i = 0; i < charCodes.length; i += 1) {
+	        var c = charCodes[i];
+	        var glyphIndex = glyphIndexMap[c];
+	        if (font._IndexToUnicodeMap[glyphIndex] === undefined) {
+	            font._IndexToUnicodeMap[glyphIndex] = {
+	                unicodes: [parseInt(c)]
+	            };
+	        } else {
+	            font._IndexToUnicodeMap[glyphIndex].unicodes.push(parseInt(c));
+	        }
+	    }
+	}
+
+	/**
+	 * @alias opentype.addGlyphNames
+	 * @param {opentype.Font}
+	 * @param {Object}
+	 */
+	function addGlyphNames(font, opt) {
+	    if (opt.lowMemory) {
+	        addGlyphNamesToUnicodeMap(font);
+	    } else {
+	        addGlyphNamesAll(font);
 	    }
 	}
 
@@ -3457,7 +3485,7 @@
 	        xScale = yScale = 1;
 	    } else {
 	        commands = this.path.commands;
-	        var scale = 1 / this.path.unitsPerEm * fontSize;
+	        var scale = 1 / (this.path.unitsPerEm || 1000) * fontSize;
 	        if (xScale === undefined) { xScale = scale; }
 	        if (yScale === undefined) { yScale = scale; }
 	    }
@@ -3705,7 +3733,9 @@
 	    this.glyphs = {};
 	    if (Array.isArray(glyphs)) {
 	        for (var i = 0; i < glyphs.length; i++) {
-	            this$1.glyphs[i] = glyphs[i];
+	            var glyph = glyphs[i];
+	            glyph.path.unitsPerEm = font.unitsPerEm;
+	            this$1.glyphs[i] = glyph;
 	        }
 	    }
 
@@ -3717,8 +3747,37 @@
 	 * @return {opentype.Glyph}
 	 */
 	GlyphSet.prototype.get = function(index) {
-	    if (typeof this.glyphs[index] === 'function') {
-	        this.glyphs[index] = this.glyphs[index]();
+	    // this.glyphs[index] is 'undefined' when low memory mode is on. glyph is pushed on request only.
+	    if (this.glyphs[index] === undefined) {
+	        this.font._push(index);
+	        if (typeof this.glyphs[index] === 'function') {
+	            this.glyphs[index] = this.glyphs[index]();
+	        }
+
+	        var glyph = this.glyphs[index];
+	        var unicodeObj = this.font._IndexToUnicodeMap[index];
+
+	        if (unicodeObj) {
+	            for (var j = 0; j < unicodeObj.unicodes.length; j++)
+	                { glyph.addUnicode(unicodeObj.unicodes[j]); }
+	        }
+
+	        if (this.font.cffEncoding) {
+	            if (this.font.isCIDFont) {
+	                glyph.name = 'gid' + index;
+	            } else {
+	                glyph.name = this.font.cffEncoding.charset[index];
+	            }
+	        } else if (this.font.glyphNames.names) {
+	            glyph.name = this.font.glyphNames.glyphIndexToName(index);
+	        }
+
+	        this.glyphs[index].advanceWidth = this.font._hmtxTableData[index].advanceWidth;
+	        this.glyphs[index].leftSideBearing = this.font._hmtxTableData[index].leftSideBearing;
+	    } else {
+	        if (typeof this.glyphs[index] === 'function') {
+	            this.glyphs[index] = this.glyphs[index]();
+	        }
 	    }
 
 	    return this.glyphs[index];
@@ -3870,6 +3929,43 @@
 	    }
 
 	    return {objects: objects, startOffset: start, endOffset: endOffset};
+	}
+
+	function parseCFFIndexLowMemory(data, start) {
+	    var offsets = [];
+	    var count = parse.getCard16(data, start);
+	    var objectOffset;
+	    var endOffset;
+	    if (count !== 0) {
+	        var offsetSize = parse.getByte(data, start + 2);
+	        objectOffset = start + ((count + 1) * offsetSize) + 2;
+	        var pos = start + 3;
+	        for (var i = 0; i < count + 1; i += 1) {
+	            offsets.push(parse.getOffset(data, pos, offsetSize));
+	            pos += offsetSize;
+	        }
+
+	        // The total size of the index array is 4 header bytes + the value of the last offset.
+	        endOffset = objectOffset + offsets[count];
+	    } else {
+	        endOffset = start + 2;
+	    }
+
+	    return {offsets: offsets, startOffset: start, endOffset: endOffset};
+	}
+	function getCffIndexObject(i, offsets, data, start, conversionFn) {
+	    var count = parse.getCard16(data, start);
+	    var objectOffset = 0;
+	    if (count !== 0) {
+	        var offsetSize = parse.getByte(data, start + 2);
+	        objectOffset = start + ((count + 1) * offsetSize) + 2;
+	    }
+
+	    var value = parse.getBytes(data, objectOffset + offsets[i], objectOffset + offsets[i + 1]);
+	    if (conversionFn) {
+	        value = conversionFn(value);
+	    }
+	    return value;
 	}
 
 	// Parse a `CFF` DICT real value.
@@ -4701,7 +4797,7 @@
 	}
 
 	// Parse the `CFF` table, which contains the glyph outlines in PostScript format.
-	function parseCFFTable(data, start, font) {
+	function parseCFFTable(data, start, font, opt) {
 	    font.tables.cff = {};
 	    var header = parseCFFHeader(data, start);
 	    var nameIndex = parseCFFIndex(data, header.endOffset, parse.bytesToString);
@@ -4758,8 +4854,14 @@
 	    }
 
 	    // Offsets in the top dict are relative to the beginning of the CFF data, so add the CFF start offset.
-	    var charStringsIndex = parseCFFIndex(data, start + topDict.charStrings);
-	    font.nGlyphs = charStringsIndex.objects.length;
+	    var charStringsIndex;
+	    if (opt.lowMemory) {
+	        charStringsIndex = parseCFFIndexLowMemory(data, start + topDict.charStrings);
+	        font.nGlyphs = charStringsIndex.offsets.length;
+	    } else {
+	        charStringsIndex = parseCFFIndex(data, start + topDict.charStrings);
+	        font.nGlyphs = charStringsIndex.objects.length;
+	    }
 
 	    var charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
 	    if (topDict.encoding === 0) {
@@ -4776,9 +4878,16 @@
 	    font.encoding = font.encoding || font.cffEncoding;
 
 	    font.glyphs = new glyphset.GlyphSet(font);
-	    for (var i = 0; i < font.nGlyphs; i += 1) {
-	        var charString = charStringsIndex.objects[i];
-	        font.glyphs.push(i, glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
+	    if (opt.lowMemory) {
+	        font._push = function(i) {
+	            var charString = getCffIndexObject(i, charStringsIndex.offsets, data, start + topDict.charStrings);
+	            font.glyphs.push(i, glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
+	        };
+	    } else {
+	        for (var i = 0; i < font.nGlyphs; i += 1) {
+	            var charString = charStringsIndex.objects[i];
+	            font.glyphs.push(i, glyphset.cffGlyphLoader(font, i, parseCFFCharstring, charString));
+	        }
 	    }
 	}
 
@@ -5166,9 +5275,7 @@
 
 	// The `hmtx` table contains the horizontal metrics for all glyphs.
 
-	// Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
-	// This function augments the glyph array, adding the advanceWidth and leftSideBearing to each glyph.
-	function parseHmtxTable(data, start, numMetrics, numGlyphs, glyphs) {
+	function parseHmtxTableAll(data, start, numMetrics, numGlyphs, glyphs) {
 	    var advanceWidth;
 	    var leftSideBearing;
 	    var p = new parse.Parser(data, start);
@@ -5183,6 +5290,35 @@
 	        glyph.advanceWidth = advanceWidth;
 	        glyph.leftSideBearing = leftSideBearing;
 	    }
+	}
+
+	function parseHmtxTableOnLowMemory(font, data, start, numMetrics, numGlyphs) {
+	    font._hmtxTableData = {};
+
+	    var advanceWidth;
+	    var leftSideBearing;
+	    var p = new parse.Parser(data, start);
+	    for (var i = 0; i < numGlyphs; i += 1) {
+	        // If the font is monospaced, only one entry is needed. This last entry applies to all subsequent glyphs.
+	        if (i < numMetrics) {
+	            advanceWidth = p.parseUShort();
+	            leftSideBearing = p.parseShort();
+	        }
+
+	        font._hmtxTableData[i] = {
+	            advanceWidth: advanceWidth,
+	            leftSideBearing: leftSideBearing
+	        };
+	    }
+	}
+
+	// Parse the `hmtx` table, which contains the horizontal metrics for all glyphs.
+	// This function augments the glyph array, adding the advanceWidth and leftSideBearing to each glyph.
+	function parseHmtxTable(font, data, start, numMetrics, numGlyphs, glyphs, opt) {
+	    if (opt.lowMemory)
+	        { parseHmtxTableOnLowMemory(font, data, start, numMetrics, numGlyphs); }
+	    else
+	        { parseHmtxTableAll(data, start, numMetrics, numGlyphs, glyphs); }
 	}
 
 	function makeHmtxTable(glyphs) {
@@ -8106,8 +8242,7 @@
 	    return getPath(glyph.points);
 	}
 
-	// Parse all the glyphs according to the offsets from the `loca` table.
-	function parseGlyfTable(data, start, loca, font) {
+	function parseGlyfTableAll(data, start, loca, font) {
 	    var glyphs = new glyphset.GlyphSet(font);
 
 	    // The last element of the loca table is invalid.
@@ -8124,7 +8259,31 @@
 	    return glyphs;
 	}
 
-	var glyf = { getPath: getPath, parse: parseGlyfTable };
+	function parseGlyfTableOnLowMemory(data, start, loca, font) {
+	    var glyphs = new glyphset.GlyphSet(font);
+
+	    font._push = function(i) {
+	        var offset = loca[i];
+	        var nextOffset = loca[i + 1];
+	        if (offset !== nextOffset) {
+	            glyphs.push(i, glyphset.ttfGlyphLoader(font, i, parseGlyph, data, start + offset, buildPath));
+	        } else {
+	            glyphs.push(i, glyphset.glyphLoader(font, i));
+	        }
+	    };
+
+	    return glyphs;
+	}
+
+	// Parse all the glyphs according to the offsets from the `loca` table.
+	function parseGlyfTable(data, start, loca, font, opt) {
+	    if (opt.lowMemory)
+	        { return parseGlyfTableOnLowMemory(data, start, loca, font); }
+	    else
+	        { return parseGlyfTableAll(data, start, loca, font); }
+	}
+
+	var glyf = { getPath: getPath, parse: parseGlyfTable};
 
 	/* A TrueType font hinting interpreter.
 	*
@@ -11224,6 +11383,13 @@
 	}
 
 	/**
+	 * @typedef ContextParams
+	 * @type Object
+	 * @property {array} context context items
+	 * @property {number} currentIndex current item index
+	 */
+
+	/**
 	 * Create a context params
 	 * @param {array} context a list of items
 	 * @param {number} currentIndex current item index
@@ -11737,12 +11903,482 @@
 	}
 
 	/**
+	 * Check if a char is Latin
+	 * @param {string} c a single char
+	 */
+	function isLatinChar(c) {
+	    return /[A-z]/.test(c);
+	}
+
+	/**
 	 * Check if a char is whitespace char
 	 * @param {string} c a single char
 	 */
 	function isWhiteSpace(c) {
 	    return /\s/.test(c);
 	}
+
+	/**
+	 * Query a feature by some of it's properties to lookup a glyph substitution.
+	 */
+
+	/**
+	 * Create feature query instance
+	 * @param {Font} font opentype font instance
+	 */
+	function FeatureQuery(font) {
+	    this.font = font;
+	    this.features = {};
+	}
+
+	/**
+	 * @typedef SubstitutionAction
+	 * @type Object
+	 * @property {number} id substitution type
+	 * @property {string} tag feature tag
+	 * @property {any} substitution substitution value(s)
+	 */
+
+	/**
+	 * Create a substitution action instance
+	 * @param {SubstitutionAction} action
+	 */
+	function SubstitutionAction(action) {
+	    this.id = action.id;
+	    this.tag = action.tag;
+	    this.substitution = action.substitution;
+	}
+
+	/**
+	 * Lookup a coverage table
+	 * @param {number} glyphIndex glyph index
+	 * @param {CoverageTable} coverage coverage table
+	 */
+	function lookupCoverage(glyphIndex, coverage) {
+	    if (!glyphIndex) { return -1; }
+	    switch (coverage.format) {
+	        case 1:
+	            return coverage.glyphs.indexOf(glyphIndex);
+
+	        case 2:
+	            var ranges = coverage.ranges;
+	            for (var i = 0; i < ranges.length; i++) {
+	                var range = ranges[i];
+	                if (glyphIndex >= range.start && glyphIndex <= range.end) {
+	                    var offset = glyphIndex - range.start;
+	                    return range.index + offset;
+	                }
+	            }
+	            break;
+	        default:
+	            return -1; // not found
+	    }
+	    return -1;
+	}
+
+	/**
+	 * Handle a single substitution - format 2
+	 * @param {ContextParams} contextParams context params to lookup
+	 */
+	function singleSubstitutionFormat2(glyphIndex, subtable) {
+	    var substituteIndex = lookupCoverage(glyphIndex, subtable.coverage);
+	    if (substituteIndex === -1) { return null; }
+	    return subtable.substitute[substituteIndex];
+	}
+
+	/**
+	 * Lookup a list of coverage tables
+	 * @param {any} coverageList a list of coverage tables
+	 * @param {ContextParams} contextParams context params to lookup
+	 */
+	function lookupCoverageList(coverageList, contextParams) {
+	    var lookupList = [];
+	    for (var i = 0; i < coverageList.length; i++) {
+	        var coverage = coverageList[i];
+	        var glyphIndex = contextParams.current;
+	        glyphIndex = Array.isArray(glyphIndex) ? glyphIndex[0] : glyphIndex;
+	        var lookupIndex = lookupCoverage(glyphIndex, coverage);
+	        if (lookupIndex !== -1) {
+	            lookupList.push(lookupIndex);
+	        }
+	    }
+	    if (lookupList.length !== coverageList.length) { return -1; }
+	    return lookupList;
+	}
+
+	/**
+	 * Handle chaining context substitution - format 3
+	 * @param {ContextParams} contextParams context params to lookup
+	 */
+	function chainingSubstitutionFormat3(contextParams, subtable) {
+	    var this$1 = this;
+
+	    var lookupsCount = (
+	        subtable.inputCoverage.length +
+	        subtable.lookaheadCoverage.length +
+	        subtable.backtrackCoverage.length
+	    );
+	    if (contextParams.context.length < lookupsCount) { return []; }
+	    // INPUT LOOKUP //
+	    var inputLookups = lookupCoverageList(
+	        subtable.inputCoverage, contextParams
+	    );
+	    if (inputLookups === -1) { return []; }
+	    // LOOKAHEAD LOOKUP //
+	    var lookaheadOffset = subtable.inputCoverage.length - 1;
+	    if (contextParams.lookahead.length < subtable.lookaheadCoverage.length) { return []; }
+	    var lookaheadContext = contextParams.lookahead.slice(lookaheadOffset);
+	    while (lookaheadContext.length && isTashkeelArabicChar(lookaheadContext[0].char)) {
+	        lookaheadContext.shift();
+	    }
+	    var lookaheadParams = new ContextParams(lookaheadContext, 0);
+	    var lookaheadLookups = lookupCoverageList(
+	        subtable.lookaheadCoverage, lookaheadParams
+	    );
+	    // BACKTRACK LOOKUP //
+	    var backtrackContext = [].concat(contextParams.backtrack);
+	    backtrackContext.reverse();
+	    while (backtrackContext.length && isTashkeelArabicChar(backtrackContext[0].char)) {
+	        backtrackContext.shift();
+	    }
+	    if (backtrackContext.length < subtable.backtrackCoverage.length) { return []; }
+	    var backtrackParams = new ContextParams(backtrackContext, 0);
+	    var backtrackLookups = lookupCoverageList(
+	        subtable.backtrackCoverage, backtrackParams
+	    );
+	    var contextRulesMatch = (
+	        inputLookups.length === subtable.inputCoverage.length &&
+	        lookaheadLookups.length === subtable.lookaheadCoverage.length &&
+	        backtrackLookups.length === subtable.backtrackCoverage.length
+	    );
+	    var substitutions = [];
+	    if (contextRulesMatch) {
+	        for (var i = 0; i < subtable.lookupRecords.length; i++) {
+	            var lookupRecord = subtable.lookupRecords[i];
+	            var lookupListIndex = lookupRecord.lookupListIndex;
+	            var lookupTable = this$1.getLookupByIndex(lookupListIndex);
+	            for (var s = 0; s < lookupTable.subtables.length; s++) {
+	                var subtable$1 = lookupTable.subtables[s];
+	                var lookup = this$1.getLookupMethod(lookupTable, subtable$1);
+	                var substitutionType = this$1.getSubstitutionType(lookupTable, subtable$1);
+	                if (substitutionType === '12') {
+	                    for (var n = 0; n < inputLookups.length; n++) {
+	                        var glyphIndex = contextParams.get(n);
+	                        var substitution = lookup(glyphIndex);
+	                        if (substitution) { substitutions.push(substitution); }
+	                    }
+	                }
+	            }
+	        }
+	    }
+	    return substitutions;
+	}
+
+	/**
+	 * Handle ligature substitution - format 1
+	 * @param {ContextParams} contextParams context params to lookup
+	 */
+	function ligatureSubstitutionFormat1(contextParams, subtable) {
+	    // COVERAGE LOOKUP //
+	    var glyphIndex = contextParams.current;
+	    var ligSetIndex = lookupCoverage(glyphIndex, subtable.coverage);
+	    if (ligSetIndex === -1) { return null; }
+	    // COMPONENTS LOOKUP
+	    // (!) note, components are ordered in the written direction.
+	    var ligature;
+	    var ligatureSet = subtable.ligatureSets[ligSetIndex];
+	    for (var s = 0; s < ligatureSet.length; s++) {
+	        ligature = ligatureSet[s];
+	        for (var l = 0; l < ligature.components.length; l++) {
+	            var lookaheadItem = contextParams.lookahead[l];
+	            var component = ligature.components[l];
+	            if (lookaheadItem !== component) { break; }
+	            if (l === ligature.components.length - 1) { return ligature; }
+	        }
+	    }
+	    return null;
+	}
+
+	/**
+	 * Handle decomposition substitution - format 1
+	 * @param {number} glyphIndex glyph index
+	 * @param {any} subtable subtable
+	 */
+	function decompositionSubstitutionFormat1(glyphIndex, subtable) {
+	    var substituteIndex = lookupCoverage(glyphIndex, subtable.coverage);
+	    if (substituteIndex === -1) { return null; }
+	    return subtable.sequences[substituteIndex];
+	}
+
+	/**
+	 * Get default script features indexes
+	 */
+	FeatureQuery.prototype.getDefaultScriptFeaturesIndexes = function () {
+	    var scripts = this.font.tables.gsub.scripts;
+	    for (var s = 0; s < scripts.length; s++) {
+	        var script = scripts[s];
+	        if (script.tag === 'DFLT') { return (
+	            script.script.defaultLangSys.featureIndexes
+	        ); }
+	    }
+	    return [];
+	};
+
+	/**
+	 * Get feature indexes of a specific script
+	 * @param {string} scriptTag script tag
+	 */
+	FeatureQuery.prototype.getScriptFeaturesIndexes = function(scriptTag) {
+	    var tables = this.font.tables;
+	    if (!tables.gsub) { return []; }
+	    if (!scriptTag) { return this.getDefaultScriptFeaturesIndexes(); }
+	    var scripts = this.font.tables.gsub.scripts;
+	    for (var i = 0; i < scripts.length; i++) {
+	        var script = scripts[i];
+	        if (script.tag === scriptTag && script.script.defaultLangSys) {
+	            return script.script.defaultLangSys.featureIndexes;
+	        } else {
+	            var langSysRecords = script.langSysRecords;
+	            if (!!langSysRecords) {
+	                for (var j = 0; j < langSysRecords.length; j++) {
+	                    var langSysRecord = langSysRecords[j];
+	                    if (langSysRecord.tag === scriptTag) {
+	                        var langSys = langSysRecord.langSys;
+	                        return langSys.featureIndexes;
+	                    }
+	                }
+	            }
+	        }
+	    }
+	    return this.getDefaultScriptFeaturesIndexes();
+	};
+
+	/**
+	 * Map a feature tag to a gsub feature
+	 * @param {any} features gsub features
+	 * @param {string} scriptTag script tag
+	 */
+	FeatureQuery.prototype.mapTagsToFeatures = function (features, scriptTag) {
+	    var tags = {};
+	    for (var i = 0; i < features.length; i++) {
+	        var tag = features[i].tag;
+	        var feature = features[i].feature;
+	        tags[tag] = feature;
+	    }
+	    this.features[scriptTag].tags = tags;
+	};
+
+	/**
+	 * Get features of a specific script
+	 * @param {string} scriptTag script tag
+	 */
+	FeatureQuery.prototype.getScriptFeatures = function (scriptTag) {
+	    var features = this.features[scriptTag];
+	    if (this.features.hasOwnProperty(scriptTag)) { return features; }
+	    var featuresIndexes = this.getScriptFeaturesIndexes(scriptTag);
+	    if (!featuresIndexes) { return null; }
+	    var gsub = this.font.tables.gsub;
+	    features = featuresIndexes.map(function (index) { return gsub.features[index]; });
+	    this.features[scriptTag] = features;
+	    this.mapTagsToFeatures(features, scriptTag);
+	    return features;
+	};
+
+	/**
+	 * Get substitution type
+	 * @param {any} lookupTable lookup table
+	 * @param {any} subtable subtable
+	 */
+	FeatureQuery.prototype.getSubstitutionType = function(lookupTable, subtable) {
+	    var lookupType = lookupTable.lookupType.toString();
+	    var substFormat = subtable.substFormat.toString();
+	    return lookupType + substFormat;
+	};
+
+	/**
+	 * Get lookup method
+	 * @param {any} lookupTable lookup table
+	 * @param {any} subtable subtable
+	 */
+	FeatureQuery.prototype.getLookupMethod = function(lookupTable, subtable) {
+	    var this$1 = this;
+
+	    var substitutionType = this.getSubstitutionType(lookupTable, subtable);
+	    switch (substitutionType) {
+	        case '12':
+	            return function (glyphIndex) { return singleSubstitutionFormat2.apply(
+	                this$1, [glyphIndex, subtable]
+	            ); };
+	        case '63':
+	            return function (contextParams) { return chainingSubstitutionFormat3.apply(
+	                this$1, [contextParams, subtable]
+	            ); };
+	        case '41':
+	            return function (contextParams) { return ligatureSubstitutionFormat1.apply(
+	                this$1, [contextParams, subtable]
+	            ); };
+	        case '21':
+	            return function (glyphIndex) { return decompositionSubstitutionFormat1.apply(
+	                this$1, [glyphIndex, subtable]
+	            ); };
+	        default:
+	            throw new Error(
+	                "lookupType: " + (lookupTable.lookupType) + " - " +
+	                "substFormat: " + (subtable.substFormat) + " " +
+	                "is not yet supported"
+	            );
+	    }
+	};
+
+	/**
+	 * [ LOOKUP TYPES ]
+	 * -------------------------------
+	 * Single                        1;
+	 * Multiple                      2;
+	 * Alternate                     3;
+	 * Ligature                      4;
+	 * Context                       5;
+	 * ChainingContext               6;
+	 * ExtensionSubstitution         7;
+	 * ReverseChainingContext        8;
+	 * -------------------------------
+	 *
+	 */
+
+	/**
+	 * @typedef FQuery
+	 * @type Object
+	 * @param {string} tag feature tag
+	 * @param {string} script feature script
+	 * @param {ContextParams} contextParams context params
+	 */
+
+	/**
+	 * Lookup a feature using a query parameters
+	 * @param {FQuery} query feature query
+	 */
+	FeatureQuery.prototype.lookupFeature = function (query) {
+	    var this$1 = this;
+
+	    var contextParams = query.contextParams;
+	    var currentIndex = contextParams.index;
+	    var feature = this.getFeature({
+	        tag: query.tag, script: query.script
+	    });
+	    if (!feature) { return new Error(
+	        "font '" + (this.font.names.fullName.en) + "' " +
+	        "doesn't support feature '" + (query.tag) + "' " +
+	        "for script '" + (query.script) + "'."
+	    ); }
+	    var lookups = this.getFeatureLookups(feature);
+	    var substitutions = [].concat(contextParams.context);
+	    for (var l = 0; l < lookups.length; l++) {
+	        var lookupTable = lookups[l];
+	        var subtables = this$1.getLookupSubtables(lookupTable);
+	        for (var s = 0; s < subtables.length; s++) {
+	            var subtable = subtables[s];
+	            var substType = this$1.getSubstitutionType(lookupTable, subtable);
+	            var lookup = this$1.getLookupMethod(lookupTable, subtable);
+	            var substitution = (void 0);
+	            switch (substType) {
+	                case '12':
+	                    substitution = lookup(contextParams.current);
+	                    if (substitution) {
+	                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
+	                            id: 12, tag: query.tag, substitution: substitution
+	                        }));
+	                    }
+	                    break;
+	                case '63':
+	                    substitution = lookup(contextParams);
+	                    if (Array.isArray(substitution) && substitution.length) {
+	                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
+	                            id: 63, tag: query.tag, substitution: substitution
+	                        }));
+	                    }
+	                    break;
+	                case '41':
+	                    substitution = lookup(contextParams);
+	                    if (substitution) {
+	                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
+	                            id: 41, tag: query.tag, substitution: substitution
+	                        }));
+	                    }
+	                    break;
+	                case '21':
+	                    substitution = lookup(contextParams.current);
+	                    if (substitution) {
+	                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
+	                            id: 21, tag: query.tag, substitution: substitution
+	                        }));
+	                    }
+	                    break;
+	            }
+	            contextParams = new ContextParams(substitutions, currentIndex);
+	            if (Array.isArray(substitution) && !substitution.length) { continue; }
+	            substitution = null;
+	        }
+	    }
+	    return substitutions.length ? substitutions : null;
+	};
+
+	/**
+	 * Checks if a font supports a specific features
+	 * @param {FQuery} query feature query object
+	 */
+	FeatureQuery.prototype.supports = function (query) {
+	    if (!query.script) { return false; }
+	    this.getScriptFeatures(query.script);
+	    var supportedScript = this.features.hasOwnProperty(query.script);
+	    if (!query.tag) { return supportedScript; }
+	    var supportedFeature = (
+	        this.features[query.script].some(function (feature) { return feature.tag === query.tag; })
+	    );
+	    return supportedScript && supportedFeature;
+	};
+
+	/**
+	 * Get lookup table subtables
+	 * @param {any} lookupTable lookup table
+	 */
+	FeatureQuery.prototype.getLookupSubtables = function (lookupTable) {
+	    return lookupTable.subtables || null;
+	};
+
+	/**
+	 * Get lookup table by index
+	 * @param {number} index lookup table index
+	 */
+	FeatureQuery.prototype.getLookupByIndex = function (index) {
+	    var lookups = this.font.tables.gsub.lookups;
+	    return lookups[index] || null;
+	};
+
+	/**
+	 * Get lookup tables for a feature
+	 * @param {string} feature
+	 */
+	FeatureQuery.prototype.getFeatureLookups = function (feature) {
+	    // TODO: memoize
+	    return feature.lookupListIndexes.map(this.getLookupByIndex.bind(this));
+	};
+
+	/**
+	 * Query a feature by it's properties
+	 * @param {any} query an object that describes the properties of a query
+	 */
+	FeatureQuery.prototype.getFeature = function getFeature(query) {
+	    if (!this.font) { return { FAIL: "No font was found"}; }
+	    if (!this.features.hasOwnProperty(query.script)) {
+	        this.getScriptFeatures(query.script);
+	    }
+	    var scriptFeatures = this.features[query.script];
+	    if (!scriptFeatures) { return (
+	        { FAIL: ("No feature for script " + (query.script))}
+	    ); }
+	    if (!scriptFeatures.tags[query.tag]) { return null; }
+	    return this.features[query.script].tags[query.tag];
+	};
 
 	/**
 	 * Arabic word context checkers
@@ -11768,7 +12404,11 @@
 	        (!isArabicChar(nextChar))
 	    );
 	}
-	var arabicWordCheck = { arabicWordStartCheck: arabicWordStartCheck, arabicWordEndCheck: arabicWordEndCheck };
+
+	var arabicWordCheck = {
+	    startCheck: arabicWordStartCheck,
+	    endCheck: arabicWordEndCheck
+	};
 
 	/**
 	 * Arabic sentence context checkers
@@ -11806,11 +12446,76 @@
 	            return false;
 	    }
 	}
-	var arabicSentenceCheck = { arabicSentenceStartCheck: arabicSentenceStartCheck, arabicSentenceEndCheck: arabicSentenceEndCheck };
+
+	var arabicSentenceCheck = {
+	    startCheck: arabicSentenceStartCheck,
+	    endCheck: arabicSentenceEndCheck
+	};
+
+	/**
+	 * Apply single substitution format 2
+	 * @param {Array} substitutions substitutions
+	 * @param {any} tokens a list of tokens
+	 * @param {number} index token index
+	 */
+	function singleSubstitutionFormat2$1(action, tokens, index) {
+	    tokens[index].setState(action.tag, action.substitution);
+	}
+
+	/**
+	 * Apply chaining context substitution format 3
+	 * @param {Array} substitutions substitutions
+	 * @param {any} tokens a list of tokens
+	 * @param {number} index token index
+	 */
+	function chainingSubstitutionFormat3$1(action, tokens, index) {
+	    action.substitution.forEach(function (subst, offset) {
+	        var token = tokens[index + offset];
+	        token.setState(action.tag, subst);
+	    });
+	}
+
+	/**
+	 * Apply ligature substitution format 1
+	 * @param {Array} substitutions substitutions
+	 * @param {any} tokens a list of tokens
+	 * @param {number} index token index
+	 */
+	function ligatureSubstitutionFormat1$1(action, tokens, index) {
+	    var token = tokens[index];
+	    token.setState(action.tag, action.substitution.ligGlyph);
+	    var compsCount = action.substitution.components.length;
+	    for (var i = 0; i < compsCount; i++) {
+	        token = tokens[index + i + 1];
+	        token.setState('deleted', true);
+	    }
+	}
+
+	/**
+	 * Supported substitutions
+	 */
+	var SUBSTITUTIONS = {
+	    12: singleSubstitutionFormat2$1,
+	    63: chainingSubstitutionFormat3$1,
+	    41: ligatureSubstitutionFormat1$1
+	};
+
+	/**
+	 * Apply substitutions to a list of tokens
+	 * @param {Array} substitutions substitutions
+	 * @param {any} tokens a list of tokens
+	 * @param {number} index token index
+	 */
+	function applySubstitution(action, tokens, index) {
+	    if (action instanceof SubstitutionAction) {
+	        SUBSTITUTIONS[action.id](action, tokens, index);
+	    }
+	}
 
 	/**
 	 * Apply Arabic presentation forms to a range of tokens
 	 */
+
 	/**
 	 * Check if a char can be connected to it's preceding char
 	 * @param {ContextParams} charContextParams context params of a char
@@ -11846,44 +12551,42 @@
 	 * @param {ContextRange} range a range of tokens
 	 */
 	function arabicPresentationForms(range) {
-	    var features = this.features.arab;
-	    var rangeTokens = this.tokenizer.getRangeTokens(range);
-	    if (rangeTokens.length === 1) { return; }
-	    var getSubstitutionIndex = function (substitution) { return (
-	        substitution.length === 1 &&
-	        substitution[0].id === 12 &&
-	        substitution[0].substitution
-	    ); };
-	    var applyForm = function (tag, token, params) {
-	        if (!features.hasOwnProperty(tag)) { return; }
-	        var substitution = features[tag].lookup(params) || null;
-	        var substIndex = getSubstitutionIndex(substitution)[0];
-	        if (substIndex >= 0) {
-	            return token.setState(tag, substIndex);
-	        }
-	    };
-	    var tokensParams = new ContextParams(rangeTokens, 0);
-	    var charContextParams = new ContextParams(rangeTokens.map(function (t){ return t.char; }), 0);
-	    rangeTokens.forEach(function (token, i) {
+	    var this$1 = this;
+
+	    var script = 'arab';
+	    var tags = this.featuresTags[script];
+	    var tokens = this.tokenizer.getRangeTokens(range);
+	    if (tokens.length === 1) { return; }
+	    var contextParams = new ContextParams(
+	        tokens.map(function (token) { return token.getState('glyphIndex'); }
+	    ), 0);
+	    var charContextParams = new ContextParams(
+	        tokens.map(function (token) { return token.char; }
+	    ), 0);
+	    tokens.forEach(function (token, index) {
 	        if (isTashkeelArabicChar(token.char)) { return; }
-	        tokensParams.setCurrentIndex(i);
-	        charContextParams.setCurrentIndex(i);
+	        contextParams.setCurrentIndex(index);
+	        charContextParams.setCurrentIndex(index);
 	        var CONNECT = 0; // 2 bits 00 (10: can connect next) (01: can connect prev)
 	        if (willConnectPrev(charContextParams)) { CONNECT |= 1; }
 	        if (willConnectNext(charContextParams)) { CONNECT |= 2; }
+	        var tag;
 	        switch (CONNECT) {
-	            case 0: // isolated * original form
-	                return;
-	            case 1: // fina
-	                applyForm('fina', token, tokensParams);
-	                break;
-	            case 2: // init
-	                applyForm('init', token, tokensParams);
-	                break;
-	            case 3: // medi
-	                applyForm('medi', token, tokensParams);
-	                break;
+	            case 1: (tag = 'fina'); break;
+	            case 2: (tag = 'init'); break;
+	            case 3: (tag = 'medi'); break;
 	        }
+	        if (tags.indexOf(tag) === -1) { return; }
+	        var substitutions = this$1.query.lookupFeature({
+	            tag: tag, script: script, contextParams: contextParams
+	        });
+	        if (substitutions instanceof Error) { return console.info(substitutions.message); }
+	        substitutions.forEach(function (action, index) {
+	            if (action instanceof SubstitutionAction) {
+	                applySubstitution(action, tokens, index);
+	                contextParams.context[index] = action.substitution;
+	            }
+	        });
 	    });
 	}
 
@@ -11892,46 +12595,105 @@
 	 */
 
 	/**
+	 * Update context params
+	 * @param {any} tokens a list of tokens
+	 * @param {number} index current item index
+	 */
+	function getContextParams(tokens, index) {
+	    var context = tokens.map(function (token) { return token.activeState.value; });
+	    return new ContextParams(context, index || 0);
+	}
+
+	/**
 	 * Apply Arabic required ligatures to a context range
 	 * @param {ContextRange} range a range of tokens
 	 */
 	function arabicRequiredLigatures(range) {
-	    var features = this.features.arab;
-	    if (!features.hasOwnProperty('rlig')) { return; }
+	    var this$1 = this;
+
+	    var script = 'arab';
 	    var tokens = this.tokenizer.getRangeTokens(range);
-	    for (var i = 0; i < tokens.length; i++) {
-	        var lookupParams = new ContextParams(tokens, i);
-	        var substitution = features.rlig.lookup(lookupParams) || null;
-	        var chainingContext = (
-	            substitution.length === 1 &&
-	            substitution[0].id === 63 &&
-	            substitution[0].substitution
-	        );
-	        var ligature = (
-	            substitution.length === 1 &&
-	            substitution[0].id === 41 &&
-	            substitution[0].substitution[0]
-	        );
-	        var token = tokens[i];
-	        if (!!ligature) {
-	            token.setState('rlig', [ligature.ligGlyph]);
-	            for (var c = 0; c < ligature.components.length; c++) {
-	                var component = ligature.components[c];
-	                var lookaheadToken = lookupParams.get(c + 1);
-	                if (lookaheadToken.activeState.value === component) {
-	                    lookaheadToken.state.deleted = true;
-	                }
-	            }
-	        } else if (chainingContext) {
-	            var substIndex = (
-	                chainingContext &&
-	                chainingContext.length === 1 &&
-	                chainingContext[0].id === 12 &&
-	                chainingContext[0].substitution
+	    var contextParams = getContextParams(tokens);
+	    contextParams.context.forEach(function (glyphIndex, index) {
+	        contextParams.setCurrentIndex(index);
+	        var substitutions = this$1.query.lookupFeature({
+	            tag: 'rlig', script: script, contextParams: contextParams
+	        });
+	        if (substitutions.length) {
+	            substitutions.forEach(
+	                function (action) { return applySubstitution(action, tokens, index); }
 	            );
-	            if (!!substIndex && substIndex >= 0) { token.setState('rlig', substIndex); }
+	            contextParams = getContextParams(tokens);
 	        }
-	    }
+	    });
+	}
+
+	/**
+	 * Latin word context checkers
+	 */
+
+	function latinWordStartCheck(contextParams) {
+	    var char = contextParams.current;
+	    var prevChar = contextParams.get(-1);
+	    return (
+	        // ? latin first char
+	        (prevChar === null && isLatinChar(char)) ||
+	        // ? latin char preceded with a non latin char
+	        (!isLatinChar(prevChar) && isLatinChar(char))
+	    );
+	}
+
+	function latinWordEndCheck(contextParams) {
+	    var nextChar = contextParams.get(1);
+	    return (
+	        // ? last latin char
+	        (nextChar === null) ||
+	        // ? next char is not latin
+	        (!isLatinChar(nextChar))
+	    );
+	}
+
+	var latinWordCheck = {
+	    startCheck: latinWordStartCheck,
+	    endCheck: latinWordEndCheck
+	};
+
+	/**
+	 * Apply Latin ligature feature to a range of tokens
+	 */
+
+	/**
+	 * Update context params
+	 * @param {any} tokens a list of tokens
+	 * @param {number} index current item index
+	 */
+	function getContextParams$1(tokens, index) {
+	    var context = tokens.map(function (token) { return token.activeState.value; });
+	    return new ContextParams(context, index || 0);
+	}
+
+	/**
+	 * Apply Arabic required ligatures to a context range
+	 * @param {ContextRange} range a range of tokens
+	 */
+	function latinLigature(range) {
+	    var this$1 = this;
+
+	    var script = 'latn';
+	    var tokens = this.tokenizer.getRangeTokens(range);
+	    var contextParams = getContextParams$1(tokens);
+	    contextParams.context.forEach(function (glyphIndex, index) {
+	        contextParams.setCurrentIndex(index);
+	        var substitutions = this$1.query.lookupFeature({
+	            tag: 'liga', script: script, contextParams: contextParams
+	        });
+	        if (substitutions.length) {
+	            substitutions.forEach(
+	                function (action) { return applySubstitution(action, tokens, index); }
+	            );
+	            contextParams = getContextParams$1(tokens);
+	        }
+	    });
 	}
 
 	/**
@@ -11946,7 +12708,7 @@
 	function Bidi(baseDir) {
 	    this.baseDir = baseDir || 'ltr';
 	    this.tokenizer = new Tokenizer();
-	    this.features = [];
+	    this.featuresTags = {};
 	}
 
 	/**
@@ -11963,6 +12725,7 @@
 	 * arabic sentence check for adjusting arabic layout
 	 */
 	Bidi.prototype.contextChecks = ({
+	    latinWordCheck: latinWordCheck,
 	    arabicWordCheck: arabicWordCheck,
 	    arabicSentenceCheck: arabicSentenceCheck
 	});
@@ -11970,24 +12733,10 @@
 	/**
 	 * Register arabic word check
 	 */
-	function registerArabicWordCheck() {
-	    var checks = this.contextChecks.arabicWordCheck;
+	function registerContextChecker(checkId) {
+	    var check = this.contextChecks[(checkId + "Check")];
 	    return this.tokenizer.registerContextChecker(
-	        'arabicWord',
-	        checks.arabicWordStartCheck,
-	        checks.arabicWordEndCheck
-	    );
-	}
-
-	/**
-	 * Register arabic sentence check
-	 */
-	function registerArabicSentenceCheck() {
-	    var checks = this.contextChecks.arabicSentenceCheck;
-	    return this.tokenizer.registerContextChecker(
-	        'arabicSentence',
-	        checks.arabicSentenceStartCheck,
-	        checks.arabicSentenceEndCheck
+	        checkId, check.startCheck, check.endCheck
 	    );
 	}
 
@@ -11996,8 +12745,9 @@
 	 * tokenize text input
 	 */
 	function tokenizeText() {
-	    registerArabicWordCheck.call(this);
-	    registerArabicSentenceCheck.call(this);
+	    registerContextChecker.call(this, 'latinWord');
+	    registerContextChecker.call(this, 'arabicWord');
+	    registerContextChecker.call(this, 'arabicSentence');
 	    return this.tokenizer.tokenize(this.text);
 	}
 
@@ -12020,39 +12770,41 @@
 	}
 
 	/**
-	 * Subscribe arabic presentation form features
-	 * @param {feature} feature a feature to apply
+	 * Register supported features tags
+	 * @param {script} script script tag
+	 * @param {Array} tags features tags list
 	 */
-	Bidi.prototype.subscribeArabicForms = function(feature) {
+	Bidi.prototype.registerFeatures = function (script, tags) {
 	    var this$1 = this;
 
-	    this.tokenizer.events.contextEnd.subscribe(
-	        function (contextName, range) {
-	            if (contextName === 'arabicWord') {
-	                return arabicPresentationForms.call(
-	                    this$1.tokenizer, range, feature
-	                );
-	            }
-	        }
+	    var supportedTags = tags.filter(
+	        function (tag) { return this$1.query.supports({script: script, tag: tag}); }
 	    );
+	    if (!this.featuresTags.hasOwnProperty(script)) {
+	        this.featuresTags[script] = supportedTags;
+	    } else {
+	        this.featuresTags[script] =
+	        this.featuresTags[script].concat(supportedTags);
+	    }
 	};
 
 	/**
-	 * Apply Gsub features
-	 * @param {feature} features a list of features
+	 * Apply GSUB features
+	 * @param {Array} tagsList a list of features tags
+	 * @param {string} script a script tag
+	 * @param {Font} font opentype font instance
 	 */
-	Bidi.prototype.applyFeatures = function (features) {
+	Bidi.prototype.applyFeatures = function (font, features) {
 	    var this$1 = this;
 
-	    for (var i = 0; i < features.length; i++) {
-	        var feature = features[i];
-	        if (feature) {
-	            var script = feature.script;
-	            if (!this$1.features[script]) {
-	                this$1.features[script] = {};
-	            }
-	            this$1.features[script][feature.tag] = feature;
-	        }
+	    if (!font) { throw new Error(
+	        'No valid font was provided to apply features'
+	    ); }
+	    if (!this.query) { this.query = new FeatureQuery(font); }
+	    for (var f = 0; f < features.length; f++) {
+	        var feature = features[f];
+	        if (!this$1.query.supports({script: feature.script})) { continue; }
+	        this$1.registerFeatures(feature.script, feature.tags);
 	    }
 	};
 
@@ -12084,7 +12836,8 @@
 	function applyArabicPresentationForms() {
 	    var this$1 = this;
 
-	    if (!this.features.hasOwnProperty('arab')) { return; }
+	    var script = 'arab';
+	    if (!this.featuresTags.hasOwnProperty(script)) { return; }
 	    checkGlyphIndexStatus.call(this);
 	    var ranges = this.tokenizer.getContextRanges('arabicWord');
 	    ranges.forEach(function (range) {
@@ -12098,14 +12851,57 @@
 	function applyArabicRequireLigatures() {
 	    var this$1 = this;
 
-	    if (!this.features.hasOwnProperty('arab')) { return; }
-	    if (!this.features.arab.hasOwnProperty('rlig')) { return; }
+	    var script = 'arab';
+	    if (!this.featuresTags.hasOwnProperty(script)) { return; }
+	    var tags = this.featuresTags[script];
+	    if (tags.indexOf('rlig') === -1) { return; }
 	    checkGlyphIndexStatus.call(this);
 	    var ranges = this.tokenizer.getContextRanges('arabicWord');
 	    ranges.forEach(function (range) {
 	        arabicRequiredLigatures.call(this$1, range);
 	    });
 	}
+
+	/**
+	 * Apply required arabic ligatures
+	 */
+	function applyLatinLigatures() {
+	    var this$1 = this;
+
+	    var script = 'latn';
+	    if (!this.featuresTags.hasOwnProperty(script)) { return; }
+	    var tags = this.featuresTags[script];
+	    if (tags.indexOf('liga') === -1) { return; }
+	    checkGlyphIndexStatus.call(this);
+	    var ranges = this.tokenizer.getContextRanges('latinWord');
+	    ranges.forEach(function (range) {
+	        latinLigature.call(this$1, range);
+	    });
+	}
+
+	/**
+	 * Check if a context is registered
+	 * @param {string} contextId context id
+	 */
+	Bidi.prototype.checkContextReady = function (contextId) {
+	    return !!this.tokenizer.getContext(contextId);
+	};
+
+	/**
+	 * Apply features to registered contexts
+	 */
+	Bidi.prototype.applyFeaturesToContexts = function () {
+	    if (this.checkContextReady('arabicWord')) {
+	        applyArabicPresentationForms.call(this);
+	        applyArabicRequireLigatures.call(this);
+	    }
+	    if (this.checkContextReady('latinWord')) {
+	        applyLatinLigatures.call(this);
+	    }
+	    if (this.checkContextReady('arabicSentence')) {
+	        reverseArabicSentences.call(this);
+	    }
+	};
 
 	/**
 	 * process text input
@@ -12115,9 +12911,7 @@
 	    if (!this.text || this.text !== text) {
 	        this.setText(text);
 	        tokenizeText.call(this);
-	        applyArabicPresentationForms.call(this);
-	        applyArabicRequireLigatures.call(this);
-	        reverseArabicSentences.call(this);
+	        this.applyFeaturesToContexts();
 	    }
 	};
 
@@ -12147,425 +12941,6 @@
 	        indexes.push(Array.isArray(index) ? index[0] : index);
 	    }
 	    return indexes;
-	};
-
-	/**
-	 * Query a feature by some of it's properties to lookup a glyph substitution.
-	 */
-
-	// DEFAULT TEXT BASE DIRECTION
-	var BASE_DIR = 'ltr';
-
-	/**
-	 * Create feature query instance
-	 * @param {Font} font opentype font instance
-	 * @param {string} baseDir text base direction
-	 */
-	function FeatureQuery(font, baseDir) {
-	    this.font = font;
-	    this.features = {};
-	    BASE_DIR = !!baseDir ? baseDir : BASE_DIR;
-	}
-
-	/**
-	 * Create a new feature lookup
-	 * @param {string} tag feature tag
-	 * @param {feature} feature reference to feature at gsub table
-	 * @param {FeatureLookups} feature lookups associated with this feature
-	 * @param {string} script gsub script tag
-	 */
-	function Feature(tag, feature, featureLookups, script) {
-	    this.tag = tag;
-	    this.featureRef = feature;
-	    this.lookups = featureLookups.lookups;
-	    this.script = script;
-	}
-
-	/**
-	 * Create a coverage table lookup
-	 * @param {any} coverageTable gsub coverage table
-	 */
-	function Coverage$1(coverageTable) {
-	    this.table = coverageTable;
-	}
-
-	/**
-	 * Create a ligature set lookup
-	 * @param {any} ligatureSets gsub ligature set
-	 */
-	function LigatureSets(ligatureSets) {
-	    this.ligatureSets = ligatureSets;
-	}
-
-	/**
-	 * Lookup a glyph ligature
-	 * @param {ContextParams} contextParams context params to lookup
-	 * @param {number} ligSetIndex ligature set index at ligature sets
-	 */
-	LigatureSets.prototype.lookup = function (contextParams, ligSetIndex) {
-	    var ligatureSet = this.ligatureSets[ligSetIndex];
-	    var matchComponents = function (components, indexes) {
-	        if (components.length > indexes.length) { return null; }
-	        for (var c = 0; c < components.length; c++) {
-	            var component = components[c];
-	            var index = indexes[c];
-	            if (component !== index) { return false; }
-	        }
-	        return true;
-	    };
-	    for (var s = 0; s < ligatureSet.length; s++) {
-	        var ligSetItem = ligatureSet[s];
-	        var lookaheadIndexes = contextParams.lookahead.map(
-	            function (token) { return token.activeState.value; }
-	        );
-	        if (BASE_DIR === 'rtl') { lookaheadIndexes.reverse(); }
-	        var componentsMatch = matchComponents(
-	            ligSetItem.components, lookaheadIndexes
-	        );
-	        if (componentsMatch) { return ligSetItem; }
-	    }
-	    return null;
-	};
-
-	/**
-	 * Create a feature substitution
-	 * @param {any} lookups a reference to gsub lookups
-	 * @param {Lookuptable} lookupTable a feature lookup table
-	 * @param {any} subtable substitution table
-	 */
-	function Substitution$1(lookups, lookupTable, subtable) {
-	    this.lookups = lookups;
-	    this.subtable = subtable;
-	    this.lookupTable = lookupTable;
-	    if (subtable.hasOwnProperty('coverage')) {
-	        this.coverage = new Coverage$1(
-	            subtable.coverage
-	        );
-	    }
-	    if (subtable.hasOwnProperty('inputCoverage')) {
-	        this.inputCoverage = subtable.inputCoverage.map(
-	            function (table) { return new Coverage$1(table); }
-	        );
-	    }
-	    if (subtable.hasOwnProperty('backtrackCoverage')) {
-	        this.backtrackCoverage = subtable.backtrackCoverage.map(
-	            function (table) { return new Coverage$1(table); }
-	        );
-	    }
-	    if (subtable.hasOwnProperty('lookaheadCoverage')) {
-	        this.lookaheadCoverage = subtable.lookaheadCoverage.map(
-	            function (table) { return new Coverage$1(table); }
-	        );
-	    }
-	    if (subtable.hasOwnProperty('ligatureSets')) {
-	        this.ligatureSets = new LigatureSets(subtable.ligatureSets);
-	    }
-	}
-
-	/**
-	 * Create a lookup table lookup
-	 * @param {number} index table index at gsub lookups
-	 * @param {any} lookups a reference to gsub lookups
-	 */
-	function LookupTable(index, lookups) {
-	    this.index = index;
-	    this.subtables = lookups[index].subtables.map(
-	        function (subtable) { return new Substitution$1(
-	            lookups, lookups[index], subtable
-	        ); }
-	    );
-	}
-
-	function FeatureLookups(lookups, lookupListIndexes) {
-	    this.lookups = lookupListIndexes.map(
-	        function (index) { return new LookupTable(index, lookups); }
-	    );
-	}
-
-	/**
-	 * Lookup a lookup table subtables
-	 * @param {ContextParams} contextParams context params to lookup
-	 */
-	LookupTable.prototype.lookup = function (contextParams) {
-	    var this$1 = this;
-
-	    var substitutions = [];
-	    for (var i = 0; i < this.subtables.length; i++) {
-	        var subsTable = this$1.subtables[i];
-	        var substitution = subsTable.lookup(contextParams);
-	        if (substitution !== null || substitution.length) {
-	            substitutions = substitutions.concat(substitution);
-	        }
-	    }
-	    return substitutions;
-	};
-
-	/**
-	 * Handle a single substitution - format 2
-	 * @param {ContextParams} contextParams context params to lookup
-	 */
-	function singleSubstitutionFormat2(contextParams) {
-	    var glyphIndex = contextParams.current.activeState.value;
-	    glyphIndex = Array.isArray(glyphIndex) ? glyphIndex[0] : glyphIndex;
-	    var substituteIndex = this.coverage.lookup(glyphIndex);
-	    if (substituteIndex === -1) { return []; }
-	    return [this.subtable.substitute[substituteIndex]];
-	}
-
-	/**
-	 * Lookup a list of coverage tables
-	 * @param {any} coverageList a list of coverage tables
-	 * @param {any} contextParams context params to lookup
-	 */
-	function lookupCoverageList(coverageList, contextParams) {
-	    var lookupList = [];
-	    for (var i = 0; i < coverageList.length; i++) {
-	        var coverage = coverageList[i];
-	        var glyphIndex = contextParams.current.activeState.value;
-	        glyphIndex = Array.isArray(glyphIndex) ? glyphIndex[0] : glyphIndex;
-	        var lookupIndex = coverage.lookup(glyphIndex);
-	        if (lookupIndex !== -1) {
-	            lookupList.push(lookupIndex);
-	        }
-	    }
-	    if (lookupList.length !== coverageList.length) { return -1; }
-	    return lookupList;
-	}
-
-	/**
-	 * Handle chaining context substitution - format 3
-	 * @param {any} contextParams context params to lookup
-	 */
-	function chainingSubstitutionFormat3(contextParams) {
-	    var this$1 = this;
-
-	    var lookupsCount = (
-	        this.inputCoverage.length +
-	        this.lookaheadCoverage.length +
-	        this.backtrackCoverage.length
-	    );
-	    if (contextParams.context.length < lookupsCount) { return []; }
-	    // INPUT LOOKUP //
-	    var inputLookups = lookupCoverageList(
-	        this.inputCoverage, contextParams
-	    );
-	    if (inputLookups === -1) { return []; }
-	    // LOOKAHEAD LOOKUP //
-	    var lookaheadOffset = this.inputCoverage.length - 1;
-	    if (contextParams.lookahead.length < this.lookaheadCoverage.length) { return []; }
-	    var lookaheadContext = contextParams.lookahead.slice(lookaheadOffset);
-	    while (lookaheadContext.length && isTashkeelArabicChar(lookaheadContext[0].char)) {
-	        lookaheadContext.shift();
-	    }
-	    var lookaheadParams = new ContextParams(lookaheadContext, 0);
-	    var lookaheadLookups = lookupCoverageList(
-	        this.lookaheadCoverage, lookaheadParams
-	    );
-	    // BACKTRACK LOOKUP //
-	    var backtrackContext = [].concat(contextParams.backtrack);
-	    backtrackContext.reverse();
-	    while (backtrackContext.length && isTashkeelArabicChar(backtrackContext[0].char)) {
-	        backtrackContext.shift();
-	    }
-	    if (backtrackContext.length < this.backtrackCoverage.length) { return []; }
-	    var backtrackParams = new ContextParams(backtrackContext, 0);
-	    var backtrackLookups = lookupCoverageList(
-	        this.backtrackCoverage, backtrackParams
-	    );
-	    var contextRulesMatch = (
-	        inputLookups.length === this.inputCoverage.length &&
-	        lookaheadLookups.length === this.lookaheadCoverage.length &&
-	        backtrackLookups.length === this.backtrackCoverage.length
-	    );
-	    var substitutions = [];
-	    if (contextRulesMatch) {
-	        var lookupRecords = this.subtable.lookupRecords;
-	        for (var i = 0; i < lookupRecords.length; i++) {
-	            var lookupRecord = lookupRecords[i];
-	            for (var j = 0; j < inputLookups.length; j++) {
-	                var inputContext = new ContextParams([contextParams.get(j)], 0);
-	                var lookupIndex = lookupRecord.lookupListIndex;
-	                var lookupTable = new LookupTable(lookupIndex, this$1.lookups);
-	                var lookup = lookupTable.lookup(inputContext);
-	                substitutions = substitutions.concat(lookup);
-	            }
-	        }
-	    }
-	    return substitutions;
-	}
-
-	/**
-	 * Handle ligature substitution - format 1
-	 * @param {any} contextParams context params to lookup
-	 */
-	function ligatureSubstitutionFormat1(contextParams) {
-	    // COVERAGE LOOKUP //
-	    var glyphIndex = contextParams.current.activeState.value;
-	    var ligSetIndex = this.coverage.lookup(glyphIndex);
-	    if (ligSetIndex === -1) { return []; }
-	    // COMPONENTS LOOKUP * note that components is logically ordered
-	    var ligGlyphs = this.ligatureSets.lookup(contextParams, ligSetIndex);
-	    return ligGlyphs ? [ligGlyphs] : [];
-	}
-
-	/**
-	 * [ LOOKUP TYPES ]
-	 * -------------------------------
-	 * Single                        1;
-	 * Multiple                      2;
-	 * Alternate                     3;
-	 * Ligature                      4;
-	 * Context                       5;
-	 * ChainingContext               6;
-	 * ExtensionSubstitution         7;
-	 * ReverseChainingContext        8;
-	 * -------------------------------
-	 * @param {any} contextParams context params to lookup
-	 */
-	Substitution$1.prototype.lookup = function (contextParams) {
-	    var substitutions = [];
-	    var lookupType = this.lookupTable.lookupType;
-	    var substFormat = this.subtable.substFormat;
-	    if (lookupType === 1 && substFormat === 2) {
-	        var substitution = singleSubstitutionFormat2.call(this, contextParams);
-	        if (substitution.length > 0) {
-	            substitutions.push({ id: 12, substitution: substitution });
-	        }
-	    }
-	    if (lookupType === 6 && substFormat === 3) {
-	        var substitution$1 = chainingSubstitutionFormat3.call(this, contextParams);
-	        if (substitution$1.length > 0) {
-	            substitutions.push({ id: 63, substitution: substitution$1 });
-	        }
-	    }
-	    if (lookupType === 4 && substFormat === 1) {
-	        var substitution$2 = ligatureSubstitutionFormat1.call(this, contextParams);
-	        if (substitution$2.length > 0) {
-	            substitutions.push({ id: 41, substitution: substitution$2 });
-	        }
-	    }
-	    return substitutions;
-	};
-
-	/**
-	 * Lookup a coverage table
-	 * @param {number} glyphIndex to lookup
-	 */
-	Coverage$1.prototype.lookup = function (glyphIndex) {
-	    if (!glyphIndex) { return -1; }
-	    switch (this.table.format) {
-	        case 1:
-	            return this.table.glyphs.indexOf(glyphIndex);
-
-	        case 2:
-	            var ranges = this.table.ranges;
-	            for (var i = 0; i < ranges.length; i++) {
-	                var range = ranges[i];
-	                if (glyphIndex >= range.start && glyphIndex <= range.end) {
-	                    var offset = glyphIndex - range.start;
-	                    return range.index + offset;
-	                }
-	            }
-	            break;
-	        default:
-	            return -1; // not found
-	    }
-	    return -1;
-	};
-
-	/**
-	 * Lookup a feature for a substitution or more
-	 * @param {any} contextParams context params to lookup
-	 */
-	Feature.prototype.lookup = function(contextParams) {
-	    var this$1 = this;
-
-	    var lookups = [];
-	    for (var i = 0; i < this.lookups.length; i++) {
-	        var lookupTable = this$1.lookups[i];
-	        var lookup = lookupTable.lookup(contextParams);
-	        if (lookup !== null || lookup.length) {
-	            lookups = lookups.concat(lookup);
-	        }
-	    }
-	    return lookups;
-	};
-
-	/**
-	 * Get feature indexes of a specific script
-	 * @param {string} scriptTag script tag
-	 */
-	FeatureQuery.prototype.getScriptFeaturesIndexes = function(scriptTag) {
-	    if (!scriptTag) { return []; }
-	    var tables = this.font.tables;
-	    if (!tables.gsub) { return []; }
-	    var scripts = this.font.tables.gsub.scripts;
-	    for (var i = 0; i < scripts.length; i++) {
-	        var script = scripts[i];
-	        if (script.tag === scriptTag) {
-	            var defaultLangSys = script.script.defaultLangSys;
-	            return defaultLangSys.featureIndexes;
-	        } else {
-	            var langSysRecords = script.langSysRecords;
-	            if (!!langSysRecords) {
-	                for (var j = 0; j < langSysRecords.length; j++) {
-	                    var langSysRecord = langSysRecords[j];
-	                    if (langSysRecord.tag === scriptTag) {
-	                        var langSys = langSysRecord.langSys;
-	                        return langSys.featureIndexes;
-	                    }
-	                }
-	            }
-	        }
-	    }
-	    return [];
-	};
-
-	/**
-	 * Map a feature tag to a gsub feature
-	 * @param {any} features gsub features
-	 * @param {*} scriptTag script tag
-	 */
-	FeatureQuery.prototype.mapTagsToFeatures = function (features, scriptTag) {
-	    var this$1 = this;
-
-	    var tags = {};
-	    for (var i = 0; i < features.length; i++) {
-	        var feature = features[i].feature;
-	        var tag = features[i].tag;
-	        var lookups = this$1.font.tables.gsub.lookups;
-	        var featureLookups = new FeatureLookups(lookups, feature.lookupListIndexes);
-	        tags[tag] = new Feature(tag, feature, featureLookups, scriptTag);
-	    }
-	    this.features[scriptTag].tags = tags;
-	};
-
-	/**
-	 * Get features of a specific script
-	 * @param {string} scriptTag script tag
-	 */
-	FeatureQuery.prototype.getScriptFeatures = function (scriptTag) {
-	    var features = this.features[scriptTag];
-	    if (this.features.hasOwnProperty(scriptTag)) { return features; }
-	    var featuresIndexes = this.getScriptFeaturesIndexes(scriptTag);
-	    if (!featuresIndexes) { return null; }
-	    var gsub = this.font.tables.gsub;
-	    features = featuresIndexes.map(function (index) { return gsub.features[index]; });
-	    this.features[scriptTag] = features;
-	    this.mapTagsToFeatures(features, scriptTag);
-	    return features;
-	};
-
-	/**
-	 * Query a feature by it's properties
-	 * @param {any} query an object that describes the properties of a query
-	 */
-	FeatureQuery.prototype.getFeature = function (query) {
-	    if (!this.font) { return { FAIL: "No font was found"}; }
-	    if (!this.features.hasOwnProperty(query.script)) {
-	        this.getScriptFeatures(query.script);
-	    }
-	    return this.features[query.script].tags[query.tag] || null;
 	};
 
 	// The Font object
@@ -12654,6 +13029,10 @@
 	    this.substitution = new Substitution(this);
 	    this.tables = this.tables || {};
 
+	    // needed for low memory mode only.
+	    this._push = null;
+	    this._hmtxTableData = {};
+
 	    Object.defineProperty(this, 'hinting', {
 	        get: function() {
 	            if (this._hinting) { return this._hinting; }
@@ -12703,6 +13082,24 @@
 	};
 
 	/**
+	 * Update features
+	 * @param {any} options features options
+	 */
+	Font.prototype.updateFeatures = function (options) {
+	    // TODO: update all features options not only 'latn'.
+	    return this.defaultRenderOptions.features.map(function (feature) {
+	        if (feature.script === 'latn') {
+	            return {
+	                script: 'latn',
+	                tags: feature.tags.filter(function (tag) { return options[tag]; })
+	            };
+	        } else {
+	            return feature;
+	        }
+	    });
+	};
+
+	/**
 	 * Convert the given text to a list of Glyph objects.
 	 * Note that there is no strict one-to-one mapping between characters and
 	 * glyphs, so the list of returned glyphs can be larger or smaller than the
@@ -12714,7 +13111,6 @@
 	Font.prototype.stringToGlyphs = function(s, options) {
 	    var this$1 = this;
 
-	    options = options || this.defaultRenderOptions;
 
 	    var bidi = new Bidi();
 
@@ -12722,45 +13118,22 @@
 	    var charToGlyphIndexMod = function (token) { return this$1.charToGlyphIndex(token.char); };
 	    bidi.registerModifier('glyphIndex', null, charToGlyphIndexMod);
 
-	    var arabFeatureQuery = new FeatureQuery(this);
-	    var arabFeatures = ['init', 'medi', 'fina', 'rlig'];
-	    bidi.applyFeatures(
-	        arabFeatures.map(function (tag) {
-	            var query = { tag: tag, script: 'arab' };
-	            var feature = arabFeatureQuery.getFeature(query);
-	            if (!!feature) { return feature; }
-	        })
-	    );
+	    // roll-back to default features
+	    var features = options ?
+	    this.updateFeatures(options.features) :
+	    this.defaultRenderOptions.features;
+
+	    bidi.applyFeatures(this, features);
+
 	    var indexes = bidi.getTextGlyphs(s);
 
 	    var length = indexes.length;
 
-	    // Apply substitutions on glyph indexes
-	    if (options.features) {
-	        var script = options.script || this.substitution.getDefaultScriptName();
-	        var manyToOne = [];
-	        if (options.features.liga) { manyToOne = manyToOne.concat(this.substitution.getFeature('liga', script, options.language)); }
-	        if (options.features.rlig) { manyToOne = manyToOne.concat(this.substitution.getFeature('rlig', script, options.language)); }
-	        for (var i = 0; i < length; i += 1) {
-	            for (var j = 0; j < manyToOne.length; j++) {
-	                var ligature = manyToOne[j];
-	                var components = ligature.sub;
-	                var compCount = components.length;
-	                var k = 0;
-	                while (k < compCount && components[k] === indexes[i + k]) { k++; }
-	                if (k === compCount) {
-	                    indexes.splice(i, compCount, ligature.by);
-	                    length = length - compCount + 1;
-	                }
-	            }
-	        }
-	    }
-
 	    // convert glyph indexes to glyph objects
 	    var glyphs = new Array(length);
 	    var notdef = this.glyphs.get(0);
-	    for (var i$1 = 0; i$1 < length; i$1 += 1) {
-	        glyphs[i$1] = this$1.glyphs.get(indexes[i$1]) || notdef;
+	    for (var i = 0; i < length; i += 1) {
+	        glyphs[i] = this$1.glyphs.get(indexes[i]) || notdef;
 	    }
 	    return glyphs;
 	};
@@ -12835,10 +13208,14 @@
 	 */
 	Font.prototype.defaultRenderOptions = {
 	    kerning: true,
-	    features: {
-	        liga: true,
-	        rlig: true
-	    }
+	    features: [
+	        /**
+	         * these 4 features are required to render Arabic text properly
+	         * and shouldn't be turned off when rendering arabic text.
+	         */
+	        { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
+	        { script: 'latn', tags: ['liga', 'rlig'] }
+	    ]
 	};
 
 	/**
@@ -13621,9 +13998,12 @@
 	 * Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
 	 * Throws an error if the font could not be parsed.
 	 * @param  {ArrayBuffer}
+	 * @param  {Object} opt - options for parsing
 	 * @return {opentype.Font}
 	 */
-	function parseBuffer(buffer) {
+	function parseBuffer(buffer, opt) {
+	    opt = (opt === undefined || opt === null) ?  {} : opt;
+
 	    var indexToLocFormat;
 	    var ltagTable;
 
@@ -13771,17 +14151,17 @@
 	        var locaTable = uncompressTable(data, locaTableEntry);
 	        var locaOffsets = loca.parse(locaTable.data, locaTable.offset, font.numGlyphs, shortVersion);
 	        var glyfTable = uncompressTable(data, glyfTableEntry);
-	        font.glyphs = glyf.parse(glyfTable.data, glyfTable.offset, locaOffsets, font);
+	        font.glyphs = glyf.parse(glyfTable.data, glyfTable.offset, locaOffsets, font, opt);
 	    } else if (cffTableEntry) {
 	        var cffTable = uncompressTable(data, cffTableEntry);
-	        cff.parse(cffTable.data, cffTable.offset, font);
+	        cff.parse(cffTable.data, cffTable.offset, font, opt);
 	    } else {
 	        throw new Error('Font doesn\'t contain TrueType or CFF outlines.');
 	    }
 
 	    var hmtxTable = uncompressTable(data, hmtxTableEntry);
-	    hmtx.parse(hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
-	    addGlyphNames(font);
+	    hmtx.parse(font, hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs, opt);
+	    addGlyphNames(font, opt);
 
 	    if (kernTableEntry) {
 	        var kernTable = uncompressTable(data, kernTableEntry);
@@ -13825,7 +14205,7 @@
 	 * @param  {string} url - The URL of the font to load.
 	 * @param  {Function} callback - The callback.
 	 */
-	function load(url, callback) {
+	function load(url, callback, opt) {
 	    var isNode$$1 = typeof window === 'undefined';
 	    var loadFn = isNode$$1 ? loadFromFile : loadFromUrl;
 	    loadFn(url, function(err, arrayBuffer) {
@@ -13834,7 +14214,7 @@
 	        }
 	        var font;
 	        try {
-	            font = parseBuffer(arrayBuffer);
+	            font = parseBuffer(arrayBuffer, opt);
 	        } catch (e) {
 	            return callback(e, null);
 	        }
@@ -13847,12 +14227,13 @@
 	 * When done, returns the font object or throws an error.
 	 * @alias opentype.loadSync
 	 * @param  {string} url - The URL of the font to load.
+	 * @param  {Object} opt - opt.lowMemory
 	 * @return {opentype.Font}
 	 */
-	function loadSync(url) {
+	function loadSync(url, opt) {
 	    var fs = require('fs');
 	    var buffer = fs.readFileSync(url);
-	    return parseBuffer(nodeBufferToArrayBuffer(buffer));
+	    return parseBuffer(nodeBufferToArrayBuffer(buffer), opt);
 	}
 
 	exports.Font = Font;

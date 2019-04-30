@@ -243,11 +243,7 @@ GlyphNames.prototype.glyphIndexToName = function(gid) {
     return this.names[gid];
 };
 
-/**
- * @alias opentype.addGlyphNames
- * @param {opentype.Font}
- */
-function addGlyphNames(font) {
+function addGlyphNamesAll(font) {
     let glyph;
     const glyphIndexMap = font.tables.cmap.glyphIndexMap;
     const charCodes = Object.keys(glyphIndexMap);
@@ -270,6 +266,38 @@ function addGlyphNames(font) {
         } else if (font.glyphNames.names) {
             glyph.name = font.glyphNames.glyphIndexToName(i);
         }
+    }
+}
+
+function addGlyphNamesToUnicodeMap(font) {
+    font._IndexToUnicodeMap = {};
+
+    const glyphIndexMap = font.tables.cmap.glyphIndexMap;
+    const charCodes = Object.keys(glyphIndexMap);
+
+    for (let i = 0; i < charCodes.length; i += 1) {
+        const c = charCodes[i];
+        let glyphIndex = glyphIndexMap[c];
+        if (font._IndexToUnicodeMap[glyphIndex] === undefined) {
+            font._IndexToUnicodeMap[glyphIndex] = {
+                unicodes: [parseInt(c)]
+            };
+        } else {
+            font._IndexToUnicodeMap[glyphIndex].unicodes.push(parseInt(c));
+        }
+    }
+}
+
+/**
+ * @alias opentype.addGlyphNames
+ * @param {opentype.Font}
+ * @param {Object}
+ */
+function addGlyphNames(font, opt) {
+    if (opt.lowMemory) {
+        addGlyphNamesToUnicodeMap(font);
+    } else {
+        addGlyphNamesAll(font);
     }
 }
 

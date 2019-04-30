@@ -305,8 +305,7 @@ function buildPath(glyphs, glyph) {
     return getPath(glyph.points);
 }
 
-// Parse all the glyphs according to the offsets from the `loca` table.
-function parseGlyfTable(data, start, loca, font) {
+function parseGlyfTableAll(data, start, loca, font) {
     const glyphs = new glyphset.GlyphSet(font);
 
     // The last element of the loca table is invalid.
@@ -323,4 +322,28 @@ function parseGlyfTable(data, start, loca, font) {
     return glyphs;
 }
 
-export default { getPath, parse: parseGlyfTable };
+function parseGlyfTableOnLowMemory(data, start, loca, font) {
+    const glyphs = new glyphset.GlyphSet(font);
+
+    font._push = function(i) {
+        const offset = loca[i];
+        const nextOffset = loca[i + 1];
+        if (offset !== nextOffset) {
+            glyphs.push(i, glyphset.ttfGlyphLoader(font, i, parseGlyph, data, start + offset, buildPath));
+        } else {
+            glyphs.push(i, glyphset.glyphLoader(font, i));
+        }
+    };
+
+    return glyphs;
+}
+
+// Parse all the glyphs according to the offsets from the `loca` table.
+function parseGlyfTable(data, start, loca, font, opt) {
+    if (opt.lowMemory)
+        return parseGlyfTableOnLowMemory(data, start, loca, font);
+    else
+        return parseGlyfTableAll(data, start, loca, font);
+}
+
+export default { getPath, parse: parseGlyfTable};
