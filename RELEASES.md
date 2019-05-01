@@ -1,8 +1,13 @@
+1.1.0 (May 1, 2019)
+=====================
+* Support reading GSUB Single substitution format 1 (PR #382) (thanks @solomancode!)
+
 1.0.1 (April 19, 2019)
+=====================
 * Fix error if defaultLangSys is undefined (Issue #378)
 
 1.0.0 (April 17, 2019)
-
+=====================
 * Render arabic rtl text properly (PR #361, partial fix of #364) (thanks @solomancode!)
 * #361 introduced a breaking change to `Font.prototype.defaultRenderOptions`
 Before
