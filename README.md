@@ -77,6 +77,16 @@ opentype.load('fonts/Roboto-Black.ttf', function(err, font) {
 });
 ```
 
+You can also use `es6 async/await` syntax to load your fonts
+
+```javascript
+async function make(){
+    const font = await opentype.load('fonts/Roboto-Black.ttf');
+    const path = font.getPath('Hello, World!', 0, 150, 72);
+    console.log(path);
+}
+```
+
 If you already have an `ArrayBuffer`, you can use `opentype.parse(buffer)` to parse the buffer. This method always
 returns a Font, but check `font.supported` to see if the font is in a supported format. (Fonts can be marked unsupported
 if they have encoding tables we can't read).
