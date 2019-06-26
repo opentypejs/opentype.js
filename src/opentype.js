@@ -374,18 +374,37 @@ function parseBuffer(buffer, opt) {
 function load(url, callback, opt) {
     const isNode = typeof window === 'undefined';
     const loadFn = isNode ? loadFromFile : loadFromUrl;
-    loadFn(url, function(err, arrayBuffer) {
-        if (err) {
-            return callback(err);
-        }
-        let font;
-        try {
-            font = parseBuffer(arrayBuffer, opt);
-        } catch (e) {
-            return callback(e, null);
-        }
-        return callback(null, font);
-    });
+
+    if(callback){
+        loadFn(url, function(err, arrayBuffer) {
+            if (err) {
+                return callback(err);
+            }
+            let font;
+            try {
+                font = parseBuffer(arrayBuffer, opt);
+            } catch (e) {
+                return callback(e, null);
+            }
+            return callback(null, font);
+        });
+    } else {
+        return new Promise( (resolve, reject) => {
+            loadFn(url, (err, arrayBuffer) => {
+                if (err) {
+                    reject(err);
+                }
+                let font;
+                try {
+                    font = parseBuffer(arrayBuffer, opt);
+                } catch (e) {
+                    reject(e);
+                }
+                resolve(font);
+            })
+        })
+    }
+    
 }
 
 /**
