@@ -375,7 +375,7 @@ function load(url, callback, opt) {
     const isNode = typeof window === 'undefined';
     const loadFn = isNode ? loadFromFile : loadFromUrl;
 
-    if(callback){
+    if (callback) {
         loadFn(url, function(err, arrayBuffer) {
             if (err) {
                 return callback(err);
@@ -389,7 +389,7 @@ function load(url, callback, opt) {
             return callback(null, font);
         });
     } else {
-        return new Promise( (resolve, reject) => {
+        return new Promise((resolve, reject) => {
             loadFn(url, (err, arrayBuffer) => {
                 if (err) {
                     reject(err);
@@ -401,10 +401,9 @@ function load(url, callback, opt) {
                     reject(e);
                 }
                 resolve(font);
-            })
-        })
+            });
+        });
     }
-    
 }
 
 /**
