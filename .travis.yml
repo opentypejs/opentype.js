@@ -1,6 +1,5 @@
 language: node_js
 node_js:
-- '4'  # https://github.com/opentypejs/opentype.js/pull/251#issuecomment-272175882
 - '10'
 deploy:
   provider: npm
