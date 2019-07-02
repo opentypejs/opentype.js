@@ -5,8 +5,8 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(factory((global.opentype = {})));
-}(this, (function (exports) { 'use strict';
+	(global = global || self, factory(global.opentype = {}));
+}(this, function (exports) { 'use strict';
 
 	/*! https://mths.be/codepointat v0.2.0 by @mathias */
 	if (!String.prototype.codePointAt) {
@@ -4386,7 +4386,7 @@
 	        haveWidth = true;
 	    }
 
-	    function parse$$1(code) {
+	    function parse(code) {
 	        var b1;
 	        var b2;
 	        var b3;
@@ -4470,7 +4470,7 @@
 	                    codeIndex = stack.pop() + subrsBias;
 	                    subrCode = subrs[codeIndex];
 	                    if (subrCode) {
-	                        parse$$1(subrCode);
+	                        parse(subrCode);
 	                    }
 
 	                    break;
@@ -4670,7 +4670,7 @@
 	                    codeIndex = stack.pop() + font.gsubrsBias;
 	                    subrCode = font.gsubrs[codeIndex];
 	                    if (subrCode) {
-	                        parse$$1(subrCode);
+	                        parse(subrCode);
 	                    }
 
 	                    break;
@@ -4745,7 +4745,7 @@
 	        }
 	    }
 
-	    parse$$1(code);
+	    parse(code);
 
 	    glyph.advanceWidth = width;
 	    return p;
@@ -10260,7 +10260,7 @@
 	    if (!test) {
 	        skip(state, true);
 
-	        if (exports.DEBUG) { console.log(state.step, 'EIF[]'); }
+	        if (exports.DEBUG) { console.log(state.step,  'EIF[]'); }
 	    }
 	}
 
@@ -13267,7 +13267,7 @@
 	    x = x !== undefined ? x : 0;
 	    y = y !== undefined ? y : 0;
 	    fontSize = fontSize !== undefined ? fontSize : 72;
-	    options = options || this.defaultRenderOptions;
+	    options = Object.assign({}, this.defaultRenderOptions, options);
 	    var fontScale = 1 / this.unitsPerEm * fontSize;
 	    var glyphs = this.stringToGlyphs(text, options);
 	    var kerningLookups;
@@ -13425,8 +13425,7 @@
 
 	    function assertNamePresent(name) {
 	        var englishName = _this.getEnglishName(name);
-	        assert(englishName && englishName.trim().length > 0,
-	               'No English ' + name + ' specified.');
+	        assert(englishName && englishName.trim().length > 0);
 	    }
 
 	    // Identification information
@@ -13437,7 +13436,7 @@
 	    assertNamePresent('version');
 
 	    // Dimension information
-	    assert(this.unitsPerEm > 0, 'No unitsPerEm specified.');
+	    assert(this.unitsPerEm > 0);
 	};
 
 	/**
@@ -14239,19 +14238,26 @@
 	 * @param  {Function} callback - The callback.
 	 */
 	function load(url, callback, opt) {
-	    var isNode$$1 = typeof window === 'undefined';
-	    var loadFn = isNode$$1 ? loadFromFile : loadFromUrl;
-	    loadFn(url, function(err, arrayBuffer) {
-	        if (err) {
-	            return callback(err);
-	        }
-	        var font;
-	        try {
-	            font = parseBuffer(arrayBuffer, opt);
-	        } catch (e) {
-	            return callback(e, null);
-	        }
-	        return callback(null, font);
+	    var isNode = typeof window === 'undefined';
+	    var loadFn = isNode ? loadFromFile : loadFromUrl;
+
+	    return new Promise(function (resolve) {
+	        loadFn(url, function(err, arrayBuffer) {
+	            if (err) {
+	                return callback(err);
+	            }
+	            var font;
+	            try {
+	                font = parseBuffer(arrayBuffer, opt);
+	            } catch (e) {
+	                return callback(e, null);
+	            }
+	            if (callback) {
+	                return callback(null, font);
+	            } else {
+	                resolve(font);
+	            }
+	        });
 	    });
 	}
 
@@ -14269,16 +14275,16 @@
 	    return parseBuffer(nodeBufferToArrayBuffer(buffer), opt);
 	}
 
+	exports.BoundingBox = BoundingBox;
 	exports.Font = Font;
 	exports.Glyph = Glyph;
 	exports.Path = Path;
-	exports.BoundingBox = BoundingBox;
 	exports._parse = parse;
-	exports.parse = parseBuffer;
 	exports.load = load;
 	exports.loadSync = loadSync;
+	exports.parse = parseBuffer;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 
-})));
+}));
 //# sourceMappingURL=opentype.js.map

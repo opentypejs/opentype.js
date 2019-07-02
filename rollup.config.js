@@ -20,9 +20,7 @@ module.exports = {
    ],
     plugins: [
         resolve({
-            jsnext: true,
-            main: true,
-            browser: true,
+            mainFields: ['module', 'main', 'jsnext', 'browser'],
         }),
         commonjs(),
         buble(),
