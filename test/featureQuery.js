@@ -85,7 +85,7 @@ describe('featureQuery.js', function() {
             assert.deepEqual(ligaSubsType, 41); // supported: ligature substitution '41'
             assert.deepEqual(typeof ligaLookupFn, 'function');
         });
-        it.only('should find a substitute - single substitution format 1 (11)', function () {
+        it('should find a substitute - single substitution format 1 (11)', function () {
             const feature = query.arabicChanga.getFeature({tag: 'init', script: 'arab'});
             const featureLookups = query.arabicChanga.getFeatureLookups(feature);
             const lookupSubtables = query.arabicChanga.getLookupSubtables(featureLookups[0]);
