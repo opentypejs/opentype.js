@@ -241,12 +241,12 @@ function fontToSfntTable(font) {
         // ordering was chosen experimentally.
         sTypoAscender: globals.ascender,
         sTypoDescender: globals.descender,
-        sTypoLineGap: 0,
+        sTypoLineGap: font.tables.os2.sTypoLineGap || 0,
         usWinAscent: globals.yMax,
         usWinDescent: Math.abs(globals.yMin),
         ulCodePageRange1: 1, // FIXME: hard-code Latin 1 support for now
-        sxHeight: metricsForChar(font, 'xyvw', {yMax: Math.round(globals.ascender / 2)}).yMax,
-        sCapHeight: metricsForChar(font, 'HIKLEFJMNTZBDPRAGOQSUVWXY', globals).yMax,
+        sxHeight: font.tables.os2.sxHeight || metricsForChar(font, 'xyvw', {yMax: Math.round(globals.ascender / 2)}).yMax,
+        sCapHeight: font.tables.os2.sCapHeight || metricsForChar(font, 'HIKLEFJMNTZBDPRAGOQSUVWXY', globals).yMax,
         usDefaultChar: font.hasChar(' ') ? 32 : 0, // Use space as the default character, if available.
         usBreakChar: font.hasChar(' ') ? 32 : 0 // Use space as the break character, if available.
     });
