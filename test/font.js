@@ -4,14 +4,14 @@ import { Font, Glyph, Path, loadSync } from '../src/opentype';
 describe('font.js', function() {
     let font;
 
-    const fGlyph = new Glyph({name: 'f', unicode: 102, path: new Path()});
-    const iGlyph = new Glyph({name: 'i', unicode: 105, path: new Path()});
-    const ffGlyph = new Glyph({name: 'f_f', unicode: 0xfb01, path: new Path()});
-    const fiGlyph = new Glyph({name: 'f_i', unicode: 0xfb02, path: new Path()});
-    const ffiGlyph = new Glyph({name: 'f_f_i', unicode: 0xfb03, path: new Path()});
+    const fGlyph = new Glyph({name: 'f', unicode: 102, path: new Path(), advanceWidth: 1});
+    const iGlyph = new Glyph({name: 'i', unicode: 105, path: new Path(), advanceWidth: 1});
+    const ffGlyph = new Glyph({name: 'f_f', unicode: 0xfb01, path: new Path(), advanceWidth: 1});
+    const fiGlyph = new Glyph({name: 'f_i', unicode: 0xfb02, path: new Path(), advanceWidth: 1});
+    const ffiGlyph = new Glyph({name: 'f_f_i', unicode: 0xfb03, path: new Path(), advanceWidth: 1});
 
     const glyphs = [
-        new Glyph({name: '.notdef', unicode: 0, path: new Path()}),
+        new Glyph({name: '.notdef', unicode: 0, path: new Path(), advanceWidth: 1}),
         fGlyph, iGlyph, ffGlyph, fiGlyph, ffiGlyph
     ];
 
@@ -22,7 +22,25 @@ describe('font.js', function() {
             unitsPerEm: 1000,
             ascender: 800,
             descender: -200,
+            fsSelection: 42,
+            tables: {os2: {achVendID: 'TEST'}},
             glyphs: glyphs
+        });
+    });
+
+    describe('Font constructor', function() {
+        it('tables definition must be supported', function() {
+            assert.equal(font.tables.os2.achVendID, 'TEST');
+        });
+        it('tables definition must blend with default tables values', function() {
+            assert.equal(font.tables.os2.usWidthClass, 5);
+        });
+        it('tables definition can override defaults values', function() {
+            assert.equal(font.tables.os2.fsSelection, 42);
+        });
+        it('tables definition shall be serialized', function() {
+            const os2 = font.toTables().tables.find(table => table.tableName === 'OS/2');
+            assert.equal(os2.achVendID, 'TEST');
         });
     });
 

@@ -48,6 +48,7 @@ import Bidi from './bidi';
  */
 function Font(options) {
     options = options || {};
+    options.tables = options.tables || {};
 
     if (!options.empty) {
         // Check that we've provided the minimum set of names.
@@ -80,11 +81,13 @@ function Font(options) {
         this.ascender = options.ascender;
         this.descender = options.descender;
         this.createdTimestamp = options.createdTimestamp;
-        this.tables = { os2: {
-            usWeightClass: options.weightClass || this.usWeightClasses.MEDIUM,
-            usWidthClass: options.widthClass || this.usWidthClasses.MEDIUM,
-            fsSelection: options.fsSelection || this.fsSelectionValues.REGULAR
-        } };
+        this.tables = Object.assign(options.tables, {
+            os2: Object.assign({
+                usWeightClass: options.weightClass || this.usWeightClasses.MEDIUM,
+                usWidthClass: options.widthClass || this.usWidthClasses.MEDIUM,
+                fsSelection: options.fsSelection || this.fsSelectionValues.REGULAR,
+            }, options.tables.os2)
+        });
     }
 
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
