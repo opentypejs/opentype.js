@@ -21,7 +21,7 @@ describe('font.js', function() {
             styleName: 'Medium',
             unitsPerEm: 1000,
             ascender: 800,
-            descender: -200,
+            descender: 0,
             fsSelection: 42,
             tables: {os2: {achVendID: 'TEST'}},
             glyphs: glyphs
@@ -29,6 +29,9 @@ describe('font.js', function() {
     });
 
     describe('Font constructor', function() {
+        it('accept 0 as descender value', function() {
+            assert.equal(font.descender, 0);
+        });
         it('tables definition must be supported', function() {
             assert.equal(font.tables.os2.achVendID, 'TEST');
         });

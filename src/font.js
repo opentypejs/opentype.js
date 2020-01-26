@@ -56,8 +56,7 @@ function Font(options) {
         checkArgument(options.styleName, 'When creating a new Font object, styleName is required.');
         checkArgument(options.unitsPerEm, 'When creating a new Font object, unitsPerEm is required.');
         checkArgument(options.ascender, 'When creating a new Font object, ascender is required.');
-        checkArgument(options.descender, 'When creating a new Font object, descender is required.');
-        checkArgument(options.descender < 0, 'Descender should be negative (e.g. -512).');
+        checkArgument(options.descender <= 0, 'When creating a new Font object, negative descender value is required.');
 
         // OS X will complain if the names are empty, so we put a single space everywhere by default.
         this.names = {
