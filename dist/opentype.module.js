@@ -1,5 +1,5 @@
 /**
- * https://opentype.js.org v1.1.0 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
+ * https://opentype.js.org v1.2.0 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
  */
 
 /*! https://mths.be/codepointat v0.2.0 by @mathias */
@@ -530,8 +530,6 @@ BoundingBox.prototype.addY = function(y) {
  * @param {number} y - The ending Y coordinate.
  */
 BoundingBox.prototype.addBezier = function(x0, y0, x1, y1, x2, y2, x, y) {
-    var this$1 = this;
-
     // This code is based on http://nishiohirokazu.blogspot.com/2009/06/how-to-calculate-bezier-curves-bounding.html
     // and https://github.com/icons8/svg-path-bounding-box
 
@@ -552,8 +550,8 @@ BoundingBox.prototype.addBezier = function(x0, y0, x1, y1, x2, y2, x, y) {
             if (b === 0) { continue; }
             var t = -c / b;
             if (0 < t && t < 1) {
-                if (i === 0) { this$1.addX(derive(p0[i], p1[i], p2[i], p3[i], t)); }
-                if (i === 1) { this$1.addY(derive(p0[i], p1[i], p2[i], p3[i], t)); }
+                if (i === 0) { this.addX(derive(p0[i], p1[i], p2[i], p3[i], t)); }
+                if (i === 1) { this.addY(derive(p0[i], p1[i], p2[i], p3[i], t)); }
             }
             continue;
         }
@@ -562,13 +560,13 @@ BoundingBox.prototype.addBezier = function(x0, y0, x1, y1, x2, y2, x, y) {
         if (b2ac < 0) { continue; }
         var t1 = (-b + Math.sqrt(b2ac)) / (2 * a);
         if (0 < t1 && t1 < 1) {
-            if (i === 0) { this$1.addX(derive(p0[i], p1[i], p2[i], p3[i], t1)); }
-            if (i === 1) { this$1.addY(derive(p0[i], p1[i], p2[i], p3[i], t1)); }
+            if (i === 0) { this.addX(derive(p0[i], p1[i], p2[i], p3[i], t1)); }
+            if (i === 1) { this.addY(derive(p0[i], p1[i], p2[i], p3[i], t1)); }
         }
         var t2 = (-b - Math.sqrt(b2ac)) / (2 * a);
         if (0 < t2 && t2 < 1) {
-            if (i === 0) { this$1.addX(derive(p0[i], p1[i], p2[i], p3[i], t2)); }
-            if (i === 1) { this$1.addY(derive(p0[i], p1[i], p2[i], p3[i], t2)); }
+            if (i === 0) { this.addX(derive(p0[i], p1[i], p2[i], p3[i], t2)); }
+            if (i === 1) { this.addY(derive(p0[i], p1[i], p2[i], p3[i], t2)); }
         }
     }
 };
@@ -742,8 +740,6 @@ Path.prototype.extend = function(pathOrCommands) {
  * @returns {opentype.BoundingBox}
  */
 Path.prototype.getBoundingBox = function() {
-    var this$1 = this;
-
     var box = new BoundingBox();
 
     var startX = 0;
@@ -751,7 +747,7 @@ Path.prototype.getBoundingBox = function() {
     var prevX = 0;
     var prevY = 0;
     for (var i = 0; i < this.commands.length; i++) {
-        var cmd = this$1.commands[i];
+        var cmd = this.commands[i];
         switch (cmd.type) {
             case 'M':
                 box.addPoint(cmd.x, cmd.y);
@@ -792,11 +788,9 @@ Path.prototype.getBoundingBox = function() {
  * @param {CanvasRenderingContext2D} ctx - A 2D drawing context.
  */
 Path.prototype.draw = function(ctx) {
-    var this$1 = this;
-
     ctx.beginPath();
     for (var i = 0; i < this.commands.length; i += 1) {
-        var cmd = this$1.commands[i];
+        var cmd = this.commands[i];
         if (cmd.type === 'M') {
             ctx.moveTo(cmd.x, cmd.y);
         } else if (cmd.type === 'L') {
@@ -829,8 +823,6 @@ Path.prototype.draw = function(ctx) {
  * @return {string}
  */
 Path.prototype.toPathData = function(decimalPlaces) {
-    var this$1 = this;
-
     decimalPlaces = decimalPlaces !== undefined ? decimalPlaces : 2;
 
     function floatToString(v) {
@@ -859,7 +851,7 @@ Path.prototype.toPathData = function(decimalPlaces) {
 
     var d = '';
     for (var i = 0; i < this.commands.length; i += 1) {
-        var cmd = this$1.commands[i];
+        var cmd = this.commands[i];
         if (cmd.type === 'M') {
             d += 'M' + packValues(cmd.x, cmd.y);
         } else if (cmd.type === 'L') {
@@ -1906,11 +1898,9 @@ sizeOf.LITERAL = function(v) {
  * @constructor
  */
 function Table(tableName, fields, options) {
-    var this$1 = this;
-
     for (var i = 0; i < fields.length; i += 1) {
         var field = fields[i];
-        this$1[field.name] = field.value;
+        this[field.name] = field.value;
     }
 
     this.tableName = tableName;
@@ -1920,8 +1910,8 @@ function Table(tableName, fields, options) {
         for (var i$1 = 0; i$1 < optionKeys.length; i$1 += 1) {
             var k = optionKeys[i$1];
             var v = options[k];
-            if (this$1[k] !== undefined) {
-                this$1[k] = v;
+            if (this[k] !== undefined) {
+                this[k] = v;
             }
         }
     }
@@ -2353,29 +2343,25 @@ Parser.prototype.parseByteList = function(count) {
  * itemCallback is one of the Parser methods.
  */
 Parser.prototype.parseList = function(count, itemCallback) {
-    var this$1 = this;
-
     if (!itemCallback) {
         itemCallback = count;
         count = this.parseUShort();
     }
     var list = new Array(count);
     for (var i = 0; i < count; i++) {
-        list[i] = itemCallback.call(this$1);
+        list[i] = itemCallback.call(this);
     }
     return list;
 };
 
 Parser.prototype.parseList32 = function(count, itemCallback) {
-    var this$1 = this;
-
     if (!itemCallback) {
         itemCallback = count;
         count = this.parseULong();
     }
     var list = new Array(count);
     for (var i = 0; i < count; i++) {
-        list[i] = itemCallback.call(this$1);
+        list[i] = itemCallback.call(this);
     }
     return list;
 };
@@ -2386,8 +2372,6 @@ Parser.prototype.parseList32 = function(count, itemCallback) {
  * Example of recordDescription: { sequenceIndex: Parser.uShort, lookupListIndex: Parser.uShort }
  */
 Parser.prototype.parseRecordList = function(count, recordDescription) {
-    var this$1 = this;
-
     // If the count argument is absent, read it in the stream.
     if (!recordDescription) {
         recordDescription = count;
@@ -2400,7 +2384,7 @@ Parser.prototype.parseRecordList = function(count, recordDescription) {
         for (var j = 0; j < fields.length; j++) {
             var fieldName = fields[j];
             var fieldType = recordDescription[fieldName];
-            rec[fieldName] = fieldType.call(this$1);
+            rec[fieldName] = fieldType.call(this);
         }
         records[i] = rec;
     }
@@ -2408,8 +2392,6 @@ Parser.prototype.parseRecordList = function(count, recordDescription) {
 };
 
 Parser.prototype.parseRecordList32 = function(count, recordDescription) {
-    var this$1 = this;
-
     // If the count argument is absent, read it in the stream.
     if (!recordDescription) {
         recordDescription = count;
@@ -2422,7 +2404,7 @@ Parser.prototype.parseRecordList32 = function(count, recordDescription) {
         for (var j = 0; j < fields.length; j++) {
             var fieldName = fields[j];
             var fieldType = recordDescription[fieldName];
-            rec[fieldName] = fieldType.call(this$1);
+            rec[fieldName] = fieldType.call(this);
         }
         records[i] = rec;
     }
@@ -2432,8 +2414,6 @@ Parser.prototype.parseRecordList32 = function(count, recordDescription) {
 // Parse a data structure into an object
 // Example of description: { sequenceIndex: Parser.uShort, lookupListIndex: Parser.uShort }
 Parser.prototype.parseStruct = function(description) {
-    var this$1 = this;
-
     if (typeof description === 'function') {
         return description.call(this);
     } else {
@@ -2442,7 +2422,7 @@ Parser.prototype.parseStruct = function(description) {
         for (var j = 0; j < fields.length; j++) {
             var fieldName = fields[j];
             var fieldType = description[fieldName];
-            struct[fieldName] = fieldType.call(this$1);
+            struct[fieldName] = fieldType.call(this);
         }
         return struct;
     }
@@ -2485,13 +2465,11 @@ Parser.prototype.parseValueRecord = function(valueFormat) {
  * valueFormat and valueCount are read from the stream.
  */
 Parser.prototype.parseValueRecordList = function() {
-    var this$1 = this;
-
     var valueFormat = this.parseUShort();
     var valueCount = this.parseUShort();
     var values = new Array(valueCount);
     for (var i = 0; i < valueCount; i++) {
-        values[i] = this$1.parseValueRecord(valueFormat);
+        values[i] = this.parseValueRecord(valueFormat);
     }
     return values;
 };
@@ -2522,8 +2500,6 @@ Parser.prototype.parsePointer32 = function(description) {
  * See examples in tables/gsub.js
  */
 Parser.prototype.parseListOfLists = function(itemCallback) {
-    var this$1 = this;
-
     var offsets = this.parseOffset16List();
     var count = offsets.length;
     var relativeOffset = this.relativeOffset;
@@ -2536,17 +2512,17 @@ Parser.prototype.parseListOfLists = function(itemCallback) {
             list[i] = undefined;
             continue;
         }
-        this$1.relativeOffset = start;
+        this.relativeOffset = start;
         if (itemCallback) {
-            var subOffsets = this$1.parseOffset16List();
+            var subOffsets = this.parseOffset16List();
             var subList = new Array(subOffsets.length);
             for (var j = 0; j < subOffsets.length; j++) {
-                this$1.relativeOffset = start + subOffsets[j];
-                subList[j] = itemCallback.call(this$1);
+                this.relativeOffset = start + subOffsets[j];
+                subList[j] = itemCallback.call(this);
             }
             list[i] = subList;
         } else {
-            list[i] = this$1.parseUShortList();
+            list[i] = this.parseUShortList();
         }
     }
     this.relativeOffset = relativeOffset;
@@ -2559,8 +2535,6 @@ Parser.prototype.parseListOfLists = function(itemCallback) {
 // https://www.microsoft.com/typography/OTSPEC/chapter2.htm
 // parser.offset must point to the start of the table containing the coverage.
 Parser.prototype.parseCoverage = function() {
-    var this$1 = this;
-
     var startOffset = this.offset + this.relativeOffset;
     var format = this.parseUShort();
     var count = this.parseUShort();
@@ -2573,9 +2547,9 @@ Parser.prototype.parseCoverage = function() {
         var ranges = new Array(count);
         for (var i = 0; i < count; i++) {
             ranges[i] = {
-                start: this$1.parseUShort(),
-                end: this$1.parseUShort(),
-                index: this$1.parseUShort()
+                start: this.parseUShort(),
+                end: this.parseUShort(),
+                index: this.parseUShort()
             };
         }
         return {
@@ -3214,8 +3188,6 @@ CffEncoding.prototype.charToGlyphIndex = function(s) {
  * @param {Object} post
  */
 function GlyphNames(post) {
-    var this$1 = this;
-
     switch (post.version) {
         case 1:
             this.names = standardNames.slice();
@@ -3224,9 +3196,9 @@ function GlyphNames(post) {
             this.names = new Array(post.numberOfGlyphs);
             for (var i = 0; i < post.numberOfGlyphs; i++) {
                 if (post.glyphNameIndex[i] < standardNames.length) {
-                    this$1.names[i] = standardNames[post.glyphNameIndex[i]];
+                    this.names[i] = standardNames[post.glyphNameIndex[i]];
                 } else {
-                    this$1.names[i] = post.names[post.glyphNameIndex[i] - standardNames.length];
+                    this.names[i] = post.names[post.glyphNameIndex[i] - standardNames.length];
                 }
             }
 
@@ -3234,7 +3206,7 @@ function GlyphNames(post) {
         case 2.5:
             this.names = new Array(post.numberOfGlyphs);
             for (var i$1 = 0; i$1 < post.numberOfGlyphs; i$1++) {
-                this$1.names[i$1] = standardNames[i$1 + post.glyphNameIndex[i$1]];
+                this.names[i$1] = standardNames[i$1 + post.glyphNameIndex[i$1]];
             }
 
             break;
@@ -3513,8 +3485,6 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
  * @return {Array}
  */
 Glyph.prototype.getContours = function() {
-    var this$1 = this;
-
     if (this.points === undefined) {
         return [];
     }
@@ -3522,7 +3492,7 @@ Glyph.prototype.getContours = function() {
     var contours = [];
     var currentContour = [];
     for (var i = 0; i < this.points.length; i += 1) {
-        var pt = this$1.points[i];
+        var pt = this.points[i];
         currentContour.push(pt);
         if (pt.lastPointOfContour) {
             contours.push(currentContour);
@@ -3721,15 +3691,13 @@ function defineDependentProperty(glyph, externalName, internalName) {
  * @param {Array}
  */
 function GlyphSet(font, glyphs) {
-    var this$1 = this;
-
     this.font = font;
     this.glyphs = {};
     if (Array.isArray(glyphs)) {
         for (var i = 0; i < glyphs.length; i++) {
             var glyph = glyphs[i];
             glyph.path.unitsPerEm = font.unitsPerEm;
-            this$1.glyphs[i] = glyph;
+            this.glyphs[i] = glyph;
         }
     }
 
@@ -6778,7 +6746,6 @@ subtableMakers[1] = function makeLookup1(subtable) {
             {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
         ].concat(table.ushortList('substitute', subtable.substitute)));
     }
-    check.fail('Lookup type 1 substFormat must be 1 or 2.');
 };
 
 subtableMakers[3] = function makeLookup3(subtable) {
@@ -7556,13 +7523,11 @@ Position.prototype.init = function() {
  * @returns {integer}
  */
 Position.prototype.getKerningValue = function(kerningLookups, leftIndex, rightIndex) {
-    var this$1 = this;
-
     for (var i = 0; i < kerningLookups.length; i++) {
         var subtables = kerningLookups[i].subtables;
         for (var j = 0; j < subtables.length; j++) {
             var subtable = subtables[j];
-            var covIndex = this$1.getCoverageIndex(subtable.coverage, leftIndex);
+            var covIndex = this.getCoverageIndex(subtable.coverage, leftIndex);
             if (covIndex < 0) { continue; }
             switch (subtable.posFormat) {
                 case 1:
@@ -7577,8 +7542,8 @@ Position.prototype.getKerningValue = function(kerningLookups, leftIndex, rightIn
                     break;      // left glyph found, not right glyph - try next subtable
                 case 2:
                     // Search Pair Adjustment Positioning Format 2
-                    var class1 = this$1.getGlyphClass(subtable.classDef1, leftIndex);
-                    var class2 = this$1.getGlyphClass(subtable.classDef2, rightIndex);
+                    var class1 = this.getGlyphClass(subtable.classDef1, leftIndex);
+                    var class2 = this.getGlyphClass(subtable.classDef2, rightIndex);
                     var pair$1 = subtable.classRecords[class1][class2];
                     return pair$1.value1 && pair$1.value1.xAdvance || 0;
             }
@@ -7669,15 +7634,13 @@ Substitution.prototype.createDefaultTable = function() {
  * @return {Array} substitutions - The list of substitutions.
  */
 Substitution.prototype.getSingle = function(feature, script, language) {
-    var this$1 = this;
-
     var substitutions = [];
     var lookupTables = this.getLookupTables(script, language, feature, 1);
     for (var idx = 0; idx < lookupTables.length; idx++) {
         var subtables = lookupTables[idx].subtables;
         for (var i = 0; i < subtables.length; i++) {
             var subtable = subtables[i];
-            var glyphs = this$1.expandCoverage(subtable.coverage);
+            var glyphs = this.expandCoverage(subtable.coverage);
             var j = (void 0);
             if (subtable.substFormat === 1) {
                 var delta = subtable.deltaGlyphId;
@@ -7704,15 +7667,13 @@ Substitution.prototype.getSingle = function(feature, script, language) {
  * @return {Array} alternates - The list of alternates
  */
 Substitution.prototype.getAlternates = function(feature, script, language) {
-    var this$1 = this;
-
     var alternates = [];
     var lookupTables = this.getLookupTables(script, language, feature, 3);
     for (var idx = 0; idx < lookupTables.length; idx++) {
         var subtables = lookupTables[idx].subtables;
         for (var i = 0; i < subtables.length; i++) {
             var subtable = subtables[i];
-            var glyphs = this$1.expandCoverage(subtable.coverage);
+            var glyphs = this.expandCoverage(subtable.coverage);
             var alternateSets = subtable.alternateSets;
             for (var j = 0; j < glyphs.length; j++) {
                 alternates.push({ sub: glyphs[j], by: alternateSets[j] });
@@ -7731,15 +7692,13 @@ Substitution.prototype.getAlternates = function(feature, script, language) {
  * @return {Array} ligatures - The list of ligatures.
  */
 Substitution.prototype.getLigatures = function(feature, script, language) {
-    var this$1 = this;
-
     var ligatures = [];
     var lookupTables = this.getLookupTables(script, language, feature, 4);
     for (var idx = 0; idx < lookupTables.length; idx++) {
         var subtables = lookupTables[idx].subtables;
         for (var i = 0; i < subtables.length; i++) {
             var subtable = subtables[i];
-            var glyphs = this$1.expandCoverage(subtable.coverage);
+            var glyphs = this.expandCoverage(subtable.coverage);
             var ligatureSets = subtable.ligatureSets;
             for (var j = 0; j < glyphs.length; j++) {
                 var startGlyph = glyphs[j];
@@ -11794,13 +11753,11 @@ Tokenizer.prototype.resetContextsRanges = function () {
  * Updates context ranges
  */
 Tokenizer.prototype.updateContextsRanges = function () {
-    var this$1 = this;
-
     this.resetContextsRanges();
     var chars = this.tokens.map(function (token) { return token.char; });
     for (var i = 0; i < chars.length; i++) {
         var contextParams = new ContextParams(chars, i);
-        this$1.runContextCheck(contextParams);
+        this.runContextCheck(contextParams);
     }
     this.dispatch('updateContextsRanges', [this.registeredContexts]);
 };
@@ -11849,8 +11806,6 @@ Tokenizer.prototype.runContextCheck = function(contextParams) {
  * @param {string} text a text to tokenize
  */
 Tokenizer.prototype.tokenize = function (text) {
-    var this$1 = this;
-
     this.tokens = [];
     this.resetContextsRanges();
     var chars = Array.from(text);
@@ -11858,11 +11813,11 @@ Tokenizer.prototype.tokenize = function (text) {
     for (var i = 0; i < chars.length; i++) {
         var char = chars[i];
         var contextParams = new ContextParams(chars, i);
-        this$1.dispatch('next', [contextParams]);
-        this$1.runContextCheck(contextParams);
+        this.dispatch('next', [contextParams]);
+        this.runContextCheck(contextParams);
         var token = new Token(char);
-        this$1.tokens.push(token);
-        this$1.dispatch('newToken', [token, contextParams]);
+        this.tokens.push(token);
+        this.dispatch('newToken', [token, contextParams]);
     }
     this.dispatch('end', [this.tokens]);
     return this.tokens;
@@ -12015,8 +11970,6 @@ function lookupCoverageList(coverageList, contextParams) {
  * @param {ContextParams} contextParams context params to lookup
  */
 function chainingSubstitutionFormat3(contextParams, subtable) {
-    var this$1 = this;
-
     var lookupsCount = (
         subtable.inputCoverage.length +
         subtable.lookaheadCoverage.length +
@@ -12060,11 +12013,11 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
         for (var i = 0; i < subtable.lookupRecords.length; i++) {
             var lookupRecord = subtable.lookupRecords[i];
             var lookupListIndex = lookupRecord.lookupListIndex;
-            var lookupTable = this$1.getLookupByIndex(lookupListIndex);
+            var lookupTable = this.getLookupByIndex(lookupListIndex);
             for (var s = 0; s < lookupTable.subtables.length; s++) {
                 var subtable$1 = lookupTable.subtables[s];
-                var lookup = this$1.getLookupMethod(lookupTable, subtable$1);
-                var substitutionType = this$1.getSubstitutionType(lookupTable, subtable$1);
+                var lookup = this.getLookupMethod(lookupTable, subtable$1);
+                var substitutionType = this.getSubstitutionType(lookupTable, subtable$1);
                 if (substitutionType === '12') {
                     for (var n = 0; n < inputLookups.length; n++) {
                         var glyphIndex = contextParams.get(n);
@@ -12266,8 +12219,6 @@ FeatureQuery.prototype.getLookupMethod = function(lookupTable, subtable) {
  * @param {FQuery} query feature query
  */
 FeatureQuery.prototype.lookupFeature = function (query) {
-    var this$1 = this;
-
     var contextParams = query.contextParams;
     var currentIndex = contextParams.index;
     var feature = this.getFeature({
@@ -12282,11 +12233,11 @@ FeatureQuery.prototype.lookupFeature = function (query) {
     var substitutions = [].concat(contextParams.context);
     for (var l = 0; l < lookups.length; l++) {
         var lookupTable = lookups[l];
-        var subtables = this$1.getLookupSubtables(lookupTable);
+        var subtables = this.getLookupSubtables(lookupTable);
         for (var s = 0; s < subtables.length; s++) {
             var subtable = subtables[s];
-            var substType = this$1.getSubstitutionType(lookupTable, subtable);
-            var lookup = this$1.getLookupMethod(lookupTable, subtable);
+            var substType = this.getSubstitutionType(lookupTable, subtable);
+            var lookup = this.getLookupMethod(lookupTable, subtable);
             var substitution = (void 0);
             switch (substType) {
                 case '11':
@@ -12822,16 +12773,14 @@ Bidi.prototype.registerFeatures = function (script, tags) {
  * @param {Font} font opentype font instance
  */
 Bidi.prototype.applyFeatures = function (font, features) {
-    var this$1 = this;
-
     if (!font) { throw new Error(
         'No valid font was provided to apply features'
     ); }
     if (!this.query) { this.query = new FeatureQuery(font); }
     for (var f = 0; f < features.length; f++) {
         var feature = features[f];
-        if (!this$1.query.supports({script: feature.script})) { continue; }
-        this$1.registerFeatures(feature.script, feature.tags);
+        if (!this.query.supports({script: feature.script})) { continue; }
+        this.registerFeatures(feature.script, feature.tags);
     }
 };
 
@@ -12957,12 +12906,10 @@ Bidi.prototype.getBidiText = function (text) {
  * @param {text} text an input text
  */
 Bidi.prototype.getTextGlyphs = function (text) {
-    var this$1 = this;
-
     this.processText(text);
     var indexes = [];
     for (var i = 0; i < this.tokenizer.tokens.length; i++) {
-        var token = this$1.tokenizer.tokens[i];
+        var token = this.tokenizer.tokens[i];
         if (token.state.deleted) { continue; }
         var index = token.activeState.value;
         indexes.push(Array.isArray(index) ? index[0] : index);
@@ -13160,7 +13107,7 @@ Font.prototype.stringToGlyphs = function(s, options) {
     var glyphs = new Array(length);
     var notdef = this.glyphs.get(0);
     for (var i = 0; i < length; i += 1) {
-        glyphs[i] = this$1.glyphs.get(indexes[i]) || notdef;
+        glyphs[i] = this.glyphs.get(indexes[i]) || notdef;
     }
     return glyphs;
 };
@@ -13256,8 +13203,6 @@ Font.prototype.defaultRenderOptions = {
  * @param  {Function} callback
  */
 Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) {
-    var this$1 = this;
-
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
@@ -13271,7 +13216,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     }
     for (var i = 0; i < glyphs.length; i += 1) {
         var glyph = glyphs[i];
-        callback.call(this$1, glyph, x, y, fontSize, options);
+        callback.call(this, glyph, x, y, fontSize, options);
         if (glyph.advanceWidth) {
             x += glyph.advanceWidth * fontScale;
         }
@@ -13280,8 +13225,8 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
             // We should apply position adjustment lookups in a more generic way.
             // Here we only use the xAdvance value.
             var kerningValue = kerningLookups ?
-                  this$1.position.getKerningValue(kerningLookups, glyph.index, glyphs[i + 1].index) :
-                  this$1.getKerningValue(glyph, glyphs[i + 1]);
+                  this.position.getKerningValue(kerningLookups, glyph.index, glyphs[i + 1].index) :
+                  this.getKerningValue(glyph, glyphs[i + 1]);
             x += kerningValue * fontScale;
         }
 
