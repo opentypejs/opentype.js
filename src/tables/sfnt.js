@@ -224,17 +224,14 @@ function fontToSfntTable(font) {
 
     const maxpTable = maxp.make(font.glyphs.length);
 
-    const os2Table = os2.make({
+    const os2Table = os2.make(Object.assign({
         xAvgCharWidth: Math.round(globals.advanceWidthAvg),
-        usWeightClass: font.tables.os2.usWeightClass,
-        usWidthClass: font.tables.os2.usWidthClass,
         usFirstCharIndex: firstCharIndex,
         usLastCharIndex: lastCharIndex,
         ulUnicodeRange1: ulUnicodeRange1,
         ulUnicodeRange2: ulUnicodeRange2,
         ulUnicodeRange3: ulUnicodeRange3,
         ulUnicodeRange4: ulUnicodeRange4,
-        fsSelection: font.tables.os2.fsSelection, // REGULAR
         // See http://typophile.com/node/13081 for more info on vertical metrics.
         // We get metrics for typical characters (such as "x" for xHeight).
         // We provide some fallback characters if characters are unavailable: their
@@ -248,8 +245,8 @@ function fontToSfntTable(font) {
         sxHeight: metricsForChar(font, 'xyvw', {yMax: Math.round(globals.ascender / 2)}).yMax,
         sCapHeight: metricsForChar(font, 'HIKLEFJMNTZBDPRAGOQSUVWXY', globals).yMax,
         usDefaultChar: font.hasChar(' ') ? 32 : 0, // Use space as the default character, if available.
-        usBreakChar: font.hasChar(' ') ? 32 : 0 // Use space as the break character, if available.
-    });
+        usBreakChar: font.hasChar(' ') ? 32 : 0, // Use space as the break character, if available.
+    }, font.tables.os2));
 
     const hmtxTable = hmtx.make(font.glyphs);
     const cmapTable = cmap.make(font.glyphs);

@@ -48,6 +48,7 @@ import Bidi from './bidi';
  */
 function Font(options) {
     options = options || {};
+    options.tables = options.tables || {};
 
     if (!options.empty) {
         // Check that we've provided the minimum set of names.
@@ -55,8 +56,7 @@ function Font(options) {
         checkArgument(options.styleName, 'When creating a new Font object, styleName is required.');
         checkArgument(options.unitsPerEm, 'When creating a new Font object, unitsPerEm is required.');
         checkArgument(options.ascender, 'When creating a new Font object, ascender is required.');
-        checkArgument(options.descender, 'When creating a new Font object, descender is required.');
-        checkArgument(options.descender < 0, 'Descender should be negative (e.g. -512).');
+        checkArgument(options.descender <= 0, 'When creating a new Font object, negative descender value is required.');
 
         // OS X will complain if the names are empty, so we put a single space everywhere by default.
         this.names = {
@@ -80,11 +80,13 @@ function Font(options) {
         this.ascender = options.ascender;
         this.descender = options.descender;
         this.createdTimestamp = options.createdTimestamp;
-        this.tables = { os2: {
-            usWeightClass: options.weightClass || this.usWeightClasses.MEDIUM,
-            usWidthClass: options.widthClass || this.usWidthClasses.MEDIUM,
-            fsSelection: options.fsSelection || this.fsSelectionValues.REGULAR
-        } };
+        this.tables = Object.assign(options.tables, {
+            os2: Object.assign({
+                usWeightClass: options.weightClass || this.usWeightClasses.MEDIUM,
+                usWidthClass: options.widthClass || this.usWidthClasses.MEDIUM,
+                fsSelection: options.fsSelection || this.fsSelectionValues.REGULAR,
+            }, options.tables.os2)
+        });
     }
 
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
