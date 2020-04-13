@@ -4,7 +4,7 @@ var commonjs = require('rollup-plugin-commonjs');
 var license = require('rollup-plugin-license');
 
 module.exports = {
-    input: 'src/opentype.js',
+    input: 'src/index.js',
     output: [
         {
             file: 'dist/opentype.js',
