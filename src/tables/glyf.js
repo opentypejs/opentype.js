@@ -211,14 +211,10 @@ function getContours(points) {
 }
 
 // Convert the TrueType glyph outline to a Path.
-function getPath(points, glyph) {
+function getPath(points) {
     const p = new Path();
     if (!points) {
         return p;
-    }
-    let flipY = null;
-    if (glyph) {
-        flipY = (glyph._yMax + glyph._yMin);
     }
 
     const contours = getContours(points);
@@ -231,14 +227,14 @@ function getPath(points, glyph) {
         let next = contour[0];
 
         if (curr.onCurve) {
-            p.moveTo(curr.x, flipY == null ? curr.y : (flipY - curr.y));
+            p.moveTo(curr.x, curr.y);
         } else {
             if (next.onCurve) {
-                p.moveTo(next.x, flipY == null ? next.y : (flipY - next.y));
+                p.moveTo(next.x, next.y);
             } else {
                 // If both first and last points are off-curve, start at their middle.
                 const start = {x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5};
-                p.moveTo(start.x, flipY == null ? start.y : (flipY - start.y));
+                p.moveTo(start.x, start.y);
             }
         }
 
@@ -249,7 +245,7 @@ function getPath(points, glyph) {
 
             if (curr.onCurve) {
                 // This is a straight line.
-                p.lineTo(curr.x, flipY == null ? curr.y : (flipY - curr.y));
+                p.lineTo(curr.x, curr.y);
             } else {
                 let prev2 = prev;
                 let next2 = next;
@@ -262,7 +258,7 @@ function getPath(points, glyph) {
                     next2 = { x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5 };
                 }
 
-                p.quadraticCurveTo(curr.x, flipY == null ? curr.y : (flipY - curr.y), next2.x, flipY == null ? next2.y : (flipY - next2.y));
+                p.quadraticCurveTo(curr.x, curr.y, next2.x, next2.y);
             }
         }
 
@@ -306,7 +302,7 @@ function buildPath(glyphs, glyph) {
         }
     }
 
-    return getPath(glyph.points, glyph);
+    return getPath(glyph.points);
 }
 
 function parseGlyfTableAll(data, start, loca, font) {
