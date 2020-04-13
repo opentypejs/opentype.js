@@ -1,5 +1,5 @@
 /**
- * https://opentype.js.org v1.2.0 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
+ * https://opentype.js.org v1.2.1 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
  */
 
 /*! https://mths.be/codepointat v0.2.0 by @mathias */
@@ -8101,10 +8101,14 @@ function getContours(points) {
 }
 
 // Convert the TrueType glyph outline to a Path.
-function getPath(points) {
+function getPath(points, glyph) {
     var p = new Path();
     if (!points) {
         return p;
+    }
+    var flipY = null;
+    if (glyph) {
+        flipY = (glyph._yMax + glyph._yMin);
     }
 
     var contours = getContours(points);
@@ -8117,14 +8121,14 @@ function getPath(points) {
         var next = contour[0];
 
         if (curr.onCurve) {
-            p.moveTo(curr.x, curr.y);
+            p.moveTo(curr.x, flipY == null ? curr.y : (flipY - curr.y));
         } else {
             if (next.onCurve) {
-                p.moveTo(next.x, next.y);
+                p.moveTo(next.x, flipY == null ? next.y : (flipY - next.y));
             } else {
                 // If both first and last points are off-curve, start at their middle.
                 var start = {x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5};
-                p.moveTo(start.x, start.y);
+                p.moveTo(start.x, flipY == null ? start.y : (flipY - start.y));
             }
         }
 
@@ -8135,7 +8139,7 @@ function getPath(points) {
 
             if (curr.onCurve) {
                 // This is a straight line.
-                p.lineTo(curr.x, curr.y);
+                p.lineTo(curr.x, flipY == null ? curr.y : (flipY - curr.y));
             } else {
                 var prev2 = prev;
                 var next2 = next;
@@ -8148,7 +8152,7 @@ function getPath(points) {
                     next2 = { x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5 };
                 }
 
-                p.quadraticCurveTo(curr.x, curr.y, next2.x, next2.y);
+                p.quadraticCurveTo(curr.x, flipY == null ? curr.y : (flipY - curr.y), next2.x, flipY == null ? next2.y : (flipY - next2.y));
             }
         }
 
@@ -8192,7 +8196,7 @@ function buildPath(glyphs, glyph) {
         }
     }
 
-    return getPath(glyph.points);
+    return getPath(glyph.points, glyph);
 }
 
 function parseGlyfTableAll(data, start, loca, font) {
@@ -12485,7 +12489,7 @@ var SUBSTITUTIONS = {
  * @param {number} index token index
  */
 function applySubstitution(action, tokens, index) {
-    if (action instanceof SubstitutionAction) {
+    if (action instanceof SubstitutionAction && SUBSTITUTIONS[action.id]) {
         SUBSTITUTIONS[action.id](action, tokens, index);
     }
 }
@@ -14180,16 +14184,24 @@ function load(url, callback, opt) {
     var isNode = typeof window === 'undefined';
     var loadFn = isNode ? loadFromFile : loadFromUrl;
 
-    return new Promise(function (resolve) {
+    return new Promise(function (resolve, reject) {
         loadFn(url, function(err, arrayBuffer) {
             if (err) {
-                return callback(err);
+                if (callback) {
+                    return callback(err);
+                } else {
+                    reject(err);
+                }
             }
             var font;
             try {
                 font = parseBuffer(arrayBuffer, opt);
             } catch (e) {
-                return callback(e, null);
+                if (callback) {
+                    return callback(e, null);
+                } else {
+                    reject(e);
+                }
             }
             if (callback) {
                 return callback(null, font);

@@ -1,3 +1,9 @@
+1.2.1 (April 13, 2020)
+=====================
+* Fix Path.toPathData and Path.toSVG - X Axis is flipped (#369)
+* Fix use of Promise / async/await in the load function (#427)
+* Fix a bug for unsupported SUBSTITUTIONS #403
+
 1.2.0 (April 13, 2020)
 =====================
 * Fix issue #385, merge default options with user options (#386)

@@ -1,7 +1,7 @@
 {
   "name": "opentype.js",
   "description": "OpenType font parser",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": {
     "name": "Frederik De Bleser",
     "email": "frederik@debleser.be"
