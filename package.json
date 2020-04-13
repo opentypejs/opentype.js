@@ -1,7 +1,7 @@
 {
   "name": "opentype.js",
   "description": "OpenType font parser",
-  "version": "1.1.0",
+  "version": "1.2.1",
   "author": {
     "name": "Frederik De Bleser",
     "email": "frederik@debleser.be"
@@ -34,25 +34,25 @@
     "dist": "npm run test && npm run build && npm run minify"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.1.0",
-    "buble": "^0.19.4",
-    "cross-env": "^5.2.0",
+    "@babel/preset-env": "^7.9.5",
+    "buble": "^0.20.0",
+    "cross-env": "^7.0.2",
     "jscs": "^3.0.7",
-    "jshint": "^2.9.6",
-    "mocha": "^6.1.4",
-    "reify": "^0.20.9",
-    "rollup": "^1.16.4",
-    "rollup-plugin-buble": "^0.19.4",
-    "rollup-plugin-commonjs": "^10.0.1",
+    "jshint": "^2.11.0",
+    "mocha": "^7.1.1",
+    "reify": "^0.20.12",
+    "rollup": "^1.32.1",
+    "rollup-plugin-buble": "^0.19.8",
+    "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-license": "^0.9.0",
     "rollup-plugin-node-resolve": "^5.2.0",
-    "uglify-js": "^3.4.9"
+    "uglify-js": "^3.8.1"
   },
   "browser": {
     "fs": false
   },
   "dependencies": {
     "string.prototype.codepointat": "^0.2.1",
-    "tiny-inflate": "^1.0.2"
+    "tiny-inflate": "^1.0.3"
   }
 }

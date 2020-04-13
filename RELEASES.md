@@ -1,3 +1,18 @@
+1.2.1 (April 13, 2020)
+=====================
+* Fix Path.toPathData and Path.toSVG - X Axis is flipped (#369)
+* Fix use of Promise / async/await in the load function (#427)
+* Fix a bug for unsupported SUBSTITUTIONS #403
+
+1.2.0 (April 13, 2020)
+=====================
+* Fix issue #385, merge default options with user options (#386)
+* Adds support for browser Async/Await for .load() (#389)
+* Introduce ES6 module build (#391)
+* Fix test in featureQuery
+* Remove Node 4 from Travis (#392)
+* Update dependencies & build dist files
+
 1.1.0 (May 1, 2019)
 =====================
 * Support reading GSUB Single substitution format 1 (PR #382) (thanks @solomancode!)
