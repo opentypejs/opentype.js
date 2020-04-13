@@ -1,3 +1,7 @@
+1.3.1 (April 13, 2020)
+=====================
+* Revert Fix Path.toPathData and Path.toSVG - X Axis is flipped (#369)
+
 1.3.0 (April 13, 2020)
 =====================
 * Forward os2 Table attributs during font construction (#422)
