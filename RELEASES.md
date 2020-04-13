@@ -1,3 +1,8 @@
+1.3.0 (April 13, 2020)
+=====================
+* Forward os2 Table attributs during font construction (#422)
+* Add default export
+
 1.2.1 (April 13, 2020)
 =====================
 * Fix Path.toPathData and Path.toSVG - X Axis is flipped (#369)
