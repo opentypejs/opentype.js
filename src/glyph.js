@@ -276,11 +276,10 @@ Glyph.prototype.draw = function(ctx, x, y, fontSize, options) {
  */
 Glyph.prototype.drawPoints = function(ctx, x, y, fontSize) {
     function drawCircles(l, x, y, scale) {
-        const PI_SQ = Math.PI * 2;
         ctx.beginPath();
         for (let j = 0; j < l.length; j += 1) {
             ctx.moveTo(x + (l[j].x * scale), y + (l[j].y * scale));
-            ctx.arc(x + (l[j].x * scale), y + (l[j].y * scale), 2, 0, PI_SQ, false);
+            ctx.arc(x + (l[j].x * scale), y + (l[j].y * scale), 2, 0, Math.PI * 2, false);
         }
 
         ctx.closePath();
