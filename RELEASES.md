@@ -1,3 +1,7 @@
+1.3.3 (April 20, 2020)
+=====================
+* fix GlyphOptions with falsy values (#430)
+
 1.3.2 (April 20, 2020)
 =====================
 * Re-export named exports with a default export and add a TypeScript import example
