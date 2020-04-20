@@ -25,12 +25,14 @@ Installation
 ### Using [npm](http://npmjs.org/) package manager
 
     npm install opentype.js
+    
+```js
+const opentype = require('opentype.js');
 
-    const opentype = require('opentype.js');
+import opentype from 'opentype.js'
 
-    import opentype from 'opentype.js'
-
-    import { load } from 'opentype.js'
+import { load } from 'opentype.js'
+```
 
 Using TypeScript? [See this example](examples/typescript)
 
