@@ -1,12 +1,12 @@
 /**
- * https://opentype.js.org v1.3.1 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
+ * https://opentype.js.org v1.3.2 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
  */
 
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-	typeof define === 'function' && define.amd ? define(factory) :
-	(global = global || self, global.opentype = factory());
-}(this, (function () { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+	typeof define === 'function' && define.amd ? define(['exports'], factory) :
+	(global = global || self, factory(global.opentype = {}));
+}(this, (function (exports) { 'use strict';
 
 	/*! https://mths.be/codepointat v0.2.0 by @mathias */
 	if (!String.prototype.codePointAt) {
@@ -14238,7 +14238,17 @@
 		loadSync: loadSync
 	});
 
-	return opentype;
+	exports.BoundingBox = BoundingBox;
+	exports.Font = Font;
+	exports.Glyph = Glyph;
+	exports.Path = Path;
+	exports._parse = parse;
+	exports.default = opentype;
+	exports.load = load;
+	exports.loadSync = loadSync;
+	exports.parse = parseBuffer;
+
+	Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
 //# sourceMappingURL=opentype.js.map

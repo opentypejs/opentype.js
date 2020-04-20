@@ -10,11 +10,13 @@ module.exports = {
             file: 'dist/opentype.js',
             format: 'umd',
             name: 'opentype',
+            exports: 'named',
             sourcemap: true
         },
         {
             file: 'dist/opentype.module.js',
             format: 'es',
+            exports: 'named',
             sourcemap: true
         }
    ],

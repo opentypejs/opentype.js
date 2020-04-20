@@ -1,5 +1,5 @@
 /**
- * https://opentype.js.org v1.3.1 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
+ * https://opentype.js.org v1.3.2 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
  */
 
 /*! https://mths.be/codepointat v0.2.0 by @mathias */
@@ -14233,4 +14233,5 @@ var opentype = /*#__PURE__*/Object.freeze({
 });
 
 export default opentype;
+export { BoundingBox, Font, Glyph, Path, parse as _parse, load, loadSync, parseBuffer as parse };
 //# sourceMappingURL=opentype.module.js.map

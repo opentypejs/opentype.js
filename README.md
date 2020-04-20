@@ -8,6 +8,7 @@ See [https://opentype.js.org/](https://opentype.js.org/) for a live demo.
 
 Features
 ========
+
 * Create a bézier path out of a piece of text.
 * Support for composite glyphs (accented letters).
 * Support for WOFF, OTF, TTF (both with TrueType `glyf` and PostScript `cff` outlines)
@@ -25,7 +26,13 @@ Installation
 
     npm install opentype.js
 
-    var opentype = require('opentype.js');
+    const opentype = require('opentype.js');
+
+    import opentype from 'opentype.js'
+
+    import { load } from 'opentype.js'
+
+Using TypeScript? [See this example](examples/typescript)
 
 Note: OpenType.js uses ES6-style imports, so if you want to edit it and debug it in Node.js run `npm run build` first and use `npm run watch` to automatically rebuild when files change.
 
@@ -64,12 +71,12 @@ opentype.load('fonts/Roboto-Black.ttf', function(err, font) {
         alert('Font could not be loaded: ' + err);
     } else {
         // Now let's display it on a canvas with id "canvas"
-        var ctx = document.getElementById('canvas').getContext('2d');
+        const ctx = document.getElementById('canvas').getContext('2d');
 
         // Construct a Path object containing the letter shapes of the given text.
         // The other parameters are x, y and fontSize.
         // Note that y is the position of the baseline.
-        var path = font.getPath('Hello, World!', 0, 150, 72);
+        const path = font.getPath('Hello, World!', 0, 150, 72);
 
         // If you just want to draw the text you can also use font.draw(ctx, text, x, y, fontSize).
         path.draw(ctx);
@@ -91,13 +98,13 @@ If you already have an `ArrayBuffer`, you can use `opentype.parse(buffer)` to pa
 returns a Font, but check `font.supported` to see if the font is in a supported format. (Fonts can be marked unsupported
 if they have encoding tables we can't read).
 
-    var font = opentype.parse(myBuffer);
+    const font = opentype.parse(myBuffer);
 
 ### Loading a font synchronously (Node.js)
 Use `opentype.loadSync(url)` to load a font from a file and return a `Font` object.
 Throws an error if the font could not be parsed. This only works in Node.js.
 
-    var font = opentype.loadSync('fonts/Roboto-Black.ttf');
+    const font = opentype.loadSync('fonts/Roboto-Black.ttf');
 
 ### Writing a font
 Once you have a `Font` object (either by using `opentype.load` or by creating a new one from scratch) you can write it
@@ -108,26 +115,26 @@ on the font name.
 ```javascript
 // Create the bézier paths for each of the glyphs.
 // Note that the .notdef glyph is required.
-var notdefGlyph = new opentype.Glyph({
+const notdefGlyph = new opentype.Glyph({
     name: '.notdef',
     unicode: 0,
     advanceWidth: 650,
     path: new opentype.Path()
 });
 
-var aPath = new opentype.Path();
+const aPath = new opentype.Path();
 aPath.moveTo(100, 0);
 aPath.lineTo(100, 700);
 // more drawing instructions...
-var aGlyph = new opentype.Glyph({
+const aGlyph = new opentype.Glyph({
     name: 'A',
     unicode: 65,
     advanceWidth: 650,
     path: aPath
 });
 
-var glyphs = [notdefGlyph, aGlyph];
-var font = new opentype.Font({
+const glyphs = [notdefGlyph, aGlyph];
+const font = new opentype.Font({
     familyName: 'OpenTypeSans',
     styleName: 'Medium',
     unitsPerEm: 1000,
