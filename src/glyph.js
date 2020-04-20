@@ -66,23 +66,23 @@ Glyph.prototype.bindConstructorValues = function(options) {
 
     // But by binding these values only when necessary, we reduce can
     // the memory requirements by almost 3% for larger fonts.
-    if (options.xMin) {
+    if ('xMin' in options) {
         this.xMin = options.xMin;
     }
 
-    if (options.yMin) {
+    if ('yMin' in options) {
         this.yMin = options.yMin;
     }
 
-    if (options.xMax) {
+    if ('xMax' in options) {
         this.xMax = options.xMax;
     }
 
-    if (options.yMax) {
+    if ('yMax' in options) {
         this.yMax = options.yMax;
     }
 
-    if (options.advanceWidth) {
+    if ('advanceWidth' in options) {
         this.advanceWidth = options.advanceWidth;
     }
 
