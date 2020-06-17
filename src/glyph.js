@@ -61,9 +61,11 @@ Glyph.prototype.bindConstructorValues = function(options) {
 
     // These three values cannot be deferred for memory optimization:
     this.name = options.name || null;
-    this.unicode = options.unicode || undefined;
-    this.unicodes = options.unicodes || options.unicode !== undefined ? [options.unicode] : [];
-
+    this.unicodes = options.unicodes || [];
+    if ('unicode' in options) {
+        this.unicodes.push(options.unicode);
+    }
+    
     // But by binding these values only when necessary, we reduce can
     // the memory requirements by almost 3% for larger fonts.
     if ('xMin' in options) {
@@ -96,10 +98,6 @@ Glyph.prototype.bindConstructorValues = function(options) {
  * @param {number}
  */
 Glyph.prototype.addUnicode = function(unicode) {
-    if (this.unicodes.length === 0) {
-        this.unicode = unicode;
-    }
-
     this.unicodes.push(unicode);
 };
 

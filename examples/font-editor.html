@@ -448,7 +448,7 @@
             }));
             otGlyphs.push(new opentype.Glyph({
                 name: 'space',
-                unicode: 32,
+                unicodes: [32],
                 path: new opentype.Path(),
                 advanceWidth: 7 * TTF_SCALE
             }));
@@ -473,7 +473,7 @@
                 }
                 var newGlyph = new opentype.Glyph({
                     name: ttfName,
-                    unicode: c.charCodeAt(0),
+                    unicodes: [c.charCodeAt(0)],
                     advanceWidth: (w + 1) * TTF_SCALE,
                     path: p
                 });

@@ -8,7 +8,7 @@ describe('opentype.js', function() {
         assert.equal(font.unitsPerEm, 2048);
         assert.equal(font.glyphs.length, 1294);
         const aGlyph = font.charToGlyph('A');
-        assert.equal(aGlyph.unicode, 65);
+        assert.deepEqual(aGlyph.unicodes, [65]);
         assert.equal(aGlyph.path.commands.length, 15);
     });
 
@@ -18,7 +18,7 @@ describe('opentype.js', function() {
             assert.equal(font.unitsPerEm, 2048);
             assert.equal(font.glyphs.length, 1294);
             const aGlyph = font.charToGlyph('A');
-            assert.equal(aGlyph.unicode, 65);
+            assert.deepEqual(aGlyph.unicodes, [65]);
             assert.equal(aGlyph.path.commands.length, 15);
             done();
         });
@@ -31,7 +31,7 @@ describe('opentype.js', function() {
         assert.equal(font.glyphs.length, 1151);
         const aGlyph = font.charToGlyph('A');
         assert.equal(aGlyph.name, 'A');
-        assert.equal(aGlyph.unicode, 65);
+        assert.deepEqual(aGlyph.unicodes, [65]);
         assert.equal(aGlyph.path.commands.length, 14);
     });
 
@@ -47,7 +47,7 @@ describe('opentype.js', function() {
         assert.equal(font.glyphs.length, 257);
         const aGlyph = font.glyphs.get(2);
         assert.equal(aGlyph.name, 'gid2');
-        assert.equal(aGlyph.unicode, 1);
+        assert.equal(aGlyph.unicodes.length, 4344);
         assert.equal(aGlyph.path.commands.length, 24);
     });
 
@@ -58,7 +58,7 @@ describe('opentype.js', function() {
         assert.equal(font.glyphs.length, 1147);
         const aGlyph = font.charToGlyph('A');
         assert.equal(aGlyph.name, 'A');
-        assert.equal(aGlyph.unicode, 65);
+        assert.deepEqual(aGlyph.unicodes, [65]);
         assert.equal(aGlyph.path.commands.length, 14);
     });
 
@@ -106,7 +106,7 @@ describe('opentype.js on low memory mode', function() {
         assert.equal(font.unitsPerEm, 2048);
         assert.equal(font.glyphs.length, 0);
         const aGlyph = font.charToGlyph('A');
-        assert.equal(aGlyph.unicode, 65);
+        assert.deepEqual(aGlyph.unicodes, [65]);
         assert.equal(aGlyph.path.commands.length, 15);
     });
 
@@ -117,7 +117,7 @@ describe('opentype.js on low memory mode', function() {
         assert.equal(font.glyphs.length, 0);
         const aGlyph = font.charToGlyph('A');
         assert.equal(aGlyph.name, 'A');
-        assert.equal(aGlyph.unicode, 65);
+        assert.deepEqual(aGlyph.unicodes, [65]);
         assert.equal(aGlyph.path.commands.length, 14);
     });
 
@@ -133,7 +133,7 @@ describe('opentype.js on low memory mode', function() {
         assert.equal(font.glyphs.length, 0);
         const aGlyph = font.glyphs.get(2);
         assert.equal(aGlyph.name, 'gid2');
-        assert.equal(aGlyph.unicode, 1);
+        assert.equal(aGlyph.unicodes.length, 4344);
         assert.equal(aGlyph.path.commands.length, 24);
     });
 
@@ -144,7 +144,7 @@ describe('opentype.js on low memory mode', function() {
         assert.equal(font.glyphs.length, 0);
         const aGlyph = font.charToGlyph('A');
         assert.equal(aGlyph.name, 'A');
-        assert.equal(aGlyph.unicode, 65);
+        assert.deepEqual(aGlyph.unicodes, [65]);
         assert.equal(aGlyph.path.commands.length, 14);
     });
 
