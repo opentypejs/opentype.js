@@ -18,6 +18,7 @@ import cmap from './tables/cmap';
 import cff from './tables/cff';
 import fvar from './tables/fvar';
 import glyf from './tables/glyf';
+import gdef from './tables/gdef';
 import gpos from './tables/gpos';
 import gsub from './tables/gsub';
 import head from './tables/head';
@@ -211,6 +212,7 @@ function parseBuffer(buffer, opt) {
     let cffTableEntry;
     let fvarTableEntry;
     let glyfTableEntry;
+    let gdefTableEntry;
     let gposTableEntry;
     let gsubTableEntry;
     let hmtxTableEntry;
@@ -296,6 +298,9 @@ function parseBuffer(buffer, opt) {
             case 'kern':
                 kernTableEntry = tableEntry;
                 break;
+            case 'GDEF':
+                gdefTableEntry = tableEntry;
+                break;
             case 'GPOS':
                 gposTableEntry = tableEntry;
                 break;
@@ -334,6 +339,11 @@ function parseBuffer(buffer, opt) {
         font.kerningPairs = kern.parse(kernTable.data, kernTable.offset);
     } else {
         font.kerningPairs = {};
+    }
+
+    if (gdefTableEntry) {
+        const gdefTable = uncompressTable(data, gdefTableEntry);
+        font.tables.gdef = gdef.parse(gdefTable.data, gdefTable.offset);
     }
 
     if (gposTableEntry) {
