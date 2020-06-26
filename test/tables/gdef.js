@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { hex, unhex } from '../testutil';
+import { unhex } from '../testutil';
 import gdef from '../../src/tables/gdef';
 
 describe('tables/gdef.js', function() {
@@ -25,11 +25,11 @@ describe('tables/gdef.js', function() {
         version: 1,
         attachList: {
             attachPoints: [
-                [11,13,14],
-                [24,25,26],
-                [39,40,41],
-                [4,13,14],
-                [24,25,26]
+                [11, 13, 14],
+                [24, 25, 26],
+                [39, 40, 41],
+                [4, 13, 14],
+                [24, 25, 26]
             ],
             coverage: {
                 format: 2,
@@ -53,24 +53,24 @@ describe('tables/gdef.js', function() {
             ]
         },
         ligCaretList: {
-            coverage: { format: 1, glyphs: [ 1004, 1005, 1007, 1008, 1009 ] },
+            coverage: {format: 1, glyphs: [1004, 1005, 1007, 1008, 1009]},
             ligGlyphs: [
-                  [{coordinate: 2115 } ],
-                  [{coordinate: 1410 }, {coordinate: 2820 } ],
-                  [{coordinate: 2304 } ],
-                  [{coordinate: 1536 }, {coordinate: 3072 } ],
-                  [{coordinate: 1152 }, {coordinate: 2304 }, {coordinate: 3456 } ]
+                  [{coordinate: 2115}],
+                  [{coordinate: 1410}, {coordinate: 2820}],
+                  [{coordinate: 2304}],
+                  [{coordinate: 1536}, {coordinate: 3072}],
+                  [{coordinate: 1152}, {coordinate: 2304}, {coordinate: 3456}]
             ]
         },
         markAttachClassDef: {
             format: 2,
             ranges: [
-              {classId: 1, start: 43, end: 43 },
-              {classId: 2, start: 46, end: 46 },
-              {classId: 4, start: 74, end: 74 },
-              {classId: 1, start: 101, end: 101 },
-              {classId: 2, start: 126, end: 126 }
-            ]
+              {classId: 1, start: 43, end: 43},
+              {classId: 2, start: 46, end: 46},
+              {classId: 4, start: 74, end: 74},
+              {classId: 1, start: 101, end: 101},
+              {classId: 2, start: 126, end: 126}
+           ]
         },
     };
 
