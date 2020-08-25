@@ -384,6 +384,8 @@ function gatherCFFTopDicts(data, start, cffIndex, strings) {
         const topDict = parseCFFTopDict(topDictData, strings);
         topDict._subrs = [];
         topDict._subrsBias = 0;
+        topDict._defaultWidthX = 0;
+        topDict._nominalWidthX = 0;
         const privateSize = topDict.private[0];
         const privateOffset = topDict.private[1];
         if (privateSize !== 0 && privateOffset !== 0) {
