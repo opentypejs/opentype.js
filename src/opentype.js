@@ -373,7 +373,7 @@ function parseBuffer(buffer, opt) {
  */
 function load(url, callback, opt) {
     const isNode = typeof window === 'undefined';
-    const loadFn = isNode ? loadFromFile : loadFromUrl;
+    const loadFn = isNode && !opt.isUrl ? loadFromFile : loadFromUrl;
 
     return new Promise((resolve, reject) => {
         loadFn(url, function(err, arrayBuffer) {
