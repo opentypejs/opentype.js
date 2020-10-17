@@ -208,6 +208,32 @@ Substitution.prototype.addSingle = function(feature, substitution, script, langu
 };
 
 /**
+ * Add or modify a multiple substitution (lookup type 2)
+ * @param {string} feature - 4-letter feature name ('ccmp', 'stch')
+ * @param {Object} substitution - { sub: id, by: [id] } for format 2.
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dflt']
+ */
+Substitution.prototype.addMultiple = function(feature, substitution, script, language) {
+    const lookupTable = this.getLookupTables(script, language, feature, 2, true)[0];
+    const subtable = getSubstFormat(lookupTable, 1, {                // lookup type 2 subtable, format 1, coverage format 1
+        substFormat: 1,
+        coverage: {format: 1, glyphs: []},
+        sequences: []
+    });
+    check.assert(subtable.coverage.format === 1, 'Multiple Substitution: unable to modify coverage table format ' + subtable.coverage.format);
+    check.assert(substitution.by instanceof Array && substitution.by.length > 1, 'Multiple Substitution: "by" must be an array of two or more ids');
+    const coverageGlyph = substitution.sub;
+    let pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
+    if (pos < 0) {
+        pos = -1 - pos;
+        subtable.coverage.glyphs.splice(pos, 0, coverageGlyph);
+        subtable.sequences.splice(pos, 0, 0);
+    }
+    subtable.sequences[pos] = substitution.by;
+};
+
+/**
  * Add or modify an alternate substitution (lookup type 1)
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} substitution - { sub: id, by: [ids] }
@@ -330,6 +356,11 @@ Substitution.prototype.add = function(feature, sub, script, language) {
         case 'dlig':
         case 'liga':
         case 'rlig':
+            return this.addLigature(feature, sub, script, language);
+        case 'ccmp':
+            if (sub.by instanceof Array) {
+                return this.addMultiple(feature, sub, script, language);
+            }
             return this.addLigature(feature, sub, script, language);
     }
     return undefined;
