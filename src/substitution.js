@@ -96,6 +96,34 @@ Substitution.prototype.getSingle = function(feature, script, language) {
     return substitutions;
 };
 
+
+/**
+ * List all multiple substitutions (lookup type 2) for a given script, language, and feature.
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dflt']
+ * @param {string} feature - 4-character feature name ('ccmp', 'stch')
+ * @return {Array} substitutions - The list of substitutions.
+ */
+Substitution.prototype.getMultiple = function(feature, script, language) {
+    const substitutions = [];
+    const lookupTables = this.getLookupTables(script, language, feature, 2);
+    for (let idx = 0; idx < lookupTables.length; idx++) {
+        const subtables = lookupTables[idx].subtables;
+        for (let i = 0; i < subtables.length; i++) {
+            const subtable = subtables[i];
+            const glyphs = this.expandCoverage(subtable.coverage);
+            let j;
+            
+            for (j = 0; j < glyphs.length; j++) {
+                const glyph = glyphs[j];
+                const replacements = subtable.sequences[j];
+                substitutions.push({ sub: glyph, by: replacements });
+            }
+        }
+    }
+    return substitutions;
+};
+
 /**
  * List all alternates (lookup type 3) for a given script, language, and feature.
  * @param {string} [script='DFLT']
@@ -269,7 +297,13 @@ Substitution.prototype.getFeature = function(feature, script, language) {
                     .concat(this.getAlternates(feature, script, language));
         case 'dlig':
         case 'liga':
-        case 'rlig': return this.getLigatures(feature, script, language);
+        case 'rlig':
+            return this.getLigatures(feature, script, language);
+        case 'ccmp':
+            return this.getMultiple(feature, script, language)
+                .concat(this.getLigatures(feature, script, language))
+        case 'stch':
+            return this.getMultiple(feature, script, language);
     }
     return undefined;
 };
