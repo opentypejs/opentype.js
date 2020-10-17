@@ -215,14 +215,14 @@ Substitution.prototype.addSingle = function(feature, substitution, script, langu
  * @param {string} [language='dflt']
  */
 Substitution.prototype.addMultiple = function(feature, substitution, script, language) {
+    check.assert(substitution.by instanceof Array && substitution.by.length > 1, 'Multiple: "by" must be an array of two or more ids');
     const lookupTable = this.getLookupTables(script, language, feature, 2, true)[0];
     const subtable = getSubstFormat(lookupTable, 1, {                // lookup type 2 subtable, format 1, coverage format 1
         substFormat: 1,
         coverage: {format: 1, glyphs: []},
         sequences: []
     });
-    check.assert(subtable.coverage.format === 1, 'Multiple Substitution: unable to modify coverage table format ' + subtable.coverage.format);
-    check.assert(substitution.by instanceof Array && substitution.by.length > 1, 'Multiple Substitution: "by" must be an array of two or more ids');
+    check.assert(subtable.coverage.format === 1, 'Multiple: unable to modify coverage table format ' + subtable.coverage.format);
     const coverageGlyph = substitution.sub;
     let pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
     if (pos < 0) {
