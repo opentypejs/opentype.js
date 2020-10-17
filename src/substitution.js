@@ -221,8 +221,8 @@ Substitution.prototype.addMultiple = function(feature, substitution, script, lan
         coverage: {format: 1, glyphs: []},
         sequences: []
     });
-    check.assert(subtable.coverage.format === 1, 'Multiple Substitution: unable to modify coverage table format ' + subtable.coverage.format);
-    check.assert(substitution.by instanceof Array && substitution.by.length > 1, 'Multiple Substitution: "by" must be an array of two or more ids');
+    check.assert(subtable.coverage.format === 1, 'Multiple: unable to modify coverage table format ' + subtable.coverage.format);
+    check.assert(substitution.by instanceof Array && substitution.by.length > 1, 'Multiple: "by" must be an array of two or more ids');
     const coverageGlyph = substitution.sub;
     let pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
     if (pos < 0) {
