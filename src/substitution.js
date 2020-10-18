@@ -96,7 +96,6 @@ Substitution.prototype.getSingle = function(feature, script, language) {
     return substitutions;
 };
 
-
 /**
  * List all multiple substitutions (lookup type 2) for a given script, language, and feature.
  * @param {string} [script='DFLT']
@@ -113,7 +112,7 @@ Substitution.prototype.getMultiple = function(feature, script, language) {
             const subtable = subtables[i];
             const glyphs = this.expandCoverage(subtable.coverage);
             let j;
-            
+
             for (j = 0; j < glyphs.length; j++) {
                 const glyph = glyphs[j];
                 const replacements = subtable.sequences[j];
@@ -327,7 +326,7 @@ Substitution.prototype.getFeature = function(feature, script, language) {
             return this.getLigatures(feature, script, language);
         case 'ccmp':
             return this.getMultiple(feature, script, language)
-                .concat(this.getLigatures(feature, script, language))
+                .concat(this.getLigatures(feature, script, language));
         case 'stch':
             return this.getMultiple(feature, script, language);
     }
