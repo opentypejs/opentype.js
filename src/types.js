@@ -67,6 +67,9 @@ sizeOf.CHAR = constant(1);
  * @returns {Array}
  */
 encode.CHARARRAY = function(v) {
+    if (typeof v === 'undefined') {
+        v = '';
+    }
     const b = [];
     for (let i = 0; i < v.length; i += 1) {
         b[i] = v.charCodeAt(i);
