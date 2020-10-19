@@ -18,6 +18,11 @@ describe('types.js', function() {
         assert.equal(sizeOf.CHARARRAY('A/B'), 3);
     });
 
+    it('can handle undefined as CHARARRAY', function() {
+        assert.equal(hex(encode.CHARARRAY(undefined)), '');
+        assert.equal(sizeOf.CHARARRAY(undefined), 0);
+    });
+
     it('can handle USHORT', function() {
         assert.equal(hex(encode.USHORT(0xCAFE)), 'CA FE');
         assert.equal(sizeOf.USHORT(0xCAFE), 2);
