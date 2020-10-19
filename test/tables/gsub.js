@@ -328,4 +328,23 @@ describe('tables/gsub.js', function() {
             ]
         }), expectedData);
     });
+
+    //// Lookup type 4 ////////////////////////////////////////////////////////
+    // is already tested above
+
+    //// Lookup type 6 ////////////////////////////////////////////////////////
+    it('can write lookup6 substFormat1', function() {
+        // https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#lookuptype-6-chaining-contextual-substitution-subtable
+        const expectedData = unhexArray('0001 0008 0001 000E   0001 0001   000F 0001 0004 0001 000E 0001 0000 0001 0000 0001');
+        assert.deepEqual(makeLookup(6, {
+            substFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0xF]
+            },
+            chainRuleSets: [
+                [{ backtrack: [0xE], input: [], lookahead: [], lookupRecords: [{ sequenceIndex: 0, lookupListIndex: 1 }]}]
+            ]
+        }), expectedData);
+    });
 });
