@@ -83,6 +83,9 @@ encode.CHARARRAY = function(v) {
  * @returns {number}
  */
 sizeOf.CHARARRAY = function(v) {
+    if (typeof v === 'undefined') {
+        return 0;
+    }
     return v.length;
 };
 
