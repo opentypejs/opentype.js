@@ -77,6 +77,26 @@ describe('substitution.js', function() {
             }]);
         });
 
+        it('can add multiple substitutions (lookup type 2)', function() {
+            substitution.add('ccmp', { sub: 4, by: [5, 6, 7] });
+            substitution.add('ccmp', { sub: 8, by: [9, 10] });
+            assert.deepEqual(font.tables.gsub.scripts, defaultScriptList);
+            assert.deepEqual(font.tables.gsub.features, [{
+                tag: 'ccmp',
+                feature: { params: 0, lookupListIndexes: [0] }
+            }]);
+            assert.deepEqual(font.tables.gsub.lookups, [{
+                lookupFlag: 0,
+                lookupType: 2,
+                markFilteringSet: undefined,
+                subtables: [{
+                    substFormat: 1,
+                    coverage: { format: 1, glyphs: [4, 8] },
+                    sequences: [[5, 6, 7], [9, 10]]
+                }]
+            }]);
+        });
+
         it('can add alternate substitutions (lookup type 3)', function() {
             substitution.add('aalt', { sub: 4, by: [5, 6, 7] });
             substitution.add('aalt', { sub: 8, by: [9, 10] });

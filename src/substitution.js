@@ -97,6 +97,33 @@ Substitution.prototype.getSingle = function(feature, script, language) {
 };
 
 /**
+ * List all multiple substitutions (lookup type 2) for a given script, language, and feature.
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dflt']
+ * @param {string} feature - 4-character feature name ('ccmp', 'stch')
+ * @return {Array} substitutions - The list of substitutions.
+ */
+Substitution.prototype.getMultiple = function(feature, script, language) {
+    const substitutions = [];
+    const lookupTables = this.getLookupTables(script, language, feature, 2);
+    for (let idx = 0; idx < lookupTables.length; idx++) {
+        const subtables = lookupTables[idx].subtables;
+        for (let i = 0; i < subtables.length; i++) {
+            const subtable = subtables[i];
+            const glyphs = this.expandCoverage(subtable.coverage);
+            let j;
+
+            for (j = 0; j < glyphs.length; j++) {
+                const glyph = glyphs[j];
+                const replacements = subtable.sequences[j];
+                substitutions.push({ sub: glyph, by: replacements });
+            }
+        }
+    }
+    return substitutions;
+};
+
+/**
  * List all alternates (lookup type 3) for a given script, language, and feature.
  * @param {string} [script='DFLT']
  * @param {string} [language='dflt']
@@ -177,6 +204,32 @@ Substitution.prototype.addSingle = function(feature, substitution, script, langu
         subtable.substitute.splice(pos, 0, 0);
     }
     subtable.substitute[pos] = substitution.by;
+};
+
+/**
+ * Add or modify a multiple substitution (lookup type 2)
+ * @param {string} feature - 4-letter feature name ('ccmp', 'stch')
+ * @param {Object} substitution - { sub: id, by: [id] } for format 2.
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dflt']
+ */
+Substitution.prototype.addMultiple = function(feature, substitution, script, language) {
+    check.assert(substitution.by instanceof Array && substitution.by.length > 1, 'Multiple: "by" must be an array of two or more ids');
+    const lookupTable = this.getLookupTables(script, language, feature, 2, true)[0];
+    const subtable = getSubstFormat(lookupTable, 1, {                // lookup type 2 subtable, format 1, coverage format 1
+        substFormat: 1,
+        coverage: {format: 1, glyphs: []},
+        sequences: []
+    });
+    check.assert(subtable.coverage.format === 1, 'Multiple: unable to modify coverage table format ' + subtable.coverage.format);
+    const coverageGlyph = substitution.sub;
+    let pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
+    if (pos < 0) {
+        pos = -1 - pos;
+        subtable.coverage.glyphs.splice(pos, 0, coverageGlyph);
+        subtable.sequences.splice(pos, 0, 0);
+    }
+    subtable.sequences[pos] = substitution.by;
 };
 
 /**
@@ -269,7 +322,13 @@ Substitution.prototype.getFeature = function(feature, script, language) {
                     .concat(this.getAlternates(feature, script, language));
         case 'dlig':
         case 'liga':
-        case 'rlig': return this.getLigatures(feature, script, language);
+        case 'rlig':
+            return this.getLigatures(feature, script, language);
+        case 'ccmp':
+            return this.getMultiple(feature, script, language)
+                .concat(this.getLigatures(feature, script, language));
+        case 'stch':
+            return this.getMultiple(feature, script, language);
     }
     return undefined;
 };
@@ -296,6 +355,11 @@ Substitution.prototype.add = function(feature, sub, script, language) {
         case 'dlig':
         case 'liga':
         case 'rlig':
+            return this.addLigature(feature, sub, script, language);
+        case 'ccmp':
+            if (sub.by instanceof Array) {
+                return this.addMultiple(feature, sub, script, language);
+            }
             return this.addLigature(feature, sub, script, language);
     }
     return undefined;
