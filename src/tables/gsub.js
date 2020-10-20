@@ -278,6 +278,7 @@ subtableMakers[6] = function makeLookup6(subtable) {
                     .concat(table.ushortList('lookaheadGlyph', chainRule.lookahead, chainRule.lookahead.length))
                     .concat(table.ushortList('substitution', [], chainRule.lookupRecords.length));
 
+                tableData.push({name: 'substitutionCount', type: 'USHORT', value: subtable.lookupRecords.length});
                 chainRule.lookupRecords.forEach((record, i) => {
                     tableData = tableData
                         .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
@@ -307,6 +308,7 @@ subtableMakers[6] = function makeLookup6(subtable) {
             tableData.push({name: 'lookaheadCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
         });
 
+        tableData.push({name: 'substitutionCount', type: 'USHORT', value: subtable.lookupRecords.length});
         subtable.lookupRecords.forEach((record, i) => {
             tableData = tableData
                 .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
