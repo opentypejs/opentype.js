@@ -290,7 +290,32 @@ subtableMakers[6] = function makeLookup6(subtable) {
     } else if (subtable.substFormat === 2) {
         check.assert(false, 'lookup type 6 format 2 is not yet supported.');
     } else if (subtable.substFormat === 3) {
-        check.assert(false, 'lookup type 6 format 3 is not yet supported.');
+        let tableData = [
+            {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
+        ];
+
+        tableData.push({name: 'backtrackGlyphCount', type: 'USHORT', value: subtable.backtrackCoverage.length});
+        subtable.backtrackCoverage.forEach((coverage, i) => {
+            tableData.push({name: 'backtrackCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
+        });
+        tableData.push({name: 'inputGlyphCount', type: 'USHORT', value: subtable.inputCoverage.length});
+        subtable.inputCoverage.forEach((coverage, i) => {
+            tableData.push({name: 'inputCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
+        });
+        tableData.push({name: 'lookaheadGlyphCount', type: 'USHORT', value: subtable.lookaheadCoverage.length});
+        subtable.lookaheadCoverage.forEach((coverage, i) => {
+            tableData.push({name: 'lookaheadCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
+        });
+
+        subtable.lookupRecords.forEach((record, i) => {
+            tableData = tableData
+                .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
+                .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+        });
+
+        let returnTable = new table.Table('chainContextTable', tableData);
+
+        return returnTable;
     }
 
     check.assert(false, 'lookup type 6 format must be 1, 2 or 3.');
