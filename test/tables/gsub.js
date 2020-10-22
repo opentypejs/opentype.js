@@ -370,7 +370,23 @@ describe('tables/gsub.js', function() {
     //// Lookup type 6 ////////////////////////////////////////////////////////
     it('can write lookup6 substFormat1', function() {
         // https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#lookuptype-6-chaining-contextual-substitution-subtable
-        const expectedData = unhexArray('0001 0008 0001 000E   0001 0001   000F 0001 0004 0001 000E 0001 0000 0001 0000 0001');
+        const expectedData = unhexArray(
+            '0001  0008  0001' + // substFormat, coverageOffset, chainSubRuleSetCount
+            '000E' +             // chainSubRuleSetOffset
+            // ChainSubRuleSet table
+            '' +                 // chainSubRuleCount, chainSubRuleOffset
+            // coverage table
+            '0001  0001  000F' + // coverageFormat, glyphCount, glyphIndex
+            // chainSubRuleSet table
+            '0001  0004' +       // chainSubRuleCount, chainSubRuleOffset
+            // ChainSubRule subtable
+            '0001  000E' +       // backtrackGlyphCount, backtrackSequence
+            '0001' +             // inputGlyphCount (includes the first glyph)
+            '' +                 // inputSequence (starts with second glyph, and we have none)
+            '0000' +             // lookaheadGlyphCount
+            '' +                 // lookAheadSequence (we have none)
+            '0001 0000 0001' // substitutionCount, sequenceIndex, lookupListIndex
+        );
         assert.deepEqual(makeLookup(6, {
             substFormat: 1,
             coverage: {
