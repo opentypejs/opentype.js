@@ -266,7 +266,6 @@ subtableMakers[4] = function makeLookup4(subtable) {
 };
 
 subtableMakers[6] = function makeLookup6(subtable) {
-    console.log('-----', subtable);
     if (subtable.substFormat === 1) {
         let returnTable = new table.Table('chainContextTable', [
             {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
@@ -278,7 +277,6 @@ subtableMakers[6] = function makeLookup6(subtable) {
                     .concat(table.ushortList('lookaheadGlyph', chainRule.lookahead, chainRule.lookahead.length))
                     .concat(table.ushortList('substitution', [], chainRule.lookupRecords.length));
 
-                tableData.push({name: 'substitutionCount', type: 'USHORT', value: subtable.lookupRecords.length});
                 chainRule.lookupRecords.forEach((record, i) => {
                     tableData = tableData
                         .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
