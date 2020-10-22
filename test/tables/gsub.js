@@ -398,4 +398,57 @@ describe('tables/gsub.js', function() {
             ]
         }), expectedData);
     });
+
+    it('can write lookup6 substFormat3', function() {
+        // https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#63-chaining-context-substitution-format-3-coverage-based-glyph-contexts
+        // example taken from Inter Regular, with just offsets adapted to the structure when only creating the lookup
+        const expectedData = unhexArray(
+            '00 03    00 02' +                    // substFormat and backtrackGlyphCount
+            '00 18    00 22' +                    // backtrackCoverageOffsets
+            '00 01' +                             // inputGlyphCount
+            '00 2C' +                             // inputCoverageOffsets
+            '00 02' +                             // lookaheadGlyphCount
+            '00 32    00 3C' +                    // lookaheadCoverageOffsets
+            '00 01' +                             // substitutionCount
+            // SubstLookupRecord, see https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#substitution-lookup-record
+            '00 00    00 32' +                    // glyphSequenceIndex and lookupListIndex
+            // backtrackCoverage tables
+            '00 02  00 01  06 82  06 91  00 00' + // coverageFormat, rangeRecordCount, startGlyphID, endGlyphID, startCoverageIndex
+            '00 02  00 01  05 05  05 26  00 00' + // and the same for the second entry
+            // inputCoverage table
+            '00 01  00 01  03 AB' +               // coverageFormat, glyphCount, glyphIndex
+            // lookaheadCoverage table
+            '00 02  00 01  06 82  06 91  00 00' + // coverageFormat, rangeRecordCount, startGlyphID, endGlyphID, startCoverageIndex
+            '00 02 00 01 05 05 05 26 00 00'       // and the same for the second entry
+        );
+        assert.deepEqual(makeLookup(6, {
+            substFormat: 3,
+            backtrackCoverage: [
+            {
+                format: 2,
+                ranges: [{ start: 1666, end: 1681, index: 0 }]
+            },
+            {
+                format: 2,
+                ranges: [{ start: 1285, end: 1318, index: 0 }]
+            }
+            ],
+            inputCoverage: [{ format: 1, glyphs: [939] }],
+            lookaheadCoverage: [{
+                format: 2,
+                ranges: [{ start: 1666, end: 1681, index: 0 }]
+            },
+            {
+                format: 2,
+                ranges: [{ start: 1285, end: 1318, index: 0 }]
+            }
+            ],
+            lookupRecords: [
+            {
+                sequenceIndex: 0,
+                lookupListIndex: 50
+            }
+            ]
+        }), expectedData);
+    });
 });
