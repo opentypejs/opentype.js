@@ -373,8 +373,6 @@ describe('tables/gsub.js', function() {
         const expectedData = unhexArray(
             '0001  0008  0001' + // substFormat, coverageOffset, chainSubRuleSetCount
             '000E' +             // chainSubRuleSetOffset
-            // ChainSubRuleSet table
-            '' +                 // chainSubRuleCount, chainSubRuleOffset
             // coverage table
             '0001  0001  000F' + // coverageFormat, glyphCount, glyphIndex
             // chainSubRuleSet table
@@ -395,6 +393,36 @@ describe('tables/gsub.js', function() {
             },
             chainRuleSets: [
                 [{ backtrack: [0xE], input: [], lookahead: [], lookupRecords: [{ sequenceIndex: 0, lookupListIndex: 1 }]}]
+            ]
+        }), expectedData);
+    });
+
+    it('can write lookup6 substFormat1 with all rule set properties', function() {
+        // same as above but with some random values filled in for the empty values
+        // to see if it works as intended both ways
+        const expectedData = unhexArray(
+            '0001  0008  0001' + // substFormat, coverageOffset, chainSubRuleSetCount
+            '000E' +             // chainSubRuleSetOffset
+            // coverage table
+            '0001  0001  000F' + // coverageFormat, glyphCount, glyphIndex
+            // chainSubRuleSet table
+            '0001  0004' +       // chainSubRuleCount, chainSubRuleOffset
+            // ChainSubRule subtable
+            '0001  000E' +       // backtrackGlyphCount, backtrackSequence
+            '0002' +             // inputGlyphCount (includes the first glyph)
+            '0048' +             // inputSequence (starts with second glyph, and we have none)
+            '0001' +             // lookaheadGlyphCount
+            '0042' +                 // lookAheadSequence (we have none)
+            '0001 0000 0001' // substitutionCount, sequenceIndex, lookupListIndex
+        );
+        assert.deepEqual(makeLookup(6, {
+            substFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0xF]
+            },
+            chainRuleSets: [
+                [{ backtrack: [0xE], input: [0x48], lookahead: [0x42], lookupRecords: [{ sequenceIndex: 0, lookupListIndex: 1 }]}]
             ]
         }), expectedData);
     });
