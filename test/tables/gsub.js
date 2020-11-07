@@ -332,6 +332,22 @@ describe('tables/gsub.js', function() {
         }), expectedData);
     });
 
+    //// Lookup type 2 ////////////////////////////////////////////////////////
+    it('can write lookup2', function() {
+        // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX4
+        const expectedData = unhexArray('0001 0008 0001 000E   0001 0001 00F1   0003 001A 001A 001D');
+        assert.deepEqual(makeLookup(2, {
+            substFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0xf1]
+            },
+            sequences: [
+                [0x1a, 0x1a, 0x1d]
+            ]
+        }), expectedData);
+    });
+
     //// Lookup type 3 ////////////////////////////////////////////////////////
     it('can write lookup3', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX5

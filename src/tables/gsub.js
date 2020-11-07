@@ -230,6 +230,16 @@ subtableMakers[1] = function makeLookup1(subtable) {
     check.fail('Lookup type 1 substFormat must be 1 or 2.');
 };
 
+subtableMakers[2] = function makeLookup2(subtable) {
+    check.assert(subtable.substFormat === 1, 'Lookup type 2 substFormat must be 1.');
+    return new table.Table('substitutionTable', [
+        {name: 'substFormat', type: 'USHORT', value: 1},
+        {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
+    ].concat(table.tableList('seqSet', subtable.sequences, function(sequenceSet) {
+        return new table.Table('sequenceSetTable', table.ushortList('sequence', sequenceSet));
+    })));
+};
+
 subtableMakers[3] = function makeLookup3(subtable) {
     check.assert(subtable.substFormat === 1, 'Lookup type 3 substFormat must be 1.');
     return new table.Table('substitutionTable', [
