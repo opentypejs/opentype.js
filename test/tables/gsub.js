@@ -287,6 +287,25 @@ describe('tables/gsub.js', function() {
         assert.deepEqual(gsub.make(gsubTable).encode(), expectedData);
     });
 
+    it('can write a lookup with coverage table format 2', function() {
+        // https://docs.microsoft.com/de-de/typography/opentype/spec/chapter2#coverage-table
+        // https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#EX6 (extended with two more ranges)
+
+        const expectedData = unhexArray('0001 0006 00C0   0002 0003   0019 001A 0000   004E 0057 0002   0060 0063 000C');
+        assert.deepEqual(makeLookup(1, {
+            substFormat: 1,
+            coverage: {
+                format: 2,
+                ranges: [
+                    { start: 25, end: 26, index: 0 },
+                    { start: 78, end: 87, index: 2 },
+                    { start: 96, end: 99, index: 12 }
+                ]
+            },
+            deltaGlyphId: 0xc0
+        }), expectedData);
+    });
+
     //// Lookup type 1 ////////////////////////////////////////////////////////
     it('can write lookup1 substFormat 1', function() {
         const expectedData = unhexArray('0001 0006 00C0   0001 0004 003C 0040 004B 004F');

@@ -6,7 +6,7 @@
 =====================
 * Re-export named exports with a default export and add a TypeScript import example
 
-* 1.3.1 (April 13, 2020)
+1.3.1 (April 13, 2020)
 =====================
 * Revert Fix Path.toPathData and Path.toSVG - X Axis is flipped (#369)
 

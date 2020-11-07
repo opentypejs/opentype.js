@@ -12,9 +12,14 @@ import { encode, sizeOf } from './types';
  * @constructor
  */
 function Table(tableName, fields, options) {
-    for (let i = 0; i < fields.length; i += 1) {
-        const field = fields[i];
-        this[field.name] = field.value;
+    // For coverage tables with coverage format 2, we do not want to add the coverage data directly to the table object,
+    // as this will result in wrong encoding order of the coverage data on serialization to bytes.
+    // The fallback of using the field values directly when not present on the table is handled in types.encode.TABLE() already.
+    if (fields.length && (fields[0].name !== 'coverageFormat' || fields[0].value === 1)) {
+        for (let i = 0; i < fields.length; i += 1) {
+            const field = fields[i];
+            this[field.name] = field.value;
+        }
     }
 
     this.tableName = tableName;
@@ -103,8 +108,19 @@ function Coverage(coverageTable) {
             [{name: 'coverageFormat', type: 'USHORT', value: 1}]
             .concat(ushortList('glyph', coverageTable.glyphs))
         );
+    } else if (coverageTable.format === 2) {
+        Table.call(this, 'coverageTable',
+            [{name: 'coverageFormat', type: 'USHORT', value: 2}]
+            .concat(recordList('rangeRecord', coverageTable.ranges, function(RangeRecord) {
+                return [
+                    {name: 'startGlyphID', type: 'USHORT', value: RangeRecord.start},
+                    {name: 'endGlyphID', type: 'USHORT', value: RangeRecord.end},
+                    {name: 'startCoverageIndex', type: 'USHORT', value: RangeRecord.index},
+                ];
+            }))
+        );
     } else {
-        check.assert(false, 'Can\'t create coverage table format 2 yet.');
+        check.assert(false, 'Coverage format must be 1 or 2.');
     }
 }
 Coverage.prototype = Object.create(Table.prototype);
