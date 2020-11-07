@@ -208,9 +208,9 @@ describe('parse.js', function() {
                 '0000 0001 0000   0000 0002 0000 0001   0000 0003 0000 0001 0002';
             const p = new Parser(unhex(data), 0);
             assert.deepEqual(p.parseFeatureList(), [
-                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0] } },
-                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0, 1] } },
-                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0, 1, 2] } }
+                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0], tableOffset: 24 } },
+                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0, 1], tableOffset: 30 } },
+                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0, 1, 2], tableOffset: 38 } }
             ]);
             assert.equal(p.relativeOffset, 2);
         });

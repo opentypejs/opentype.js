@@ -345,6 +345,12 @@ function parseBuffer(buffer, opt) {
     if (gsubTableEntry) {
         const gsubTable = uncompressTable(data, gsubTableEntry);
         font.tables.gsub = gsub.parse(gsubTable.data, gsubTable.offset);
+        font.tables.gsub.features.forEach(f => {
+            if (f.tag.match(/ss(?:0[1-9]|1\d|20)/)) {
+                const { uiNameId } = f.feature.featureParamsTable;
+                f.feature.uiName = font.tables.name[uiNameId];
+            }
+        });
     }
 
     if (fvarTableEntry) {

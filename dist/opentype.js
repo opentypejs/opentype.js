@@ -2480,11 +2480,18 @@
 	    return values;
 	};
 
-	Parser.prototype.parsePointer = function(description) {
+	Parser.prototype.parsePointer = function(description, storeOffset) {
+	    if ( storeOffset === void 0 ) storeOffset = false;
+
 	    var structOffset = this.parseOffset16();
 	    if (structOffset > 0) {
 	        // NULL offset => return undefined
-	        return new Parser(this.data, this.offset + structOffset).parseStruct(description);
+	        var offset = this.offset + structOffset;
+	        var struct = new Parser(this.data, offset).parseStruct(description);
+	        if (storeOffset) {
+	            struct.tableOffset = offset;
+	        }
+	        return struct;
 	    }
 	    return undefined;
 	};
@@ -2617,9 +2624,11 @@
 	    };
 	};
 
-	Parser.pointer = function(description) {
+	Parser.pointer = function(description, storeOffset) {
+	    if ( storeOffset === void 0 ) storeOffset = false;
+
 	    return function() {
-	        return this.parsePointer(description);
+	        return this.parsePointer(description, storeOffset);
 	    };
 	};
 
@@ -2667,8 +2676,15 @@
 	        feature: Parser.pointer({
 	            featureParams: Parser.offset16,
 	            lookupListIndexes: Parser.uShortList
-	        })
+	        }, true)
 	    })) || [];
+	};
+
+	Parser.prototype.parseFeatureParams = function() {
+	    return this.parsePointer({
+	        version: Parser.uShort,
+	        uiNameId: Parser.uShort
+	    }) || [];
 	};
 
 	Parser.prototype.parseLookupList = function(lookupTableParsers) {
@@ -6717,12 +6733,20 @@
 	    var tableVersion = p.parseVersion(1);
 	    check.argument(tableVersion === 1 || tableVersion === 1.1, 'Unsupported GSUB table version.');
 	    if (tableVersion === 1) {
-	        return {
+	        var table = {
 	            version: tableVersion,
 	            scripts: p.parseScriptList(),
 	            features: p.parseFeatureList(),
 	            lookups: p.parseLookupList(subtableParsers)
 	        };
+	        table.features.forEach(function (f) {
+	            if (f.tag.match(/ss(?:0[1-9]|1\d|20)/)) {
+	                var p = new Parser(data, f.feature.tableOffset);
+	                f.feature.featureParamsTable = p.parseFeatureParams();
+	            }
+	            delete f.feature.tableOffset;
+	        });
+	        return table;
 	    } else {
 	        return {
 	            version: tableVersion,
@@ -14154,6 +14178,13 @@
 	    if (gsubTableEntry) {
 	        var gsubTable = uncompressTable(data, gsubTableEntry);
 	        font.tables.gsub = gsub.parse(gsubTable.data, gsubTable.offset);
+	        font.tables.gsub.features.forEach(function (f) {
+	            if (f.tag.match(/ss(?:0[1-9]|1\d|20)/)) {
+	                var ref = f.feature.featureParamsTable;
+	                var uiNameId = ref.uiNameId;
+	                f.feature.uiName = font.tables.name[uiNameId];
+	            }
+	        });
 	    }
 
 	    if (fvarTableEntry) {

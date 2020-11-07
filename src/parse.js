@@ -391,11 +391,16 @@ Parser.prototype.parseValueRecordList = function() {
     return values;
 };
 
-Parser.prototype.parsePointer = function(description) {
+Parser.prototype.parsePointer = function(description, storeOffset = false) {
     const structOffset = this.parseOffset16();
     if (structOffset > 0) {
         // NULL offset => return undefined
-        return new Parser(this.data, this.offset + structOffset).parseStruct(description);
+        const offset = this.offset + structOffset;
+        const struct = new Parser(this.data, offset).parseStruct(description);
+        if (storeOffset) {
+            struct.tableOffset = offset;
+        }
+        return struct;
     }
     return undefined;
 };
@@ -528,9 +533,9 @@ Parser.recordList32 = function(count, recordDescription) {
     };
 };
 
-Parser.pointer = function(description) {
+Parser.pointer = function(description, storeOffset = false) {
     return function() {
-        return this.parsePointer(description);
+        return this.parsePointer(description, storeOffset);
     };
 };
 
@@ -578,8 +583,15 @@ Parser.prototype.parseFeatureList = function() {
         feature: Parser.pointer({
             featureParams: Parser.offset16,
             lookupListIndexes: Parser.uShortList
-        })
+        }, true)
     })) || [];
+};
+
+Parser.prototype.parseFeatureParams = function() {
+    return this.parsePointer({
+        version: Parser.uShort,
+        uiNameId: Parser.uShort
+    }) || [];
 };
 
 Parser.prototype.parseLookupList = function(lookupTableParsers) {
