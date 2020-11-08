@@ -200,6 +200,7 @@ function parseGsubTable(data, start) {
             lookups: p.parseLookupList(subtableParsers)
         };
         table.features.forEach(f => {
+            // Match `ss01` to `ss20`
             if (f.tag.match(/ss(?:0[1-9]|1\d|20)/)) {
                 const p = new Parser(data, f.feature.tableOffset);
                 f.feature.featureParamsTable = p.parseFeatureParams();

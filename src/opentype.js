@@ -346,6 +346,7 @@ function parseBuffer(buffer, opt) {
         const gsubTable = uncompressTable(data, gsubTableEntry);
         font.tables.gsub = gsub.parse(gsubTable.data, gsubTable.offset);
         font.tables.gsub.features.forEach(f => {
+            // Match `ss01` to `ss20`
             if (f.tag.match(/ss(?:0[1-9]|1\d|20)/)) {
                 const { uiNameId } = f.feature.featureParamsTable;
                 f.feature.uiName = font.tables.name[uiNameId];
