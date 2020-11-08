@@ -130,7 +130,7 @@ aPath.lineTo(100, 700);
 // more drawing instructions...
 const aGlyph = new opentype.Glyph({
     name: 'A',
-    unicode: 65,
+    unicodes: [65],
     advanceWidth: 650,
     path: aPath
 });

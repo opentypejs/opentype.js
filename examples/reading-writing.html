@@ -50,7 +50,7 @@
     function createGlyphCanvas(glyph, size) {
         var canvasId, html, glyphsDiv, wrap, canvas, ctx;
         canvasId = 'c' + glyph.index;
-        html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyph.index + '</span><span>' + glyph.name + '</span><span>U ' + glyph.unicode + '</span></div>';
+        html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyph.index + '</span><span>' + glyph.name + '</span><span>U ' + glyph.unicodes.join() + '</span></div>';
         glyphsDiv = document.getElementById('glyphs');
         wrap = document.createElement('div');
         wrap.innerHTML = html;

@@ -4,11 +4,11 @@ import { Font, Glyph, Path, loadSync } from '../src/opentype';
 describe('font.js', function() {
     let font;
 
-    const fGlyph = new Glyph({name: 'f', unicode: 102, path: new Path(), advanceWidth: 1});
-    const iGlyph = new Glyph({name: 'i', unicode: 105, path: new Path(), advanceWidth: 1});
-    const ffGlyph = new Glyph({name: 'f_f', unicode: 0xfb01, path: new Path(), advanceWidth: 1});
-    const fiGlyph = new Glyph({name: 'f_i', unicode: 0xfb02, path: new Path(), advanceWidth: 1});
-    const ffiGlyph = new Glyph({name: 'f_f_i', unicode: 0xfb03, path: new Path(), advanceWidth: 1});
+    const fGlyph = new Glyph({name: 'f', unicodes: [102], path: new Path(), advanceWidth: 1});
+    const iGlyph = new Glyph({name: 'i', unicodes: [105], path: new Path(), advanceWidth: 1});
+    const ffGlyph = new Glyph({name: 'f_f', unicodes: [0xfb01], path: new Path(), advanceWidth: 1});
+    const fiGlyph = new Glyph({name: 'f_i', unicodes: [0xfb02], path: new Path(), advanceWidth: 1});
+    const ffiGlyph = new Glyph({name: 'f_f_i', unicodes: [0xfb03], path: new Path(), advanceWidth: 1});
 
     const glyphs = [
         new Glyph({name: '.notdef', unicode: 0, path: new Path(), advanceWidth: 1}),

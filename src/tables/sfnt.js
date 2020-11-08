@@ -146,37 +146,31 @@ function fontToSfntTable(font) {
 
     for (let i = 0; i < font.glyphs.length; i += 1) {
         const glyph = font.glyphs.get(i);
-        const unicode = glyph.unicode | 0;
 
         if (isNaN(glyph.advanceWidth)) {
             throw new Error('Glyph ' + glyph.name + ' (' + i + '): advanceWidth is not a number.');
         }
 
-        if (firstCharIndex > unicode || firstCharIndex === undefined) {
-            // ignore .notdef char
-            if (unicode > 0) {
-                firstCharIndex = unicode;
+        for (let u in glyph.unicodes) {
+            const position = os2.getUnicodeRange(glyph.unicodes[u]);
+            if (position < 32) {
+                ulUnicodeRange1 |= 1 << position;
+            } else if (position < 64) {
+                ulUnicodeRange2 |= 1 << position - 32;
+            } else if (position < 96) {
+                ulUnicodeRange3 |= 1 << position - 64;
+            } else if (position < 123) {
+                ulUnicodeRange4 |= 1 << position - 96;
+            } else {
+                throw new Error('Unicode ranges bits > 123 are reserved for internal usage');
             }
-        }
-
-        if (lastCharIndex < unicode) {
-            lastCharIndex = unicode;
-        }
-
-        const position = os2.getUnicodeRange(unicode);
-        if (position < 32) {
-            ulUnicodeRange1 |= 1 << position;
-        } else if (position < 64) {
-            ulUnicodeRange2 |= 1 << position - 32;
-        } else if (position < 96) {
-            ulUnicodeRange3 |= 1 << position - 64;
-        } else if (position < 123) {
-            ulUnicodeRange4 |= 1 << position - 96;
-        } else {
-            throw new Error('Unicode ranges bits > 123 are reserved for internal usage');
         }
         // Skip non-important characters.
         if (glyph.name === '.notdef') continue;
+
+        firstCharIndex = glyph.unicodes.reduce((a, b) => Math.min(a, b), firstCharIndex || glyph.unicodes[0]);
+        lastCharIndex = glyph.unicodes.reduce((a, b) => Math.max(a, b), lastCharIndex);
+
         const metrics = glyph.getMetrics();
         xMins.push(metrics.xMin);
         yMins.push(metrics.yMin);
