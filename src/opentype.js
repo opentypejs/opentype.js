@@ -18,6 +18,7 @@ import cmap from './tables/cmap';
 import cff from './tables/cff';
 import fvar from './tables/fvar';
 import glyf from './tables/glyf';
+import gdef from './tables/gdef';
 import gpos from './tables/gpos';
 import gsub from './tables/gsub';
 import head from './tables/head';
@@ -211,6 +212,7 @@ function parseBuffer(buffer, opt) {
     let cffTableEntry;
     let fvarTableEntry;
     let glyfTableEntry;
+    let gdefTableEntry;
     let gposTableEntry;
     let gsubTableEntry;
     let hmtxTableEntry;
@@ -296,6 +298,9 @@ function parseBuffer(buffer, opt) {
             case 'kern':
                 kernTableEntry = tableEntry;
                 break;
+            case 'GDEF':
+                gdefTableEntry = tableEntry;
+                break;
             case 'GPOS':
                 gposTableEntry = tableEntry;
                 break;
@@ -336,6 +341,11 @@ function parseBuffer(buffer, opt) {
         font.kerningPairs = {};
     }
 
+    if (gdefTableEntry) {
+        const gdefTable = uncompressTable(data, gdefTableEntry);
+        font.tables.gdef = gdef.parse(gdefTable.data, gdefTable.offset);
+    }
+
     if (gposTableEntry) {
         const gposTable = uncompressTable(data, gposTableEntry);
         font.tables.gpos = gpos.parse(gposTable.data, gposTable.offset);
@@ -372,8 +382,9 @@ function parseBuffer(buffer, opt) {
  * @param  {Function} callback - The callback.
  */
 function load(url, callback, opt) {
+    opt = (opt === undefined || opt === null) ?  {} : opt;
     const isNode = typeof window === 'undefined';
-    const loadFn = isNode ? loadFromFile : loadFromUrl;
+    const loadFn = isNode && !opt.isUrl ? loadFromFile : loadFromUrl;
 
     return new Promise((resolve, reject) => {
         loadFn(url, function(err, arrayBuffer) {

@@ -184,7 +184,7 @@ Substitution.prototype.getLigatures = function(feature, script, language) {
  * Add or modify a single substitution (lookup type 1)
  * Format 2, more flexible, is always used.
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
- * @param {Object} substitution - { sub: id, delta: number } for format 1 or { sub: id, by: id } for format 2.
+ * @param {Object} substitution - { sub: id, by: id } (format 1 is not supported)
  * @param {string} [script='DFLT']
  * @param {string} [language='dflt']
  */
@@ -195,7 +195,7 @@ Substitution.prototype.addSingle = function(feature, substitution, script, langu
         coverage: {format: 1, glyphs: []},
         substitute: []
     });
-    check.assert(subtable.coverage.format === 1, 'Ligature: unable to modify coverage table format ' + subtable.coverage.format);
+    check.assert(subtable.coverage.format === 1, 'Single: unable to modify coverage table format ' + subtable.coverage.format);
     const coverageGlyph = substitution.sub;
     let pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
     if (pos < 0) {
@@ -233,7 +233,7 @@ Substitution.prototype.addMultiple = function(feature, substitution, script, lan
 };
 
 /**
- * Add or modify an alternate substitution (lookup type 1)
+ * Add or modify an alternate substitution (lookup type 3)
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} substitution - { sub: id, by: [ids] }
  * @param {string} [script='DFLT']
@@ -246,7 +246,7 @@ Substitution.prototype.addAlternate = function(feature, substitution, script, la
         coverage: {format: 1, glyphs: []},
         alternateSets: []
     });
-    check.assert(subtable.coverage.format === 1, 'Ligature: unable to modify coverage table format ' + subtable.coverage.format);
+    check.assert(subtable.coverage.format === 1, 'Alternate: unable to modify coverage table format ' + subtable.coverage.format);
     const coverageGlyph = substitution.sub;
     let pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
     if (pos < 0) {
