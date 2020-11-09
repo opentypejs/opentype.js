@@ -216,6 +216,28 @@ describe('parse.js', function() {
         });
     });
 
+    describe('parseFeatureParams', function() {
+        it('should parse a FeatureParams table', function() {
+            // examples extracted from BungeeShade-Regular.ttf
+            {
+                const data = '0010' +                   // FeatureParams table offset
+                '0006 0005 0006 0007 0008 0009 000a' +  // rest of the feature table
+                '0000 0100';                            // FeatureParams table
+                const p = new Parser(unhex(data), 0);
+                assert.deepStrictEqual(p.parseFeatureParams(), { version: 0, uiNameId: 256 });
+                assert.strictEqual(p.relativeOffset, 2);
+            }
+            {
+                const data = '0006' +    // FeatureParams table offset
+                '0001 0018 ' +           // rest of the feature table
+                '0000 0108';             // FeatureParams table
+                const p = new Parser(unhex(data), 0);
+                assert.deepStrictEqual(p.parseFeatureParams(), { version: 0, uiNameId: 264 });
+                assert.strictEqual(p.relativeOffset, 2);
+            }
+        });
+    });
+
     describe('parseLookupList', function() {
         it('should parse a LookupList table', function() {
             // https://www.microsoft.com/typography/OTSPEC/chapter2.htm Example 4

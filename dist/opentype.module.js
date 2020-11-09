@@ -6734,6 +6734,7 @@ function parseGsubTable(data, start) {
             lookups: p.parseLookupList(subtableParsers)
         };
         table.features.forEach(function (f) {
+            // Match `ss01` to `ss20`
             if (f.tag.match(/ss(?:0[1-9]|1\d|20)/)) {
                 var p = new Parser(data, f.feature.tableOffset);
                 f.feature.featureParamsTable = p.parseFeatureParams();
@@ -14173,6 +14174,7 @@ function parseBuffer(buffer, opt) {
         var gsubTable = uncompressTable(data, gsubTableEntry);
         font.tables.gsub = gsub.parse(gsubTable.data, gsubTable.offset);
         font.tables.gsub.features.forEach(function (f) {
+            // Match `ss01` to `ss20`
             if (f.tag.match(/ss(?:0[1-9]|1\d|20)/)) {
                 var ref = f.feature.featureParamsTable;
                 var uiNameId = ref.uiNameId;
