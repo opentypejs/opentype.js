@@ -95,6 +95,12 @@ describe('opentype.js', function() {
         });
         assert.throws(function() { font.toArrayBuffer(); }, /advanceWidth is not a number/);
     });
+
+    it('can load Stylistic Set names in an OpenType/CFF font', function() {
+        const font = loadSync('./fonts/SourceSansPro-Regular.otf');
+        assert.deepStrictEqual(font.tables.gsub.features.find(t => t.tag === 'ss01').feature.uiName, {en: 'Straight l'});
+        assert.deepStrictEqual(font.tables.gsub.features.find(t => t.tag === 'ss02').feature.uiName, {en: 'Alternate a'});
+    });
 });
 
 describe('opentype.js on low memory mode', function() {
@@ -171,5 +177,11 @@ describe('opentype.js on low memory mode', function() {
             glyphs: [notdefGlyph]
         });
         assert.throws(function() { font.toArrayBuffer(); }, /advanceWidth is not a number/);
+    });
+
+    it('can load Stylistic Set names in an OpenType/CFF font', function() {
+        const font = loadSync('./fonts/SourceSansPro-Regular.otf', opt);
+        assert.deepStrictEqual(font.tables.gsub.features.find(t => t.tag === 'ss01').feature.uiName, {en: 'Straight l'});
+        assert.deepStrictEqual(font.tables.gsub.features.find(t => t.tag === 'ss02').feature.uiName, {en: 'Alternate a'});
     });
 });
