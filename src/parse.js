@@ -19,6 +19,16 @@ function getShort(dataView, offset) {
     return dataView.getInt16(offset, false);
 }
 
+// Retrieve an unsigned 24-bit integer from the DataView.
+// Format optimal for the 21-bit Unicode Scalar Values:
+// https://developer.apple.com/documentation/swift/string/unicodescalarview
+// The value is stored in big endian.
+function getUInt24(dataView, offset) {
+    const b = dataView.getUint16(offset, false);
+    const a = dataView.getUint8(offset + 2, false);
+    return b * Math.pow(2, 8) + a;
+}
+
 // Retrieve an unsigned 32-bit long from the DataView.
 // The value is stored in big endian.
 function getULong(dataView, offset) {
@@ -127,6 +137,12 @@ Parser.prototype.parseShort = function() {
 Parser.prototype.parseF2Dot14 = function() {
     const v = this.data.getInt16(this.offset + this.relativeOffset) / 16384;
     this.relativeOffset += 2;
+    return v;
+};
+
+Parser.prototype.parseUInt24 = function() {
+    const v = getUInt24(this.data, this.offset + this.relativeOffset);
+    this.relativeOffset += 3;
     return v;
 };
 
@@ -239,6 +255,22 @@ Parser.prototype.parseShortList = function(count) {
 
     this.relativeOffset += count * 2;
     return list;
+};
+
+// Parse a list of 24 bit unsigned integers. The length of the list can be read on the stream
+// or provided as an argument.
+Parser.prototype.parseUInt24List = function(count) {
+    if (count === undefined) { count = this.parseUShort(); }
+    const offsets = new Array(count);
+    const dataView = this.data;
+    let offset = this.offset + this.relativeOffset;
+    for (let i = 0; i < count; i++) {
+        offsets[i] = getUInt24(dataView, offset);
+        offset += 3;
+    }
+
+    this.relativeOffset += count * 3;
+    return offsets;
 };
 
 // Parses a list of bytes.
@@ -549,8 +581,10 @@ Parser.tag = Parser.prototype.parseTag;
 Parser.byte = Parser.prototype.parseByte;
 Parser.uShort = Parser.offset16 = Parser.prototype.parseUShort;
 Parser.uShortList = Parser.prototype.parseUShortList;
+Parser.uInt24 = Parser.prototype.parseUInt24;
 Parser.uLong = Parser.offset32 = Parser.prototype.parseULong;
 Parser.uLongList = Parser.prototype.parseULongList;
+Parser.uInt24List = Parser.prototype.parseUInt24List;
 Parser.struct = Parser.prototype.parseStruct;
 Parser.coverage = Parser.prototype.parseCoverage;
 Parser.classDef = Parser.prototype.parseClassDef;
@@ -587,10 +621,23 @@ Parser.prototype.parseFeatureList = function() {
     })) || [];
 };
 
-Parser.prototype.parseFeatureParams = function() {
+Parser.prototype.parseStylisticSetFeatureParams = function() {
     return this.parsePointer({
         version: Parser.uShort,
         uiNameId: Parser.uShort
+    }) || [];
+};
+
+// https://docs.microsoft.com/en-us/typography/opentype/spec/features_ae#tag-cv01--cv99
+Parser.prototype.parseCharacterVariantFeatureParams = function() {
+    return this.parsePointer({
+        format: Parser.uShort,
+        featUiLabelNameId: Parser.uShort,
+        featUiTooltipTextNameId: Parser.uShort,
+        sampleTextNameId: Parser.uShort,
+        numNamedParameters: Parser.uShort,
+        firstParamUiLabelNameId: Parser.uShort,
+        characters: Parser.uInt24List
     }) || [];
 };
 
@@ -628,6 +675,7 @@ export default {
     getUShort,
     getCard16: getUShort,
     getShort,
+    getUInt24,
     getULong,
     getFixed,
     getTag,

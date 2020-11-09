@@ -214,7 +214,12 @@ function parseGsubTable(data, start) {
         // Match `ss01` to `ss20`
         if (f.tag.match(/ss(?:0[1-9]|1\d|20)/)) {
             const p = new Parser(data, f.feature.tableOffset);
-            f.feature.featureParamsTable = p.parseFeatureParams();
+            f.feature.featureParamsTable = p.parseStylisticSetFeatureParams();
+        }
+        // Match `cv01` to `cv99`
+        else if (f.tag.match(/cv(?:0[1-9]|[1-9]\d)/)) {
+            const p = new Parser(data, f.feature.tableOffset);
+            f.feature.featureParamsTable = p.parseCharacterVariantFeatureParams();
         }
         delete f.feature.tableOffset;
     });

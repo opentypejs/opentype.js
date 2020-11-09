@@ -351,6 +351,11 @@ function parseBuffer(buffer, opt) {
                 const { uiNameId } = f.feature.featureParamsTable;
                 f.feature.uiName = font.tables.name[uiNameId];
             }
+            // Match `cv01` to `cv99`
+            else if (f.tag.match(/cv(?:0[1-9]|[1-9]\d)/)) {
+                const { featUiLabelNameId } = f.feature.featureParamsTable;
+                f.feature.featUiLabelName = font.tables.name[featUiLabelNameId];
+            }
         });
     }
 
