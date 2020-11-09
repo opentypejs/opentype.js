@@ -3,6 +3,14 @@ import { unhex } from './testutil';
 import { Parser } from '../src/parse';
 
 describe('parse.js', function() {
+    describe('parseUInt24', function() {
+        it('can parse a uInt24 value', function() {
+            const data = '12 34 56';
+            const p = new Parser(unhex(data), 0);
+            assert.deepEqual(p.parseUInt24(), 0x123456);
+            assert.equal(p.relativeOffset, 3);
+        });
+    });
     describe('parseUShortList', function() {
         it('can parse an empty list', function() {
             const p = new Parser(unhex('0000'), 0);
@@ -208,11 +216,54 @@ describe('parse.js', function() {
                 '0000 0001 0000   0000 0002 0000 0001   0000 0003 0000 0001 0002';
             const p = new Parser(unhex(data), 0);
             assert.deepEqual(p.parseFeatureList(), [
-                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0] } },
-                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0, 1] } },
-                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0, 1, 2] } }
+                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0], tableOffset: 24 } },
+                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0, 1], tableOffset: 30 } },
+                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0, 1, 2], tableOffset: 38 } }
             ]);
             assert.equal(p.relativeOffset, 2);
+        });
+    });
+
+    describe('parseStylisticSetFeatureParams', function() {
+        it('can parse a stylistic set feature FeatureParams table', function() {
+            // examples extracted from BungeeShade-Regular.ttf
+            {
+                const data = '0010' +                   // FeatureParams table offset
+                '0006 0005 0006 0007 0008 0009 000a' +  // rest of the feature table
+                '0000 0100';                            // FeatureParams table
+                const p = new Parser(unhex(data), 0);
+                assert.deepStrictEqual(p.parseStylisticSetFeatureParams(), { version: 0, uiNameId: 256 });
+                assert.strictEqual(p.relativeOffset, 2);
+            }
+            {
+                const data = '0006' +    // FeatureParams table offset
+                '0001 0018 ' +           // rest of the feature table
+                '0000 0108';             // FeatureParams table
+                const p = new Parser(unhex(data), 0);
+                assert.deepStrictEqual(p.parseStylisticSetFeatureParams(), { version: 0, uiNameId: 264 });
+                assert.strictEqual(p.relativeOffset, 2);
+            }
+        });
+    });
+
+    describe('parseCharacterVariantFeatureParams', function() {
+        it('can parse a character variant feature FeatureParams table', function() {
+            // examples extracted from BungeeShade-Regular.ttf
+            const data = '0006' +                   // FeatureParams table offset
+            '0001 001d' +                           // rest of the feature table
+            '0000 0100 0000 0000 0000 0000 0000';   // FeatureParams table
+            const p = new Parser(unhex(data), 0);
+            const expected = {
+                format: 0,
+                featUiLabelNameId: 256,
+                featUiTooltipTextNameId: 0,
+                sampleTextNameId: 0,
+                numNamedParameters: 0,
+                firstParamUiLabelNameId: 0,
+                characters: []
+            };
+            assert.deepStrictEqual(p.parseCharacterVariantFeatureParams(), expected);
+            assert.strictEqual(p.relativeOffset, 2);
         });
     });
 
