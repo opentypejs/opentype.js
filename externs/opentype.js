@@ -235,7 +235,7 @@ opentype.Glyph.prototype.getMetrics = function() {};
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {Object=} options - xScale, yScale to strech the glyph.
+ * @param  {Object=} options - xScale, yScale to stretch the glyph.
  */
 opentype.Glyph.prototype.draw = function(ctx, x, y, fontSize, options) {};
 
@@ -344,8 +344,9 @@ opentype.Path.prototype.getBoundingBox = function() {};
 
 /**
  * @param {CanvasRenderingContext2D} ctx - A 2D drawing context.
+ * @param {Object} options- strokeFirst(default false) if true, will stroke the path first before filling it.
  */
-opentype.Path.prototype.draw = function(ctx) {};
+opentype.Path.prototype.draw = function(ctx, options) {};
 
 /**
  * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values

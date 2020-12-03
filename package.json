@@ -24,7 +24,7 @@
   "main": "dist/opentype.js",
   "module": "dist/opentype.module.js",
   "bin": {
-    "ot": "./bin/ot"
+    "ot": "bin/ot"
   },
   "scripts": {
     "start": "node ./bin/server.js",

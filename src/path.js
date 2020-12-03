@@ -197,8 +197,10 @@ Path.prototype.getBoundingBox = function() {
 /**
  * Draw the path to a 2D context.
  * @param {CanvasRenderingContext2D} ctx - A 2D drawing context.
+ * @param {Object} options- strokeFirst(default false) if true, will stroke the path first before filling it.
  */
-Path.prototype.draw = function(ctx) {
+Path.prototype.draw = function(ctx, options = {}) {
+    const { strokeFirst = false } = options;
     ctx.beginPath();
     for (let i = 0; i < this.commands.length; i += 1) {
         const cmd = this.commands[i];
@@ -215,16 +217,25 @@ Path.prototype.draw = function(ctx) {
         }
     }
 
-    if (this.fill) {
-        ctx.fillStyle = this.fill;
-        ctx.fill();
-    }
+    const { fill, stroke, strokeWidth } = this;
+    const fillOp = function() {
+        if (fill) {
+            ctx.fillStyle = fill;
+            ctx.fill();
+        }
+    };
 
-    if (this.stroke) {
-        ctx.strokeStyle = this.stroke;
-        ctx.lineWidth = this.strokeWidth;
-        ctx.stroke();
-    }
+    const strokeOp = function() {
+        if (stroke) {
+            ctx.strokeStyle = stroke;
+            ctx.lineWidth = strokeWidth;
+            ctx.stroke();
+        }
+    };
+
+    const ops = [fillOp, strokeOp];
+    ops[+strokeFirst]();
+    ops[+!strokeFirst]();
 };
 
 /**
