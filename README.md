@@ -25,7 +25,7 @@ Installation
 ### Using [npm](http://npmjs.org/) package manager
 
     npm install opentype.js
-    
+
 ```js
 const opentype = require('opentype.js');
 
@@ -266,9 +266,13 @@ Once you have a path through `Font.getPath` or `Glyph.getPath`, you can use it.
 * `stroke`: The stroke color of the `Path`. Color is a string representing a [CSS color](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value). (default: `null`: the path will not be stroked)
 * `strokeWidth`: The line thickness of the `Path`. (default: 1, but since the `stroke` is null no stroke will be drawn)
 
-##### `Path.draw(ctx)`
+##### `Path.draw(ctx, options)`
 Draw the path on the given 2D context. This uses the `fill`, `stroke` and `strokeWidth` properties of the `Path` object.
 * `ctx`: The drawing context.
+* `options`: The drawing context.
+
+Options is an optional object containing:
+* `strokeFirst`: if true, strokes the text first before filling it(default: false)
 
 ##### `Path.getBoundingBox()`
 Calculate the minimum bounding box for the given path. Returns an `opentype.BoundingBox` object that contains x1/y1/x2/y2.
