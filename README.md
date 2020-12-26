@@ -119,7 +119,6 @@ on the font name.
 // Note that the .notdef glyph is required.
 const notdefGlyph = new opentype.Glyph({
     name: '.notdef',
-    unicode: 0,
     advanceWidth: 650,
     path: new opentype.Path()
 });
