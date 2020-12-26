@@ -173,9 +173,9 @@ describe('opentype.js on low memory mode', function() {
         assert.throws(function() { font.toArrayBuffer(); }, /advanceWidth is not a number/);
     });
 
-    it('should correctly set unicode 0 for .notdef glyph', function() {
-        const notdefGlyph = new Glyph({
-            name: '.notdef',
+    it('should correctly set unicode 0 for .null glyph', function() {
+        const nullGlyph = new Glyph({
+            name: '.null',
             unicode: 0,
             path: new Path()
         });
@@ -185,10 +185,10 @@ describe('opentype.js on low memory mode', function() {
             unitsPerEm: 1000,
             ascender: 800,
             descender: -200,
-            glyphs: [notdefGlyph]
+            glyphs: [nullGlyph]
         });
         const ndGlyph = font.glyphs.get(0);
-        assert.equal(ndGlyph.name, '.notdef');
+        assert.equal(ndGlyph.name, '.null');
         assert.equal(ndGlyph.unicode, 0);
     });
 });
