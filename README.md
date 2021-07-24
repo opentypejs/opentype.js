@@ -1,5 +1,7 @@
+*Note This is a fork of the original `opentype.js` project just for releasing some bug fixes to `@plotdb/opentype.js`.*
 
-# opentype.js &middot; [![Build Status](https://travis-ci.org/opentypejs/opentype.js.svg?branch=master)](https://travis-ci.org/opentypejs/opentype.js) [![npm](https://img.shields.io/npm/v/opentype.js.svg?style=flat-square)](https://www.npmjs.com/package/opentype.js) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/opentypejs/opentype.js/blob/master/LICENSE) [![david-dm](https://david-dm.org/opentypejs/opentype.js.svg)](https://david-dm.org/opentypejs/opentype.js)
+# @plotdb/opentype.js &middot; [![Build Status](https://travis-ci.org/opentypejs/opentype.js.svg?branch=master)](https://travis-ci.org/opentypejs/opentype.js) [![npm](https://img.shields.io/npm/v/opentype.js.svg?style=flat-square)](https://www.npmjs.com/package/opentype.js) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/opentypejs/opentype.js/blob/master/LICENSE) [![david-dm](https://david-dm.org/opentypejs/opentype.js.svg)](https://david-dm.org/opentypejs/opentype.js)
+
 
 opentype.js is a JavaScript parser and writer for TrueType and OpenType fonts.
 
