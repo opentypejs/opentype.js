@@ -2875,7 +2875,7 @@ function makeCmapTable(glyphs) {
     for (i = glyphs.length - 1; i > 0; i -= 1) {
         var g = glyphs.get(i);
         if (g.unicode > 65535) {
-            // CMAP format 12 is needed. 
+            // CMAP format 12 is needed.
             isPlan0Only = false;
             break;
         }
