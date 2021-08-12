@@ -150,7 +150,7 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
             const lookupTable = this.getLookupByIndex(lookupListIndex);
             for (let s = 0; s < lookupTable.subtables.length; s++) {
                 let subtable = lookupTable.subtables[s];
-                let lookup = this.getLookupMethod(lookupTable, subtable);
+                let lookup;
                 let substitutionType = this.getSubstitutionType(lookupTable, subtable);
 
                 if (substitutionType === '71') {
@@ -158,6 +158,8 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
                     substitutionType = this.getSubstitutionType(subtable, subtable.extension);
                     lookup = this.getLookupMethod(subtable, subtable.extension);
                     subtable = subtable.extension;
+                } else {
+                    lookup = this.getLookupMethod(lookupTable, subtable);
                 }
 
                 if (substitutionType === '12') {
@@ -379,13 +381,15 @@ FeatureQuery.prototype.lookupFeature = function (query) {
         for (let s = 0; s < subtables.length; s++) {
             let subtable = subtables[s];
             let substType = this.getSubstitutionType(lookupTable, subtable);
-            let lookup = this.getLookupMethod(lookupTable, subtable);
+            let lookup;
 
             if (substType === '71') {
                 // This is an extension subtable, so lookup the target subtable
                 substType = this.getSubstitutionType(subtable, subtable.extension);
                 lookup = this.getLookupMethod(subtable, subtable.extension);
                 subtable = subtable.extension;
+            } else {
+                lookup = this.getLookupMethod(lookupTable, subtable);
             }
 
             let substitution;
