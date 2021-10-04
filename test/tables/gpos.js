@@ -138,4 +138,23 @@ describe('tables/gpos.js', function() {
             ]
         });
     });
+
+    //// Lookup type 9 ////////////////////////////////////////////////////////
+    it('can parse lookup9 extensionLookupType2 PairPosFormat1', function() {
+        // https://docs.microsoft.com/en-us/typography/opentype/spec/gpos#lookuptype-9-extension-positioning
+        const data = '0001 0002 00000008 0001 001E 0004 0001 0002 000E 0016   0001 0059 FFE2 FFEC 0001 0059 FFD8 FFE7   0001 0002 002D 0031';
+        assert.deepEqual(parseLookup(9, data), {
+            posFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0x2d, 0x31]
+            },
+            valueFormat1: 4,
+            valueFormat2: 1,
+            pairSets: [
+                [{ secondGlyph: 0x59, value1: { xAdvance: -30 }, value2: { xPlacement: -20 } }],
+                [{ secondGlyph: 0x59, value1: { xAdvance: -40 }, value2: { xPlacement: -25 } }]
+            ]
+        });
+    });
 });
