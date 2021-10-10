@@ -91,7 +91,7 @@ var notdefGlyph = new Glyph({
 // Our glyph map can't properly encode a space character, so we make one here.
 var spaceGlyph = new Glyph({
     name: 'space',
-    unicode: 32,
+    unicodes: [32],
     advanceWidth: 10 * SCALE,
     path: new Path()
 });
@@ -124,7 +124,7 @@ for (var i = 0; i < glyphNames.length; i++) {
     // Create the glyph. The advanceWidth is the widest part of the letter + 1.
     var glyph = new Glyph({
         name: ttfName,
-        unicode: glyphName.charCodeAt(0),
+        unicodes: [glyphName.charCodeAt(0)],
         advanceWidth: (w + 1) * SCALE,
         path: path
     });

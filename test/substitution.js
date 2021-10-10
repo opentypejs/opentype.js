@@ -14,7 +14,7 @@ describe('substitution.js', function() {
     const glyphs = [notdefGlyph].concat('abcdefghijklmnopqrstuvwxyz'.split('').map(function (c) {
         return new Glyph({
             name: c,
-            unicode: c.charCodeAt(0),
+            unicodes: [c.charCodeAt(0)],
             path: new Path()
         });
     }));
