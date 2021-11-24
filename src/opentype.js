@@ -13,7 +13,7 @@ import { CmapEncoding, GlyphNames, addGlyphNames } from './encoding';
 import parse from './parse';
 import BoundingBox from './bbox';
 import Path from './path';
-import { nodeBufferToArrayBuffer } from './util';
+import { nodeBufferToArrayBuffer, isNode } from './util';
 import cmap from './tables/cmap';
 import cff from './tables/cff';
 import fvar from './tables/fvar';
@@ -383,8 +383,7 @@ function parseBuffer(buffer, opt) {
  */
 function load(url, callback, opt) {
     opt = (opt === undefined || opt === null) ?  {} : opt;
-    const isNode = typeof window === 'undefined';
-    const loadFn = isNode && !opt.isUrl ? loadFromFile : loadFromUrl;
+    const loadFn = isNode() && !opt.isUrl ? loadFromFile : loadFromUrl;
 
     return new Promise((resolve, reject) => {
         loadFn(url, function(err, arrayBuffer) {
