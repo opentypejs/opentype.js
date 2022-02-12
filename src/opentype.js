@@ -62,22 +62,68 @@ function loadFromFile(path, callback) {
  * @param  {Function} callback - The function to call when the font load completes
  */
 function loadFromUrl(url, callback) {
-    const request = new XMLHttpRequest();
-    request.open('get', url, true);
-    request.responseType = 'arraybuffer';
-    request.onload = function() {
-        if (request.response) {
-            return callback(null, request.response);
-        } else {
-            return callback('Font could not be loaded: ' + request.statusText);
-        }
-    };
 
-    request.onerror = function () {
-        callback('Font could not be loaded');
-    };
+    if (typeof XMLHttpRequest !== 'undefined') {
+        // Browser environment, we use XHR.
 
-    request.send();
+        const request = new XMLHttpRequest();
+        request.open('get', url, true);
+        request.responseType = 'arraybuffer';
+        request.onload = function() {
+            if (request.response) {
+                return callback(null, request.response);
+            } else {
+                return callback('Font could not be loaded: ' + request.statusText);
+            }
+        };
+
+        request.onerror = function() {
+            callback('Font could not be loaded');
+        };
+
+        request.send();
+
+    } else {
+        // Node environment, we use the http/https libraries (to avoid extra dependencies like axios).
+
+        const lib = url.startsWith('https:') ? require('https') : require('http');
+
+        const req = lib.request(url, res => {
+            // Follow redirections
+            if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location) {
+                return loadFromUrl(res.headers.location, callback);
+            }
+
+            res.setEncoding('binary');
+
+            const chunks = [];
+
+            res.on('data', (chunk) => {
+                // Convert binary to Buffer and append.
+                chunks.push(Buffer.from(chunk, 'binary'));
+            });
+
+            res.on('end', () => {
+                // group chunks into a single response Buffer
+                const b = Buffer.concat(chunks);
+                // convert Buffer to ArrayBuffer for compatibility with XHR interface
+                const ab = b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+                callback(null, ab);
+            });
+
+            res.on('error', (error) => {
+                callback(error, undefined);
+            });
+
+        });
+
+        req.on('error', error => {
+            callback(error, undefined);
+        });
+
+        req.end();
+
+    }
 }
 
 // Table Directory Entries //////////////////////////////////////////////
