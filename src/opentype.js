@@ -14,6 +14,8 @@ import parse from './parse';
 import BoundingBox from './bbox';
 import Path from './path';
 import { nodeBufferToArrayBuffer } from './util';
+import cpal from './tables/cpal';
+import colr from './tables/colr';
 import cmap from './tables/cmap';
 import cff from './tables/cff';
 import fvar from './tables/fvar';
@@ -263,6 +265,14 @@ function parseBuffer(buffer, opt) {
             case 'ltag':
                 table = uncompressTable(data, tableEntry);
                 ltagTable = ltag.parse(table.data, table.offset);
+                break;
+            case 'COLR':
+                table = uncompressTable(data, tableEntry);
+                font.tables.colr = colr.parse(table.data, table.offset);
+                break;
+            case 'CPAL':
+                table = uncompressTable(data, tableEntry);
+                font.tables.cpal = cpal.parse(table.data, table.offset);
                 break;
             case 'maxp':
                 table = uncompressTable(data, tableEntry);

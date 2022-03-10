@@ -19,6 +19,8 @@ import os2 from './os2';
 import post from './post';
 import gsub from './gsub';
 import meta from './meta';
+import colr from './colr';
+import cpal from './cpal';
 
 function log2(v) {
     return Math.log(v) / Math.log(2) | 0;
@@ -305,6 +307,12 @@ function fontToSfntTable(font) {
     // Optional tables
     if (font.tables.gsub) {
         tables.push(gsub.make(font.tables.gsub));
+    }
+    if (font.tables.cpal) {
+        tables.push(cpal.make(font.tables.cpal));
+    }
+    if (font.tables.colr) {
+        tables.push(colr.make(font.tables.colr));
     }
     if (metaTable) {
         tables.push(metaTable);
