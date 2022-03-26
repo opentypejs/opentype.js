@@ -6982,40 +6982,42 @@ var colr = { parse: parseColrTable, make: makeColrTable };
 
 // Parse the header `head` table
 function parseCpalTable(data, start) {
-  var p = new Parser(data, start);
-  var version = p.parseShort();
-  var numPaletteEntries = p.parseShort();
-  var numPalettes = p.parseShort();
-  var numColorRecords = p.parseShort();
-  var colorRecordsArrayOffset = p.parseOffset32();
-  var colorRecordIndices = p.parseUShortList(numPalettes);
-  p.relativeOffset = colorRecordsArrayOffset;
-  var colorRecords = p.parseULongList(numColorRecords);
-  return {
-    version: version,
-    numPaletteEntries: numPaletteEntries,
-    colorRecords: colorRecords,
-    colorRecordIndices: colorRecordIndices,
-  };
+    var p = new Parser(data, start);
+    var version = p.parseShort();
+    var numPaletteEntries = p.parseShort();
+    var numPalettes = p.parseShort();
+    var numColorRecords = p.parseShort();
+    var colorRecordsArrayOffset = p.parseOffset32();
+    var colorRecordIndices = p.parseUShortList(numPalettes);
+    p.relativeOffset = colorRecordsArrayOffset;
+    var colorRecords = p.parseULongList(numColorRecords);
+    return {
+        version: version,
+        numPaletteEntries: numPaletteEntries,
+        colorRecords: colorRecords,
+        colorRecordIndices: colorRecordIndices,
+    };
 }
 
 function makeCpalTable(ref) {
-  var version = ref.version; if ( version === void 0 ) version = 0;
-  var numPaletteEntries = ref.numPaletteEntries; if ( numPaletteEntries === void 0 ) numPaletteEntries = 0;
-  var colorRecords = ref.colorRecords; if ( colorRecords === void 0 ) colorRecords = [];
-  var colorRecordIndices = ref.colorRecordIndices; if ( colorRecordIndices === void 0 ) colorRecordIndices = [0];
+    var version = ref.version; if ( version === void 0 ) version = 0;
+    var numPaletteEntries = ref.numPaletteEntries; if ( numPaletteEntries === void 0 ) numPaletteEntries = 0;
+    var colorRecords = ref.colorRecords; if ( colorRecords === void 0 ) colorRecords = [];
+    var colorRecordIndices = ref.colorRecordIndices; if ( colorRecordIndices === void 0 ) colorRecordIndices = [0];
 
-  check.argument(version === 0, 'Only CPALv0 are supported.');
-  check.argument(colorRecords.length, 'No colorRecords given.');
-  check.argument(colorRecordIndices.length, 'No colorRecordIndices given.');
-  check.argument(!numPaletteEntries && colorRecordIndices.length == 1, 'Can\'t infer numPaletteEntries on multiple colorRecordIndices');
-  return new table.Table('CPAL', [
-    { name: 'version', type: 'USHORT', value: version },
-    { name: 'numPaletteEntries', type: 'USHORT', value: numPaletteEntries || colorRecords.length },
-    { name: 'numPalettes', type: 'USHORT', value: colorRecordIndices.length },
-    { name: 'numColorRecords', type: 'USHORT', value: colorRecords.length },
-    { name: 'colorRecordsArrayOffset', type: 'ULONG', value: 12 + 2 * colorRecordIndices.length } ].concat( colorRecordIndices.map(function (palette, i) { return ({ name: 'colorRecordIndices_' + i, type: 'USHORT', value: palette }); }),
-    colorRecords.map(function (color, i) { return ({ name: 'colorRecords_' + i, type: 'ULONG', value: color }); }) ));
+    check.argument(version === 0, 'Only CPALv0 are supported.');
+    check.argument(colorRecords.length, 'No colorRecords given.');
+    check.argument(colorRecordIndices.length, 'No colorRecordIndices given.');
+    if (colorRecordIndices.length > 1) {
+        check.argument(numPaletteEntries, 'Can\'t infer numPaletteEntries on multiple colorRecordIndices');
+    }
+    return new table.Table('CPAL', [
+        { name: 'version', type: 'USHORT', value: version },
+        { name: 'numPaletteEntries', type: 'USHORT', value: numPaletteEntries || colorRecords.length },
+        { name: 'numPalettes', type: 'USHORT', value: colorRecordIndices.length },
+        { name: 'numColorRecords', type: 'USHORT', value: colorRecords.length },
+        { name: 'colorRecordsArrayOffset', type: 'ULONG', value: 12 + 2 * colorRecordIndices.length } ].concat( colorRecordIndices.map(function (palette, i) { return ({ name: 'colorRecordIndices_' + i, type: 'USHORT', value: palette }); }),
+        colorRecords.map(function (color, i) { return ({ name: 'colorRecords_' + i, type: 'ULONG', value: color }); }) ));
 }
 
 var cpal = { parse: parseCpalTable, make: makeCpalTable };
