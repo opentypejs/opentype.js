@@ -87,7 +87,7 @@ Glyph.prototype.bindConstructorValues = function(options) {
     if ('advanceWidth' in options) {
         this.advanceWidth = options.advanceWidth;
     }
-    
+
     if ('leftSideBearing' in options) {
         this.leftSideBearing = options.leftSideBearing;
     }
