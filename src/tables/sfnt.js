@@ -266,20 +266,60 @@ function fontToSfntTable(font) {
         names[n] = font.names[n];
     }
 
-    if (!names.uniqueID) {
-        names.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
+    names.unicode = names.unicode || {};
+    names.macintosh = names.macintosh || {};
+    names.windows = names.windows || {};
+
+    const fontNamesUnicode = font.names.unicode || {};
+    const fontNamesMacintosh = font.names.macintosh || {};
+    const fontNamesWindows = font.names.windows || {};
+
+    if (!names.unicode.uniqueID) {
+        names.unicode.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
     }
 
-    if (!names.postScriptName) {
-        names.postScriptName = {en: postScriptName};
+    if (!names.macintosh.uniqueID) {
+        names.macintosh.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
     }
 
-    if (!names.preferredFamily) {
-        names.preferredFamily = font.names.fontFamily;
+    if (!names.windows.uniqueID) {
+        names.windows.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
     }
 
-    if (!names.preferredSubfamily) {
-        names.preferredSubfamily = font.names.fontSubfamily;
+    if (!names.unicode.postScriptName) {
+        names.unicode.postScriptName = {en: postScriptName};
+    }
+
+    if (!names.macintosh.postScriptName) {
+        names.macintosh.postScriptName = {en: postScriptName};
+    }
+
+    if (!names.windows.postScriptName) {
+        names.windows.postScriptName = {en: postScriptName};
+    }
+
+    if (!names.unicode.preferredFamily) {
+        names.unicode.preferredFamily = fontNamesUnicode.fontFamily || fontNamesMacintosh.fontFamily || fontNamesWindows.fontFamily;
+    }
+
+    if (!names.macintosh.preferredFamily) {
+        names.macintosh.preferredFamily = fontNamesMacintosh.fontFamily || fontNamesUnicode.fontFamily || fontNamesWindows.fontFamily;
+    }
+
+    if (!names.windows.preferredFamily) {
+        names.windows.preferredFamily = fontNamesWindows.fontFamily || fontNamesUnicode.fontFamily || fontNamesMacintosh.fontFamily;
+    }
+
+    if (!names.unicode.preferredSubfamily) {
+        names.unicode.preferredSubfamily = fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily || fontNamesWindows.fontSubFamily;
+    }
+
+    if (!names.macintosh.preferredSubfamily) {
+        names.macintosh.preferredSubfamily = fontNamesMacintosh.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesWindows.fontSubFamily;
+    }
+
+    if (!names.windows.preferredSubfamily) {
+        names.windows.preferredSubfamily = fontNamesWindows.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily;
     }
 
     const languageTags = [];
