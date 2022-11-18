@@ -59,7 +59,42 @@ function Font(options) {
         checkArgument(options.descender <= 0, 'When creating a new Font object, negative descender value is required.');
 
         // OS X will complain if the names are empty, so we put a single space everywhere by default.
-        this.names = {
+        this.names = {};
+        this.names.unicode = {
+            fontFamily: {en: options.familyName || ' '},
+            fontSubfamily: {en: options.styleName || ' '},
+            fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
+            // postScriptName may not contain any whitespace
+            postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
+            designer: {en: options.designer || ' '},
+            designerURL: {en: options.designerURL || ' '},
+            manufacturer: {en: options.manufacturer || ' '},
+            manufacturerURL: {en: options.manufacturerURL || ' '},
+            license: {en: options.license || ' '},
+            licenseURL: {en: options.licenseURL || ' '},
+            version: {en: options.version || 'Version 0.1'},
+            description: {en: options.description || ' '},
+            copyright: {en: options.copyright || ' '},
+            trademark: {en: options.trademark || ' '}
+        };
+        this.names.macintosh = {
+            fontFamily: {en: options.familyName || ' '},
+            fontSubfamily: {en: options.styleName || ' '},
+            fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
+            // postScriptName may not contain any whitespace
+            postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
+            designer: {en: options.designer || ' '},
+            designerURL: {en: options.designerURL || ' '},
+            manufacturer: {en: options.manufacturer || ' '},
+            manufacturerURL: {en: options.manufacturerURL || ' '},
+            license: {en: options.license || ' '},
+            licenseURL: {en: options.licenseURL || ' '},
+            version: {en: options.version || 'Version 0.1'},
+            description: {en: options.description || ' '},
+            copyright: {en: options.copyright || ' '},
+            trademark: {en: options.trademark || ' '}
+        };
+        this.names.windows = {
             fontFamily: {en: options.familyName || ' '},
             fontSubfamily: {en: options.styleName || ' '},
             fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
@@ -438,7 +473,7 @@ Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
  * @return {string}
  */
 Font.prototype.getEnglishName = function(name) {
-    const translations = this.names[name];
+    const translations = (this.names.unicode || this.names.macintosh || this.names.windows)[name];
     if (translations) {
         return translations.en;
     }

@@ -1690,8 +1690,14 @@
 	        var k = parseInt(keys[i], 0);
 	        var v = m[k];
 	        // Value comes before the key.
-	        d = d.concat(encode.OPERAND(v.value, v.type));
-	        d = d.concat(encode.OPERATOR(k));
+	        var enc1 = encode.OPERAND(v.value, v.type);
+	        var enc2 = encode.OPERATOR(k);
+	        for (var j = 0; j < enc1.length; j++) {
+	            d.push(enc1[j]);
+	        }
+	        for (var j$1 = 0; j$1 < enc2.length; j$1++) {
+	            d.push(enc2[j$1]);
+	        }
 	    }
 
 	    return d;
@@ -1727,19 +1733,34 @@
 	    if (Array.isArray(type)) {
 	        for (var i = 0; i < type.length; i += 1) {
 	            check.argument(v.length === type.length, 'Not enough arguments given for type' + type);
-	            d = d.concat(encode.OPERAND(v[i], type[i]));
+	            var enc1 = encode.OPERAND(v[i], type[i]);
+	            for (var j = 0; j < enc1.length; j++) {
+	                d.push(enc1[j]);
+	            }
 	        }
 	    } else {
 	        if (type === 'SID') {
-	            d = d.concat(encode.NUMBER(v));
+	            var enc1$1 = encode.NUMBER(v);
+	            for (var j$1 = 0; j$1 < enc1$1.length; j$1++) {
+	                d.push(enc1$1[j$1]);
+	            }
 	        } else if (type === 'offset') {
 	            // We make it easy for ourselves and always encode offsets as
 	            // 4 bytes. This makes offset calculation for the top dict easier.
-	            d = d.concat(encode.NUMBER32(v));
+	            var enc1$2 = encode.NUMBER32(v);
+	            for (var j$2 = 0; j$2 < enc1$2.length; j$2++) {
+	                d.push(enc1$2[j$2]);
+	            }
 	        } else if (type === 'number') {
-	            d = d.concat(encode.NUMBER(v));
+	            var enc1$3 = encode.NUMBER(v);
+	            for (var j$3 = 0; j$3 < enc1$3.length; j$3++) {
+	                d.push(enc1$3[j$3]);
+	            }
 	        } else if (type === 'real') {
-	            d = d.concat(encode.REAL(v));
+	            var enc1$4 = encode.REAL(v);
+	            for (var j$4 = 0; j$4 < enc1$4.length; j$4++) {
+	                d.push(enc1$4[j$4]);
+	            }
 	        } else {
 	            throw new Error('Unknown operand type ' + type);
 	            // FIXME Add support for booleans
@@ -1774,7 +1795,10 @@
 
 	    for (var i = 0; i < length; i += 1) {
 	        var op = ops[i];
-	        d = d.concat(encode[op.type](op.value));
+	        var enc1 = encode[op.type](op.value);
+	        for (var j = 0; j < enc1.length; j++) {
+	            d.push(enc1[j]);
+	        }
 	    }
 
 	    if (wmm) {
@@ -1841,10 +1865,12 @@
 
 	        if (field.type === 'TABLE') {
 	            subtableOffsets.push(d.length);
-	            d = d.concat([0, 0]);
+	            d.push(0, 0);
 	            subtables.push(bytes);
 	        } else {
-	            d = d.concat(bytes);
+	            for (var j = 0; j < bytes.length; j++) {
+	                d.push(bytes[j]);
+	            }
 	        }
 	    }
 
@@ -1854,7 +1880,9 @@
 	        check.argument(offset < 65536, 'Table ' + table.tableName + ' too big.');
 	        d[o] = offset >> 8;
 	        d[o + 1] = offset & 0xff;
-	        d = d.concat(subtables[i$1]);
+	        for (var j$1 = 0; j$1 < subtables[i$1].length; j$1++) {
+	            d.push(subtables[i$1][j$1]);
+	        }
 	    }
 
 	    return d;
@@ -3355,6 +3383,7 @@
 	        }
 	    };
 	}
+
 	/**
 	 * @typedef GlyphOptions
 	 * @type Object
@@ -3366,6 +3395,7 @@
 	 * @property {number} [xMax]
 	 * @property {number} [yMax]
 	 * @property {number} [advanceWidth]
+	 * @property {number} [leftSideBearing]
 	 */
 
 	// A Glyph is an individual mark that often corresponds to a character.
@@ -3416,6 +3446,10 @@
 
 	    if ('advanceWidth' in options) {
 	        this.advanceWidth = options.advanceWidth;
+	    }
+
+	    if ('leftSideBearing' in options) {
+	        this.leftSideBearing = options.leftSideBearing;
 	    }
 
 	    // The path for a glyph is the most memory intensive, and is bound as a value
@@ -6035,6 +6069,17 @@
 	    return undefined;
 	}
 
+	var platforms = {
+	    0: 'unicode',
+	    1: 'macintosh',
+	    2: 'reserved',
+	    3: 'windows'
+	};
+
+	function getPlatform(platformID) {
+	    return platforms[platformID];
+	}
+
 	// Parse the naming `name` table.
 	// FIXME: Format 1 additional fields are not supported yet.
 	// ltag is the content of the `ltag' table, such as ['en', 'zh-Hans', 'de-CH-1904'].
@@ -6054,7 +6099,8 @@
 	        var offset = p.parseUShort();
 	        var language = getLanguageCode(platformID, languageID, ltag);
 	        var encoding = getEncoding(platformID, encodingID, languageID);
-	        if (encoding !== undefined && language !== undefined) {
+	        var platformName = getPlatform(platformID);
+	        if (encoding !== undefined && language !== undefined && platformName !== undefined) {
 	            var text = (void 0);
 	            if (encoding === utf16) {
 	                text = decode.UTF16(data, stringOffset + offset, byteLength);
@@ -6063,9 +6109,13 @@
 	            }
 
 	            if (text) {
-	                var translations = name[property];
+	                var platform = name[platformName];
+	                if (platform === undefined) {
+	                    platform = name[platformName] = {};
+	                }
+	                var translations = platform[property];
 	                if (translations === undefined) {
-	                    translations = name[property] = {};
+	                    translations = platform[property] = {};
 	                }
 
 	                translations[language] = text;
@@ -6142,80 +6192,90 @@
 	}
 
 	function makeNameTable(names, ltag) {
-	    var nameID;
-	    var nameIDs = [];
-
-	    var namesWithNumericKeys = {};
-	    var nameTableIds = reverseDict(nameTableNames);
-	    for (var key in names) {
-	        var id = nameTableIds[key];
-	        if (id === undefined) {
-	            id = key;
-	        }
-
-	        nameID = parseInt(id);
-
-	        if (isNaN(nameID)) {
-	            throw new Error('Name table entry "' + key + '" does not exist, see nameTableNames for complete list.');
-	        }
-
-	        namesWithNumericKeys[nameID] = names[key];
-	        nameIDs.push(nameID);
-	    }
-
+	    var platformNameIds = reverseDict(platforms);
 	    var macLanguageIds = reverseDict(macLanguages);
 	    var windowsLanguageIds = reverseDict(windowsLanguages);
 
 	    var nameRecords = [];
 	    var stringPool = [];
 
-	    for (var i = 0; i < nameIDs.length; i++) {
-	        nameID = nameIDs[i];
-	        var translations = namesWithNumericKeys[nameID];
-	        for (var lang in translations) {
-	            var text = translations[lang];
+	    for (var platform in names) {
+	        var nameID = (void 0);
+	        var nameIDs = [];
 
-	            // For MacOS, we try to emit the name in the form that was introduced
-	            // in the initial version of the TrueType spec (in the late 1980s).
-	            // However, this can fail for various reasons: the requested BCP 47
-	            // language code might not have an old-style Mac equivalent;
-	            // we might not have a codec for the needed character encoding;
-	            // or the name might contain characters that cannot be expressed
-	            // in the old-style Macintosh encoding. In case of failure, we emit
-	            // the name in a more modern fashion (Unicode encoding with BCP 47
-	            // language tags) that is recognized by MacOS 10.5, released in 2009.
-	            // If fonts were only read by operating systems, we could simply
-	            // emit all names in the modern form; this would be much easier.
-	            // However, there are many applications and libraries that read
-	            // 'name' tables directly, and these will usually only recognize
-	            // the ancient form (silently skipping the unrecognized names).
-	            var macPlatform = 1;  // Macintosh
-	            var macLanguage = macLanguageIds[lang];
-	            var macScript = macLanguageToScript[macLanguage];
-	            var macEncoding = getEncoding(macPlatform, macScript, macLanguage);
-	            var macName = encode.MACSTRING(text, macEncoding);
-	            if (macName === undefined) {
-	                macPlatform = 0;  // Unicode
-	                macLanguage = ltag.indexOf(lang);
-	                if (macLanguage < 0) {
-	                    macLanguage = ltag.length;
-	                    ltag.push(lang);
-	                }
+	        var namesWithNumericKeys = {};
+	        var nameTableIds = reverseDict(nameTableNames);
 
-	                macScript = 4;  // Unicode 2.0 and later
-	                macName = encode.UTF16(text);
+	        var platformID = platformNameIds[platform];
+
+	        for (var key in names[platform]) {
+	            var id = nameTableIds[key];
+	            if (id === undefined) {
+	                id = key;
 	            }
 
-	            var macNameOffset = addStringToPool(macName, stringPool);
-	            nameRecords.push(makeNameRecord(macPlatform, macScript, macLanguage,
-	                                            nameID, macName.length, macNameOffset));
+	            nameID = parseInt(id);
 
-	            var winLanguage = windowsLanguageIds[lang];
-	            if (winLanguage !== undefined) {
-	                var winName = encode.UTF16(text);
-	                var winNameOffset = addStringToPool(winName, stringPool);
-	                nameRecords.push(makeNameRecord(3, 1, winLanguage,
-	                                                nameID, winName.length, winNameOffset));
+	            if (isNaN(nameID)) {
+	                throw new Error('Name table entry "' + key + '" does not exist, see nameTableNames for complete list.');
+	            }
+
+	            namesWithNumericKeys[nameID] = names[platform][key];
+	            nameIDs.push(nameID);
+	        }
+
+	        for (var i = 0; i < nameIDs.length; i++) {
+	            nameID = nameIDs[i];
+	            var translations = namesWithNumericKeys[nameID];
+	            for (var lang in translations) {
+	                var text = translations[lang];
+
+	                // For MacOS, we try to emit the name in the form that was introduced
+	                // in the initial version of the TrueType spec (in the late 1980s).
+	                // However, this can fail for various reasons: the requested BCP 47
+	                // language code might not have an old-style Mac equivalent;
+	                // we might not have a codec for the needed character encoding;
+	                // or the name might contain characters that cannot be expressed
+	                // in the old-style Macintosh encoding. In case of failure, we emit
+	                // the name in a more modern fashion (Unicode encoding with BCP 47
+	                // language tags) that is recognized by MacOS 10.5, released in 2009.
+	                // If fonts were only read by operating systems, we could simply
+	                // emit all names in the modern form; this would be much easier.
+	                // However, there are many applications and libraries that read
+	                // 'name' tables directly, and these will usually only recognize
+	                // the ancient form (silently skipping the unrecognized names).
+	                if (platformID === 1 || platformID === 0) {
+	                    var macLanguage = macLanguageIds[lang];
+	                    var macScript = macLanguageToScript[macLanguage];
+	                    var macEncoding = getEncoding(platformID, macScript, macLanguage);
+	                    var macName = encode.MACSTRING(text, macEncoding);
+	                    if (platformID === 0) {
+	                        macLanguage = ltag.indexOf(lang);
+	                        if (macLanguage < 0) {
+	                            macLanguage = ltag.length;
+	                            ltag.push(lang);
+	                        }
+
+	                        macScript = 4;  // Unicode 2.0 and later
+	                        macName = encode.UTF16(text);
+	                    }
+
+	                    if (macName !== undefined) {
+	                        var macNameOffset = addStringToPool(macName, stringPool);
+	                        nameRecords.push(makeNameRecord(platformID, macScript,
+	                                macLanguage, nameID, macName.length, macNameOffset));
+	                    }
+	                }
+
+	                if (platformID === 3) {
+	                    var winLanguage = windowsLanguageIds[lang];
+	                    if (winLanguage !== undefined) {
+	                        var winName = encode.UTF16(text);
+	                        var winNameOffset = addStringToPool(winName, stringPool);
+	                        nameRecords.push(makeNameRecord(3, 1, winLanguage,
+	                                                    nameID, winName.length, winNameOffset));
+	                    }
+	                }
 	            }
 	        }
 	    }
@@ -6564,7 +6624,7 @@
 	        return {
 	            substFormat: 1,
 	            coverage: this.parsePointer(Parser.coverage),
-	            deltaGlyphId: this.parseUShort()
+	            deltaGlyphId: this.parseShort()
 	        };
 	    } else if (substFormat === 2) {
 	        return {
@@ -6768,7 +6828,7 @@
 	        return new table.Table('substitutionTable', [
 	            {name: 'substFormat', type: 'USHORT', value: 1},
 	            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
-	            {name: 'deltaGlyphID', type: 'USHORT', value: subtable.deltaGlyphId}
+	            {name: 'deltaGlyphID', type: 'SHORT', value: subtable.deltaGlyphId}
 	        ]);
 	    } else {
 	        return new table.Table('substitutionTable', [
@@ -6896,6 +6956,8 @@
 	        var tag = p.parseTag();
 	        var dataOffset = p.parseULong();
 	        var dataLength = p.parseULong();
+	        if (tag === 'appl' || tag === 'bild')
+	           { continue; }
 	        var text = decode.UTF8(data, start + dataOffset, dataLength);
 
 	        tags[tag] = text;
@@ -7274,20 +7336,60 @@
 	        names[n] = font.names[n];
 	    }
 
-	    if (!names.uniqueID) {
-	        names.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
+	    names.unicode = names.unicode || {};
+	    names.macintosh = names.macintosh || {};
+	    names.windows = names.windows || {};
+
+	    var fontNamesUnicode = font.names.unicode || {};
+	    var fontNamesMacintosh = font.names.macintosh || {};
+	    var fontNamesWindows = font.names.windows || {};
+
+	    if (!names.unicode.uniqueID) {
+	        names.unicode.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
 	    }
 
-	    if (!names.postScriptName) {
-	        names.postScriptName = {en: postScriptName};
+	    if (!names.macintosh.uniqueID) {
+	        names.macintosh.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
 	    }
 
-	    if (!names.preferredFamily) {
-	        names.preferredFamily = font.names.fontFamily;
+	    if (!names.windows.uniqueID) {
+	        names.windows.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
 	    }
 
-	    if (!names.preferredSubfamily) {
-	        names.preferredSubfamily = font.names.fontSubfamily;
+	    if (!names.unicode.postScriptName) {
+	        names.unicode.postScriptName = {en: postScriptName};
+	    }
+
+	    if (!names.macintosh.postScriptName) {
+	        names.macintosh.postScriptName = {en: postScriptName};
+	    }
+
+	    if (!names.windows.postScriptName) {
+	        names.windows.postScriptName = {en: postScriptName};
+	    }
+
+	    if (!names.unicode.preferredFamily) {
+	        names.unicode.preferredFamily = fontNamesUnicode.fontFamily || fontNamesMacintosh.fontFamily || fontNamesWindows.fontFamily;
+	    }
+
+	    if (!names.macintosh.preferredFamily) {
+	        names.macintosh.preferredFamily = fontNamesMacintosh.fontFamily || fontNamesUnicode.fontFamily || fontNamesWindows.fontFamily;
+	    }
+
+	    if (!names.windows.preferredFamily) {
+	        names.windows.preferredFamily = fontNamesWindows.fontFamily || fontNamesUnicode.fontFamily || fontNamesMacintosh.fontFamily;
+	    }
+
+	    if (!names.unicode.preferredSubfamily) {
+	        names.unicode.preferredSubfamily = fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily || fontNamesWindows.fontSubFamily;
+	    }
+
+	    if (!names.macintosh.preferredSubfamily) {
+	        names.macintosh.preferredSubfamily = fontNamesMacintosh.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesWindows.fontSubFamily;
+	    }
+
+	    if (!names.windows.preferredSubfamily) {
+	        names.windows.preferredSubfamily = fontNamesWindows.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily;
 	    }
 
 	    var languageTags = [];
@@ -8138,7 +8240,7 @@
 	}
 
 	function arrayBufferToNodeBuffer(ab) {
-	    var buffer = new Buffer(ab.byteLength);
+	    var buffer = Buffer.alloc(ab.byteLength);
 	    var view = new Uint8Array(ab);
 	    for (var i = 0; i < buffer.length; ++i) {
 	        buffer[i] = view[i];
@@ -12484,7 +12586,7 @@
 	        tag: query.tag, script: query.script
 	    });
 	    if (!feature) { return new Error(
-	        "font '" + (this.font.names.fullName.en) + "' " +
+	        "font '" + ((this.font.names.unicode || this.font.names.macintosh).fullName.en) + "' " +
 	        "doesn't support feature '" + (query.tag) + "' " +
 	        "for script '" + (query.script) + "'."
 	    ); }
@@ -13227,7 +13329,42 @@
 	        checkArgument(options.descender <= 0, 'When creating a new Font object, negative descender value is required.');
 
 	        // OS X will complain if the names are empty, so we put a single space everywhere by default.
-	        this.names = {
+	        this.names = {};
+	        this.names.unicode = {
+	            fontFamily: {en: options.familyName || ' '},
+	            fontSubfamily: {en: options.styleName || ' '},
+	            fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
+	            // postScriptName may not contain any whitespace
+	            postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
+	            designer: {en: options.designer || ' '},
+	            designerURL: {en: options.designerURL || ' '},
+	            manufacturer: {en: options.manufacturer || ' '},
+	            manufacturerURL: {en: options.manufacturerURL || ' '},
+	            license: {en: options.license || ' '},
+	            licenseURL: {en: options.licenseURL || ' '},
+	            version: {en: options.version || 'Version 0.1'},
+	            description: {en: options.description || ' '},
+	            copyright: {en: options.copyright || ' '},
+	            trademark: {en: options.trademark || ' '}
+	        };
+	        this.names.macintosh = {
+	            fontFamily: {en: options.familyName || ' '},
+	            fontSubfamily: {en: options.styleName || ' '},
+	            fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
+	            // postScriptName may not contain any whitespace
+	            postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
+	            designer: {en: options.designer || ' '},
+	            designerURL: {en: options.designerURL || ' '},
+	            manufacturer: {en: options.manufacturer || ' '},
+	            manufacturerURL: {en: options.manufacturerURL || ' '},
+	            license: {en: options.license || ' '},
+	            licenseURL: {en: options.licenseURL || ' '},
+	            version: {en: options.version || 'Version 0.1'},
+	            description: {en: options.description || ' '},
+	            copyright: {en: options.copyright || ' '},
+	            trademark: {en: options.trademark || ' '}
+	        };
+	        this.names.windows = {
 	            fontFamily: {en: options.familyName || ' '},
 	            fontSubfamily: {en: options.styleName || ' '},
 	            fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
@@ -13608,7 +13745,7 @@
 	 * @return {string}
 	 */
 	Font.prototype.getEnglishName = function(name) {
-	    var translations = this.names[name];
+	    var translations = (this.names.unicode || this.names.macintosh || this.names.windows)[name];
 	    if (translations) {
 	        return translations.en;
 	    }
@@ -14329,6 +14466,9 @@
 
 	        numTables = parse.getUShort(data, 12);
 	        tableEntries = parseWOFFTableEntries(data, numTables);
+	    } else if (signature === 'wOF2') {
+	        var issue = 'https://github.com/opentypejs/opentype.js/issues/183#issuecomment-1147228025';
+	        throw new Error('WOFF2 require an external decompressor library, see examples at: ' + issue);
 	    } else {
 	        throw new Error('Unsupported OpenType signature ' + signature);
 	    }
