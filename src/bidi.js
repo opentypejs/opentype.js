@@ -157,7 +157,7 @@ function applyArabicPresentationForms() {
  * Apply required arabic ligatures
  */
 function applyArabicRequireLigatures() {
-    if (! this.hasFeatureEnabled('arab', 'rlig')) return;
+    if (!this.hasFeatureEnabled('arab', 'rlig')) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('arabicWord');
     ranges.forEach(range => {
@@ -169,7 +169,7 @@ function applyArabicRequireLigatures() {
  * Apply required arabic ligatures
  */
 function applyLatinLigatures() {
-    if (! this.hasFeatureEnabled('latn', 'liga')) return;
+    if (!this.hasFeatureEnabled('latn', 'liga')) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('latinWord');
     ranges.forEach(range => {
@@ -187,7 +187,7 @@ function applyThaiFeatures() {
         if (this.hasFeatureEnabled('thai', 'liga')) thaiLigatures.call(this, range);
         if (this.hasFeatureEnabled('thai', 'ccmp')) thaiGlyphComposition.call(this, range);
     });
-    
+
 }
 
 /**
@@ -200,7 +200,7 @@ Bidi.prototype.checkContextReady = function (contextId) {
 
 /**
  * Apply features to registered contexts
- * 
+ *
  * - A Glyph Composition (ccmp) feature should be always applied
  * https://learn.microsoft.com/en-us/typography/opentype/spec/features_ae#tag-ccmp
  */
@@ -222,7 +222,7 @@ Bidi.prototype.applyFeaturesToContexts = function () {
 
 /**
  * Check whatever feature is successfully enabled for a script
- * @param {string} script 
+ * @param {string} script
  * @param {string} tag feature name
  * @returns {boolean}
  */

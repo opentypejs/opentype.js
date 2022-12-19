@@ -90,7 +90,7 @@ describe('bidi.js', function() {
     describe('thai scripts', () => {
 
         let thaiFont;
-        let bidiThai; 
+        let bidiThai;
 
         before(()=> {
             thaiFont = loadSync('./fonts/NotoSansThai-Medium.ttf');
@@ -98,7 +98,7 @@ describe('bidi.js', function() {
             bidiThai.registerModifier(
                 'glyphIndex', null, token => thaiFont.charToGlyphIndex(token.char)
             );
-            const requiredThaiFeatures = [{ 
+            const requiredThaiFeatures = [{
                 script: 'thai',
                 tags: ['liga', 'ccmp']
             }];
@@ -107,14 +107,14 @@ describe('bidi.js', function() {
 
         describe('thai features', () => {
             it('should apply glyph composition', () => {
-                let glyphIndexes = bidiThai.getTextGlyphs('่ํ');                
+                let glyphIndexes = bidiThai.getTextGlyphs('่ํ');
                 assert.deepEqual(glyphIndexes, [63]);
             });
 
             it('should apply glyph ligatures', () => {
-                let glyphIndexes = bidiThai.getTextGlyphs('ฤๅ');                
+                let glyphIndexes = bidiThai.getTextGlyphs('ฤๅ');
                 assert.deepEqual(glyphIndexes, [84]);
-            }); 
+            });
         });
 
         describe('thai contexts', () => {
