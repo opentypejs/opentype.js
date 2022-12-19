@@ -77,12 +77,47 @@ subtableParsers[2] = function parseLookup2() {
 };
 
 subtableParsers[3] = function parseLookup3() { return { error: 'GPOS Lookup 3 not supported' }; };
-subtableParsers[4] = function parseLookup4() { return { error: 'GPOS Lookup 4 not supported' }; };
+
+// https://learn.microsoft.com/en-us/typography/opentype/spec/gpos#lookup-type-4-mark-to-base-attachment-positioning-subtable
+subtableParsers[4] = function parseLookup4() {
+    const start = this.offset + this.relativeOffset;
+    const posFormat = this.parseUShort();
+    check.assert(posFormat === 1, '0x' + start.toString(16) + ': GPOS lookup type 4 format must be 1.');
+    const markCoverage = this.parsePointer(Parser.coverage);
+    const baseCoverage = this.parsePointer(Parser.coverage);
+    const markClassCount = this.parseUShort();
+    const markArray = this.parsePointer(function() {
+        return this.parseMarkArray();
+    });
+    const baseArray = this.parsePointer(function() {
+        return this.parseBaseArray(markClassCount);
+    });
+    return {
+        posFormat,
+        markCoverage,
+        baseCoverage,
+        markArray,
+        baseArray
+    };
+};
+
 subtableParsers[5] = function parseLookup5() { return { error: 'GPOS Lookup 5 not supported' }; };
 subtableParsers[6] = function parseLookup6() { return { error: 'GPOS Lookup 6 not supported' }; };
 subtableParsers[7] = function parseLookup7() { return { error: 'GPOS Lookup 7 not supported' }; };
 subtableParsers[8] = function parseLookup8() { return { error: 'GPOS Lookup 8 not supported' }; };
-subtableParsers[9] = function parseLookup9() { return { error: 'GPOS Lookup 9 not supported' }; };
+
+// https://learn.microsoft.com/en-us/typography/opentype/spec/gpos#lookuptype-9-extension-positioning
+subtableParsers[9] = function parseLookup9() {
+    const start = this.offset + this.relativeOffset;
+    const posFormat = this.parseUShort();
+    check.assert(posFormat === 1, '0x' + start.toString(16) + ': GPOS lookup type 9 format must be 1.');
+    const extensionLookupType = this.parseUShort();
+    return {
+        posFormat,
+        extensionLookupType,
+        extension: this.parsePointer32(subtableParsers[extensionLookupType])
+    };
+};
 
 // https://docs.microsoft.com/en-us/typography/opentype/spec/gpos
 function parseGposTable(data, start) {
