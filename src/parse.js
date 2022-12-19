@@ -480,14 +480,14 @@ Parser.prototype.parseCoverage = function() {
 /**
  * Parse a BaseArray Table in GPOS table
  * https://learn.microsoft.com/en-us/typography/opentype/otspec191alpha/gpos#lookup-type-4-mark-to-base-attachment-positioning-subtable
- * 
- * @param {Number} marksClassCount 
+ *
+ * @param {Number} marksClassCount
  * @returns {Array}
  */
 Parser.prototype.parseBaseArray = function(marksClassCount) {
     const count = this.parseUShort();
     return this.parseList(count, Parser.list(
-        marksClassCount, 
+        marksClassCount,
         Parser.pointer(Parser.anchor)
     ));
 };
@@ -495,7 +495,7 @@ Parser.prototype.parseBaseArray = function(marksClassCount) {
 /**
  * Parse a MarkArray Table in GPOS table
  * https://learn.microsoft.com/en-us/typography/opentype/otspec191alpha/gpos_delta#mark-array-table
- * 
+ *
  * @returns {Array}
  */
 Parser.prototype.parseMarkArray = function() {
@@ -509,13 +509,13 @@ Parser.prototype.parseMarkArray = function() {
 /**
  * Parse a an anchor definition Table in GPOS table
  * https://learn.microsoft.com/en-us/typography/opentype/otspec191alpha/gpos_delta#anchor-tables
- * 
+ *
  * @returns {Object} Anchor object representing format type
  */
 Parser.prototype.parseAnchorPoint = function() {
     const startOffset = this.offset + this.relativeOffset;
     const format = this.parseUShort();
-    switch(format) {
+    switch (format) {
         case 1:
             return {
                 format,
@@ -537,7 +537,7 @@ Parser.prototype.parseAnchorPoint = function() {
                 format,
                 xCoordinate: this.parseShort(),
                 yCoordinate: this.parseShort(),
-                xDevice: 0x00, 
+                xDevice: 0x00,
                 yDevice: 0x00,
             };
     }

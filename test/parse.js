@@ -112,7 +112,7 @@ describe('parse.js', function() {
             ' 0000  000E ' + // mark1 class and its anchor offset
             ' 0001  001A ' + // mark2 class and its anchor offset
             ' 0000  0014 ' + // mark3 class and its anchor offset
-            ' 0001 00BD 012D ' +   
+            ' 0001 00BD 012D ' +
             ' 0001 00DD 012E ' +
             ' 0002 00DF FED1 0001';
 
@@ -132,7 +132,7 @@ describe('parse.js', function() {
                     yCoordinate: -303,
                     anchorPoint: 1
                 }
-            },{
+            }, {
                 class: 0,
                 attachmentPoint: {
                     format: 1,
@@ -151,7 +151,7 @@ describe('parse.js', function() {
             const data = '0002 ' + // baseCount
             ' 000E 0014 001E' + // baseRecord1 anchor offsets foreach class anchor point
             ' 0014 000E 001E' + // baseRecord2 anchor offsets foreach class anchor point
-            ' 0001 00BD 012D ' +    // 
+            ' 0001 00BD 012D ' +    //
             ' 0003 00BD 012D 0000 0000 ' +
             ' 0002 00DF FED1 0001';
 
@@ -178,7 +178,7 @@ describe('parse.js', function() {
                     }
                 ],
                 [
-                    
+
                     {
                         format: 3,
                         xCoordinate: 189,
@@ -207,7 +207,7 @@ describe('parse.js', function() {
 
     describe('parseAnchorPoint', () => {
         it('should parse a AnchorTableFormat1 table', () => {
-            const data =' 0001 00BD 012D';
+            const data = ' 0001 00BD 012D';
             const p = new Parser(unhex(data), 0);
             assert.deepEqual(p.parseAnchorPoint(), {
                 format: 1,
@@ -217,7 +217,7 @@ describe('parse.js', function() {
         });
 
         it('should parse a AnchorTableFormat2 table', () => {
-            const data =' 0002 00DF FED1 0003';
+            const data = ' 0002 00DF FED1 0003';
             const p = new Parser(unhex(data), 0);
             assert.deepEqual(p.parseAnchorPoint(), {
                 format: 2,
@@ -228,7 +228,7 @@ describe('parse.js', function() {
         });
 
         it('should parse a AnchorTableFormat3 table', () => {
-            const data =' 0003 00BD 012D 0000 0000';
+            const data = ' 0003 00BD 012D 0000 0000';
             const p = new Parser(unhex(data), 0);
             assert.deepEqual(p.parseAnchorPoint(), {
                 format: 3,

@@ -8,9 +8,9 @@ function kern(lookupTable, glyphs) {
         const glyph = glyphs[i];
         coords[i] = { xAdvance: 0, yAdvance: 0 };
         if (i < glyphs.length - 1) {
-            coords[i] = { 
-                xAdvance: this.position.getKerningValue([lookupTable], glyph.index, glyphs[i + 1].index), 
-                yAdvance: 0 
+            coords[i] = {
+                xAdvance: this.position.getKerningValue([lookupTable], glyph.index, glyphs[i + 1].index),
+                yAdvance: 0
             };
         }
     }

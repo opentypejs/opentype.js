@@ -9,12 +9,12 @@ function mark(lookupTable, glyphs) {
         coords[i] = { xAdvance: 0, yAdvance: 0 };
         if (i > 0) {
             const coordinatedPair = this.position.getMarkToBaseAttachment([lookupTable], glyph.index, glyphs[i - 1].index);
-            if (coordinatedPair) { 
+            if (coordinatedPair) {
                 const { attachmentMarkPoint, baseMarkPoint } = coordinatedPair;
                 // Base mark's advanceWidth must be ignored to have a proper positiong for the attachment mark
-                coords[i] = { 
-                    xAdvance: baseMarkPoint.xCoordinate - attachmentMarkPoint.xCoordinate - glyphs[i - 1].advanceWidth,  
-                    yAdvance: baseMarkPoint.yCoordinate - attachmentMarkPoint.yCoordinate 
+                coords[i] = {
+                    xAdvance: baseMarkPoint.xCoordinate - attachmentMarkPoint.xCoordinate - glyphs[i - 1].advanceWidth,
+                    yAdvance: baseMarkPoint.yCoordinate - attachmentMarkPoint.yCoordinate
                 };
             }
         }

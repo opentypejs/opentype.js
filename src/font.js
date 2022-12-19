@@ -160,7 +160,7 @@ Font.prototype.updateFeatures = function (options) {
         if (configureable.includes(feature.script)) {
             return {
                 script: feature.script,
-                tags: feature.tags.filter(tag => ! options || options[tag])
+                tags: feature.tags.filter(tag => !options || options[tag])
             };
         }
         return feature;
@@ -189,7 +189,7 @@ Font.prototype.stringToGlyphs = function(s, options) {
     // Create and register 'glyphIndex' state modifier
     const charToGlyphIndexMod = token => this.charToGlyphIndex(token.char);
     bidi.registerModifier('glyphIndex', null, charToGlyphIndexMod);
-    
+
     const features = this.getFeaturesConfig(options);
     bidi.applyFeatures(this, features);
 
@@ -309,7 +309,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     for (let i = 0; i < glyphs.length; i += 1) {
         const glyph = glyphs[i];
         const { xAdvance, yAdvance } = glyphsPositions[i];
-       
+
         callback.call(this, glyph, x + (xAdvance * fontScale), y + (yAdvance * fontScale), fontSize, options);
 
         if (glyph.advanceWidth) {
@@ -327,12 +327,12 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
 
 /**
  * Returns array of glyphs' relative position advances for a given sequence.
- * 
+ *
  * Supported features:
  * - kern - kerning
  * - mark - mark to base attachments
- * 
- * @param {opentype.Glyph[]} glyphs 
+ *
+ * @param {opentype.Glyph[]} glyphs
  * @returns {Object[]} array of { xAdvance: number, yAdvance: number } for a glyph ordered by their index
  */
 Font.prototype.getGlyphsPositions = function(glyphs, options) {
@@ -345,18 +345,18 @@ Font.prototype.getGlyphsPositions = function(glyphs, options) {
         .reduce((tags, feature) => tags.concat(feature.tags), []);
 
     // Force a kern feature
-    if (options && options.kerning) features.push('kern'); 
+    if (options && options.kerning) features.push('kern');
 
     const glyphsPositions = [];
     for (let i = 0; i < glyphs.length; i += 1) {
-        glyphsPositions[i] = { xAdvance:0, yAdvance:0 };
+        glyphsPositions[i] = { xAdvance: 0, yAdvance: 0 };
     }
 
     let kernLookupTableProcessed = false;
     const featuresLookups = this.position.getPositionFeatures(features, script, options.language);
     featuresLookups.forEach(lookupTable => {
         let pos = [];
-        switch(lookupTable.feature) {
+        switch (lookupTable.feature) {
             case 'kern':
                 pos = kern.call(this, lookupTable, glyphs);
                 kernLookupTableProcessed = true;
@@ -376,7 +376,7 @@ Font.prototype.getGlyphsPositions = function(glyphs, options) {
     // Support for the 'kern' table glyph pairs
     if (options.kerning && kernLookupTableProcessed === false) {
         for (let i = 0; i < glyphs.length - 1; i += 1) {
-            glyphsPositions[i].xAdvance += this.getKerningValue(glyphs[i], glyphs[i+1]);
+            glyphsPositions[i].xAdvance += this.getKerningValue(glyphs[i], glyphs[i + 1]);
         }
     }
     return glyphsPositions;

@@ -155,7 +155,7 @@ describe('font.js', function() {
                     features: [],
                     lookups: []
                 };
-                
+
                 font.kerningPairs = {
                     [`${ffGlyph.index},${ffiGlyph.index}`]: 18,
                     [`${ffGlyph.index},${fGlyph.index}`]: -9
@@ -164,10 +164,10 @@ describe('font.js', function() {
 
             it('supports a kern table if no kern lookup tables set', () => {
                 const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: true });
-                assert.deepStrictEqual(result, [ { xAdvance: 18, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 } ]);
+                assert.deepStrictEqual(result, [{ xAdvance: 18, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 }]);
 
                 const result2 = font.getGlyphsPositions([ffGlyph, fGlyph], { kerning: true });
-                assert.deepStrictEqual(result2, [ { xAdvance: -9, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 } ]);
+                assert.deepStrictEqual(result2, [{ xAdvance: -9, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 }]);
             });
 
             it('supports a kern lookup tables', () => {
@@ -186,19 +186,19 @@ describe('font.js', function() {
                     }],
                     lookups: [
                         {
-                            'lookupType': 2,
-                            'lookupFlag': 0,
-                            'subtables': [{
-                                'posFormat': 1,
-                                'coverage': {
-                                    'format': 1,
-                                    'glyphs': [3]
+                            lookupType: 2,
+                            lookupFlag: 0,
+                            subtables: [{
+                                posFormat: 1,
+                                coverage: {
+                                    format: 1,
+                                    glyphs: [3]
                                 },
-                                'pairSets': [
+                                pairSets: [
                                     [{
-                                        'secondGlyph': 5,
-                                        'value1': {
-                                            'xAdvance': -91
+                                        secondGlyph: 5,
+                                        value1: {
+                                            xAdvance: -91
                                         }
                                     }]
                                 ]
@@ -206,17 +206,17 @@ describe('font.js', function() {
                         }
                     ]
                 };
-                
+
                 const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: true });
-                assert.deepStrictEqual(result, [ { xAdvance: -91, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 } ]);
+                assert.deepStrictEqual(result, [{ xAdvance: -91, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 }]);
             });
 
             it('can be disabled with options.kerning flag', () => {
                 const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: false });
-                assert.deepStrictEqual(result, [ { xAdvance: 0, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 } ]);
+                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 }]);
             });
         });
-        
+
         describe('MARK - MarkToBase Attachment', () => {
             beforeEach(() => {
                 font.tables.gpos = {
@@ -239,40 +239,40 @@ describe('font.js', function() {
                         feature: { featureParams: 0, lookupListIndexes: [0]}
                     }],
                     lookups: [{
-                        'lookupType': 4,
-                        'lookupFlag': 0,
-                        'subtables': [{
-                            'posFormat': 1,
-                            'markCoverage': {
-                                'format': 1,
-                                'glyphs': [5]
+                        lookupType: 4,
+                        lookupFlag: 0,
+                        subtables: [{
+                            posFormat: 1,
+                            markCoverage: {
+                                format: 1,
+                                glyphs: [5]
                             },
-                            'baseCoverage': {
-                                'format': 2,
-                                'ranges': [{
-                                    'start': 2,
-                                    'end': 4,
-                                    'index': 0
+                            baseCoverage: {
+                                format: 2,
+                                ranges: [{
+                                    start: 2,
+                                    end: 4,
+                                    index: 0
                                 }]
                             },
-                            'markArray': [{
-                                'class': 0,
-                                'attachmentPoint': {
-                                    'format': 1,
-                                    'xCoordinate': -134,
-                                    'yCoordinate': 812
+                            markArray: [{
+                                class: 0,
+                                attachmentPoint: {
+                                    format: 1,
+                                    xCoordinate: -134,
+                                    yCoordinate: 812
                                 }
                             }],
-                            'baseArray': [
+                            baseArray: [
                                 [{
-                                    'format': 1,
-                                    'xCoordinate': -133,
-                                    'yCoordinate': -500
+                                    format: 1,
+                                    xCoordinate: -133,
+                                    yCoordinate: -500
                                 }],
                                 [{
-                                    'format': 1,
-                                    'xCoordinate': 511,
-                                    'yCoordinate': 91
+                                    format: 1,
+                                    xCoordinate: 511,
+                                    yCoordinate: 91
                                 }]
                             ]
                         }]
@@ -284,7 +284,7 @@ describe('font.js', function() {
 
             it('supports a mark lookup table', () => {
                 const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: true });
-                assert.deepStrictEqual(result, [ { xAdvance: 0, yAdvance: 0 }, { xAdvance: 644, yAdvance: -721 } ]);
+                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 644, yAdvance: -721 }]);
             });
 
             it('supports a mark feature with kern feature', () => {
@@ -294,20 +294,20 @@ describe('font.js', function() {
                 };
 
                 const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: true });
-                assert.deepStrictEqual(result, [ { xAdvance: 32, yAdvance: 0 }, { xAdvance: 644, yAdvance: -721 } ]);
+                assert.deepStrictEqual(result, [{ xAdvance: 32, yAdvance: 0 }, { xAdvance: 644, yAdvance: -721 }]);
             });
 
             it('is enabled by default', () => {
                 const resultDFLT = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: false });
-                assert.deepStrictEqual(resultDFLT, [ { xAdvance: 0, yAdvance: 0 }, { xAdvance: 644, yAdvance: -721 } ]);
+                assert.deepStrictEqual(resultDFLT, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 644, yAdvance: -721 }]);
 
                 const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: false, script: 'arab' });
-                assert.deepStrictEqual(result, [ { xAdvance: 0, yAdvance: 0 }, { xAdvance: 644, yAdvance: -721 } ]);
+                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 644, yAdvance: -721 }]);
             });
 
             it('can be disabled with options.features.mark flag', () => {
                 const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { features: { mark: false } });
-                assert.deepStrictEqual(result, [ { xAdvance: 0, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 } ]);
+                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 }]);
             });
         });
     });

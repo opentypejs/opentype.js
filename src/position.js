@@ -65,7 +65,7 @@ Position.prototype.getKerningValue = function(kerningLookups, leftIndex, rightIn
 };
 
 /**
- * Find a mark to base attachment pair 
+ * Find a mark to base attachment pair
  *
  * @param {integer} markGlyphIndex - attached mark glyph index
  * @param {integer} baseGlyphIndex - base glyph index
@@ -105,18 +105,18 @@ Position.prototype.getKerningTables = function(script, language) {
 };
 
 /**
- * Assembling features into ordered lookup list 
+ * Assembling features into ordered lookup list
  * Assemble all features (including any required feature) for the glyph run’s language system.
- * Assemble all lookups in these features, in LookupList order, removing any duplicates. 
- * 
+ * Assemble all lookups in these features, in LookupList order, removing any duplicates.
+ *
  * https://learn.microsoft.com/en-us/typography/opentype/otspec191alpha/chapter2#lookup-table
- * 
- * @param {string[]} list of requested features  
- * @param {string} script 
- * @param {string} language 
- * @return {Object[]} ordered lookup processing list 
+ *
+ * @param {string[]} list of requested features
+ * @param {string} script
+ * @param {string} language
+ * @return {Object[]} ordered lookup processing list
  */
-Position.prototype.getPositionFeatures = function(features, script, language) {  
+Position.prototype.getPositionFeatures = function(features, script, language) {
     return this.getFeaturesLookups(features, script, language);
 };
 

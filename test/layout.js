@@ -386,7 +386,7 @@ describe('layout.js', function() {
                             }]
                         ]
                     }]
-            }]);
+                }]);
         });
 
         it('should support an extension lookup tables', () => {
@@ -418,7 +418,7 @@ describe('layout.js', function() {
                                     }]
                                 ]
                             }
-                        }    
+                        }
                     ]
                 },
                 {
@@ -554,7 +554,7 @@ describe('layout.js', function() {
         });
 
         it('should not return supported an extension lookup tables with not supported lookups', () => {
-            posLayout.supportedFeatures[0].supportedLookups = [8]; // This lookup 8 is not supported 
+            posLayout.supportedFeatures[0].supportedLookups = [8]; // This lookup 8 is not supported
             font.tables.gpos.features = [{
                 tag: 'mark',
                 feature: { featureParams: 0, lookupListIndexes: [1, 2]}
@@ -583,7 +583,7 @@ describe('layout.js', function() {
                                     }]
                                 ]
                             }
-                        }    
+                        }
                     ]
                 },
                 {
@@ -696,7 +696,7 @@ describe('layout.js', function() {
                             }]
                         ]
                     }]
-            }]);
+                }]);
         });
 
     });

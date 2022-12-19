@@ -200,17 +200,17 @@ Layout.prototype = {
      * This follows an ordered processing requirements (specs):
      * > During text processing, it processes the lookups referenced by that feature in their lookup list order.
      * > Note that an application may process lookups for multiple features simultaneously. In this case:
-     * > the list of lookups is the union of lookups referenced by all of those features, and these are all processed in their lookup list order. 
-     * 
+     * > the list of lookups is the union of lookups referenced by all of those features, and these are all processed in their lookup list order.
+     *
      * https://learn.microsoft.com/en-us/typography/opentype/otspec191alpha/chapter2#lookup-list-table
-     * 
-     * @param {string[]} requestedFeatures 
+     *
+     * @param {string[]} requestedFeatures
      * @param {string} [script='DFLT']
      * @param {string} [language='dlft']
      * @return {Object[]} an ordered lookup list of requested features
      */
     getFeaturesLookups: function(requestedFeatures, script, language) {
-        if (! this.font.tables[this.tableName] || ! requestedFeatures) {
+        if (!this.font.tables[this.tableName] || !requestedFeatures) {
             return [];
         }
 
@@ -218,7 +218,7 @@ Layout.prototype = {
         requestedFeatures = this.supportedFeatures.filter(f => requestedFeatures.includes(f.featureName));
 
         const lookupUnionList = {};
-        const allLookups = this.font.tables[this.tableName].lookups; 
+        const allLookups = this.font.tables[this.tableName].lookups;
         requestedFeatures.forEach(feature => {
             const { featureName, supportedLookups } = feature;
             let featureTable = this.getFeatureTable(script, language, featureName);
@@ -232,7 +232,7 @@ Layout.prototype = {
                     if (!lookupTable) continue;
                     let validLookupType = supportedLookups.indexOf(lookupTable.lookupType) !== -1;
                     // Extension lookup table support
-                    if (lookupTable.subtables.length === 1) { 
+                    if (lookupTable.subtables.length === 1) {
                         const { extensionLookupType, extension } = lookupTable.subtables[0];
                         if (extensionLookupType && extension && supportedLookups.indexOf(extensionLookupType) !== -1) {
                             lookupTable.lookupType = extensionLookupType;
