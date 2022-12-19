@@ -27,6 +27,14 @@ export function isTashkeelArabicChar(char) {
 }
 
 /**
+ * Check if a char is Thai
+ * @param {string} c a single char
+ */
+export function isThaiChar(c) {
+    return /[\u0E00-\u0E7F]/.test(c);
+}
+
+/**
  * Check if a char is Latin
  * @param {string} c a single char
  */

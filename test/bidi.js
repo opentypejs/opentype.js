@@ -8,6 +8,7 @@ describe('bidi.js', function() {
     let bidiFira;
     let bidiScheherazade;
     let arabicTokenizer;
+
     before(function () {
         /**
          * arab
@@ -85,5 +86,45 @@ describe('bidi.js', function() {
             assert.deepEqual(glyphIndexes, [1145]);
         });
     });
-});
 
+    describe('thai scripts', () => {
+
+        let thaiFont;
+        let bidiThai; 
+
+        before(()=> {
+            thaiFont = loadSync('./fonts/NotoSansThai-Medium.ttf');
+            bidiThai = new Bidi();
+            bidiThai.registerModifier(
+                'glyphIndex', null, token => thaiFont.charToGlyphIndex(token.char)
+            );
+            const requiredThaiFeatures = [{ 
+                script: 'thai',
+                tags: ['liga', 'ccmp']
+            }];
+            bidiThai.applyFeatures(thaiFont, requiredThaiFeatures);
+        });
+
+        describe('thai features', () => {
+            it('should apply glyph composition', () => {
+                let glyphIndexes = bidiThai.getTextGlyphs('่ํ');                
+                assert.deepEqual(glyphIndexes, [63]);
+            });
+
+            it('should apply glyph ligatures', () => {
+                let glyphIndexes = bidiThai.getTextGlyphs('ฤๅ');                
+                assert.deepEqual(glyphIndexes, [84]);
+            }); 
+        });
+
+        describe('thai contexts', () => {
+            it('should match thai words in a given text', () => {
+                const tokenizer = bidiThai.tokenizer;
+                tokenizer.tokenize('The king said: เป็นคนใจดีสำหรับทุกคน because ความรักคือทุกสิ่ง');
+                const ranges = tokenizer.getContextRanges('thaiWord');
+                const words = ranges.map(range => tokenizer.rangeToText(range));
+                assert.deepEqual(words, ['เป็นคนใจดีสำหรับทุกคน', 'ความรักคือทุกสิ่ง']);
+            });
+        });
+    });
+});

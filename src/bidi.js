@@ -11,6 +11,9 @@ import arabicPresentationForms from './features/arab/arabicPresentationForms';
 import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures';
 import latinWordCheck from './features/latn/contextCheck/latinWord';
 import latinLigature from './features/latn/latinLigatures';
+import thaiWordCheck from './features/thai/contextCheck/thaiWord';
+import thaiGlyphComposition from './features/thai/thaiGlyphComposition';
+import thaiLigatures from './features/thai/thaiLigatures';
 
 /**
  * Create Bidi. features
@@ -38,7 +41,8 @@ Bidi.prototype.setText = function (text) {
 Bidi.prototype.contextChecks = ({
     latinWordCheck,
     arabicWordCheck,
-    arabicSentenceCheck
+    arabicSentenceCheck,
+    thaiWordCheck
 });
 
 /**
@@ -59,6 +63,7 @@ function tokenizeText() {
     registerContextChecker.call(this, 'latinWord');
     registerContextChecker.call(this, 'arabicWord');
     registerContextChecker.call(this, 'arabicSentence');
+    registerContextChecker.call(this, 'thaiWord');
     return this.tokenizer.tokenize(this.text);
 }
 
@@ -152,10 +157,7 @@ function applyArabicPresentationForms() {
  * Apply required arabic ligatures
  */
 function applyArabicRequireLigatures() {
-    const script = 'arab';
-    if (!this.featuresTags.hasOwnProperty(script)) return;
-    const tags = this.featuresTags[script];
-    if (tags.indexOf('rlig') === -1) return;
+    if (! this.hasFeatureEnabled('arab', 'rlig')) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('arabicWord');
     ranges.forEach(range => {
@@ -167,15 +169,25 @@ function applyArabicRequireLigatures() {
  * Apply required arabic ligatures
  */
 function applyLatinLigatures() {
-    const script = 'latn';
-    if (!this.featuresTags.hasOwnProperty(script)) return;
-    const tags = this.featuresTags[script];
-    if (tags.indexOf('liga') === -1) return;
+    if (! this.hasFeatureEnabled('latn', 'liga')) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('latinWord');
     ranges.forEach(range => {
         latinLigature.call(this, range);
     });
+}
+
+/**
+ * Apply available thai features
+ */
+function applyThaiFeatures() {
+    checkGlyphIndexStatus.call(this);
+    const ranges = this.tokenizer.getContextRanges('thaiWord');
+    ranges.forEach(range => {
+        if (this.hasFeatureEnabled('thai', 'liga')) thaiLigatures.call(this, range);
+        if (this.hasFeatureEnabled('thai', 'ccmp')) thaiGlyphComposition.call(this, range);
+    });
+    
 }
 
 /**
@@ -188,6 +200,9 @@ Bidi.prototype.checkContextReady = function (contextId) {
 
 /**
  * Apply features to registered contexts
+ * 
+ * - A Glyph Composition (ccmp) feature should be always applied
+ * https://learn.microsoft.com/en-us/typography/opentype/spec/features_ae#tag-ccmp
  */
 Bidi.prototype.applyFeaturesToContexts = function () {
     if (this.checkContextReady('arabicWord')) {
@@ -200,6 +215,19 @@ Bidi.prototype.applyFeaturesToContexts = function () {
     if (this.checkContextReady('arabicSentence')) {
         reverseArabicSentences.call(this);
     }
+    if (this.checkContextReady('thaiWord')) {
+        applyThaiFeatures.call(this);
+    }
+};
+
+/**
+ * Check whatever feature is successfully enabled for a script
+ * @param {string} script 
+ * @param {string} tag feature name
+ * @returns {boolean}
+ */
+Bidi.prototype.hasFeatureEnabled = function(script, tag) {
+    return (this.featuresTags[script] || []).indexOf(tag) !== -1;
 };
 
 /**
