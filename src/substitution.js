@@ -12,7 +12,10 @@ import Layout from './layout';
  * @constructor
  */
 function Substitution(font) {
-    Layout.call(this, font, 'gsub');
+    Layout.call(this, font, 'gsub', [
+        { featureName: 'rlig',  supportedLookups: [4] }
+        // TODO: Define all supported features to use layout.getFeaturesLookups for a sequence ordered feature lookups
+    ]); 
 }
 
 // Check if 2 arrays of primitives are equal.

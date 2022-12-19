@@ -13,6 +13,7 @@ Features
 * Support for composite glyphs (accented letters).
 * Support for WOFF, OTF, TTF (both with TrueType `glyf` and PostScript `cff` outlines)
 * Support for kerning (Using GPOS or the kern table).
+* Support for Mark-to-Base Attachment Positioning.
 * Support for ligatures.
 * Support for TrueType font hinting.
 * Support arabic text rendering (See issue #364 & PR #359 #361)
