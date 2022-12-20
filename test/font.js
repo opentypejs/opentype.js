@@ -142,6 +142,9 @@ describe('font.js', function() {
 
     describe('Positioning features support', () => {
         describe('KERN - Kerning', () => {
+
+            const fGlyph = new Glyph({name: 'f', unicode: 102, path: new Path(), advanceWidth: 1, index: 1 });
+
             beforeEach(() => {
                 font.tables.gpos = {
                     version: 1,
@@ -158,16 +161,18 @@ describe('font.js', function() {
 
                 font.kerningPairs = {
                     [`${ffGlyph.index},${ffiGlyph.index}`]: 18,
-                    [`${ffGlyph.index},${fGlyph.index}`]: -9
+                    [`${ffGlyph.index},${fGlyph.index}`]: -9,
+                    [`${fGlyph.index},${ffGlyph.index}`]: 20,
+                    [`${ffiGlyph.index},${fGlyph.index}`]: -30
                 };
             });
 
             it('supports a kern table if no kern lookup tables set', () => {
-                const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: true });
-                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 18, yAdvance: 0 }]);
+                const result = font.getGlyphsPositions([ffGlyph, ffiGlyph, fGlyph, ffGlyph], { kerning: true });
+                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 18, yAdvance: 0 }, { xAdvance: 18 - 30, yAdvance: 0 }, { xAdvance: 18 - 30 + 20, yAdvance: 0 }]);
 
-                const result2 = font.getGlyphsPositions([ffGlyph, fGlyph], { kerning: true });
-                assert.deepStrictEqual(result2, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: -9, yAdvance: 0 }]);
+                const result2 = font.getGlyphsPositions([ffGlyph, fGlyph, fGlyph, ffGlyph], { kerning: true });
+                assert.deepStrictEqual(result2, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: -9 + 0, yAdvance: 0 }, { xAdvance: -9 + 0, yAdvance: 0 }, { xAdvance: -9 + 20, yAdvance: 0 }]);
             });
 
             it('supports a kern lookup tables', () => {
@@ -192,13 +197,19 @@ describe('font.js', function() {
                                 posFormat: 1,
                                 coverage: {
                                     format: 1,
-                                    glyphs: [3]
+                                    glyphs: [3, 5]
                                 },
                                 pairSets: [
                                     [{
                                         secondGlyph: 5,
                                         value1: {
                                             xAdvance: -91
+                                        }
+                                    }],
+                                    [{
+                                        secondGlyph: 1,
+                                        value1: {
+                                            xAdvance: -11
                                         }
                                     }]
                                 ]
@@ -207,13 +218,13 @@ describe('font.js', function() {
                     ]
                 };
 
-                const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: true });
-                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: -91, yAdvance: 0 }]);
+                const result = font.getGlyphsPositions([ffGlyph, ffiGlyph, fGlyph, fGlyph], { kerning: true });
+                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: -91, yAdvance: 0 }, { xAdvance: -91 - 11, yAdvance: 0 }, { xAdvance: -91 - 11, yAdvance: 0 }]);
             });
 
             it('can be disabled with options.kerning flag', () => {
-                const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: false });
-                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 }]);
+                const result = font.getGlyphsPositions([ffGlyph, ffiGlyph, fGlyph], { kerning: false });
+                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 }]);
             });
         });
 
@@ -289,12 +300,12 @@ describe('font.js', function() {
 
             it('supports a mark feature with kern feature', () => {
                 font.kerningPairs = {
-                    [`${ffGlyph.index},${ffiGlyph.index}`]: 32,
+                    [`${ffGlyph.index},${ffiGlyph.index}`]: -15,
                     [`${ffGlyph.index},${fGlyph.index}`]: -9
                 };
 
-                const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: true });
-                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 676, yAdvance: -721 }]);
+                const result = font.getGlyphsPositions([ffGlyph, ffiGlyph, fGlyph, fiGlyph], { kerning: true });
+                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 644 - 15, yAdvance: -721 }, { xAdvance: -15, yAdvance: 0 }, { xAdvance: -15, yAdvance: 0 }]);
             });
 
             it('is enabled by default', () => {

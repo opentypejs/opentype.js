@@ -355,6 +355,7 @@ Font.prototype.getGlyphsPositions = function(glyphs, options) {
     let kernLookupTableProcessed = false;
     const featuresLookups = this.position.getPositionFeatures(features, script, options.language);
     featuresLookups.forEach(lookupTable => {
+        let kerningValue = 0;
         let pos = [];
         switch (lookupTable.feature) {
             case 'kern':
@@ -368,15 +369,22 @@ Font.prototype.getGlyphsPositions = function(glyphs, options) {
 
         // Reposition glyphs
         pos.forEach((glyphPosition, index) => {
-            glyphsPositions[index].xAdvance += glyphPosition.xAdvance;
-            glyphsPositions[index].yAdvance += glyphPosition.yAdvance;
+            if (lookupTable.feature === 'kern') { 
+                kerningValue += glyphPosition.xAdvance; // kerning apply to entire sequence
+                glyphsPositions[index].xAdvance += kerningValue;
+            } else {
+                glyphsPositions[index].xAdvance += glyphPosition.xAdvance;
+                glyphsPositions[index].yAdvance += glyphPosition.yAdvance;
+            }
         });
     });
 
     // Support for the 'kern' table glyph pairs
     if (options.kerning && kernLookupTableProcessed === false) {
+        let kerningValue = 0;
         for (let i = 1; i < glyphs.length; i += 1) {
-            glyphsPositions[i].xAdvance += this.getKerningValue(glyphs[i - 1], glyphs[i]);
+            kerningValue += this.getKerningValue(glyphs[i - 1], glyphs[i]); // kerning apply to entire sequence
+            glyphsPositions[i].xAdvance += kerningValue; 
         }
     }
     return glyphsPositions;
