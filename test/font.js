@@ -164,10 +164,10 @@ describe('font.js', function() {
 
             it('supports a kern table if no kern lookup tables set', () => {
                 const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: true });
-                assert.deepStrictEqual(result, [{ xAdvance: 18, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 }]);
+                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 18, yAdvance: 0 }]);
 
                 const result2 = font.getGlyphsPositions([ffGlyph, fGlyph], { kerning: true });
-                assert.deepStrictEqual(result2, [{ xAdvance: -9, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 }]);
+                assert.deepStrictEqual(result2, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: -9, yAdvance: 0 }]);
             });
 
             it('supports a kern lookup tables', () => {
@@ -208,7 +208,7 @@ describe('font.js', function() {
                 };
 
                 const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: true });
-                assert.deepStrictEqual(result, [{ xAdvance: -91, yAdvance: 0 }, { xAdvance: 0, yAdvance: 0 }]);
+                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: -91, yAdvance: 0 }]);
             });
 
             it('can be disabled with options.kerning flag', () => {
@@ -294,7 +294,7 @@ describe('font.js', function() {
                 };
 
                 const result = font.getGlyphsPositions([ffGlyph, ffiGlyph], { kerning: true });
-                assert.deepStrictEqual(result, [{ xAdvance: 32, yAdvance: 0 }, { xAdvance: 644, yAdvance: -721 }]);
+                assert.deepStrictEqual(result, [{ xAdvance: 0, yAdvance: 0 }, { xAdvance: 676, yAdvance: -721 }]);
             });
 
             it('is enabled by default', () => {

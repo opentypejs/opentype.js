@@ -375,8 +375,8 @@ Font.prototype.getGlyphsPositions = function(glyphs, options) {
 
     // Support for the 'kern' table glyph pairs
     if (options.kerning && kernLookupTableProcessed === false) {
-        for (let i = 0; i < glyphs.length - 1; i += 1) {
-            glyphsPositions[i].xAdvance += this.getKerningValue(glyphs[i], glyphs[i + 1]);
+        for (let i = 1; i < glyphs.length; i += 1) {
+            glyphsPositions[i].xAdvance += this.getKerningValue(glyphs[i - 1], glyphs[i]);
         }
     }
     return glyphsPositions;

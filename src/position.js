@@ -66,12 +66,11 @@ Position.prototype.getKerningValue = function(kerningLookups, leftIndex, rightIn
 
 /**
  * Find a mark to base attachment pair
- *
- * @param {integer} markGlyphIndex - attached mark glyph index
  * @param {integer} baseGlyphIndex - base glyph index
+ * @param {integer} markGlyphIndex - attached mark glyph index
  * @returns {Object[]}
  */
-Position.prototype.getMarkToBaseAttachment = function(lookupTables, markGlyphIndex, baseGlyphIndex) {
+Position.prototype.getMarkToBaseAttachment = function(lookupTables, baseGlyphIndex, markGlyphIndex) {
     for (let i = 0; i < lookupTables.length; i++) {
         const subtables = lookupTables[i].subtables;
         for (let j = 0; j < subtables.length; j++) {
