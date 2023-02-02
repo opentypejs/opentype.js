@@ -1,7 +1,9 @@
 
-# opentype.js &middot; [![Build Status](https://travis-ci.org/opentypejs/opentype.js.svg?branch=master)](https://travis-ci.org/opentypejs/opentype.js) [![npm](https://img.shields.io/npm/v/opentype.js.svg?style=flat-square)](https://www.npmjs.com/package/opentype.js) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/opentypejs/opentype.js/blob/master/LICENSE)
+# opentype.js &middot; <!--[![Build Status](https://travis-ci.org/opentypejs/opentype.js.svg?branch=master)](https://travis-ci.org/opentypejs/opentype.js) -->[![npm](https://img.shields.io/npm/v/opentype.js.svg?style=flat-square)](https://www.npmjs.com/package/opentype.js) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/SABRE-JS/opentype.js/blob/master/LICENSE)
 
-opentype.js is a JavaScript parser and writer for TrueType and OpenType fonts.
+## [This fork](https://github.com/SABRE-JS/opentype.js) has taken over active development from the [original](https://github.com/opentypejs/opentype.js) due to the maintainer abandoning the project.
+
+opentype.js is a JavaScript renderer, parser and writer for TrueType and OpenType fonts.
 
 It gives you access to the <strong>letterforms</strong> of text from the browser or Node.js.
 See [https://opentype.js.org/](https://opentype.js.org/) for a live demo.
