@@ -173,6 +173,7 @@ a {
     margin: 0;
     cursor: pointer;
     background-color: #f8f8f8;
+    clear: both;
 }
 
 #font-data h3.expanded::before {
