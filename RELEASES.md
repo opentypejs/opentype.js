@@ -1,3 +1,8 @@
+1.3.4 (October 8, 2021)
+=====================
+* fix Quadratic to Cubic rounding issue in Glyph to CFF Ops stage (#468)
+* update dependencies with `npm audit fix`
+
 1.3.3 (April 20, 2020)
 =====================
 * fix GlyphOptions with falsy values (#430)
@@ -6,7 +11,7 @@
 =====================
 * Re-export named exports with a default export and add a TypeScript import example
 
-* 1.3.1 (April 13, 2020)
+1.3.1 (April 13, 2020)
 =====================
 * Revert Fix Path.toPathData and Path.toSVG - X Axis is flipped (#369)
 
@@ -158,7 +163,7 @@ Also as this project is now using SemVer, the breaking change required a new maj
 * GSUB reading and writing by @fpirsch. This is still missing a user-friendly API.
 * Add support for cmap table format 12, which enables support for Unicode characters outside of the 0x0 - 0xFFFF range.
 * Better API documentation using [JSDoc](http://usejsdoc.org/).
-* Accessing xMin/... metrics works before path load. 
+* Accessing xMin/... metrics works before path load.
 
 0.6.4 (June 30, 2016)
 =========================

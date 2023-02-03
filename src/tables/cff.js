@@ -384,6 +384,8 @@ function gatherCFFTopDicts(data, start, cffIndex, strings) {
         const topDict = parseCFFTopDict(topDictData, strings);
         topDict._subrs = [];
         topDict._subrsBias = 0;
+        topDict._defaultWidthX = 0;
+        topDict._nominalWidthX = 0;
         const privateSize = topDict.private[0];
         const privateOffset = topDict.private[1];
         if (privateSize !== 0 && privateOffset !== 0) {
@@ -1167,14 +1169,15 @@ function glyphToOps(glyph) {
             const _23 = 2 / 3;
 
             // We're going to create a new command so we don't change the original path.
+            // Since all coordinates are relative, we round() them ASAP to avoid propagating errors.
             cmd = {
                 type: 'C',
                 x: cmd.x,
                 y: cmd.y,
-                x1: _13 * x + _23 * cmd.x1,
-                y1: _13 * y + _23 * cmd.y1,
-                x2: _13 * cmd.x + _23 * cmd.x1,
-                y2: _13 * cmd.y + _23 * cmd.y1
+                x1: Math.round(_13 * x + _23 * cmd.x1),
+                y1: Math.round(_13 * y + _23 * cmd.y1),
+                x2: Math.round(_13 * cmd.x + _23 * cmd.x1),
+                y2: Math.round(_13 * cmd.y + _23 * cmd.y1)
             };
         }
 

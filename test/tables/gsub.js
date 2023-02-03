@@ -210,7 +210,117 @@ describe('tables/gsub.js', function() {
     });
 
     //// Lookup type 6 ////////////////////////////////////////////////////////
-    // TODO (no example in the doc from Microsoft)
+    it('can parse lookup6 substFormat1', function() {
+        // https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#lookuptype-6-chaining-contextual-substitution-subtable
+        const data =
+            '0001  0008  0001' + // substFormat, coverageOffset, chainSubRuleSetCount
+            '000E' +             // chainSubRuleSetOffset
+            // coverage table
+            '0001  0001  000F' + // coverageFormat, glyphCount, glyphIndex
+            // chainSubRuleSet table
+            '0001  0004' +       // chainSubRuleCount, chainSubRuleOffset
+            // ChainSubRule subtable
+            '0001  000E' +       // backtrackGlyphCount, backtrackSequence
+            '0001' +             // inputGlyphCount (includes the first glyph)
+            '' +                 // inputSequence (starts with second glyph, and we have none)
+            '0000' +             // lookaheadGlyphCount
+            '' +                 // lookAheadSequence (we have none)
+            '0001 0000 0001' // substitutionCount, sequenceIndex, lookupListIndex
+        ;
+        assert.deepEqual(parseLookup(6, data), {
+            substFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0xF]
+            },
+            chainRuleSets: [
+                [{ backtrack: [0xE], input: [], lookahead: [], lookupRecords: [{ sequenceIndex: 0, lookupListIndex: 1 }]}]
+            ]
+        });
+    });
+
+    it('can parse lookup6 substFormat1 with all rule set properties', function() {
+        // same as above but with some random values filled in for the empty values
+        // to see if it works as intended both ways
+        const data =
+            '0001  0008  0001' + // substFormat, coverageOffset, chainSubRuleSetCount
+            '000E' +             // chainSubRuleSetOffset
+            // coverage table
+            '0001  0001  000F' + // coverageFormat, glyphCount, glyphIndex
+            // chainSubRuleSet table
+            '0001  0004' +       // chainSubRuleCount, chainSubRuleOffset
+            // ChainSubRule subtable
+            '0001  000E' +       // backtrackGlyphCount, backtrackSequence
+            '0002' +             // inputGlyphCount (includes the first glyph)
+            '0048' +             // inputSequence (starts with second glyph, and we have none)
+            '0001' +             // lookaheadGlyphCount
+            '0042' +                 // lookAheadSequence (we have none)
+            '0001 0000 0001' // substitutionCount, sequenceIndex, lookupListIndex
+        ;
+        assert.deepEqual(parseLookup(6, data), {
+            substFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0xF]
+            },
+            chainRuleSets: [
+                [{ backtrack: [0xE], input: [0x48], lookahead: [0x42], lookupRecords: [{ sequenceIndex: 0, lookupListIndex: 1 }]}]
+            ]
+        });
+    });
+
+    it('can parse lookup6 substFormat3', function() {
+        // https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#63-chaining-context-substitution-format-3-coverage-based-glyph-contexts
+        // example taken from Inter Regular, with just offsets adapted to the structure when only creating the lookup
+        const data =
+            '00 03    00 02' +                    // substFormat and backtrackGlyphCount
+            '00 18    00 22' +                    // backtrackCoverageOffsets
+            '00 01' +                             // inputGlyphCount
+            '00 2C' +                             // inputCoverageOffsets
+            '00 02' +                             // lookaheadGlyphCount
+            '00 32    00 3C' +                    // lookaheadCoverageOffsets
+            '00 01' +                             // substitutionCount
+            // SubstLookupRecord, see https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#substitution-lookup-record
+            '00 00    00 32' +                    // glyphSequenceIndex and lookupListIndex
+            // backtrackCoverage tables
+            '00 02  00 01  06 82  06 91  00 00' + // coverageFormat, rangeRecordCount, startGlyphID, endGlyphID, startCoverageIndex
+            '00 02  00 01  05 05  05 26  00 00' + // and the same for the second entry
+            // inputCoverage table
+            '00 01  00 01  03 AB' +               // coverageFormat, glyphCount, glyphIndex
+            // lookaheadCoverage table
+            '00 02  00 01  06 82  06 91  00 00' + // coverageFormat, rangeRecordCount, startGlyphID, endGlyphID, startCoverageIndex
+            '00 02 00 01 05 05 05 26 00 00'       // and the same for the second entry
+        ;
+        assert.deepEqual(parseLookup(6, data), {
+            substFormat: 3,
+            backtrackCoverage: [
+            {
+                format: 2,
+                ranges: [{ start: 1666, end: 1681, index: 0 }]
+            },
+            {
+                format: 2,
+                ranges: [{ start: 1285, end: 1318, index: 0 }]
+            }
+            ],
+            inputCoverage: [{ format: 1, glyphs: [939] }],
+            lookaheadCoverage: [{
+                format: 2,
+                ranges: [{ start: 1666, end: 1681, index: 0 }]
+            },
+            {
+                format: 2,
+                ranges: [{ start: 1285, end: 1318, index: 0 }]
+            }
+            ],
+            lookupRecords: [
+            {
+                sequenceIndex: 0,
+                lookupListIndex: 50
+            }
+            ]
+        });
+    });
 
     //// Lookup type 7 ////////////////////////////////////////////////////////
     // TODO (no example in the doc from Microsoft)
@@ -287,6 +397,25 @@ describe('tables/gsub.js', function() {
         assert.deepEqual(gsub.make(gsubTable).encode(), expectedData);
     });
 
+    it('can write a lookup with coverage table format 2', function() {
+        // https://docs.microsoft.com/de-de/typography/opentype/spec/chapter2#coverage-table
+        // https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#EX6 (extended with two more ranges)
+
+        const expectedData = unhexArray('0001 0006 00C0   0002 0003   0019 001A 0000   004E 0057 0002   0060 0063 000C');
+        assert.deepEqual(makeLookup(1, {
+            substFormat: 1,
+            coverage: {
+                format: 2,
+                ranges: [
+                    { start: 25, end: 26, index: 0 },
+                    { start: 78, end: 87, index: 2 },
+                    { start: 96, end: 99, index: 12 }
+                ]
+            },
+            deltaGlyphId: 0xc0
+        }), expectedData);
+    });
+
     //// Lookup type 1 ////////////////////////////////////////////////////////
     it('can write lookup1 substFormat 1', function() {
         const expectedData = unhexArray('0001 0006 00C0   0001 0004 003C 0040 004B 004F');
@@ -313,6 +442,22 @@ describe('tables/gsub.js', function() {
         }), expectedData);
     });
 
+    //// Lookup type 2 ////////////////////////////////////////////////////////
+    it('can write lookup2', function() {
+        // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX4
+        const expectedData = unhexArray('0001 0008 0001 000E   0001 0001 00F1   0003 001A 001A 001D');
+        assert.deepEqual(makeLookup(2, {
+            substFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0xf1]
+            },
+            sequences: [
+                [0x1a, 0x1a, 0x1d]
+            ]
+        }), expectedData);
+    });
+
     //// Lookup type 3 ////////////////////////////////////////////////////////
     it('can write lookup3', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX5
@@ -325,6 +470,122 @@ describe('tables/gsub.js', function() {
             },
             alternateSets: [
                 [0xc9, 0xca]
+            ]
+        }), expectedData);
+    });
+
+    //// Lookup type 4 ////////////////////////////////////////////////////////
+    // is already tested above
+
+    //// Lookup type 6 ////////////////////////////////////////////////////////
+    it('can write lookup6 substFormat1', function() {
+        // https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#lookuptype-6-chaining-contextual-substitution-subtable
+        const expectedData = unhexArray(
+            '0001  0008  0001' + // substFormat, coverageOffset, chainSubRuleSetCount
+            '000E' +             // chainSubRuleSetOffset
+            // coverage table
+            '0001  0001  000F' + // coverageFormat, glyphCount, glyphIndex
+            // chainSubRuleSet table
+            '0001  0004' +       // chainSubRuleCount, chainSubRuleOffset
+            // ChainSubRule subtable
+            '0001  000E' +       // backtrackGlyphCount, backtrackSequence
+            '0001' +             // inputGlyphCount (includes the first glyph)
+            '' +                 // inputSequence (starts with second glyph, and we have none)
+            '0000' +             // lookaheadGlyphCount
+            '' +                 // lookAheadSequence (we have none)
+            '0001 0000 0001' // substitutionCount, sequenceIndex, lookupListIndex
+        );
+        assert.deepEqual(makeLookup(6, {
+            substFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0xF]
+            },
+            chainRuleSets: [
+                [{ backtrack: [0xE], input: [], lookahead: [], lookupRecords: [{ sequenceIndex: 0, lookupListIndex: 1 }]}]
+            ]
+        }), expectedData);
+    });
+
+    it('can write lookup6 substFormat1 with all rule set properties', function() {
+        // same as above but with some random values filled in for the empty values
+        // to see if it works as intended both ways
+        const expectedData = unhexArray(
+            '0001  0008  0001' + // substFormat, coverageOffset, chainSubRuleSetCount
+            '000E' +             // chainSubRuleSetOffset
+            // coverage table
+            '0001  0001  000F' + // coverageFormat, glyphCount, glyphIndex
+            // chainSubRuleSet table
+            '0001  0004' +       // chainSubRuleCount, chainSubRuleOffset
+            // ChainSubRule subtable
+            '0001  000E' +       // backtrackGlyphCount, backtrackSequence
+            '0002' +             // inputGlyphCount (includes the first glyph)
+            '0048' +             // inputSequence (starts with second glyph, and we have none)
+            '0001' +             // lookaheadGlyphCount
+            '0042' +                 // lookAheadSequence (we have none)
+            '0001 0000 0001' // substitutionCount, sequenceIndex, lookupListIndex
+        );
+        assert.deepEqual(makeLookup(6, {
+            substFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0xF]
+            },
+            chainRuleSets: [
+                [{ backtrack: [0xE], input: [0x48], lookahead: [0x42], lookupRecords: [{ sequenceIndex: 0, lookupListIndex: 1 }]}]
+            ]
+        }), expectedData);
+    });
+
+    it('can write lookup6 substFormat3', function() {
+        // https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#63-chaining-context-substitution-format-3-coverage-based-glyph-contexts
+        // example taken from Inter Regular, with just offsets adapted to the structure when only creating the lookup
+        const expectedData = unhexArray(
+            '00 03    00 02' +                    // substFormat and backtrackGlyphCount
+            '00 18    00 22' +                    // backtrackCoverageOffsets
+            '00 01' +                             // inputGlyphCount
+            '00 2C' +                             // inputCoverageOffsets
+            '00 02' +                             // lookaheadGlyphCount
+            '00 32    00 3C' +                    // lookaheadCoverageOffsets
+            '00 01' +                             // substitutionCount
+            // SubstLookupRecord, see https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#substitution-lookup-record
+            '00 00    00 32' +                    // glyphSequenceIndex and lookupListIndex
+            // backtrackCoverage tables
+            '00 02  00 01  06 82  06 91  00 00' + // coverageFormat, rangeRecordCount, startGlyphID, endGlyphID, startCoverageIndex
+            '00 02  00 01  05 05  05 26  00 00' + // and the same for the second entry
+            // inputCoverage table
+            '00 01  00 01  03 AB' +               // coverageFormat, glyphCount, glyphIndex
+            // lookaheadCoverage table
+            '00 02  00 01  06 82  06 91  00 00' + // coverageFormat, rangeRecordCount, startGlyphID, endGlyphID, startCoverageIndex
+            '00 02 00 01 05 05 05 26 00 00'       // and the same for the second entry
+        );
+        assert.deepEqual(makeLookup(6, {
+            substFormat: 3,
+            backtrackCoverage: [
+            {
+                format: 2,
+                ranges: [{ start: 1666, end: 1681, index: 0 }]
+            },
+            {
+                format: 2,
+                ranges: [{ start: 1285, end: 1318, index: 0 }]
+            }
+            ],
+            inputCoverage: [{ format: 1, glyphs: [939] }],
+            lookaheadCoverage: [{
+                format: 2,
+                ranges: [{ start: 1666, end: 1681, index: 0 }]
+            },
+            {
+                format: 2,
+                ranges: [{ start: 1285, end: 1318, index: 0 }]
+            }
+            ],
+            lookupRecords: [
+            {
+                sequenceIndex: 0,
+                lookupListIndex: 50
+            }
             ]
         }), expectedData);
     });

@@ -14,10 +14,13 @@ import parse from './parse';
 import BoundingBox from './bbox';
 import Path from './path';
 import { nodeBufferToArrayBuffer } from './util';
+import cpal from './tables/cpal';
+import colr from './tables/colr';
 import cmap from './tables/cmap';
 import cff from './tables/cff';
 import fvar from './tables/fvar';
 import glyf from './tables/glyf';
+import gdef from './tables/gdef';
 import gpos from './tables/gpos';
 import gsub from './tables/gsub';
 import head from './tables/head';
@@ -204,6 +207,9 @@ function parseBuffer(buffer, opt) {
 
         numTables = parse.getUShort(data, 12);
         tableEntries = parseWOFFTableEntries(data, numTables);
+    } else if (signature === 'wOF2') {
+        var issue = "https://github.com/opentypejs/opentype.js/issues/183#issuecomment-1147228025"
+        throw new Error('WOFF2 require an external decompressor library, see examples at: ' + issue);
     } else {
         throw new Error('Unsupported OpenType signature ' + signature);
     }
@@ -211,6 +217,7 @@ function parseBuffer(buffer, opt) {
     let cffTableEntry;
     let fvarTableEntry;
     let glyfTableEntry;
+    let gdefTableEntry;
     let gposTableEntry;
     let gsubTableEntry;
     let hmtxTableEntry;
@@ -262,6 +269,14 @@ function parseBuffer(buffer, opt) {
                 table = uncompressTable(data, tableEntry);
                 ltagTable = ltag.parse(table.data, table.offset);
                 break;
+            case 'COLR':
+                table = uncompressTable(data, tableEntry);
+                font.tables.colr = colr.parse(table.data, table.offset);
+                break;
+            case 'CPAL':
+                table = uncompressTable(data, tableEntry);
+                font.tables.cpal = cpal.parse(table.data, table.offset);
+                break;
             case 'maxp':
                 table = uncompressTable(data, tableEntry);
                 font.tables.maxp = maxp.parse(table.data, table.offset);
@@ -295,6 +310,9 @@ function parseBuffer(buffer, opt) {
                 break;
             case 'kern':
                 kernTableEntry = tableEntry;
+                break;
+            case 'GDEF':
+                gdefTableEntry = tableEntry;
                 break;
             case 'GPOS':
                 gposTableEntry = tableEntry;
@@ -334,6 +352,11 @@ function parseBuffer(buffer, opt) {
         font.kerningPairs = kern.parse(kernTable.data, kernTable.offset);
     } else {
         font.kerningPairs = {};
+    }
+
+    if (gdefTableEntry) {
+        const gdefTable = uncompressTable(data, gdefTableEntry);
+        font.tables.gdef = gdef.parse(gdefTable.data, gdefTable.offset);
     }
 
     if (gposTableEntry) {
@@ -384,8 +407,9 @@ function parseBuffer(buffer, opt) {
  * @param  {Function} callback - The callback.
  */
 function load(url, callback, opt) {
+    opt = (opt === undefined || opt === null) ?  {} : opt;
     const isNode = typeof window === 'undefined';
-    const loadFn = isNode ? loadFromFile : loadFromUrl;
+    const loadFn = isNode && !opt.isUrl ? loadFromFile : loadFromUrl;
 
     return new Promise((resolve, reject) => {
         loadFn(url, function(err, arrayBuffer) {
