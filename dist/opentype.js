@@ -6931,6 +6931,103 @@
 
 	var meta = { parse: parseMetaTable, make: makeMetaTable };
 
+	// The `COLR` table adds support for multi-colored glyphs
+
+	function parseColrTable(data, start) {
+	    var p = new Parser(data, start);
+	    var version = p.parseUShort();
+	    check.argument(version === 0x0000, 'Only COLRv0 supported.');
+	    var numBaseGlyphRecords = p.parseUShort();
+	    var baseGlyphRecordsOffset = p.parseOffset32();
+	    var layerRecordsOffset = p.parseOffset32();
+	    var numLayerRecords = p.parseUShort();
+	    p.relativeOffset = baseGlyphRecordsOffset;
+	    var baseGlyphRecords = p.parseRecordList(numBaseGlyphRecords, {
+	        glyphID: Parser.uShort,
+	        firstLayerIndex: Parser.uShort,
+	        numLayers: Parser.uShort,
+	    });
+	    p.relativeOffset = layerRecordsOffset;
+	    var layerRecords = p.parseRecordList(numLayerRecords, {
+	        glyphID: Parser.uShort,
+	        paletteIndex: Parser.uShort
+	    });
+
+	    return {
+	        version: version,
+	        baseGlyphRecords: baseGlyphRecords,
+	        layerRecords: layerRecords,
+	    };
+	}
+
+	function makeColrTable(ref) {
+	    var version = ref.version; if ( version === void 0 ) version = 0x0000;
+	    var baseGlyphRecords = ref.baseGlyphRecords; if ( baseGlyphRecords === void 0 ) baseGlyphRecords = [];
+	    var layerRecords = ref.layerRecords; if ( layerRecords === void 0 ) layerRecords = [];
+
+	    check.argument(version === 0x0000, 'Only COLRv0 supported.');
+	    var baseGlyphRecordsOffset = 14;
+	    var layerRecordsOffset = baseGlyphRecordsOffset + (baseGlyphRecords.length * 6);
+	    return new table.Table('COLR', [
+	        { name: 'version', type: 'USHORT', value: version },
+	        { name: 'numBaseGlyphRecords', type: 'USHORT', value: baseGlyphRecords.length },
+	        { name: 'baseGlyphRecordsOffset', type: 'ULONG', value: baseGlyphRecordsOffset },
+	        { name: 'layerRecordsOffset', type: 'ULONG', value: layerRecordsOffset },
+	        { name: 'numLayerRecords', type: 'USHORT', value: layerRecords.length } ].concat( baseGlyphRecords.map(function (glyph, i) { return [
+	            { name: 'glyphID_' + i, type: 'USHORT', value: glyph.glyphID },
+	            { name: 'firstLayerIndex_' + i, type: 'USHORT', value: glyph.firstLayerIndex },
+	            { name: 'numLayers_' + i, type: 'USHORT', value: glyph.numLayers } ]; }).flat(),
+	        layerRecords.map(function (layer, i) { return [
+	            { name: 'LayerGlyphID_' + i, type: 'USHORT', value: layer.glyphID },
+	            { name: 'paletteIndex_' + i, type: 'USHORT', value: layer.paletteIndex } ]; }).flat() ));
+	}
+
+	var colr = { parse: parseColrTable, make: makeColrTable };
+
+	// The `CPAL` define a contiguous list of colors (colorRecords)
+
+	// Parse the header `head` table
+	function parseCpalTable(data, start) {
+	    var p = new Parser(data, start);
+	    var version = p.parseShort();
+	    var numPaletteEntries = p.parseShort();
+	    var numPalettes = p.parseShort();
+	    var numColorRecords = p.parseShort();
+	    var colorRecordsArrayOffset = p.parseOffset32();
+	    var colorRecordIndices = p.parseUShortList(numPalettes);
+	    p.relativeOffset = colorRecordsArrayOffset;
+	    var colorRecords = p.parseULongList(numColorRecords);
+	    return {
+	        version: version,
+	        numPaletteEntries: numPaletteEntries,
+	        colorRecords: colorRecords,
+	        colorRecordIndices: colorRecordIndices,
+	    };
+	}
+
+	function makeCpalTable(ref) {
+	    var version = ref.version; if ( version === void 0 ) version = 0;
+	    var numPaletteEntries = ref.numPaletteEntries; if ( numPaletteEntries === void 0 ) numPaletteEntries = 0;
+	    var colorRecords = ref.colorRecords; if ( colorRecords === void 0 ) colorRecords = [];
+	    var colorRecordIndices = ref.colorRecordIndices; if ( colorRecordIndices === void 0 ) colorRecordIndices = [0];
+
+	    check.argument(version === 0, 'Only CPALv0 are supported.');
+	    check.argument(colorRecords.length, 'No colorRecords given.');
+	    check.argument(colorRecordIndices.length, 'No colorRecordIndices given.');
+	    if (colorRecordIndices.length > 1) {
+	        check.argument(numPaletteEntries, 'Can\'t infer numPaletteEntries on multiple colorRecordIndices');
+	    }
+	    return new table.Table('CPAL', [
+	        { name: 'version', type: 'USHORT', value: version },
+	        { name: 'numPaletteEntries', type: 'USHORT', value: numPaletteEntries || colorRecords.length },
+	        { name: 'numPalettes', type: 'USHORT', value: colorRecordIndices.length },
+	        { name: 'numColorRecords', type: 'USHORT', value: colorRecords.length },
+	        { name: 'colorRecordsArrayOffset', type: 'ULONG', value: 12 + 2 * colorRecordIndices.length } ].concat( colorRecordIndices.map(function (palette, i) { return ({ name: 'colorRecordIndices_' + i, type: 'USHORT', value: palette }); }),
+	        colorRecords.map(function (color, i) { return ({ name: 'colorRecords_' + i, type: 'ULONG', value: color }); }) ));
+	}
+
+	var cpal = { parse: parseCpalTable, make: makeCpalTable };
+
 	// The `sfnt` wrapper provides organization for the tables in the font.
 
 	function log2(v) {
@@ -7218,6 +7315,12 @@
 	    // Optional tables
 	    if (font.tables.gsub) {
 	        tables.push(gsub.make(font.tables.gsub));
+	    }
+	    if (font.tables.cpal) {
+	        tables.push(cpal.make(font.tables.cpal));
+	    }
+	    if (font.tables.colr) {
+	        tables.push(colr.make(font.tables.colr));
 	    }
 	    if (metaTable) {
 	        tables.push(metaTable);
@@ -14284,6 +14387,14 @@
 	            case 'ltag':
 	                table = uncompressTable(data, tableEntry);
 	                ltagTable = ltag.parse(table.data, table.offset);
+	                break;
+	            case 'COLR':
+	                table = uncompressTable(data, tableEntry);
+	                font.tables.colr = colr.parse(table.data, table.offset);
+	                break;
+	            case 'CPAL':
+	                table = uncompressTable(data, tableEntry);
+	                font.tables.cpal = cpal.parse(table.data, table.offset);
 	                break;
 	            case 'maxp':
 	                table = uncompressTable(data, tableEntry);
