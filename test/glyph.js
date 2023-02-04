@@ -1,5 +1,5 @@
 import assert  from 'assert';
-import { loadSync } from '../src/opentype';
+import { loadSync, Glyph, Path } from '../src/opentype';
 
 describe('glyph.js', function() {
     describe('lazy loading', function() {
@@ -66,6 +66,24 @@ describe('glyph.js', function() {
             assert.equal(box.y1, -103);
             assert.equal(box.x2, 688);
             assert.equal(box.y2, 701);
+        });
+    });
+
+    describe('new Glyph', function() {
+        let glyph = new Glyph({
+            name: 'Test Glyph',
+            unicode: 65,
+            path: new Path(),
+            advanceWidth: 400,
+            leftSideBearing: -100
+        });
+
+        it('verifies that the options have all been set', function() {
+            assert.equal(glyph.name, 'Test Glyph');
+            assert.equal(glyph.unicode, 65);
+            assert.equal(glyph.advanceWidth, 400);
+            assert.equal(glyph.leftSideBearing, -100);
+            assert.deepEqual(glyph.unicodes, [65]);
         });
     });
 });

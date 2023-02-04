@@ -763,8 +763,14 @@ encode.DICT = function(m) {
         const k = parseInt(keys[i], 0);
         const v = m[k];
         // Value comes before the key.
-        d = d.concat(encode.OPERAND(v.value, v.type));
-        d = d.concat(encode.OPERATOR(k));
+        const enc1 = encode.OPERAND(v.value, v.type);
+        const enc2 = encode.OPERATOR(k);
+        for (let j = 0; j < enc1.length; j++) {
+            d.push(enc1[j]);
+        }
+        for (let j = 0; j < enc2.length; j++) {
+            d.push(enc2[j]);
+        }
     }
 
     return d;
@@ -800,19 +806,34 @@ encode.OPERAND = function(v, type) {
     if (Array.isArray(type)) {
         for (let i = 0; i < type.length; i += 1) {
             check.argument(v.length === type.length, 'Not enough arguments given for type' + type);
-            d = d.concat(encode.OPERAND(v[i], type[i]));
+            const enc1 = encode.OPERAND(v[i], type[i]);
+            for (let j = 0; j < enc1.length; j++) {
+                d.push(enc1[j]);
+            }
         }
     } else {
         if (type === 'SID') {
-            d = d.concat(encode.NUMBER(v));
+            const enc1 = encode.NUMBER(v);
+            for (let j = 0; j < enc1.length; j++) {
+                d.push(enc1[j]);
+            }
         } else if (type === 'offset') {
             // We make it easy for ourselves and always encode offsets as
             // 4 bytes. This makes offset calculation for the top dict easier.
-            d = d.concat(encode.NUMBER32(v));
+            const enc1 = encode.NUMBER32(v);
+            for (let j = 0; j < enc1.length; j++) {
+                d.push(enc1[j]);
+            }
         } else if (type === 'number') {
-            d = d.concat(encode.NUMBER(v));
+            const enc1 = encode.NUMBER(v);
+            for (let j = 0; j < enc1.length; j++) {
+                d.push(enc1[j]);
+            }
         } else if (type === 'real') {
-            d = d.concat(encode.REAL(v));
+            const enc1 = encode.REAL(v);
+            for (let j = 0; j < enc1.length; j++) {
+                d.push(enc1[j]);
+            }
         } else {
             throw new Error('Unknown operand type ' + type);
             // FIXME Add support for booleans
@@ -847,7 +868,10 @@ encode.CHARSTRING = function(ops) {
 
     for (let i = 0; i < length; i += 1) {
         const op = ops[i];
-        d = d.concat(encode[op.type](op.value));
+        const enc1 = encode[op.type](op.value);
+        for (let j = 0; j < enc1.length; j++) {
+            d.push(enc1[j]);
+        }
     }
 
     if (wmm) {
@@ -914,10 +938,12 @@ encode.TABLE = function(table) {
 
         if (field.type === 'TABLE') {
             subtableOffsets.push(d.length);
-            d = d.concat([0, 0]);
+            d.push(...[0, 0]);
             subtables.push(bytes);
         } else {
-            d = d.concat(bytes);
+            for (let j = 0; j < bytes.length; j++) {
+                d.push(bytes[j]);
+            }
         }
     }
 
@@ -927,7 +953,9 @@ encode.TABLE = function(table) {
         check.argument(offset < 65536, 'Table ' + table.tableName + ' too big.');
         d[o] = offset >> 8;
         d[o + 1] = offset & 0xff;
-        d = d.concat(subtables[i]);
+        for (let j = 0; j < subtables[i].length; j++) {
+            d.push(subtables[i][j]);
+        }
     }
 
     return d;
