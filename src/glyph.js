@@ -23,6 +23,7 @@ function getPathDefinition(glyph, path) {
         }
     };
 }
+
 /**
  * @typedef GlyphOptions
  * @type Object
@@ -34,6 +35,7 @@ function getPathDefinition(glyph, path) {
  * @property {number} [xMax]
  * @property {number} [yMax]
  * @property {number} [advanceWidth]
+ * @property {number} [leftSideBearing]
  */
 
 // A Glyph is an individual mark that often corresponds to a character.
@@ -84,6 +86,10 @@ Glyph.prototype.bindConstructorValues = function(options) {
 
     if ('advanceWidth' in options) {
         this.advanceWidth = options.advanceWidth;
+    }
+
+    if ('leftSideBearing' in options) {
+        this.leftSideBearing = options.leftSideBearing;
     }
 
     // The path for a glyph is the most memory intensive, and is bound as a value
