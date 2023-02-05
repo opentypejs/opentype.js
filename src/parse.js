@@ -499,7 +499,7 @@ Parser.prototype.parseClassDef = function() {
         };
     }
 
-    console.warn(`0x${startOffset.toString(16)}: Unknown ClassDef format ${format}.`);
+    console.warn(`0x${startOffset.toString(16)}: This font file uses an invalid ClassDef format of ${format}. It might be corrupted and should be reacquired if it doesn't display as intended.`);
     return {
         format: format
     };
