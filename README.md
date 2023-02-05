@@ -40,7 +40,7 @@ Note: OpenType.js uses ES6-style imports, so if you want to edit it and debug it
 
 ### Directly
 
-[Download the latest ZIP](https://github.com/opentypejs/opentype.js/archive/master.zip) and grab the files in the `dist`
+[Download the latest release's ZIP](https://github.com/opentypejs/opentype.js/releases/latest) and grab the files in the `dist`
 folder. These are compiled.
 
 ### Using via a CDN

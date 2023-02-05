@@ -1,60 +1,1539 @@
 /**
- * https://opentype.js.org v1.3.4 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
+ * https://opentype.js.org v2.0.0 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
  */
 
-/*! https://mths.be/codepointat v0.2.0 by @mathias */
-if (!String.prototype.codePointAt) {
-	(function() {
-		var defineProperty = (function() {
-			// IE 8 only supports `Object.defineProperty` on DOM elements
+var callBindExports$1 = {};
+var callBind$3 = {
+  get exports(){ return callBindExports$1; },
+  set exports(v){ callBindExports$1 = v; },
+};
+
+var callBindExports = {};
+var callBind$2 = {
+  get exports(){ return callBindExports; },
+  set exports(v){ callBindExports = v; },
+};
+
+/* eslint no-invalid-this: 1 */
+
+var ERROR_MESSAGE = 'Function.prototype.bind called on incompatible ';
+var slice$1 = Array.prototype.slice;
+var toStr$3 = Object.prototype.toString;
+var funcType = '[object Function]';
+
+var implementation$5 = function bind(that) {
+    var target = this;
+    if (typeof target !== 'function' || toStr$3.call(target) !== funcType) {
+        throw new TypeError(ERROR_MESSAGE + target);
+    }
+    var args = slice$1.call(arguments, 1);
+
+    var bound;
+    var binder = function () {
+        if (this instanceof bound) {
+            var result = target.apply(
+                this,
+                args.concat(slice$1.call(arguments))
+            );
+            if (Object(result) === result) {
+                return result;
+            }
+            return this;
+        } else {
+            return target.apply(
+                that,
+                args.concat(slice$1.call(arguments))
+            );
+        }
+    };
+
+    var boundLength = Math.max(0, target.length - args.length);
+    var boundArgs = [];
+    for (var i = 0; i < boundLength; i++) {
+        boundArgs.push('$' + i);
+    }
+
+    bound = Function('binder', 'return function (' + boundArgs.join(',') + '){ return binder.apply(this,arguments); }')(binder);
+
+    if (target.prototype) {
+        var Empty = function Empty() {};
+        Empty.prototype = target.prototype;
+        bound.prototype = new Empty();
+        Empty.prototype = null;
+    }
+
+    return bound;
+};
+
+var implementation$4 = implementation$5;
+
+var functionBind = Function.prototype.bind || implementation$4;
+
+/* eslint complexity: [2, 18], max-statements: [2, 33] */
+var shams$1 = function hasSymbols() {
+	if (typeof Symbol !== 'function' || typeof Object.getOwnPropertySymbols !== 'function') { return false; }
+	if (typeof Symbol.iterator === 'symbol') { return true; }
+
+	var obj = {};
+	var sym = Symbol('test');
+	var symObj = Object(sym);
+	if (typeof sym === 'string') { return false; }
+
+	if (Object.prototype.toString.call(sym) !== '[object Symbol]') { return false; }
+	if (Object.prototype.toString.call(symObj) !== '[object Symbol]') { return false; }
+
+	// temp disabled per https://github.com/ljharb/object.assign/issues/17
+	// if (sym instanceof Symbol) { return false; }
+	// temp disabled per https://github.com/WebReflection/get-own-property-symbols/issues/4
+	// if (!(symObj instanceof Symbol)) { return false; }
+
+	// if (typeof Symbol.prototype.toString !== 'function') { return false; }
+	// if (String(sym) !== Symbol.prototype.toString.call(sym)) { return false; }
+
+	var symVal = 42;
+	obj[sym] = symVal;
+	for (sym in obj) { return false; } // eslint-disable-line no-restricted-syntax, no-unreachable-loop
+	if (typeof Object.keys === 'function' && Object.keys(obj).length !== 0) { return false; }
+
+	if (typeof Object.getOwnPropertyNames === 'function' && Object.getOwnPropertyNames(obj).length !== 0) { return false; }
+
+	var syms = Object.getOwnPropertySymbols(obj);
+	if (syms.length !== 1 || syms[0] !== sym) { return false; }
+
+	if (!Object.prototype.propertyIsEnumerable.call(obj, sym)) { return false; }
+
+	if (typeof Object.getOwnPropertyDescriptor === 'function') {
+		var descriptor = Object.getOwnPropertyDescriptor(obj, sym);
+		if (descriptor.value !== symVal || descriptor.enumerable !== true) { return false; }
+	}
+
+	return true;
+};
+
+var origSymbol = typeof Symbol !== 'undefined' && Symbol;
+var hasSymbolSham = shams$1;
+
+var hasSymbols$2 = function hasNativeSymbols() {
+	if (typeof origSymbol !== 'function') { return false; }
+	if (typeof Symbol !== 'function') { return false; }
+	if (typeof origSymbol('foo') !== 'symbol') { return false; }
+	if (typeof Symbol('bar') !== 'symbol') { return false; }
+
+	return hasSymbolSham();
+};
+
+var bind$1 = functionBind;
+
+var src = bind$1.call(Function.call, Object.prototype.hasOwnProperty);
+
+var undefined$1;
+
+var $SyntaxError = SyntaxError;
+var $Function = Function;
+var $TypeError$3 = TypeError;
+
+// eslint-disable-next-line consistent-return
+var getEvalledConstructor = function (expressionSyntax) {
+	try {
+		return $Function('"use strict"; return (' + expressionSyntax + ').constructor;')();
+	} catch (e) {}
+};
+
+var $gOPD = Object.getOwnPropertyDescriptor;
+if ($gOPD) {
+	try {
+		$gOPD({}, '');
+	} catch (e) {
+		$gOPD = null; // this is IE 8, which has a broken gOPD
+	}
+}
+
+var throwTypeError = function () {
+	throw new $TypeError$3();
+};
+var ThrowTypeError = $gOPD
+	? (function () {
+		try {
+			// eslint-disable-next-line no-unused-expressions, no-caller, no-restricted-properties
+			arguments.callee; // IE 8 does not throw here
+			return throwTypeError;
+		} catch (calleeThrows) {
 			try {
-				var object = {};
-				var $defineProperty = Object.defineProperty;
-				var result = $defineProperty(object, object, object) && $defineProperty;
-			} catch(error) {}
-			return result;
-		}());
-		var codePointAt = function(position) {
-			if (this == null) {
-				throw TypeError();
+				// IE 8 throws on Object.getOwnPropertyDescriptor(arguments, '')
+				return $gOPD(arguments, 'callee').get;
+			} catch (gOPDthrows) {
+				return throwTypeError;
 			}
-			var string = String(this);
-			var size = string.length;
-			// `ToInteger`
-			var index = position ? Number(position) : 0;
-			if (index != index) { // better `isNaN`
-				index = 0;
+		}
+	}())
+	: throwTypeError;
+
+var hasSymbols$1 = hasSymbols$2();
+
+var getProto = Object.getPrototypeOf || function (x) { return x.__proto__; }; // eslint-disable-line no-proto
+
+var needsEval = {};
+
+var TypedArray = typeof Uint8Array === 'undefined' ? undefined$1 : getProto(Uint8Array);
+
+var INTRINSICS = {
+	'%AggregateError%': typeof AggregateError === 'undefined' ? undefined$1 : AggregateError,
+	'%Array%': Array,
+	'%ArrayBuffer%': typeof ArrayBuffer === 'undefined' ? undefined$1 : ArrayBuffer,
+	'%ArrayIteratorPrototype%': hasSymbols$1 ? getProto([][Symbol.iterator]()) : undefined$1,
+	'%AsyncFromSyncIteratorPrototype%': undefined$1,
+	'%AsyncFunction%': needsEval,
+	'%AsyncGenerator%': needsEval,
+	'%AsyncGeneratorFunction%': needsEval,
+	'%AsyncIteratorPrototype%': needsEval,
+	'%Atomics%': typeof Atomics === 'undefined' ? undefined$1 : Atomics,
+	'%BigInt%': typeof BigInt === 'undefined' ? undefined$1 : BigInt,
+	'%BigInt64Array%': typeof BigInt64Array === 'undefined' ? undefined$1 : BigInt64Array,
+	'%BigUint64Array%': typeof BigUint64Array === 'undefined' ? undefined$1 : BigUint64Array,
+	'%Boolean%': Boolean,
+	'%DataView%': typeof DataView === 'undefined' ? undefined$1 : DataView,
+	'%Date%': Date,
+	'%decodeURI%': decodeURI,
+	'%decodeURIComponent%': decodeURIComponent,
+	'%encodeURI%': encodeURI,
+	'%encodeURIComponent%': encodeURIComponent,
+	'%Error%': Error,
+	'%eval%': eval, // eslint-disable-line no-eval
+	'%EvalError%': EvalError,
+	'%Float32Array%': typeof Float32Array === 'undefined' ? undefined$1 : Float32Array,
+	'%Float64Array%': typeof Float64Array === 'undefined' ? undefined$1 : Float64Array,
+	'%FinalizationRegistry%': typeof FinalizationRegistry === 'undefined' ? undefined$1 : FinalizationRegistry,
+	'%Function%': $Function,
+	'%GeneratorFunction%': needsEval,
+	'%Int8Array%': typeof Int8Array === 'undefined' ? undefined$1 : Int8Array,
+	'%Int16Array%': typeof Int16Array === 'undefined' ? undefined$1 : Int16Array,
+	'%Int32Array%': typeof Int32Array === 'undefined' ? undefined$1 : Int32Array,
+	'%isFinite%': isFinite,
+	'%isNaN%': isNaN,
+	'%IteratorPrototype%': hasSymbols$1 ? getProto(getProto([][Symbol.iterator]())) : undefined$1,
+	'%JSON%': typeof JSON === 'object' ? JSON : undefined$1,
+	'%Map%': typeof Map === 'undefined' ? undefined$1 : Map,
+	'%MapIteratorPrototype%': typeof Map === 'undefined' || !hasSymbols$1 ? undefined$1 : getProto(new Map()[Symbol.iterator]()),
+	'%Math%': Math,
+	'%Number%': Number,
+	'%Object%': Object,
+	'%parseFloat%': parseFloat,
+	'%parseInt%': parseInt,
+	'%Promise%': typeof Promise === 'undefined' ? undefined$1 : Promise,
+	'%Proxy%': typeof Proxy === 'undefined' ? undefined$1 : Proxy,
+	'%RangeError%': RangeError,
+	'%ReferenceError%': ReferenceError,
+	'%Reflect%': typeof Reflect === 'undefined' ? undefined$1 : Reflect,
+	'%RegExp%': RegExp,
+	'%Set%': typeof Set === 'undefined' ? undefined$1 : Set,
+	'%SetIteratorPrototype%': typeof Set === 'undefined' || !hasSymbols$1 ? undefined$1 : getProto(new Set()[Symbol.iterator]()),
+	'%SharedArrayBuffer%': typeof SharedArrayBuffer === 'undefined' ? undefined$1 : SharedArrayBuffer,
+	'%String%': String,
+	'%StringIteratorPrototype%': hasSymbols$1 ? getProto(''[Symbol.iterator]()) : undefined$1,
+	'%Symbol%': hasSymbols$1 ? Symbol : undefined$1,
+	'%SyntaxError%': $SyntaxError,
+	'%ThrowTypeError%': ThrowTypeError,
+	'%TypedArray%': TypedArray,
+	'%TypeError%': $TypeError$3,
+	'%Uint8Array%': typeof Uint8Array === 'undefined' ? undefined$1 : Uint8Array,
+	'%Uint8ClampedArray%': typeof Uint8ClampedArray === 'undefined' ? undefined$1 : Uint8ClampedArray,
+	'%Uint16Array%': typeof Uint16Array === 'undefined' ? undefined$1 : Uint16Array,
+	'%Uint32Array%': typeof Uint32Array === 'undefined' ? undefined$1 : Uint32Array,
+	'%URIError%': URIError,
+	'%WeakMap%': typeof WeakMap === 'undefined' ? undefined$1 : WeakMap,
+	'%WeakRef%': typeof WeakRef === 'undefined' ? undefined$1 : WeakRef,
+	'%WeakSet%': typeof WeakSet === 'undefined' ? undefined$1 : WeakSet
+};
+
+try {
+	null.error; // eslint-disable-line no-unused-expressions
+} catch (e$1) {
+	// https://github.com/tc39/proposal-shadowrealm/pull/384#issuecomment-1364264229
+	var errorProto = getProto(getProto(e$1));
+	INTRINSICS['%Error.prototype%'] = errorProto;
+}
+
+var doEval = function doEval(name) {
+	var value;
+	if (name === '%AsyncFunction%') {
+		value = getEvalledConstructor('async function () {}');
+	} else if (name === '%GeneratorFunction%') {
+		value = getEvalledConstructor('function* () {}');
+	} else if (name === '%AsyncGeneratorFunction%') {
+		value = getEvalledConstructor('async function* () {}');
+	} else if (name === '%AsyncGenerator%') {
+		var fn = doEval('%AsyncGeneratorFunction%');
+		if (fn) {
+			value = fn.prototype;
+		}
+	} else if (name === '%AsyncIteratorPrototype%') {
+		var gen = doEval('%AsyncGenerator%');
+		if (gen) {
+			value = getProto(gen.prototype);
+		}
+	}
+
+	INTRINSICS[name] = value;
+
+	return value;
+};
+
+var LEGACY_ALIASES = {
+	'%ArrayBufferPrototype%': ['ArrayBuffer', 'prototype'],
+	'%ArrayPrototype%': ['Array', 'prototype'],
+	'%ArrayProto_entries%': ['Array', 'prototype', 'entries'],
+	'%ArrayProto_forEach%': ['Array', 'prototype', 'forEach'],
+	'%ArrayProto_keys%': ['Array', 'prototype', 'keys'],
+	'%ArrayProto_values%': ['Array', 'prototype', 'values'],
+	'%AsyncFunctionPrototype%': ['AsyncFunction', 'prototype'],
+	'%AsyncGenerator%': ['AsyncGeneratorFunction', 'prototype'],
+	'%AsyncGeneratorPrototype%': ['AsyncGeneratorFunction', 'prototype', 'prototype'],
+	'%BooleanPrototype%': ['Boolean', 'prototype'],
+	'%DataViewPrototype%': ['DataView', 'prototype'],
+	'%DatePrototype%': ['Date', 'prototype'],
+	'%ErrorPrototype%': ['Error', 'prototype'],
+	'%EvalErrorPrototype%': ['EvalError', 'prototype'],
+	'%Float32ArrayPrototype%': ['Float32Array', 'prototype'],
+	'%Float64ArrayPrototype%': ['Float64Array', 'prototype'],
+	'%FunctionPrototype%': ['Function', 'prototype'],
+	'%Generator%': ['GeneratorFunction', 'prototype'],
+	'%GeneratorPrototype%': ['GeneratorFunction', 'prototype', 'prototype'],
+	'%Int8ArrayPrototype%': ['Int8Array', 'prototype'],
+	'%Int16ArrayPrototype%': ['Int16Array', 'prototype'],
+	'%Int32ArrayPrototype%': ['Int32Array', 'prototype'],
+	'%JSONParse%': ['JSON', 'parse'],
+	'%JSONStringify%': ['JSON', 'stringify'],
+	'%MapPrototype%': ['Map', 'prototype'],
+	'%NumberPrototype%': ['Number', 'prototype'],
+	'%ObjectPrototype%': ['Object', 'prototype'],
+	'%ObjProto_toString%': ['Object', 'prototype', 'toString'],
+	'%ObjProto_valueOf%': ['Object', 'prototype', 'valueOf'],
+	'%PromisePrototype%': ['Promise', 'prototype'],
+	'%PromiseProto_then%': ['Promise', 'prototype', 'then'],
+	'%Promise_all%': ['Promise', 'all'],
+	'%Promise_reject%': ['Promise', 'reject'],
+	'%Promise_resolve%': ['Promise', 'resolve'],
+	'%RangeErrorPrototype%': ['RangeError', 'prototype'],
+	'%ReferenceErrorPrototype%': ['ReferenceError', 'prototype'],
+	'%RegExpPrototype%': ['RegExp', 'prototype'],
+	'%SetPrototype%': ['Set', 'prototype'],
+	'%SharedArrayBufferPrototype%': ['SharedArrayBuffer', 'prototype'],
+	'%StringPrototype%': ['String', 'prototype'],
+	'%SymbolPrototype%': ['Symbol', 'prototype'],
+	'%SyntaxErrorPrototype%': ['SyntaxError', 'prototype'],
+	'%TypedArrayPrototype%': ['TypedArray', 'prototype'],
+	'%TypeErrorPrototype%': ['TypeError', 'prototype'],
+	'%Uint8ArrayPrototype%': ['Uint8Array', 'prototype'],
+	'%Uint8ClampedArrayPrototype%': ['Uint8ClampedArray', 'prototype'],
+	'%Uint16ArrayPrototype%': ['Uint16Array', 'prototype'],
+	'%Uint32ArrayPrototype%': ['Uint32Array', 'prototype'],
+	'%URIErrorPrototype%': ['URIError', 'prototype'],
+	'%WeakMapPrototype%': ['WeakMap', 'prototype'],
+	'%WeakSetPrototype%': ['WeakSet', 'prototype']
+};
+
+var bind = functionBind;
+var hasOwn = src;
+var $concat = bind.call(Function.call, Array.prototype.concat);
+var $spliceApply = bind.call(Function.apply, Array.prototype.splice);
+var $replace$1 = bind.call(Function.call, String.prototype.replace);
+var $strSlice$1 = bind.call(Function.call, String.prototype.slice);
+var $exec = bind.call(Function.call, RegExp.prototype.exec);
+
+/* adapted from https://github.com/lodash/lodash/blob/4.17.15/dist/lodash.js#L6735-L6744 */
+var rePropName = /[^%.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|%$))/g;
+var reEscapeChar = /\\(\\)?/g; /** Used to match backslashes in property paths. */
+var stringToPath = function stringToPath(string) {
+	var first = $strSlice$1(string, 0, 1);
+	var last = $strSlice$1(string, -1);
+	if (first === '%' && last !== '%') {
+		throw new $SyntaxError('invalid intrinsic syntax, expected closing `%`');
+	} else if (last === '%' && first !== '%') {
+		throw new $SyntaxError('invalid intrinsic syntax, expected opening `%`');
+	}
+	var result = [];
+	$replace$1(string, rePropName, function (match, number, quote, subString) {
+		result[result.length] = quote ? $replace$1(subString, reEscapeChar, '$1') : number || match;
+	});
+	return result;
+};
+/* end adaptation */
+
+var getBaseIntrinsic = function getBaseIntrinsic(name, allowMissing) {
+	var intrinsicName = name;
+	var alias;
+	if (hasOwn(LEGACY_ALIASES, intrinsicName)) {
+		alias = LEGACY_ALIASES[intrinsicName];
+		intrinsicName = '%' + alias[0] + '%';
+	}
+
+	if (hasOwn(INTRINSICS, intrinsicName)) {
+		var value = INTRINSICS[intrinsicName];
+		if (value === needsEval) {
+			value = doEval(intrinsicName);
+		}
+		if (typeof value === 'undefined' && !allowMissing) {
+			throw new $TypeError$3('intrinsic ' + name + ' exists, but is not available. Please file an issue!');
+		}
+
+		return {
+			alias: alias,
+			name: intrinsicName,
+			value: value
+		};
+	}
+
+	throw new $SyntaxError('intrinsic ' + name + ' does not exist!');
+};
+
+var getIntrinsic = function GetIntrinsic(name, allowMissing) {
+	if (typeof name !== 'string' || name.length === 0) {
+		throw new $TypeError$3('intrinsic name must be a non-empty string');
+	}
+	if (arguments.length > 1 && typeof allowMissing !== 'boolean') {
+		throw new $TypeError$3('"allowMissing" argument must be a boolean');
+	}
+
+	if ($exec(/^%?[^%]*%?$/, name) === null) {
+		throw new $SyntaxError('`%` may not be present anywhere but at the beginning and end of the intrinsic name');
+	}
+	var parts = stringToPath(name);
+	var intrinsicBaseName = parts.length > 0 ? parts[0] : '';
+
+	var intrinsic = getBaseIntrinsic('%' + intrinsicBaseName + '%', allowMissing);
+	var intrinsicRealName = intrinsic.name;
+	var value = intrinsic.value;
+	var skipFurtherCaching = false;
+
+	var alias = intrinsic.alias;
+	if (alias) {
+		intrinsicBaseName = alias[0];
+		$spliceApply(parts, $concat([0, 1], alias));
+	}
+
+	for (var i = 1, isOwn = true; i < parts.length; i += 1) {
+		var part = parts[i];
+		var first = $strSlice$1(part, 0, 1);
+		var last = $strSlice$1(part, -1);
+		if (
+			(
+				(first === '"' || first === "'" || first === '`')
+				|| (last === '"' || last === "'" || last === '`')
+			)
+			&& first !== last
+		) {
+			throw new $SyntaxError('property names with quotes must have matching quotes');
+		}
+		if (part === 'constructor' || !isOwn) {
+			skipFurtherCaching = true;
+		}
+
+		intrinsicBaseName += '.' + part;
+		intrinsicRealName = '%' + intrinsicBaseName + '%';
+
+		if (hasOwn(INTRINSICS, intrinsicRealName)) {
+			value = INTRINSICS[intrinsicRealName];
+		} else if (value != null) {
+			if (!(part in value)) {
+				if (!allowMissing) {
+					throw new $TypeError$3('base intrinsic for ' + name + ' exists, but the property is not available.');
+				}
+				return void undefined$1;
 			}
-			// Account for out-of-bounds indices:
-			if (index < 0 || index >= size) {
-				return undefined;
+			if ($gOPD && (i + 1) >= parts.length) {
+				var desc = $gOPD(value, part);
+				isOwn = !!desc;
+
+				// By convention, when a data property is converted to an accessor
+				// property to emulate a data property that does not suffer from
+				// the override mistake, that accessor's getter is marked with
+				// an `originalValue` property. Here, when we detect this, we
+				// uphold the illusion by pretending to see that original data
+				// property, i.e., returning the value rather than the getter
+				// itself.
+				if (isOwn && 'get' in desc && !('originalValue' in desc.get)) {
+					value = desc.get;
+				} else {
+					value = value[part];
+				}
+			} else {
+				isOwn = hasOwn(value, part);
+				value = value[part];
 			}
-			// Get the first code unit
-			var first = string.charCodeAt(index);
-			var second;
-			if ( // check if it’s the start of a surrogate pair
-				first >= 0xD800 && first <= 0xDBFF && // high surrogate
-				size > index + 1 // there is a next code unit
-			) {
-				second = string.charCodeAt(index + 1);
-				if (second >= 0xDC00 && second <= 0xDFFF) { // low surrogate
-					// https://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
-					return (first - 0xD800) * 0x400 + second - 0xDC00 + 0x10000;
+
+			if (isOwn && !skipFurtherCaching) {
+				INTRINSICS[intrinsicRealName] = value;
+			}
+		}
+	}
+	return value;
+};
+
+(function (module) {
+
+	var bind = functionBind;
+	var GetIntrinsic = getIntrinsic;
+
+	var $apply = GetIntrinsic('%Function.prototype.apply%');
+	var $call = GetIntrinsic('%Function.prototype.call%');
+	var $reflectApply = GetIntrinsic('%Reflect.apply%', true) || bind.call($call, $apply);
+
+	var $gOPD = GetIntrinsic('%Object.getOwnPropertyDescriptor%', true);
+	var $defineProperty = GetIntrinsic('%Object.defineProperty%', true);
+	var $max = GetIntrinsic('%Math.max%');
+
+	if ($defineProperty) {
+		try {
+			$defineProperty({}, 'a', { value: 1 });
+		} catch (e) {
+			// IE 8 has a broken defineProperty
+			$defineProperty = null;
+		}
+	}
+
+	module.exports = function callBind(originalFunction) {
+		var func = $reflectApply(bind, $call, arguments);
+		if ($gOPD && $defineProperty) {
+			var desc = $gOPD(func, 'length');
+			if (desc.configurable) {
+				// original length, plus the receiver, minus any additional arguments (after the receiver)
+				$defineProperty(
+					func,
+					'length',
+					{ value: 1 + $max(0, originalFunction.length - (arguments.length - 1)) }
+				);
+			}
+		}
+		return func;
+	};
+
+	var applyBind = function applyBind() {
+		return $reflectApply(bind, $apply, arguments);
+	};
+
+	if ($defineProperty) {
+		$defineProperty(module.exports, 'apply', { value: applyBind });
+	} else {
+		module.exports.apply = applyBind;
+	}
+} (callBind$2));
+
+(function (module) {
+
+	// TODO; semver-major: remove
+
+	module.exports = callBindExports;
+} (callBind$3));
+
+var toStr$2 = Object.prototype.toString;
+
+var isArguments = function isArguments(value) {
+	var str = toStr$2.call(value);
+	var isArgs = str === '[object Arguments]';
+	if (!isArgs) {
+		isArgs = str !== '[object Array]' &&
+			value !== null &&
+			typeof value === 'object' &&
+			typeof value.length === 'number' &&
+			value.length >= 0 &&
+			toStr$2.call(value.callee) === '[object Function]';
+	}
+	return isArgs;
+};
+
+var implementation$3;
+var hasRequiredImplementation;
+
+function requireImplementation () {
+	if (hasRequiredImplementation) { return implementation$3; }
+	hasRequiredImplementation = 1;
+
+	var keysShim;
+	if (!Object.keys) {
+		// modified from https://github.com/es-shims/es5-shim
+		var has = Object.prototype.hasOwnProperty;
+		var toStr = Object.prototype.toString;
+		var isArgs = isArguments; // eslint-disable-line global-require
+		var isEnumerable = Object.prototype.propertyIsEnumerable;
+		var hasDontEnumBug = !isEnumerable.call({ toString: null }, 'toString');
+		var hasProtoEnumBug = isEnumerable.call(function () {}, 'prototype');
+		var dontEnums = [
+			'toString',
+			'toLocaleString',
+			'valueOf',
+			'hasOwnProperty',
+			'isPrototypeOf',
+			'propertyIsEnumerable',
+			'constructor'
+		];
+		var equalsConstructorPrototype = function (o) {
+			var ctor = o.constructor;
+			return ctor && ctor.prototype === o;
+		};
+		var excludedKeys = {
+			$applicationCache: true,
+			$console: true,
+			$external: true,
+			$frame: true,
+			$frameElement: true,
+			$frames: true,
+			$innerHeight: true,
+			$innerWidth: true,
+			$onmozfullscreenchange: true,
+			$onmozfullscreenerror: true,
+			$outerHeight: true,
+			$outerWidth: true,
+			$pageXOffset: true,
+			$pageYOffset: true,
+			$parent: true,
+			$scrollLeft: true,
+			$scrollTop: true,
+			$scrollX: true,
+			$scrollY: true,
+			$self: true,
+			$webkitIndexedDB: true,
+			$webkitStorageInfo: true,
+			$window: true
+		};
+		var hasAutomationEqualityBug = (function () {
+			/* global window */
+			if (typeof window === 'undefined') { return false; }
+			for (var k in window) {
+				try {
+					if (!excludedKeys['$' + k] && has.call(window, k) && window[k] !== null && typeof window[k] === 'object') {
+						try {
+							equalsConstructorPrototype(window[k]);
+						} catch (e) {
+							return true;
+						}
+					}
+				} catch (e$1) {
+					return true;
 				}
 			}
-			return first;
+			return false;
+		}());
+		var equalsConstructorPrototypeIfNotBuggy = function (o) {
+			/* global window */
+			if (typeof window === 'undefined' || !hasAutomationEqualityBug) {
+				return equalsConstructorPrototype(o);
+			}
+			try {
+				return equalsConstructorPrototype(o);
+			} catch (e) {
+				return false;
+			}
 		};
-		if (defineProperty) {
-			defineProperty(String.prototype, 'codePointAt', {
-				'value': codePointAt,
-				'configurable': true,
-				'writable': true
-			});
-		} else {
-			String.prototype.codePointAt = codePointAt;
-		}
-	}());
+
+		keysShim = function keys(object) {
+			var isObject = object !== null && typeof object === 'object';
+			var isFunction = toStr.call(object) === '[object Function]';
+			var isArguments = isArgs(object);
+			var isString = isObject && toStr.call(object) === '[object String]';
+			var theKeys = [];
+
+			if (!isObject && !isFunction && !isArguments) {
+				throw new TypeError('Object.keys called on a non-object');
+			}
+
+			var skipProto = hasProtoEnumBug && isFunction;
+			if (isString && object.length > 0 && !has.call(object, 0)) {
+				for (var i = 0; i < object.length; ++i) {
+					theKeys.push(String(i));
+				}
+			}
+
+			if (isArguments && object.length > 0) {
+				for (var j = 0; j < object.length; ++j) {
+					theKeys.push(String(j));
+				}
+			} else {
+				for (var name in object) {
+					if (!(skipProto && name === 'prototype') && has.call(object, name)) {
+						theKeys.push(String(name));
+					}
+				}
+			}
+
+			if (hasDontEnumBug) {
+				var skipConstructor = equalsConstructorPrototypeIfNotBuggy(object);
+
+				for (var k = 0; k < dontEnums.length; ++k) {
+					if (!(skipConstructor && dontEnums[k] === 'constructor') && has.call(object, dontEnums[k])) {
+						theKeys.push(dontEnums[k]);
+					}
+				}
+			}
+			return theKeys;
+		};
+	}
+	implementation$3 = keysShim;
+	return implementation$3;
 }
+
+var slice = Array.prototype.slice;
+var isArgs = isArguments;
+
+var origKeys = Object.keys;
+var keysShim = origKeys ? function keys(o) { return origKeys(o); } : requireImplementation();
+
+var originalKeys = Object.keys;
+
+keysShim.shim = function shimObjectKeys() {
+	if (Object.keys) {
+		var keysWorksWithArguments = (function () {
+			// Safari 5.0 bug
+			var args = Object.keys(arguments);
+			return args && args.length === arguments.length;
+		}(1, 2));
+		if (!keysWorksWithArguments) {
+			Object.keys = function keys(object) { // eslint-disable-line func-name-matching
+				if (isArgs(object)) {
+					return originalKeys(slice.call(object));
+				}
+				return originalKeys(object);
+			};
+		}
+	} else {
+		Object.keys = keysShim;
+	}
+	return Object.keys || keysShim;
+};
+
+var objectKeys = keysShim;
+
+var GetIntrinsic$5 = getIntrinsic;
+
+var $defineProperty = GetIntrinsic$5('%Object.defineProperty%', true);
+
+var hasPropertyDescriptors$1 = function hasPropertyDescriptors() {
+	if ($defineProperty) {
+		try {
+			$defineProperty({}, 'a', { value: 1 });
+			return true;
+		} catch (e) {
+			// IE 8 has a broken defineProperty
+			return false;
+		}
+	}
+	return false;
+};
+
+hasPropertyDescriptors$1.hasArrayLengthDefineBug = function hasArrayLengthDefineBug() {
+	// node v0.6 has a bug where array lengths can be Set but not Defined
+	if (!hasPropertyDescriptors$1()) {
+		return null;
+	}
+	try {
+		return $defineProperty([], 'length', { value: 1 }).length !== 1;
+	} catch (e) {
+		// In Firefox 4-22, defining length on an array throws an exception.
+		return true;
+	}
+};
+
+var hasPropertyDescriptors_1 = hasPropertyDescriptors$1;
+
+var keys = objectKeys;
+var hasSymbols = typeof Symbol === 'function' && typeof Symbol('foo') === 'symbol';
+
+var toStr$1 = Object.prototype.toString;
+var concat = Array.prototype.concat;
+var origDefineProperty = Object.defineProperty;
+
+var isFunction = function (fn) {
+	return typeof fn === 'function' && toStr$1.call(fn) === '[object Function]';
+};
+
+var hasPropertyDescriptors = hasPropertyDescriptors_1();
+
+var supportsDescriptors = origDefineProperty && hasPropertyDescriptors;
+
+var defineProperty = function (object, name, value, predicate) {
+	if (name in object && (!isFunction(predicate) || !predicate())) {
+		return;
+	}
+	if (supportsDescriptors) {
+		origDefineProperty(object, name, {
+			configurable: true,
+			enumerable: false,
+			value: value,
+			writable: true
+		});
+	} else {
+		object[name] = value; // eslint-disable-line no-param-reassign
+	}
+};
+
+var defineProperties = function (object, map) {
+	var predicates = arguments.length > 2 ? arguments[2] : {};
+	var props = keys(map);
+	if (hasSymbols) {
+		props = concat.call(props, Object.getOwnPropertySymbols(map));
+	}
+	for (var i = 0; i < props.length; i += 1) {
+		defineProperty(object, props[i], map[props[i]], predicates[props[i]]);
+	}
+};
+
+defineProperties.supportsDescriptors = !!supportsDescriptors;
+
+var defineProperties_1 = defineProperties;
+
+var callBoundExports = {};
+var callBound$3 = {
+  get exports(){ return callBoundExports; },
+  set exports(v){ callBoundExports = v; },
+};
+
+var GetIntrinsic$4 = getIntrinsic;
+
+var callBind$1 = callBindExports;
+
+var $indexOf = callBind$1(GetIntrinsic$4('String.prototype.indexOf'));
+
+var callBound$2 = function callBoundIntrinsic(name, allowMissing) {
+	var intrinsic = GetIntrinsic$4(name, !!allowMissing);
+	if (typeof intrinsic === 'function' && $indexOf(name, '.prototype.') > -1) {
+		return callBind$1(intrinsic);
+	}
+	return intrinsic;
+};
+
+(function (module) {
+
+	// TODO; semver-major: remove
+
+	module.exports = callBound$2;
+} (callBound$3));
+
+var RequireObjectCoercibleExports = {};
+var RequireObjectCoercible$1 = {
+  get exports(){ return RequireObjectCoercibleExports; },
+  set exports(v){ RequireObjectCoercibleExports = v; },
+};
+
+var GetIntrinsic$3 = getIntrinsic;
+
+var $TypeError$2 = GetIntrinsic$3('%TypeError%');
+
+// http://262.ecma-international.org/5.1/#sec-9.10
+
+var CheckObjectCoercible = function CheckObjectCoercible(value, optMessage) {
+	if (value == null) {
+		throw new $TypeError$2(optMessage || ('Cannot call method on ' + value));
+	}
+	return value;
+};
+
+(function (module) {
+
+	module.exports = CheckObjectCoercible;
+} (RequireObjectCoercible$1));
+
+var GetIntrinsic$2 = getIntrinsic;
+
+var $String = GetIntrinsic$2('%String%');
+var $TypeError$1 = GetIntrinsic$2('%TypeError%');
+
+// https://ecma-international.org/ecma-262/6.0/#sec-tostring
+
+var ToString$1 = function ToString(argument) {
+	if (typeof argument === 'symbol') {
+		throw new $TypeError$1('Cannot convert a Symbol value to a string');
+	}
+	return $String(argument);
+};
+
+var GetIntrinsic$1 = getIntrinsic;
+
+var $abs = GetIntrinsic$1('%Math.abs%');
+
+// http://262.ecma-international.org/5.1/#sec-5.2
+
+var abs$1 = function abs(x) {
+	return $abs(x);
+};
+
+// var modulo = require('./modulo');
+var $floor = Math.floor;
+
+// http://262.ecma-international.org/5.1/#sec-5.2
+
+var floor$1 = function floor(x) {
+	// return x - modulo(x, 1);
+	return $floor(x);
+};
+
+var ToPrimitiveExports = {};
+var ToPrimitive$3 = {
+  get exports(){ return ToPrimitiveExports; },
+  set exports(v){ ToPrimitiveExports = v; },
+};
+
+var isPrimitive$3;
+var hasRequiredIsPrimitive$1;
+
+function requireIsPrimitive$1 () {
+	if (hasRequiredIsPrimitive$1) { return isPrimitive$3; }
+	hasRequiredIsPrimitive$1 = 1;
+
+	isPrimitive$3 = function isPrimitive(value) {
+		return value === null || (typeof value !== 'function' && typeof value !== 'object');
+	};
+	return isPrimitive$3;
+}
+
+var isCallable$1;
+var hasRequiredIsCallable;
+
+function requireIsCallable () {
+	if (hasRequiredIsCallable) { return isCallable$1; }
+	hasRequiredIsCallable = 1;
+
+	var fnToStr = Function.prototype.toString;
+	var reflectApply = typeof Reflect === 'object' && Reflect !== null && Reflect.apply;
+	var badArrayLike;
+	var isCallableMarker;
+	if (typeof reflectApply === 'function' && typeof Object.defineProperty === 'function') {
+		try {
+			badArrayLike = Object.defineProperty({}, 'length', {
+				get: function () {
+					throw isCallableMarker;
+				}
+			});
+			isCallableMarker = {};
+			// eslint-disable-next-line no-throw-literal
+			reflectApply(function () { throw 42; }, null, badArrayLike);
+		} catch (_) {
+			if (_ !== isCallableMarker) {
+				reflectApply = null;
+			}
+		}
+	} else {
+		reflectApply = null;
+	}
+
+	var constructorRegex = /^\s*class\b/;
+	var isES6ClassFn = function isES6ClassFunction(value) {
+		try {
+			var fnStr = fnToStr.call(value);
+			return constructorRegex.test(fnStr);
+		} catch (e) {
+			return false; // not a function
+		}
+	};
+
+	var tryFunctionObject = function tryFunctionToStr(value) {
+		try {
+			if (isES6ClassFn(value)) { return false; }
+			fnToStr.call(value);
+			return true;
+		} catch (e) {
+			return false;
+		}
+	};
+	var toStr = Object.prototype.toString;
+	var objectClass = '[object Object]';
+	var fnClass = '[object Function]';
+	var genClass = '[object GeneratorFunction]';
+	var ddaClass = '[object HTMLAllCollection]'; // IE 11
+	var ddaClass2 = '[object HTML document.all class]';
+	var ddaClass3 = '[object HTMLCollection]'; // IE 9-10
+	var hasToStringTag = typeof Symbol === 'function' && !!Symbol.toStringTag; // better: use `has-tostringtag`
+
+	var isIE68 = !(0 in [,]); // eslint-disable-line no-sparse-arrays, comma-spacing
+
+	var isDDA = function isDocumentDotAll() { return false; };
+	if (typeof document === 'object') {
+		// Firefox 3 canonicalizes DDA to undefined when it's not accessed directly
+		var all = document.all;
+		if (toStr.call(all) === toStr.call(document.all)) {
+			isDDA = function isDocumentDotAll(value) {
+				/* globals document: false */
+				// in IE 6-8, typeof document.all is "object" and it's truthy
+				if ((isIE68 || !value) && (typeof value === 'undefined' || typeof value === 'object')) {
+					try {
+						var str = toStr.call(value);
+						return (
+							str === ddaClass
+							|| str === ddaClass2
+							|| str === ddaClass3 // opera 12.16
+							|| str === objectClass // IE 6-8
+						) && value('') == null; // eslint-disable-line eqeqeq
+					} catch (e) { /**/ }
+				}
+				return false;
+			};
+		}
+	}
+
+	isCallable$1 = reflectApply
+		? function isCallable(value) {
+			if (isDDA(value)) { return true; }
+			if (!value) { return false; }
+			if (typeof value !== 'function' && typeof value !== 'object') { return false; }
+			try {
+				reflectApply(value, null, badArrayLike);
+			} catch (e) {
+				if (e !== isCallableMarker) { return false; }
+			}
+			return !isES6ClassFn(value) && tryFunctionObject(value);
+		}
+		: function isCallable(value) {
+			if (isDDA(value)) { return true; }
+			if (!value) { return false; }
+			if (typeof value !== 'function' && typeof value !== 'object') { return false; }
+			if (hasToStringTag) { return tryFunctionObject(value); }
+			if (isES6ClassFn(value)) { return false; }
+			var strClass = toStr.call(value);
+			if (strClass !== fnClass && strClass !== genClass && !(/^\[object HTML/).test(strClass)) { return false; }
+			return tryFunctionObject(value);
+		};
+	return isCallable$1;
+}
+
+var toStr = Object.prototype.toString;
+
+var isPrimitive$2 = requireIsPrimitive$1();
+
+var isCallable = requireIsCallable();
+
+// http://ecma-international.org/ecma-262/5.1/#sec-8.12.8
+var ES5internalSlots = {
+	'[[DefaultValue]]': function (O) {
+		var actualHint;
+		if (arguments.length > 1) {
+			actualHint = arguments[1];
+		} else {
+			actualHint = toStr.call(O) === '[object Date]' ? String : Number;
+		}
+
+		if (actualHint === String || actualHint === Number) {
+			var methods = actualHint === String ? ['toString', 'valueOf'] : ['valueOf', 'toString'];
+			var value, i;
+			for (i = 0; i < methods.length; ++i) {
+				if (isCallable(O[methods[i]])) {
+					value = O[methods[i]]();
+					if (isPrimitive$2(value)) {
+						return value;
+					}
+				}
+			}
+			throw new TypeError('No default value');
+		}
+		throw new TypeError('invalid [[DefaultValue]] hint supplied');
+	}
+};
+
+// http://ecma-international.org/ecma-262/5.1/#sec-9.1
+var es5 = function ToPrimitive(input) {
+	if (isPrimitive$2(input)) {
+		return input;
+	}
+	if (arguments.length > 1) {
+		return ES5internalSlots['[[DefaultValue]]'](input, arguments[1]);
+	}
+	return ES5internalSlots['[[DefaultValue]]'](input);
+};
+
+(function (module) {
+
+	// http://262.ecma-international.org/5.1/#sec-9.1
+
+	module.exports = es5;
+} (ToPrimitive$3));
+
+var ToPrimitive$2 = ToPrimitiveExports;
+
+// http://262.ecma-international.org/5.1/#sec-9.3
+
+var ToNumber$3 = function ToNumber(value) {
+	var prim = ToPrimitive$2(value, Number);
+	if (typeof prim !== 'string') {
+		return +prim; // eslint-disable-line no-implicit-coercion
+	}
+
+	// eslint-disable-next-line no-control-regex
+	var trimmed = prim.replace(/^[ \t\x0b\f\xa0\ufeff\n\r\u2028\u2029\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000\u0085]+|[ \t\x0b\f\xa0\ufeff\n\r\u2028\u2029\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000\u0085]+$/g, '');
+	if ((/^0[ob]|^[+-]0x/).test(trimmed)) {
+		return NaN;
+	}
+
+	return +trimmed; // eslint-disable-line no-implicit-coercion
+};
+
+var _isNaN = Number.isNaN || function isNaN(a) {
+	return a !== a;
+};
+
+var $isNaN$1 = _isNaN;
+
+var _isFinite = function (x) { return (typeof x === 'number' || typeof x === 'bigint') && !$isNaN$1(x) && x !== Infinity && x !== -Infinity; };
+
+var sign = function sign(number) {
+	return number >= 0 ? 1 : -1;
+};
+
+var abs = abs$1;
+var floor = floor$1;
+var ToNumber$2 = ToNumber$3;
+
+var $isNaN = _isNaN;
+var $isFinite = _isFinite;
+var $sign = sign;
+
+// http://262.ecma-international.org/5.1/#sec-9.4
+
+var ToInteger$2 = function ToInteger(value) {
+	var number = ToNumber$2(value);
+	if ($isNaN(number)) { return 0; }
+	if (number === 0 || !$isFinite(number)) { return number; }
+	return $sign(number) * floor(abs(number));
+};
+
+var shams;
+var hasRequiredShams;
+
+function requireShams () {
+	if (hasRequiredShams) { return shams; }
+	hasRequiredShams = 1;
+
+	var hasSymbols = shams$1;
+
+	shams = function hasToStringTagShams() {
+		return hasSymbols() && !!Symbol.toStringTag;
+	};
+	return shams;
+}
+
+var isRegex;
+var hasRequiredIsRegex;
+
+function requireIsRegex () {
+	if (hasRequiredIsRegex) { return isRegex; }
+	hasRequiredIsRegex = 1;
+
+	var callBound = callBound$2;
+	var hasToStringTag = requireShams()();
+	var has;
+	var $exec;
+	var isRegexMarker;
+	var badStringifier;
+
+	if (hasToStringTag) {
+		has = callBound('Object.prototype.hasOwnProperty');
+		$exec = callBound('RegExp.prototype.exec');
+		isRegexMarker = {};
+
+		var throwRegexMarker = function () {
+			throw isRegexMarker;
+		};
+		badStringifier = {
+			toString: throwRegexMarker,
+			valueOf: throwRegexMarker
+		};
+
+		if (typeof Symbol.toPrimitive === 'symbol') {
+			badStringifier[Symbol.toPrimitive] = throwRegexMarker;
+		}
+	}
+
+	var $toString = callBound('Object.prototype.toString');
+	var gOPD = Object.getOwnPropertyDescriptor;
+	var regexClass = '[object RegExp]';
+
+	isRegex = hasToStringTag
+		// eslint-disable-next-line consistent-return
+		? function isRegex(value) {
+			if (!value || typeof value !== 'object') {
+				return false;
+			}
+
+			var descriptor = gOPD(value, 'lastIndex');
+			var hasLastIndexDataProperty = descriptor && has(descriptor, 'value');
+			if (!hasLastIndexDataProperty) {
+				return false;
+			}
+
+			try {
+				$exec(value, badStringifier);
+			} catch (e) {
+				return e === isRegexMarker;
+			}
+		}
+		: function isRegex(value) {
+			// In older browsers, typeof regex incorrectly returns 'function'
+			if (!value || (typeof value !== 'object' && typeof value !== 'function')) {
+				return false;
+			}
+
+			return $toString(value) === regexClass;
+		};
+	return isRegex;
+}
+
+var safeRegexTest;
+var hasRequiredSafeRegexTest;
+
+function requireSafeRegexTest () {
+	if (hasRequiredSafeRegexTest) { return safeRegexTest; }
+	hasRequiredSafeRegexTest = 1;
+
+	var callBound = callBound$2;
+	var GetIntrinsic = getIntrinsic;
+	var isRegex = requireIsRegex();
+
+	var $exec = callBound('RegExp.prototype.exec');
+	var $TypeError = GetIntrinsic('%TypeError%');
+
+	safeRegexTest = function regexTester(regex) {
+		if (!isRegex(regex)) {
+			throw new $TypeError('`regex` must be a RegExp');
+		}
+		return function test(s) {
+			return $exec(regex, s) !== null;
+		};
+	};
+	return safeRegexTest;
+}
+
+var isPrimitive$1;
+var hasRequiredIsPrimitive;
+
+function requireIsPrimitive () {
+	if (hasRequiredIsPrimitive) { return isPrimitive$1; }
+	hasRequiredIsPrimitive = 1;
+
+	isPrimitive$1 = function isPrimitive(value) {
+		return value === null || (typeof value !== 'function' && typeof value !== 'object');
+	};
+	return isPrimitive$1;
+}
+
+var isDateObject;
+var hasRequiredIsDateObject;
+
+function requireIsDateObject () {
+	if (hasRequiredIsDateObject) { return isDateObject; }
+	hasRequiredIsDateObject = 1;
+
+	var getDay = Date.prototype.getDay;
+	var tryDateObject = function tryDateGetDayCall(value) {
+		try {
+			getDay.call(value);
+			return true;
+		} catch (e) {
+			return false;
+		}
+	};
+
+	var toStr = Object.prototype.toString;
+	var dateClass = '[object Date]';
+	var hasToStringTag = requireShams()();
+
+	isDateObject = function isDateObject(value) {
+		if (typeof value !== 'object' || value === null) {
+			return false;
+		}
+		return hasToStringTag ? tryDateObject(value) : toStr.call(value) === dateClass;
+	};
+	return isDateObject;
+}
+
+var isSymbolExports = {};
+var isSymbol = {
+  get exports(){ return isSymbolExports; },
+  set exports(v){ isSymbolExports = v; },
+};
+
+var hasRequiredIsSymbol;
+
+function requireIsSymbol () {
+	if (hasRequiredIsSymbol) { return isSymbolExports; }
+	hasRequiredIsSymbol = 1;
+
+	var toStr = Object.prototype.toString;
+	var hasSymbols = hasSymbols$2();
+
+	if (hasSymbols) {
+		var symToStr = Symbol.prototype.toString;
+		var symStringRegex = /^Symbol\(.*\)$/;
+		var isSymbolObject = function isRealSymbolObject(value) {
+			if (typeof value.valueOf() !== 'symbol') {
+				return false;
+			}
+			return symStringRegex.test(symToStr.call(value));
+		};
+
+		isSymbol.exports = function isSymbol(value) {
+			if (typeof value === 'symbol') {
+				return true;
+			}
+			if (toStr.call(value) !== '[object Symbol]') {
+				return false;
+			}
+			try {
+				return isSymbolObject(value);
+			} catch (e) {
+				return false;
+			}
+		};
+	} else {
+
+		isSymbol.exports = function isSymbol(value) {
+			// this environment does not support Symbols.
+			return false ;
+		};
+	}
+	return isSymbolExports;
+}
+
+var es2015;
+var hasRequiredEs2015;
+
+function requireEs2015 () {
+	if (hasRequiredEs2015) { return es2015; }
+	hasRequiredEs2015 = 1;
+
+	var hasSymbols = typeof Symbol === 'function' && typeof Symbol.iterator === 'symbol';
+
+	var isPrimitive = requireIsPrimitive$1();
+	var isCallable = requireIsCallable();
+	var isDate = requireIsDateObject();
+	var isSymbol = requireIsSymbol();
+
+	var ordinaryToPrimitive = function OrdinaryToPrimitive(O, hint) {
+		if (typeof O === 'undefined' || O === null) {
+			throw new TypeError('Cannot call method on ' + O);
+		}
+		if (typeof hint !== 'string' || (hint !== 'number' && hint !== 'string')) {
+			throw new TypeError('hint must be "string" or "number"');
+		}
+		var methodNames = hint === 'string' ? ['toString', 'valueOf'] : ['valueOf', 'toString'];
+		var method, result, i;
+		for (i = 0; i < methodNames.length; ++i) {
+			method = O[methodNames[i]];
+			if (isCallable(method)) {
+				result = method.call(O);
+				if (isPrimitive(result)) {
+					return result;
+				}
+			}
+		}
+		throw new TypeError('No default value');
+	};
+
+	var GetMethod = function GetMethod(O, P) {
+		var func = O[P];
+		if (func !== null && typeof func !== 'undefined') {
+			if (!isCallable(func)) {
+				throw new TypeError(func + ' returned for property ' + P + ' of object ' + O + ' is not a function');
+			}
+			return func;
+		}
+		return void 0;
+	};
+
+	// http://www.ecma-international.org/ecma-262/6.0/#sec-toprimitive
+	es2015 = function ToPrimitive(input) {
+		if (isPrimitive(input)) {
+			return input;
+		}
+		var hint = 'default';
+		if (arguments.length > 1) {
+			if (arguments[1] === String) {
+				hint = 'string';
+			} else if (arguments[1] === Number) {
+				hint = 'number';
+			}
+		}
+
+		var exoticToPrim;
+		if (hasSymbols) {
+			if (Symbol.toPrimitive) {
+				exoticToPrim = GetMethod(input, Symbol.toPrimitive);
+			} else if (isSymbol(input)) {
+				exoticToPrim = Symbol.prototype.valueOf;
+			}
+		}
+		if (typeof exoticToPrim !== 'undefined') {
+			var result = exoticToPrim.call(input, hint);
+			if (isPrimitive(result)) {
+				return result;
+			}
+			throw new TypeError('unable to convert exotic object to primitive');
+		}
+		if (hint === 'default' && (isDate(input) || isSymbol(input))) {
+			hint = 'string';
+		}
+		return ordinaryToPrimitive(input, hint === 'default' ? 'number' : hint);
+	};
+	return es2015;
+}
+
+var ToPrimitive$1;
+var hasRequiredToPrimitive;
+
+function requireToPrimitive () {
+	if (hasRequiredToPrimitive) { return ToPrimitive$1; }
+	hasRequiredToPrimitive = 1;
+
+	var toPrimitive = requireEs2015();
+
+	// https://ecma-international.org/ecma-262/6.0/#sec-toprimitive
+
+	ToPrimitive$1 = function ToPrimitive(input) {
+		if (arguments.length > 1) {
+			return toPrimitive(input, arguments[1]);
+		}
+		return toPrimitive(input);
+	};
+	return ToPrimitive$1;
+}
+
+var GetIntrinsic = getIntrinsic;
+
+var $TypeError = GetIntrinsic('%TypeError%');
+var $Number = GetIntrinsic('%Number%');
+var $RegExp = GetIntrinsic('%RegExp%');
+var $parseInteger = GetIntrinsic('%parseInt%');
+
+var callBound$1 = callBound$2;
+var regexTester = requireSafeRegexTest();
+var isPrimitive = requireIsPrimitive();
+
+var $strSlice = callBound$1('String.prototype.slice');
+var isBinary = regexTester(/^0b[01]+$/i);
+var isOctal = regexTester(/^0o[0-7]+$/i);
+var isInvalidHexLiteral = regexTester(/^[-+]0x[0-9a-f]+$/i);
+var nonWS = ['\u0085', '\u200b', '\ufffe'].join('');
+var nonWSregex = new $RegExp('[' + nonWS + ']', 'g');
+var hasNonWS = regexTester(nonWSregex);
+
+// whitespace from: https://es5.github.io/#x15.5.4.20
+// implementation from https://github.com/es-shims/es5-shim/blob/v3.4.0/es5-shim.js#L1304-L1324
+var ws = [
+	'\x09\x0A\x0B\x0C\x0D\x20\xA0\u1680\u180E\u2000\u2001\u2002\u2003',
+	'\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000\u2028',
+	'\u2029\uFEFF'
+].join('');
+var trimRegex = new RegExp('(^[' + ws + ']+)|([' + ws + ']+$)', 'g');
+var $replace = callBound$1('String.prototype.replace');
+var $trim = function (value) {
+	return $replace(value, trimRegex, '');
+};
+
+var ToPrimitive = requireToPrimitive();
+
+// https://ecma-international.org/ecma-262/6.0/#sec-tonumber
+
+var ToNumber$1 = function ToNumber(argument) {
+	var value = isPrimitive(argument) ? argument : ToPrimitive(argument, $Number);
+	if (typeof value === 'symbol') {
+		throw new $TypeError('Cannot convert a Symbol value to a number');
+	}
+	if (typeof value === 'string') {
+		if (isBinary(value)) {
+			return ToNumber($parseInteger($strSlice(value, 2), 2));
+		} else if (isOctal(value)) {
+			return ToNumber($parseInteger($strSlice(value, 2), 8));
+		} else if (hasNonWS(value) || isInvalidHexLiteral(value)) {
+			return NaN;
+		}
+		var trimmed = $trim(value);
+		if (trimmed !== value) {
+			return ToNumber(trimmed);
+		}
+
+	}
+	return $Number(value);
+};
+
+var ES5ToInteger = ToInteger$2;
+
+var ToNumber = ToNumber$1;
+
+// https://ecma-international.org/ecma-262/6.0/#sec-tointeger
+
+var ToInteger$1 = function ToInteger(value) {
+	var number = ToNumber(value);
+	return ES5ToInteger(number);
+};
+
+/*! https://mths.be/codepointat v1.0.0 by @mathias */
+
+var callBound = callBoundExports;
+var RequireObjectCoercible = RequireObjectCoercibleExports;
+var ToString = ToString$1;
+var ToInteger = ToInteger$1;
+var StringCharCodeAt = callBound('String.prototype.charCodeAt');
+
+var implementation$2 = function codePointAt(position) {
+	var O = RequireObjectCoercible(this);
+	var string = ToString(O);
+	var size = string.length;
+	var index = ToInteger(position);
+	// Account for out-of-bounds indices:
+	if (index < 0 || index >= size) {
+		return undefined;
+	}
+	// Get the first code unit
+	var first = StringCharCodeAt(string, index);
+	var second;
+	if ( // check if it’s the start of a surrogate pair
+		first >= 0xD800 && first <= 0xDBFF && // high surrogate
+		size > index + 1 // there is a next code unit
+	) {
+		second = StringCharCodeAt(string, index + 1);
+		if (second >= 0xDC00 && second <= 0xDFFF) { // low surrogate
+			// https://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
+			return (first - 0xD800) * 0x400 + second - 0xDC00 + 0x10000;
+		}
+	}
+	return first;
+};
+
+/*! https://mths.be/codepointat v1.0.0 by @mathias */
+
+var implementation$1 = implementation$2;
+
+var polyfill = function getPolyfill() {
+	return String.prototype.codePointAt || implementation$1;
+};
+
+/*! https://mths.be/codepointat v1.0.0 by @mathias */
+
+var define$1 = defineProperties_1;
+
+var getPolyfill$1 = polyfill;
+
+var shim$1 = function shimCodePointAt() {
+	var polyfill = getPolyfill$1();
+
+	if (String.prototype.codePointAt !== polyfill) {
+		define$1(String.prototype, { codePointAt: polyfill });
+	}
+
+	return polyfill;
+};
+
+/*! https://mths.be/codepointat v1.0.0 by @mathias */
+
+var callBind = callBindExports$1;
+var define = defineProperties_1;
+
+var implementation = implementation$2;
+var getPolyfill = polyfill;
+var shim = shim$1;
+
+var boundCodePointAt = callBind(getPolyfill());
+
+define(boundCodePointAt, {
+	getPolyfill: getPolyfill,
+	implementation: implementation,
+	shim: shim
+});
 
 var TINF_OK = 0;
 var TINF_DATA_ERROR = -3;
@@ -6116,11 +7595,9 @@ function parseNameTable(data, start, ltag) {
             }
         }
     }
-
-    var langTagCount = 0;
     if (format === 1) {
         // FIXME: Also handle Microsoft's 'name' table 1.
-        langTagCount = p.parseUShort();
+        p.parseUShort();
     }
 
     return name;
@@ -6608,10 +8085,10 @@ var post = { parse: parsePostTable, make: makePostTable };
 
 // The `GSUB` table contains ligatures, among other things.
 
-var subtableParsers = new Array(9);         // subtableParsers[0] is unused
+var subtableParsers$1 = new Array(9);         // subtableParsers[0] is unused
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#SS
-subtableParsers[1] = function parseLookup1() {
+subtableParsers$1[1] = function parseLookup1() {
     var start = this.offset + this.relativeOffset;
     var substFormat = this.parseUShort();
     if (substFormat === 1) {
@@ -6631,7 +8108,7 @@ subtableParsers[1] = function parseLookup1() {
 };
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#MS
-subtableParsers[2] = function parseLookup2() {
+subtableParsers$1[2] = function parseLookup2() {
     var substFormat = this.parseUShort();
     check.argument(substFormat === 1, 'GSUB Multiple Substitution Subtable identifier-format must be 1');
     return {
@@ -6642,7 +8119,7 @@ subtableParsers[2] = function parseLookup2() {
 };
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#AS
-subtableParsers[3] = function parseLookup3() {
+subtableParsers$1[3] = function parseLookup3() {
     var substFormat = this.parseUShort();
     check.argument(substFormat === 1, 'GSUB Alternate Substitution Subtable identifier-format must be 1');
     return {
@@ -6653,7 +8130,7 @@ subtableParsers[3] = function parseLookup3() {
 };
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#LS
-subtableParsers[4] = function parseLookup4() {
+subtableParsers$1[4] = function parseLookup4() {
     var substFormat = this.parseUShort();
     check.argument(substFormat === 1, 'GSUB ligature table identifier-format must be 1');
     return {
@@ -6674,7 +8151,7 @@ var lookupRecordDesc = {
 };
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#CSF
-subtableParsers[5] = function parseLookup5() {
+subtableParsers$1[5] = function parseLookup5() {
     var start = this.offset + this.relativeOffset;
     var substFormat = this.parseUShort();
 
@@ -6718,7 +8195,7 @@ subtableParsers[5] = function parseLookup5() {
 };
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#CC
-subtableParsers[6] = function parseLookup6() {
+subtableParsers$1[6] = function parseLookup6() {
     var start = this.offset + this.relativeOffset;
     var substFormat = this.parseUShort();
     if (substFormat === 1) {
@@ -6763,7 +8240,7 @@ subtableParsers[6] = function parseLookup6() {
 };
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#ES
-subtableParsers[7] = function parseLookup7() {
+subtableParsers$1[7] = function parseLookup7() {
     // Extension Substitution subtable
     var substFormat = this.parseUShort();
     check.argument(substFormat === 1, 'GSUB Extension Substitution subtable identifier-format must be 1');
@@ -6772,12 +8249,12 @@ subtableParsers[7] = function parseLookup7() {
     return {
         substFormat: 1,
         lookupType: extensionLookupType,
-        extension: subtableParsers[extensionLookupType].call(extensionParser)
+        extension: subtableParsers$1[extensionLookupType].call(extensionParser)
     };
 };
 
 // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#RCCS
-subtableParsers[8] = function parseLookup8() {
+subtableParsers$1[8] = function parseLookup8() {
     var substFormat = this.parseUShort();
     check.argument(substFormat === 1, 'GSUB Reverse Chaining Contextual Single Substitution Subtable identifier-format must be 1');
     return {
@@ -6800,14 +8277,14 @@ function parseGsubTable(data, start) {
             version: tableVersion,
             scripts: p.parseScriptList(),
             features: p.parseFeatureList(),
-            lookups: p.parseLookupList(subtableParsers)
+            lookups: p.parseLookupList(subtableParsers$1)
         };
     } else {
         return {
             version: tableVersion,
             scripts: p.parseScriptList(),
             features: p.parseFeatureList(),
-            lookups: p.parseLookupList(subtableParsers),
+            lookups: p.parseLookupList(subtableParsers$1),
             variations: p.parseFeatureVariationsList()
         };
     }
@@ -6815,9 +8292,9 @@ function parseGsubTable(data, start) {
 }
 
 // GSUB Writing //////////////////////////////////////////////
-var subtableMakers = new Array(9);
+var subtableMakers$1 = new Array(9);
 
-subtableMakers[1] = function makeLookup1(subtable) {
+subtableMakers$1[1] = function makeLookup1(subtable) {
     if (subtable.substFormat === 1) {
         return new table.Table('substitutionTable', [
             {name: 'substFormat', type: 'USHORT', value: 1},
@@ -6832,7 +8309,7 @@ subtableMakers[1] = function makeLookup1(subtable) {
     }
 };
 
-subtableMakers[2] = function makeLookup2(subtable) {
+subtableMakers$1[2] = function makeLookup2(subtable) {
     check.assert(subtable.substFormat === 1, 'Lookup type 2 substFormat must be 1.');
     return new table.Table('substitutionTable', [
         {name: 'substFormat', type: 'USHORT', value: 1},
@@ -6842,7 +8319,7 @@ subtableMakers[2] = function makeLookup2(subtable) {
     })));
 };
 
-subtableMakers[3] = function makeLookup3(subtable) {
+subtableMakers$1[3] = function makeLookup3(subtable) {
     check.assert(subtable.substFormat === 1, 'Lookup type 3 substFormat must be 1.');
     return new table.Table('substitutionTable', [
         {name: 'substFormat', type: 'USHORT', value: 1},
@@ -6852,7 +8329,7 @@ subtableMakers[3] = function makeLookup3(subtable) {
     })));
 };
 
-subtableMakers[4] = function makeLookup4(subtable) {
+subtableMakers$1[4] = function makeLookup4(subtable) {
     check.assert(subtable.substFormat === 1, 'Lookup type 4 substFormat must be 1.');
     return new table.Table('substitutionTable', [
         {name: 'substFormat', type: 'USHORT', value: 1},
@@ -6867,7 +8344,7 @@ subtableMakers[4] = function makeLookup4(subtable) {
     })));
 };
 
-subtableMakers[6] = function makeLookup6(subtable) {
+subtableMakers$1[6] = function makeLookup6(subtable) {
     if (subtable.substFormat === 1) {
         var returnTable = new table.Table('chainContextTable', [
             {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
@@ -6927,7 +8404,7 @@ function makeGsubTable(gsub) {
         {name: 'version', type: 'ULONG', value: 0x10000},
         {name: 'scripts', type: 'TABLE', value: new table.ScriptList(gsub.scripts)},
         {name: 'features', type: 'TABLE', value: new table.FeatureList(gsub.features)},
-        {name: 'lookups', type: 'TABLE', value: new table.LookupList(gsub.lookups, subtableMakers)}
+        {name: 'lookups', type: 'TABLE', value: new table.LookupList(gsub.lookups, subtableMakers$1)}
     ]);
 }
 
@@ -8483,11 +9960,10 @@ function getPath(points) {
                 // This is a straight line.
                 p.lineTo(curr.x, curr.y);
             } else {
-                var prev2 = prev;
                 var next2 = next;
 
                 if (!prev.onCurve) {
-                    prev2 = { x: (curr.x + prev.x) * 0.5, y: (curr.y + prev.y) * 0.5 };
+                    ({ x: (curr.x + prev.x) * 0.5, y: (curr.y + prev.y) * 0.5 });
                 }
 
                 if (!next.onCurve) {
@@ -9218,9 +10694,9 @@ Hinting.prototype.exec = function(glyph, ppem) {
 
         try {
             exec(prepState);
-        } catch (e) {
+        } catch (e$1) {
             if (this._errorState < 2) {
-                console.log('Hinting error in PREP:' + e);
+                console.log('Hinting error in PREP:' + e$1);
             }
             this._errorState = 2;
         }
@@ -9230,9 +10706,9 @@ Hinting.prototype.exec = function(glyph, ppem) {
 
     try {
         return execGlyph(glyph, prepState);
-    } catch (e) {
+    } catch (e$2) {
         if (this._errorState < 1) {
-            console.log('Hinting error:' + e);
+            console.log('Hinting error:' + e$2);
             console.log('Note: further hinting errors are silenced');
         }
         this._errorState = 1;
@@ -10559,7 +12035,7 @@ function IF(state) {
     if (!test) {
         skip(state, true);
 
-        if (exports.DEBUG) { console.log(state.step,  'EIF[]'); }
+        if (exports.DEBUG) { console.log(state.step, 'EIF[]'); }
     }
 }
 
@@ -11716,7 +13192,7 @@ function Event(eventId) {
  * @param {any} events an object that enlists core events handlers
  */
 function initializeCoreEvents(events) {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var coreEvents = [
         'start', 'end', 'next', 'newToken', 'contextStart',
@@ -11725,7 +13201,7 @@ function initializeCoreEvents(events) {
     ];
 
     coreEvents.forEach(function (eventId) {
-        Object.defineProperty(this$1.events, eventId, {
+        Object.defineProperty(this$1$1.events, eventId, {
             value: new Event(eventId)
         });
     });
@@ -11734,7 +13210,7 @@ function initializeCoreEvents(events) {
         coreEvents.forEach(function (eventId) {
             var event = events[eventId];
             if (typeof event === 'function') {
-                this$1.events[eventId].subscribe(event);
+                this$1$1.events[eventId].subscribe(event);
             }
         });
     }
@@ -11743,8 +13219,8 @@ function initializeCoreEvents(events) {
         'replaceToken', 'replaceRange', 'composeRUD'
     ];
     requiresContextUpdate.forEach(function (eventId) {
-        this$1.events[eventId].subscribe(
-            this$1.updateContextsRanges
+        this$1$1.events[eventId].subscribe(
+            this$1$1.updateContextsRanges
         );
     });
 }
@@ -11792,11 +13268,11 @@ Tokenizer.prototype.inboundIndex = function(index) {
  * TODO: Perf. Optimization (lengthBefore === lengthAfter ? dispatch once)
  */
 Tokenizer.prototype.composeRUD = function (RUDs) {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var silent = true;
     var state = RUDs.map(function (RUD) { return (
-        this$1[RUD[0]].apply(this$1, RUD.slice(1).concat(silent))
+        this$1$1[RUD[0]].apply(this$1$1, RUD.slice(1).concat(silent))
     ); });
     var hasFAILObject = function (obj) { return (
         typeof obj === 'object' &&
@@ -12019,12 +13495,12 @@ Tokenizer.prototype.on = function(eventName, eventHandler) {
  * @param {any} args event handler arguments
  */
 Tokenizer.prototype.dispatch = function(eventName, args) {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var event = this.events[eventName];
     if (event instanceof Event) {
         event.subscribers.forEach(function (subscriber) {
-            subscriber.apply(this$1, args || []);
+            subscriber.apply(this$1$1, args || []);
         });
     }
 };
@@ -12128,21 +13604,21 @@ Tokenizer.prototype.setEndOffset = function (offset, contextName) {
  * @param {contextParams} contextParams current context params
  */
 Tokenizer.prototype.runContextCheck = function(contextParams) {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var index = contextParams.index;
     this.contextCheckers.forEach(function (contextChecker) {
         var contextName = contextChecker.contextName;
-        var openRange = this$1.getContext(contextName).openRange;
+        var openRange = this$1$1.getContext(contextName).openRange;
         if (!openRange && contextChecker.checkStart(contextParams)) {
             openRange = new ContextRange(index, null, contextName);
-            this$1.getContext(contextName).openRange = openRange;
-            this$1.dispatch('contextStart', [contextName, index]);
+            this$1$1.getContext(contextName).openRange = openRange;
+            this$1$1.dispatch('contextStart', [contextName, index]);
         }
         if (!!openRange && contextChecker.checkEnd(contextParams)) {
             var offset = (index - openRange.startIndex) + 1;
-            var range = this$1.setEndOffset(offset, contextName);
-            this$1.dispatch('contextEnd', [contextName, range]);
+            var range = this$1$1.setEndOffset(offset, contextName);
+            this$1$1.dispatch('contextEnd', [contextName, range]);
         }
     });
 };
@@ -12275,7 +13751,7 @@ function lookupCoverage(glyphIndex, coverage) {
  * Handle a single substitution - format 1
  * @param {ContextParams} contextParams context params to lookup
  */
-function singleSubstitutionFormat1(glyphIndex, subtable) {
+function singleSubstitutionFormat1$1(glyphIndex, subtable) {
     var substituteIndex = lookupCoverage(glyphIndex, subtable.coverage);
     if (substituteIndex === -1) { return null; }
     return glyphIndex + subtable.deltaGlyphId;
@@ -12285,7 +13761,7 @@ function singleSubstitutionFormat1(glyphIndex, subtable) {
  * Handle a single substitution - format 2
  * @param {ContextParams} contextParams context params to lookup
  */
-function singleSubstitutionFormat2(glyphIndex, subtable) {
+function singleSubstitutionFormat2$1(glyphIndex, subtable) {
     var substituteIndex = lookupCoverage(glyphIndex, subtable.coverage);
     if (substituteIndex === -1) { return null; }
     return subtable.substitute[substituteIndex];
@@ -12315,7 +13791,7 @@ function lookupCoverageList(coverageList, contextParams) {
  * Handle chaining context substitution - format 3
  * @param {ContextParams} contextParams context params to lookup
  */
-function chainingSubstitutionFormat3(contextParams, subtable) {
+function chainingSubstitutionFormat3$1(contextParams, subtable) {
     var lookupsCount = (
         subtable.inputCoverage.length +
         subtable.lookaheadCoverage.length +
@@ -12381,7 +13857,7 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
  * Handle ligature substitution - format 1
  * @param {ContextParams} contextParams context params to lookup
  */
-function ligatureSubstitutionFormat1(contextParams, subtable) {
+function ligatureSubstitutionFormat1$1(contextParams, subtable) {
     // COVERAGE LOOKUP //
     var glyphIndex = contextParams.current;
     var ligSetIndex = lookupCoverage(glyphIndex, subtable.coverage);
@@ -12504,29 +13980,29 @@ FeatureQuery.prototype.getSubstitutionType = function(lookupTable, subtable) {
  * @param {any} subtable subtable
  */
 FeatureQuery.prototype.getLookupMethod = function(lookupTable, subtable) {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var substitutionType = this.getSubstitutionType(lookupTable, subtable);
     switch (substitutionType) {
         case '11':
-            return function (glyphIndex) { return singleSubstitutionFormat1.apply(
-                this$1, [glyphIndex, subtable]
+            return function (glyphIndex) { return singleSubstitutionFormat1$1.apply(
+                this$1$1, [glyphIndex, subtable]
             ); };
         case '12':
-            return function (glyphIndex) { return singleSubstitutionFormat2.apply(
-                this$1, [glyphIndex, subtable]
+            return function (glyphIndex) { return singleSubstitutionFormat2$1.apply(
+                this$1$1, [glyphIndex, subtable]
             ); };
         case '63':
-            return function (contextParams) { return chainingSubstitutionFormat3.apply(
-                this$1, [contextParams, subtable]
+            return function (contextParams) { return chainingSubstitutionFormat3$1.apply(
+                this$1$1, [contextParams, subtable]
             ); };
         case '41':
-            return function (contextParams) { return ligatureSubstitutionFormat1.apply(
-                this$1, [contextParams, subtable]
+            return function (contextParams) { return ligatureSubstitutionFormat1$1.apply(
+                this$1$1, [contextParams, subtable]
             ); };
         case '21':
             return function (glyphIndex) { return decompositionSubstitutionFormat1.apply(
-                this$1, [glyphIndex, subtable]
+                this$1$1, [glyphIndex, subtable]
             ); };
         default:
             throw new Error(
@@ -12771,7 +14247,7 @@ var arabicSentenceCheck = {
  * @param {any} tokens a list of tokens
  * @param {number} index token index
  */
-function singleSubstitutionFormat1$1(action, tokens, index) {
+function singleSubstitutionFormat1(action, tokens, index) {
     tokens[index].setState(action.tag, action.substitution);
 }
 
@@ -12781,7 +14257,7 @@ function singleSubstitutionFormat1$1(action, tokens, index) {
  * @param {any} tokens a list of tokens
  * @param {number} index token index
  */
-function singleSubstitutionFormat2$1(action, tokens, index) {
+function singleSubstitutionFormat2(action, tokens, index) {
     tokens[index].setState(action.tag, action.substitution);
 }
 
@@ -12791,7 +14267,7 @@ function singleSubstitutionFormat2$1(action, tokens, index) {
  * @param {any} tokens a list of tokens
  * @param {number} index token index
  */
-function chainingSubstitutionFormat3$1(action, tokens, index) {
+function chainingSubstitutionFormat3(action, tokens, index) {
     action.substitution.forEach(function (subst, offset) {
         var token = tokens[index + offset];
         token.setState(action.tag, subst);
@@ -12804,7 +14280,7 @@ function chainingSubstitutionFormat3$1(action, tokens, index) {
  * @param {any} tokens a list of tokens
  * @param {number} index token index
  */
-function ligatureSubstitutionFormat1$1(action, tokens, index) {
+function ligatureSubstitutionFormat1(action, tokens, index) {
     var token = tokens[index];
     token.setState(action.tag, action.substitution.ligGlyph);
     var compsCount = action.substitution.components.length;
@@ -12818,10 +14294,10 @@ function ligatureSubstitutionFormat1$1(action, tokens, index) {
  * Supported substitutions
  */
 var SUBSTITUTIONS = {
-    11: singleSubstitutionFormat1$1,
-    12: singleSubstitutionFormat2$1,
-    63: chainingSubstitutionFormat3$1,
-    41: ligatureSubstitutionFormat1$1
+    11: singleSubstitutionFormat1,
+    12: singleSubstitutionFormat2,
+    63: chainingSubstitutionFormat3,
+    41: ligatureSubstitutionFormat1
 };
 
 /**
@@ -12875,7 +14351,7 @@ function willConnectNext(charContextParams) {
  * @param {ContextRange} range a range of tokens
  */
 function arabicPresentationForms(range) {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var script = 'arab';
     var tags = this.featuresTags[script];
@@ -12901,7 +14377,7 @@ function arabicPresentationForms(range) {
             case 3: (tag = 'medi'); break;
         }
         if (tags.indexOf(tag) === -1) { return; }
-        var substitutions = this$1.query.lookupFeature({
+        var substitutions = this$1$1.query.lookupFeature({
             tag: tag, script: script, contextParams: contextParams
         });
         if (substitutions instanceof Error) { return console.info(substitutions.message); }
@@ -12923,7 +14399,7 @@ function arabicPresentationForms(range) {
  * @param {any} tokens a list of tokens
  * @param {number} index current item index
  */
-function getContextParams(tokens, index) {
+function getContextParams$1(tokens, index) {
     var context = tokens.map(function (token) { return token.activeState.value; });
     return new ContextParams(context, index || 0);
 }
@@ -12933,21 +14409,21 @@ function getContextParams(tokens, index) {
  * @param {ContextRange} range a range of tokens
  */
 function arabicRequiredLigatures(range) {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var script = 'arab';
     var tokens = this.tokenizer.getRangeTokens(range);
-    var contextParams = getContextParams(tokens);
+    var contextParams = getContextParams$1(tokens);
     contextParams.context.forEach(function (glyphIndex, index) {
         contextParams.setCurrentIndex(index);
-        var substitutions = this$1.query.lookupFeature({
+        var substitutions = this$1$1.query.lookupFeature({
             tag: 'rlig', script: script, contextParams: contextParams
         });
         if (substitutions.length) {
             substitutions.forEach(
                 function (action) { return applySubstitution(action, tokens, index); }
             );
-            contextParams = getContextParams(tokens);
+            contextParams = getContextParams$1(tokens);
         }
     });
 }
@@ -12991,7 +14467,7 @@ var latinWordCheck = {
  * @param {any} tokens a list of tokens
  * @param {number} index current item index
  */
-function getContextParams$1(tokens, index) {
+function getContextParams(tokens, index) {
     var context = tokens.map(function (token) { return token.activeState.value; });
     return new ContextParams(context, index || 0);
 }
@@ -13001,21 +14477,21 @@ function getContextParams$1(tokens, index) {
  * @param {ContextRange} range a range of tokens
  */
 function latinLigature(range) {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var script = 'latn';
     var tokens = this.tokenizer.getRangeTokens(range);
-    var contextParams = getContextParams$1(tokens);
+    var contextParams = getContextParams(tokens);
     contextParams.context.forEach(function (glyphIndex, index) {
         contextParams.setCurrentIndex(index);
-        var substitutions = this$1.query.lookupFeature({
+        var substitutions = this$1$1.query.lookupFeature({
             tag: 'liga', script: script, contextParams: contextParams
         });
         if (substitutions.length) {
             substitutions.forEach(
                 function (action) { return applySubstitution(action, tokens, index); }
             );
-            contextParams = getContextParams$1(tokens);
+            contextParams = getContextParams(tokens);
         }
     });
 }
@@ -13080,12 +14556,12 @@ function tokenizeText() {
  * TODO: check base dir before applying adjustments - priority low
  */
 function reverseArabicSentences() {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var ranges = this.tokenizer.getContextRanges('arabicSentence');
     ranges.forEach(function (range) {
-        var rangeTokens = this$1.tokenizer.getRangeTokens(range);
-        this$1.tokenizer.replaceRange(
+        var rangeTokens = this$1$1.tokenizer.getRangeTokens(range);
+        this$1$1.tokenizer.replaceRange(
             range.startIndex,
             range.endOffset,
             rangeTokens.reverse()
@@ -13099,10 +14575,10 @@ function reverseArabicSentences() {
  * @param {Array} tags features tags list
  */
 Bidi.prototype.registerFeatures = function (script, tags) {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var supportedTags = tags.filter(
-        function (tag) { return this$1.query.supports({script: script, tag: tag}); }
+        function (tag) { return this$1$1.query.supports({script: script, tag: tag}); }
     );
     if (!this.featuresTags.hasOwnProperty(script)) {
         this.featuresTags[script] = supportedTags;
@@ -13156,14 +14632,14 @@ function checkGlyphIndexStatus() {
  * Apply arabic presentation forms features
  */
 function applyArabicPresentationForms() {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var script = 'arab';
     if (!this.featuresTags.hasOwnProperty(script)) { return; }
     checkGlyphIndexStatus.call(this);
     var ranges = this.tokenizer.getContextRanges('arabicWord');
     ranges.forEach(function (range) {
-        arabicPresentationForms.call(this$1, range);
+        arabicPresentationForms.call(this$1$1, range);
     });
 }
 
@@ -13171,7 +14647,7 @@ function applyArabicPresentationForms() {
  * Apply required arabic ligatures
  */
 function applyArabicRequireLigatures() {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var script = 'arab';
     if (!this.featuresTags.hasOwnProperty(script)) { return; }
@@ -13180,7 +14656,7 @@ function applyArabicRequireLigatures() {
     checkGlyphIndexStatus.call(this);
     var ranges = this.tokenizer.getContextRanges('arabicWord');
     ranges.forEach(function (range) {
-        arabicRequiredLigatures.call(this$1, range);
+        arabicRequiredLigatures.call(this$1$1, range);
     });
 }
 
@@ -13188,7 +14664,7 @@ function applyArabicRequireLigatures() {
  * Apply required arabic ligatures
  */
 function applyLatinLigatures() {
-    var this$1 = this;
+    var this$1$1 = this;
 
     var script = 'latn';
     if (!this.featuresTags.hasOwnProperty(script)) { return; }
@@ -13197,7 +14673,7 @@ function applyLatinLigatures() {
     checkGlyphIndexStatus.call(this);
     var ranges = this.tokenizer.getContextRanges('latinWord');
     ranges.forEach(function (range) {
-        latinLigature.call(this$1, range);
+        latinLigature.call(this$1$1, range);
     });
 }
 
@@ -13438,13 +14914,13 @@ Font.prototype.updateFeatures = function (options) {
  * @return {opentype.Glyph[]}
  */
 Font.prototype.stringToGlyphs = function(s, options) {
-    var this$1 = this;
+    var this$1$1 = this;
 
 
     var bidi = new Bidi();
 
     // Create and register 'glyphIndex' state modifier
-    var charToGlyphIndexMod = function (token) { return this$1.charToGlyphIndex(token.char); };
+    var charToGlyphIndexMod = function (token) { return this$1$1.charToGlyphIndex(token.char); };
     bidi.registerModifier('glyphIndex', null, charToGlyphIndexMod);
 
     // roll-back to default features
@@ -14035,11 +15511,11 @@ var gdef = { parse: parseGDEFTable };
 
 // The `GPOS` table contains kerning pairs, among other things.
 
-var subtableParsers$1 = new Array(10);         // subtableParsers[0] is unused
+var subtableParsers = new Array(10);         // subtableParsers[0] is unused
 
 // https://docs.microsoft.com/en-us/typography/opentype/spec/gpos#lookup-type-1-single-adjustment-positioning-subtable
 // this = Parser instance
-subtableParsers$1[1] = function parseLookup1() {
+subtableParsers[1] = function parseLookup1() {
     var start = this.offset + this.relativeOffset;
     var posformat = this.parseUShort();
     if (posformat === 1) {
@@ -14059,7 +15535,7 @@ subtableParsers$1[1] = function parseLookup1() {
 };
 
 // https://docs.microsoft.com/en-us/typography/opentype/spec/gpos#lookup-type-2-pair-adjustment-positioning-subtable
-subtableParsers$1[2] = function parseLookup2() {
+subtableParsers[2] = function parseLookup2() {
     var start = this.offset + this.relativeOffset;
     var posFormat = this.parseUShort();
     check.assert(posFormat === 1 || posFormat === 2, '0x' + start.toString(16) + ': GPOS lookup type 2 format must be 1 or 2.');
@@ -14106,13 +15582,13 @@ subtableParsers$1[2] = function parseLookup2() {
     }
 };
 
-subtableParsers$1[3] = function parseLookup3() { return { error: 'GPOS Lookup 3 not supported' }; };
-subtableParsers$1[4] = function parseLookup4() { return { error: 'GPOS Lookup 4 not supported' }; };
-subtableParsers$1[5] = function parseLookup5() { return { error: 'GPOS Lookup 5 not supported' }; };
-subtableParsers$1[6] = function parseLookup6() { return { error: 'GPOS Lookup 6 not supported' }; };
-subtableParsers$1[7] = function parseLookup7() { return { error: 'GPOS Lookup 7 not supported' }; };
-subtableParsers$1[8] = function parseLookup8() { return { error: 'GPOS Lookup 8 not supported' }; };
-subtableParsers$1[9] = function parseLookup9() { return { error: 'GPOS Lookup 9 not supported' }; };
+subtableParsers[3] = function parseLookup3() { return { error: 'GPOS Lookup 3 not supported' }; };
+subtableParsers[4] = function parseLookup4() { return { error: 'GPOS Lookup 4 not supported' }; };
+subtableParsers[5] = function parseLookup5() { return { error: 'GPOS Lookup 5 not supported' }; };
+subtableParsers[6] = function parseLookup6() { return { error: 'GPOS Lookup 6 not supported' }; };
+subtableParsers[7] = function parseLookup7() { return { error: 'GPOS Lookup 7 not supported' }; };
+subtableParsers[8] = function parseLookup8() { return { error: 'GPOS Lookup 8 not supported' }; };
+subtableParsers[9] = function parseLookup9() { return { error: 'GPOS Lookup 9 not supported' }; };
 
 // https://docs.microsoft.com/en-us/typography/opentype/spec/gpos
 function parseGposTable(data, start) {
@@ -14126,14 +15602,14 @@ function parseGposTable(data, start) {
             version: tableVersion,
             scripts: p.parseScriptList(),
             features: p.parseFeatureList(),
-            lookups: p.parseLookupList(subtableParsers$1)
+            lookups: p.parseLookupList(subtableParsers)
         };
     } else {
         return {
             version: tableVersion,
             scripts: p.parseScriptList(),
             features: p.parseFeatureList(),
-            lookups: p.parseLookupList(subtableParsers$1),
+            lookups: p.parseLookupList(subtableParsers),
             variations: p.parseFeatureVariationsList()
         };
     }
@@ -14142,14 +15618,14 @@ function parseGposTable(data, start) {
 
 // GPOS Writing //////////////////////////////////////////////
 // NOT SUPPORTED
-var subtableMakers$1 = new Array(10);
+var subtableMakers = new Array(10);
 
 function makeGposTable(gpos) {
     return new table.Table('GPOS', [
         {name: 'version', type: 'ULONG', value: 0x10000},
         {name: 'scripts', type: 'TABLE', value: new table.ScriptList(gpos.scripts)},
         {name: 'features', type: 'TABLE', value: new table.FeatureList(gpos.features)},
-        {name: 'lookups', type: 'TABLE', value: new table.LookupList(gpos.lookups, subtableMakers$1)}
+        {name: 'lookups', type: 'TABLE', value: new table.LookupList(gpos.lookups, subtableMakers)}
     ]);
 }
 
@@ -14658,17 +16134,16 @@ function loadSync(url, opt) {
 }
 
 var opentype = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	Font: Font,
-	Glyph: Glyph,
-	Path: Path,
-	BoundingBox: BoundingBox,
-	_parse: parse,
-	parse: parseBuffer,
-	load: load,
-	loadSync: loadSync
+  __proto__: null,
+  BoundingBox: BoundingBox,
+  Font: Font,
+  Glyph: Glyph,
+  Path: Path,
+  _parse: parse,
+  load: load,
+  loadSync: loadSync,
+  parse: parseBuffer
 });
 
-export default opentype;
-export { BoundingBox, Font, Glyph, Path, parse as _parse, load, loadSync, parseBuffer as parse };
+export { BoundingBox, Font, Glyph, Path, parse as _parse, opentype as default, load, loadSync, parseBuffer as parse };
 //# sourceMappingURL=opentype.module.js.map
