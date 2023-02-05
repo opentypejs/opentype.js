@@ -111,19 +111,23 @@ describe('tables/name.js', function() {
             [300, '8F EE EB F3 F7 E5 F0 20 F2 E5 F1 E5 ED', 1, 7, 44],
             [44444, '004C 0069 0070 0073 0074 0069 0063 006B 0020 D83D DC84', 3, 10, 0x0409]
         ], undefined), {
-            fontFamily: {
-                en: 'Walrus',
-                iu: 'ᐊᐃᕕᖅ',
-                'iu-Latn': 'Aiviq',
-                ja: '海馬'
+            macintosh: {
+                300: {
+                    bg: 'Получер тесен',
+                    en: 'Black Condensed',
+                    tr: 'Koyu Sıkışık'
+                },
             },
-            300: {
-                bg: 'Получер тесен',
-                en: 'Black Condensed',
-                tr: 'Koyu Sıkışık'
-            },
-            44444: {
-                en: 'Lipstick 💄'
+            windows: {
+                fontFamily: {
+                    en: 'Walrus',
+                    iu: 'ᐊᐃᕕᖅ',
+                    'iu-Latn': 'Aiviq',
+                    ja: '海馬'
+                },
+                44444: {
+                    en: 'Lipstick 💄'
+                }
             }
         });
     });
@@ -136,13 +140,15 @@ describe('tables/name.js', function() {
             [1, '0057 0061 006C 0072 006F 00DF', 0, 4, 2],
             [999, '0057 0061 006C 0072 0075 0073 002D 0054 0068 0069 006E', 0, 4, 0xFFFF]
         ], ltag), {
-            fontFamily: {
-                de: 'Walross',
-                'de-1901': 'Walroß',
-                en: 'Walrus'
-            },
-            999: {
-                und: 'Walrus-Thin'
+            unicode: {
+                fontFamily: {
+                    de: 'Walross',
+                    'de-1901': 'Walroß',
+                    en: 'Walrus'
+                },
+                999: {
+                    und: 'Walrus-Thin'
+                }
             }
         });
     });
@@ -158,14 +164,33 @@ describe('tables/name.js', function() {
         // * Indonesian ('id') uses the same string as English,
         //   so we exercise the building of string pools;
         const names = {
-            fontFamily: {
-                en: 'Walrus',
-                de: 'Walross',
-                id: 'Walrus'
+            unicode: {
+                fontFamily: {
+                    en: 'Walrus',
+                    de: 'Walross',
+                    id: 'Walrus'
+                },
+            },
+            macintosh: {
+                fontFamily: {
+                    en: 'Walrus',
+                    de: 'Walross',
+                    id: 'Walrus'
+                }
+            },
+            windows: {
+                fontFamily: {
+                    en: 'Walrus',
+                    de: 'Walross',
+                    id: 'Walrus'
+                }
             }
         };
         const ltag = [];
         assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
+            'Uni UTF-16 0 N1 [00 57 00 61 00 6C 00 72 00 75 00 73]',
+            'Uni UTF-16 1 N1 [00 57 00 61 00 6C 00 72 00 6F 00 73 00 73]',
+            'Uni UTF-16 2 N1 [00 57 00 61 00 6C 00 72 00 75 00 73]',
             'Mac smRoman langEnglish N1 [57 61 6C 72 75 73]',
             'Mac smRoman langGerman N1 [57 61 6C 72 6F 73 73]',
             'Mac smRoman langIndonesian N1 [57 61 6C 72 75 73]',
@@ -173,7 +198,7 @@ describe('tables/name.js', function() {
             'Win UCS-2 English/US N1 [00 57 00 61 00 6C 00 72 00 75 00 73]',
             'Win UCS-2 Indonesian/Indonesia N1 [00 57 00 61 00 6C 00 72 00 75 00 73]'
         ]);
-        assert.deepEqual(ltag, []);
+        assert.deepEqual(ltag, ['en', 'de', 'id']);
     });
 
     it('can make a naming table that refers to a language tag table', function() {
@@ -182,9 +207,23 @@ describe('tables/name.js', function() {
         // Windows has one for “Inuktitut in Latin” (iu-Latn),
         // but MacOS does not.
         const names = {
-            fontFamily: {
-                'de-1901': 'Walroß',
-                'iu-Latn': 'Aiviq'
+            unicode: {
+                fontFamily: {
+                    'de-1901': 'Walroß',
+                    'iu-Latn': 'Aiviq'
+                }
+            },
+            macintosh: {
+                fontFamily: {
+                    'de-1901': 'Walroß',
+                    'iu-Latn': 'Aiviq'
+                }
+            },
+            windows: {
+                fontFamily: {
+                    'de-1901': 'Walroß',
+                    'iu-Latn': 'Aiviq'
+                }
             }
         };
         const ltag = [];
@@ -203,8 +242,20 @@ describe('tables/name.js', function() {
         // with a BCP 47 language code; only newer versions of MacOS will
         // recognize it but this is better than stripping the string away.
         const names = {
-            fontFamily: {
-                ja: '海馬'
+            unicode: {
+                fontFamily: {
+                    ja: '海馬'
+                }
+            },
+            macintosh: {
+                fontFamily: {
+                    ja: '海馬'
+                }
+            },
+            windows: {
+                fontFamily: {
+                    ja: '海馬'
+                }
             }
         };
         const ltag = [];
@@ -219,8 +270,20 @@ describe('tables/name.js', function() {
         // The MacRoman encoding has no interrobang character. When
         // building a name table, this case should be handled gracefully.
         const names = {
-            fontFamily: {
-                en: 'Hello‽'
+            unicode: {
+                fontFamily: {
+                    en: 'Hello‽'
+                }
+            },
+            macintosh: {
+                fontFamily: {
+                    en: 'Hello‽'
+                }
+            },
+            windows: {
+                fontFamily: {
+                    en: 'Hello‽'
+                }
             }
         };
         const ltag = [];
@@ -238,33 +301,62 @@ describe('tables/name.js', function() {
         // The implementation uses a secondary look-up table for handling such
         // corner cases (Inuktitut is not the only one), and this test exercises it.
         const names = {
-            fontFamily: {
-                iu: 'ᐊᐃᕕᖅ'
+            unicode: {
+                fontFamily: {
+                    iu: 'ᐊᐃᕕᖅ'
+                }
+            },
+            macintosh: {
+                fontFamily: {
+                    iu: 'ᐊᐃᕕᖅ'
+                }
+            },
+            windows: {
+                fontFamily: {
+                    iu: 'ᐊᐃᕕᖅ'
+                }
             }
         };
         const ltag = [];
         assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
+            'Uni UTF-16 0 N1 [14 0A 14 03 15 55 15 85]',
             'Mac smEthiopic langInuktitut N1 [84 80 CD E7]',
             'Win UCS-2 Inuktitut/Canada N1 [14 0A 14 03 15 55 15 85]'
         ]);
-        assert.deepEqual(ltag, []);
+        assert.deepEqual(ltag, ['iu']);
     });
 
     it('can make a naming table with custom names', function() {
         // Custom name for a font variation axis.
         const names = {
-            256: {
-                en: 'Width',
-                de: 'Breite'
+            unicode: {
+                256: {
+                    en: 'Width',
+                    de: 'Breite'
+                }
+            },
+            macintosh: {
+                256: {
+                    en: 'Width',
+                    de: 'Breite'
+                }
+            },
+            windows: {
+                256: {
+                    en: 'Width',
+                    de: 'Breite'
+                }
             }
         };
         const ltag = [];
         assert.deepEqual(getNameRecords(_name.make(names, ltag)), [
+            'Uni UTF-16 0 N256 [00 57 00 69 00 64 00 74 00 68]',
+            'Uni UTF-16 1 N256 [00 42 00 72 00 65 00 69 00 74 00 65]',
             'Mac smRoman langEnglish N256 [57 69 64 74 68]',
             'Mac smRoman langGerman N256 [42 72 65 69 74 65]',
             'Win UCS-2 German/Germany N256 [00 42 00 72 00 65 00 69 00 74 00 65]',
             'Win UCS-2 English/US N256 [00 57 00 69 00 64 00 74 00 68]'
         ]);
-        assert.deepEqual(ltag, []);
+        assert.deepEqual(ltag, ['en', 'de']);
     });
 });
