@@ -64,7 +64,7 @@
     "fs": false
   },
   "dependencies": {
-    "string.prototype.codepointat": "^0.2.1",
+    "string.prototype.codepointat": "^1.0.0",
     "tiny-inflate": "^1.0.3"
   }
 }
