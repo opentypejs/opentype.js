@@ -165,13 +165,13 @@ function sortKeys(dict) {
 function displayNames(names) {
     let html = '';
     ['unicode', 'macintosh', 'windows'].forEach( platform => {
-        platformNames = names?.[platform];
+        let platformNames = names?.[platform];
 
         if ( ! platformNames ) return;
 
         html += `<h4>${platform}</h4><dl id="name-table-${platform}">`;
 
-        properties = sortKeys(platformNames);
+        let properties = sortKeys(platformNames);
         for (var i = 0; i < properties.length; i++) {
             var property = properties[i];
             html += `<dt>${escapeHtml(property)}</dt><dd>`;
