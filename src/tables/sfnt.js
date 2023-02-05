@@ -275,7 +275,10 @@ function fontToSfntTable(font) {
     const fontNamesWindows = font.names.windows || {};
 
     // do this as a loop to reduce redundant code
-    for(const platform in ["unicode","macintosh","windows"]) {
+    for (const platform in ['unicode', 'macintosh', 'windows']) {
+
+        names[platform] = names[platform] || {};
+
         if (!names[platform].uniqueID) {
             names.unicode.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
         }

@@ -357,7 +357,7 @@ FeatureQuery.prototype.lookupFeature = function (query) {
         tag: query.tag, script: query.script
     });
     if (!feature) return new Error(
-        `font '${(this.font.names.unicode || this.font.names.macintosh).fullName.en}' ` +
+        `font '${(this.font.names.unicode || this.font.names.windows || this.font.names.macintosh).fullName.en}' ` +
         `doesn't support feature '${query.tag}' ` +
         `for script '${query.script}'.`
     );
