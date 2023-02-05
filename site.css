@@ -186,8 +186,13 @@ a {
     content: "► ";
 }
 
-#font-data h3.collapsed + dl {
+#font-data h3.collapsed + dl,
+#font-data h3.collapsed + .data-content {
     display: none;
+}
+
+#font-data h4 {
+    margin: 1em 1em 0 2em;
 }
 
 #font-data dl {

@@ -623,6 +623,17 @@ function getEncoding(platformID, encodingID, languageID) {
     return undefined;
 }
 
+const platforms = {
+    0: 'unicode',
+    1: 'macintosh',
+    2: 'reserved',
+    3: 'windows'
+};
+
+function getPlatform(platformID) {
+    return platforms[platformID];
+}
+
 // Parse the naming `name` table.
 // FIXME: Format 1 additional fields are not supported yet.
 // ltag is the content of the `ltag' table, such as ['en', 'zh-Hans', 'de-CH-1904'].
@@ -642,7 +653,8 @@ function parseNameTable(data, start, ltag) {
         const offset = p.parseUShort();
         const language = getLanguageCode(platformID, languageID, ltag);
         const encoding = getEncoding(platformID, encodingID, languageID);
-        if (encoding !== undefined && language !== undefined) {
+        const platformName = getPlatform(platformID);
+        if (encoding !== undefined && language !== undefined && platformName !== undefined) {
             let text;
             if (encoding === utf16) {
                 text = decode.UTF16(data, stringOffset + offset, byteLength);
@@ -651,9 +663,13 @@ function parseNameTable(data, start, ltag) {
             }
 
             if (text) {
-                let translations = name[property];
+                let platform = name[platformName];
+                if (platform === undefined) {
+                    platform = name[platformName] = {};
+                }
+                let translations = platform[property];
                 if (translations === undefined) {
-                    translations = name[property] = {};
+                    translations = platform[property] = {};
                 }
 
                 translations[language] = text;
@@ -730,80 +746,90 @@ function addStringToPool(s, pool) {
 }
 
 function makeNameTable(names, ltag) {
-    let nameID;
-    const nameIDs = [];
-
-    const namesWithNumericKeys = {};
-    const nameTableIds = reverseDict(nameTableNames);
-    for (let key in names) {
-        let id = nameTableIds[key];
-        if (id === undefined) {
-            id = key;
-        }
-
-        nameID = parseInt(id);
-
-        if (isNaN(nameID)) {
-            throw new Error('Name table entry "' + key + '" does not exist, see nameTableNames for complete list.');
-        }
-
-        namesWithNumericKeys[nameID] = names[key];
-        nameIDs.push(nameID);
-    }
-
+    const platformNameIds = reverseDict(platforms);
     const macLanguageIds = reverseDict(macLanguages);
     const windowsLanguageIds = reverseDict(windowsLanguages);
 
     const nameRecords = [];
     const stringPool = [];
 
-    for (let i = 0; i < nameIDs.length; i++) {
-        nameID = nameIDs[i];
-        const translations = namesWithNumericKeys[nameID];
-        for (let lang in translations) {
-            const text = translations[lang];
+    for (let platform in names) {
+        let nameID;
+        const nameIDs = [];
 
-            // For MacOS, we try to emit the name in the form that was introduced
-            // in the initial version of the TrueType spec (in the late 1980s).
-            // However, this can fail for various reasons: the requested BCP 47
-            // language code might not have an old-style Mac equivalent;
-            // we might not have a codec for the needed character encoding;
-            // or the name might contain characters that cannot be expressed
-            // in the old-style Macintosh encoding. In case of failure, we emit
-            // the name in a more modern fashion (Unicode encoding with BCP 47
-            // language tags) that is recognized by MacOS 10.5, released in 2009.
-            // If fonts were only read by operating systems, we could simply
-            // emit all names in the modern form; this would be much easier.
-            // However, there are many applications and libraries that read
-            // 'name' tables directly, and these will usually only recognize
-            // the ancient form (silently skipping the unrecognized names).
-            let macPlatform = 1;  // Macintosh
-            let macLanguage = macLanguageIds[lang];
-            let macScript = macLanguageToScript[macLanguage];
-            const macEncoding = getEncoding(macPlatform, macScript, macLanguage);
-            let macName = encode.MACSTRING(text, macEncoding);
-            if (macName === undefined) {
-                macPlatform = 0;  // Unicode
-                macLanguage = ltag.indexOf(lang);
-                if (macLanguage < 0) {
-                    macLanguage = ltag.length;
-                    ltag.push(lang);
-                }
+        const namesWithNumericKeys = {};
+        const nameTableIds = reverseDict(nameTableNames);
 
-                macScript = 4;  // Unicode 2.0 and later
-                macName = encode.UTF16(text);
+        const platformID = platformNameIds[platform];
+
+        for (let key in names[platform]) {
+            let id = nameTableIds[key];
+            if (id === undefined) {
+                id = key;
             }
 
-            const macNameOffset = addStringToPool(macName, stringPool);
-            nameRecords.push(makeNameRecord(macPlatform, macScript, macLanguage,
-                                            nameID, macName.length, macNameOffset));
+            nameID = parseInt(id);
 
-            const winLanguage = windowsLanguageIds[lang];
-            if (winLanguage !== undefined) {
-                const winName = encode.UTF16(text);
-                const winNameOffset = addStringToPool(winName, stringPool);
-                nameRecords.push(makeNameRecord(3, 1, winLanguage,
-                                                nameID, winName.length, winNameOffset));
+            if (isNaN(nameID)) {
+                throw new Error('Name table entry "' + key + '" does not exist, see nameTableNames for complete list.');
+            }
+
+            namesWithNumericKeys[nameID] = names[platform][key];
+            nameIDs.push(nameID);
+        }
+
+        for (let i = 0; i < nameIDs.length; i++) {
+            nameID = nameIDs[i];
+            const translations = namesWithNumericKeys[nameID];
+            for (let lang in translations) {
+                const text = translations[lang];
+
+                // For MacOS, we try to emit the name in the form that was introduced
+                // in the initial version of the TrueType spec (in the late 1980s).
+                // However, this can fail for various reasons: the requested BCP 47
+                // language code might not have an old-style Mac equivalent;
+                // we might not have a codec for the needed character encoding;
+                // or the name might contain characters that cannot be expressed
+                // in the old-style Macintosh encoding. In case of failure, we emit
+                // the name in a more modern fashion (Unicode encoding with BCP 47
+                // language tags) that is recognized by MacOS 10.5, released in 2009.
+                // If fonts were only read by operating systems, we could simply
+                // emit all names in the modern form; this would be much easier.
+                // However, there are many applications and libraries that read
+                // 'name' tables directly, and these will usually only recognize
+                // the ancient form (silently skipping the unrecognized names).
+                if (platformID === 1 || platformID === 0) {
+                    let macLanguage = macLanguageIds[lang];
+                    let macScript = macLanguageToScript[macLanguage];
+                    const macEncoding = getEncoding(platformID, macScript, macLanguage);
+                    let macName = encode.MACSTRING(text, macEncoding);
+                    if (platformID === 0) {
+                        macLanguage = ltag.indexOf(lang);
+                        if (macLanguage < 0) {
+                            macLanguage = ltag.length;
+                            ltag.push(lang);
+                        }
+
+                        macScript = 4;  // Unicode 2.0 and later
+                        macName = encode.UTF16(text);
+                    }
+
+                    if (macName !== undefined) {
+                        const macNameOffset = addStringToPool(macName, stringPool);
+                        nameRecords.push(makeNameRecord(platformID, macScript,
+                                macLanguage, nameID, macName.length, macNameOffset));
+                    }
+                }
+
+                if (platformID === 3) {
+                    const winLanguage = windowsLanguageIds[lang];
+                    if (winLanguage !== undefined) {
+                        const winName = encode.UTF16(text);
+                        const winNameOffset = addStringToPool(winName, stringPool);
+                        nameRecords.push(makeNameRecord(3, 1, winLanguage,
+                                                    nameID, winName.length, winNameOffset));
+                    }
+                }
             }
         }
     }
