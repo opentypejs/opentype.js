@@ -1,5 +1,6 @@
 {
     "excludeFiles": [
+        ".git/**",
         "node_modules/**",
         "build/**",
         "dist/**",
