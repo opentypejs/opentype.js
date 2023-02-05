@@ -274,30 +274,18 @@ function fontToSfntTable(font) {
     const fontNamesMacintosh = font.names.macintosh || {};
     const fontNamesWindows = font.names.windows || {};
 
-    if (!names.unicode.uniqueID) {
-        names.unicode.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
+    // do this as a loop to reduce redundant code
+    for(const platform in ["unicode","macintosh","windows"]) {
+        if (!names[platform].uniqueID) {
+            names.unicode.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
+        }
+
+        if (!names[platform].postScriptName) {
+            names.unicode.postScriptName = {en: postScriptName};
+        }
     }
 
-    if (!names.macintosh.uniqueID) {
-        names.macintosh.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
-    }
-
-    if (!names.windows.uniqueID) {
-        names.windows.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
-    }
-
-    if (!names.unicode.postScriptName) {
-        names.unicode.postScriptName = {en: postScriptName};
-    }
-
-    if (!names.macintosh.postScriptName) {
-        names.macintosh.postScriptName = {en: postScriptName};
-    }
-
-    if (!names.windows.postScriptName) {
-        names.windows.postScriptName = {en: postScriptName};
-    }
-
+    // this cannot be done as a loop as each one is unique.
     if (!names.unicode.preferredFamily) {
         names.unicode.preferredFamily = fontNamesUnicode.fontFamily || fontNamesMacintosh.fontFamily || fontNamesWindows.fontFamily;
     }
