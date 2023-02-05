@@ -157,6 +157,32 @@ opentype.Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, option
 opentype.Font.prototype.getEnglishName = function(name) {};
 
 /**
+ * @typedef {{
+        fontFamily: Object<string,string>,
+        fontSubfamily: Object<string,string>,
+        fullName: Object<string,string>,
+        // postScriptName may not contain any whitespace
+        postScriptName: Object<string,string>,
+        designer: Object<string,string>,
+        designerURL: Object<string,string>,
+        manufacturer: Object<string,string>,
+        manufacturerURL: Object<string,string>,
+        license: Object<string,string>,
+        licenseURL: Object<string,string>,
+        version: Object<string,string>,
+        description: Object<string,string>,
+        copyright: Object<string,string>,
+        trademark: Object<string,string>
+    };}
+ */
+var NamePlatform;
+
+/**
+ * @type {{unicode: ?NamePlatform, macintosh: ?NamePlatform, windows: ?NamePlatform}}
+ */
+opentype.Font.prototype.names = {};
+
+/**
  * Validate
  */
 opentype.Font.prototype.validate = function() {};
