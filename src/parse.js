@@ -498,7 +498,11 @@ Parser.prototype.parseClassDef = function() {
             })
         };
     }
-    throw new Error('0x' + startOffset.toString(16) + ': ClassDef format must be 1 or 2.');
+
+    console.warn(`0x${startOffset.toString(16)}: Unknown ClassDef format ${format}.`);
+    return {
+        format: format
+    }
 };
 
 ///// Static methods ///////////////////////////////////
