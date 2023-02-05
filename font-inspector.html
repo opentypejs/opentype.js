@@ -47,7 +47,9 @@
         <dl id="maxp-table"><dt>Undefined</dt></dl>
 
         <h3 class="collapsed">Naming table <a href="https://www.microsoft.com/typography/OTSPEC/name.htm" target="_blank">name</a></h3>
-        <dl id="name-table"><dt>Undefined</dt></dl>
+        <div id="name-table" class="data-content">
+            <dl><dt>Undefined</dt></dl>
+        </div>
 
         <h3 class="collapsed">OS/2 and Windows Metrics table <a href="https://www.microsoft.com/typography/OTSPEC/os2.htm" target="_blank">OS/2</a></h3>
         <dl id="os2-table"><dt>Undefined</dt></dl>
@@ -161,22 +163,32 @@ function sortKeys(dict) {
 }
 
 function displayNames(names) {
-    var html = '';
-    properties = sortKeys(names);
-    for (var i = 0; i < properties.length; i++) {
-        var property = properties[i];
-        html += '<dt>'+escapeHtml(property)+'</dt><dd>';
-        var translations = names[property];
-        var langs = sortKeys(translations);
-        for (var j = 0; j < langs.length; j++) {
-            var lang = langs[j];
-            var esclang = escapeHtml(lang);
-            html += '<span class="langtag">' + esclang
-                + '</span> <span class="langname" lang=' + esclang + '>'
-                + escapeHtml(translations[lang]) + '</span> ';
+    let html = '';
+    ['unicode', 'macintosh', 'windows'].forEach( platform => {
+        platformNames = names?.[platform];
+
+        if ( ! platformNames ) return;
+
+        html += `<h4>${platform}</h4><dl id="name-table-${platform}">`;
+
+        properties = sortKeys(platformNames);
+        for (var i = 0; i < properties.length; i++) {
+            var property = properties[i];
+            html += `<dt>${escapeHtml(property)}</dt><dd>`;
+            var translations = platformNames[property];
+            var langs = sortKeys(translations);
+            for (var j = 0; j < langs.length; j++) {
+                var lang = langs[j];
+                var esclang = escapeHtml(lang);
+                html += '<span class="langtag">' + esclang
+                    + '</span> <span class="langname" lang=' + esclang + '>'
+                    + escapeHtml(translations[lang]) + '</span> ';
+            }
+            html += '</dd>';
         }
-        html += '</dd>';
-    }
+
+        html += '</dl>';
+    });
 
     document.getElementById('name-table').innerHTML = html;
 }
