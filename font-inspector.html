@@ -165,7 +165,7 @@ function sortKeys(dict) {
 function displayNames(names) {
     var html = '';
     ['unicode', 'macintosh', 'windows'].forEach( platform => {
-        let platformNames = names?.[platform];
+        var platformNames = (names ? names[platform] : null);
 
         if ( ! platformNames ) return;
 
