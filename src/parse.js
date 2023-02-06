@@ -535,7 +535,11 @@ Parser.prototype.parseClassDef = function() {
             })
         };
     }
-    throw new Error('0x' + startOffset.toString(16) + ': ClassDef format must be 1 or 2.');
+
+    console.warn(`0x${startOffset.toString(16)}: This font file uses an invalid ClassDef format of ${format}. It might be corrupted and should be reacquired if it doesn't display as intended.`);
+    return {
+        format: format
+    };
 };
 
 ///// Static methods ///////////////////////////////////

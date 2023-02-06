@@ -208,7 +208,7 @@ function parseBuffer(buffer, opt) {
         numTables = parse.getUShort(data, 12);
         tableEntries = parseWOFFTableEntries(data, numTables);
     } else if (signature === 'wOF2') {
-        var issue = "https://github.com/opentypejs/opentype.js/issues/183#issuecomment-1147228025"
+        var issue = 'https://github.com/opentypejs/opentype.js/issues/183#issuecomment-1147228025';
         throw new Error('WOFF2 require an external decompressor library, see examples at: ' + issue);
     } else {
         throw new Error('Unsupported OpenType signature ' + signature);
