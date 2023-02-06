@@ -210,7 +210,9 @@ function parseGsubTable(data, start) {
         };
     }
 
-    table.features.forEach(f => {
+    for ( const fi in table.features ) {
+        if ( ! table.features.hasOwnProperty(fi) ) continue;
+        const f = table.features[fi];
         // Match `ss01` to `ss20`
         if (f.tag.match(/ss(?:0[1-9]|1\d|20)/)) {
             const p = new Parser(data, f.feature.tableOffset);
@@ -222,7 +224,7 @@ function parseGsubTable(data, start) {
             f.feature.featureParamsTable = p.parseCharacterVariantFeatureParams();
         }
         delete f.feature.tableOffset;
-    });
+    };
     return table;
 
 }
