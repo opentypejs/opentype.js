@@ -368,7 +368,9 @@ function parseBuffer(buffer, opt) {
     if (gsubTableEntry) {
         const gsubTable = uncompressTable(data, gsubTableEntry);
         font.tables.gsub = gsub.parse(gsubTable.data, gsubTable.offset);
-        font.tables.gsub.features.forEach(f => {
+        for ( const fi in font.tables.gsub.features ) {
+            if ( ! font.tables.gsub.features.hasOwnProperty(fi) ) continue;
+            const f = font.tables.gsub.features[fi];
             // Match `ss01` to `ss20`
             if (f.tag.match(/ss(?:0[1-9]|1\d|20)/)) {
                 const { uiNameId } = f.feature.featureParamsTable;
@@ -379,7 +381,7 @@ function parseBuffer(buffer, opt) {
                 const { featUiLabelNameId } = f.feature.featureParamsTable;
                 f.feature.featUiLabelName = font.tables.name[featUiLabelNameId];
             }
-        });
+        };
     }
 
     if (fvarTableEntry) {
