@@ -6,18 +6,20 @@ import table from '../table.js';
 
 function parseHmtxTableAll(data, start, numMetrics, numGlyphs, glyphs) {
     let advanceWidth;
-    let leftSideBearing;
     const p = new parse.Parser(data, start);
-    for (let i = 0; i < numGlyphs; i += 1) {
-        // If the font is monospaced, only one entry is needed. This last entry applies to all subsequent glyphs.
-        if (i < numMetrics) {
-            advanceWidth = p.parseUShort();
-            leftSideBearing = p.parseShort();
-        }
+    for (let i = 0; i < numMetrics; i += 1) {
+          advanceWidth = p.parseUShort();  // 16 bits 
+         const   leftSideBearing = p.parseShort(); // 16 bits
 
         const glyph = glyphs.get(i);
         glyph.advanceWidth = advanceWidth;
         glyph.leftSideBearing = leftSideBearing;
+    }
+// If numGlyphs > numMetrics
+    for (let i = numMetrics; i < numGlyphs; i += 1) {
+        const glyph = glyphs.get(i);
+        glyph.advanceWidth = advanceWidth;//same as from previous loop
+        glyph.leftSideBearing = p.parseShort(); // 16 bits
     }
 }
 
@@ -25,18 +27,21 @@ function parseHmtxTableOnLowMemory(font, data, start, numMetrics, numGlyphs) {
     font._hmtxTableData = {};
 
     let advanceWidth;
-    let leftSideBearing;
     const p = new parse.Parser(data, start);
-    for (let i = 0; i < numGlyphs; i += 1) {
-        // If the font is monospaced, only one entry is needed. This last entry applies to all subsequent glyphs.
-        if (i < numMetrics) {
-            advanceWidth = p.parseUShort();
-            leftSideBearing = p.parseShort();
-        }
-
+    for (let i = 0; i < numMetrics; i += 1) {
+        advanceWidth = p.parseUShort();
+        const leftSideBearing = p.parseShort();
         font._hmtxTableData[i] = {
             advanceWidth: advanceWidth,
-            leftSideBearing: leftSideBearing
+            leftSideBearing: leftSideBearing,
+        };
+    }
+
+// If numGlyphs > numMetrics
+    for (let i = numMetrics; i < numGlyphs; i += 1) {
+        font._hmtxTableData[i] = {
+            advanceWidth: advanceWidth,//same as from previous loop
+            leftSideBearing: p.parseShort(), // 16 bits
         };
     }
 }
