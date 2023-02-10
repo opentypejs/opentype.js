@@ -2158,6 +2158,16 @@
 	    return dataView.getInt16(offset, false);
 	}
 
+	// Retrieve an unsigned 24-bit integer from the DataView.
+	// Format optimal for the 21-bit Unicode Scalar Values:
+	// https://developer.apple.com/documentation/swift/string/unicodescalarview
+	// The value is stored in big endian.
+	function getUInt24(dataView, offset) {
+	    var b = dataView.getUint16(offset, false);
+	    var a = dataView.getUint8(offset + 2, false);
+	    return b * Math.pow(2, 8) + a;
+	}
+
 	// Retrieve an unsigned 32-bit long from the DataView.
 	// The value is stored in big endian.
 	function getULong(dataView, offset) {
@@ -2266,6 +2276,12 @@
 	Parser.prototype.parseF2Dot14 = function() {
 	    var v = this.data.getInt16(this.offset + this.relativeOffset) / 16384;
 	    this.relativeOffset += 2;
+	    return v;
+	};
+
+	Parser.prototype.parseUInt24 = function() {
+	    var v = getUInt24(this.data, this.offset + this.relativeOffset);
+	    this.relativeOffset += 3;
 	    return v;
 	};
 
@@ -2378,6 +2394,22 @@
 
 	    this.relativeOffset += count * 2;
 	    return list;
+	};
+
+	// Parse a list of 24 bit unsigned integers. The length of the list can be read on the stream
+	// or provided as an argument.
+	Parser.prototype.parseUInt24List = function(count) {
+	    if (count === undefined) { count = this.parseUShort(); }
+	    var offsets = new Array(count);
+	    var dataView = this.data;
+	    var offset = this.offset + this.relativeOffset;
+	    for (var i = 0; i < count; i++) {
+	        offsets[i] = getUInt24(dataView, offset);
+	        offset += 3;
+	    }
+
+	    this.relativeOffset += count * 3;
+	    return offsets;
 	};
 
 	// Parses a list of bytes.
@@ -2530,11 +2562,18 @@
 	    return values;
 	};
 
-	Parser.prototype.parsePointer = function(description) {
+	Parser.prototype.parsePointer = function(description, storeOffset) {
+	    if ( storeOffset === void 0 ) storeOffset = false;
+
 	    var structOffset = this.parseOffset16();
 	    if (structOffset > 0) {
 	        // NULL offset => return undefined
-	        return new Parser(this.data, this.offset + structOffset).parseStruct(description);
+	        var offset = this.offset + structOffset;
+	        var struct = new Parser(this.data, offset).parseStruct(description);
+	        if (storeOffset) {
+	            struct.tableOffset = offset;
+	        }
+	        return struct;
 	    }
 	    return undefined;
 	};
@@ -2667,9 +2706,11 @@
 	    };
 	};
 
-	Parser.pointer = function(description) {
+	Parser.pointer = function(description, storeOffset) {
+	    if ( storeOffset === void 0 ) storeOffset = false;
+
 	    return function() {
-	        return this.parsePointer(description);
+	        return this.parsePointer(description, storeOffset);
 	    };
 	};
 
@@ -2683,8 +2724,10 @@
 	Parser.byte = Parser.prototype.parseByte;
 	Parser.uShort = Parser.offset16 = Parser.prototype.parseUShort;
 	Parser.uShortList = Parser.prototype.parseUShortList;
+	Parser.uInt24 = Parser.prototype.parseUInt24;
 	Parser.uLong = Parser.offset32 = Parser.prototype.parseULong;
 	Parser.uLongList = Parser.prototype.parseULongList;
+	Parser.uInt24List = Parser.prototype.parseUInt24List;
 	Parser.struct = Parser.prototype.parseStruct;
 	Parser.coverage = Parser.prototype.parseCoverage;
 	Parser.classDef = Parser.prototype.parseClassDef;
@@ -2717,8 +2760,28 @@
 	        feature: Parser.pointer({
 	            featureParams: Parser.offset16,
 	            lookupListIndexes: Parser.uShortList
-	        })
+	        }, true)
 	    })) || [];
+	};
+
+	Parser.prototype.parseStylisticSetFeatureParams = function() {
+	    return this.parsePointer({
+	        version: Parser.uShort,
+	        uiNameId: Parser.uShort
+	    }) || [];
+	};
+
+	// https://docs.microsoft.com/en-us/typography/opentype/spec/features_ae#tag-cv01--cv99
+	Parser.prototype.parseCharacterVariantFeatureParams = function() {
+	    return this.parsePointer({
+	        format: Parser.uShort,
+	        featUiLabelNameId: Parser.uShort,
+	        featUiTooltipTextNameId: Parser.uShort,
+	        sampleTextNameId: Parser.uShort,
+	        numNamedParameters: Parser.uShort,
+	        firstParamUiLabelNameId: Parser.uShort,
+	        characters: Parser.uInt24List
+	    }) || [];
 	};
 
 	Parser.prototype.parseLookupList = function(lookupTableParsers) {
@@ -2755,6 +2818,7 @@
 	    getUShort: getUShort,
 	    getCard16: getUShort,
 	    getShort: getShort,
+	    getUInt24: getUInt24,
 	    getULong: getULong,
 	    getFixed: getFixed,
 	    getTag: getTag,
@@ -6801,15 +6865,16 @@
 	    var p = new Parser(data, start);
 	    var tableVersion = p.parseVersion(1);
 	    check.argument(tableVersion === 1 || tableVersion === 1.1, 'Unsupported GSUB table version.');
+	    var table;
 	    if (tableVersion === 1) {
-	        return {
+	        table = {
 	            version: tableVersion,
 	            scripts: p.parseScriptList(),
 	            features: p.parseFeatureList(),
 	            lookups: p.parseLookupList(subtableParsers)
 	        };
 	    } else {
-	        return {
+	        table = {
 	            version: tableVersion,
 	            scripts: p.parseScriptList(),
 	            features: p.parseFeatureList(),
@@ -6817,6 +6882,21 @@
 	            variations: p.parseFeatureVariationsList()
 	        };
 	    }
+
+	    table.features.forEach(function (f) {
+	        // Match `ss01` to `ss20`
+	        if (f.tag.match(/ss(?:0[1-9]|1\d|20)/)) {
+	            var p = new Parser(data, f.feature.tableOffset);
+	            f.feature.featureParamsTable = p.parseStylisticSetFeatureParams();
+	        }
+	        // Match `cv01` to `cv99`
+	        else if (f.tag.match(/cv(?:0[1-9]|[1-9]\d)/)) {
+	            var p$1 = new Parser(data, f.feature.tableOffset);
+	            f.feature.featureParamsTable = p$1.parseCharacterVariantFeatureParams();
+	        }
+	        delete f.feature.tableOffset;
+	    });
+	    return table;
 
 	}
 
@@ -14590,6 +14670,20 @@
 	    if (gsubTableEntry) {
 	        var gsubTable = uncompressTable(data, gsubTableEntry);
 	        font.tables.gsub = gsub.parse(gsubTable.data, gsubTable.offset);
+	        font.tables.gsub.features.forEach(function (f) {
+	            // Match `ss01` to `ss20`
+	            if (f.tag.match(/ss(?:0[1-9]|1\d|20)/)) {
+	                var ref = f.feature.featureParamsTable;
+	                var uiNameId = ref.uiNameId;
+	                f.feature.uiName = font.tables.name[uiNameId];
+	            }
+	            // Match `cv01` to `cv99`
+	            else if (f.tag.match(/cv(?:0[1-9]|[1-9]\d)/)) {
+	                var ref$1 = f.feature.featureParamsTable;
+	                var featUiLabelNameId = ref$1.featUiLabelNameId;
+	                f.feature.featUiLabelName = font.tables.name[featUiLabelNameId];
+	            }
+	        });
 	    }
 
 	    if (fvarTableEntry) {

@@ -99,6 +99,18 @@ describe('opentype.js', function() {
         });
         assert.throws(function() { font.toArrayBuffer(); }, /advanceWidth is not a number/);
     });
+
+    it('can load Stylistic Set names in an OpenType/CFF font', function() {
+        const font = loadSync('./fonts/SourceSansPro-Regular.otf');
+        assert.deepStrictEqual(font.tables.gsub.features.find(t => t.tag === 'ss01').feature.uiName, {en: 'Straight l'});
+        assert.deepStrictEqual(font.tables.gsub.features.find(t => t.tag === 'ss02').feature.uiName, {en: 'Alternate a'});
+    });
+
+    it('can load Character Variant names in an OpenType/TTF font', function() {
+        const font = loadSync('./fonts/SourceCodeVariable-Roman.ttf');
+        assert.deepStrictEqual(font.tables.gsub.features.find(t => t.tag === 'cv01').feature.featUiLabelName, {el: 'απλό a', en: 'simple a', ru: 'простой а'});
+        assert.deepStrictEqual(font.tables.gsub.features.find(t => t.tag === 'cv02').feature.featUiLabelName, {el: 'απλό g', en: 'simple g', ru: 'простой g'});
+    });
 });
 
 describe('opentype.js on low memory mode', function() {
@@ -178,5 +190,17 @@ describe('opentype.js on low memory mode', function() {
             glyphs: [notdefGlyph]
         });
         assert.throws(function() { font.toArrayBuffer(); }, /advanceWidth is not a number/);
+    });
+
+    it('can load Stylistic Set names in an OpenType/CFF font', function() {
+        const font = loadSync('./fonts/SourceSansPro-Regular.otf', opt);
+        assert.deepStrictEqual(font.tables.gsub.features.find(t => t.tag === 'ss01').feature.uiName, {en: 'Straight l'});
+        assert.deepStrictEqual(font.tables.gsub.features.find(t => t.tag === 'ss02').feature.uiName, {en: 'Alternate a'});
+    });
+
+    it('can load Character Variant names in an OpenType/TTF font', function() {
+        const font = loadSync('./fonts/SourceCodeVariable-Roman.ttf', opt);
+        assert.deepStrictEqual(font.tables.gsub.features.find(t => t.tag === 'cv01').feature.featUiLabelName, {el: 'απλό a', en: 'simple a', ru: 'простой а'});
+        assert.deepStrictEqual(font.tables.gsub.features.find(t => t.tag === 'cv02').feature.featUiLabelName, {el: 'απλό g', en: 'simple g', ru: 'простой g'});
     });
 });
