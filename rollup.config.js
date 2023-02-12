@@ -1,6 +1,6 @@
-var buble = require('rollup-plugin-buble');
-var resolve = require('rollup-plugin-node-resolve');
-var commonjs = require('rollup-plugin-commonjs');
+var buble = require('@rollup/plugin-buble');
+var resolve = require('@rollup/plugin-node-resolve');
+var commonjs = require('@rollup/plugin-commonjs');
 var license = require('rollup-plugin-license');
 
 module.exports = {
