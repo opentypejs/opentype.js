@@ -4,6 +4,7 @@ import Glyph from '../../src/glyph';
 import glyphset from '../../src/glyphset';
 import Path from '../../src/path';
 import cff from '../../src/tables/cff';
+import { load } from '../../src/opentype';
 
 describe('tables/cff.js', function () {
     const data =
@@ -39,6 +40,16 @@ describe('tables/cff.js', function () {
         const glyphs = new glyphset.GlyphSet(glyphSetFont, [nodefGlyph, bumpsGlyph]);
 
         assert.deepEqual(data, hex(cff.make(glyphs, options).encode()));
+    });
+
+    /**
+     * @see https://github.com/opentypejs/opentype.js/issues/524
+     */
+    it('can fall back to CIDs instead of strings when parsing the charset', function() {
+        load('./fonts/FiraSansOT-Medium.otf', (err, font) => {
+            assert.equal((new Set(font.cffEncoding.charset)).size, 1509);
+            assert.equal(font.cffEncoding.charset.includes(undefined), false);
+        }, {lowMemory: true});
     });
 
 });
