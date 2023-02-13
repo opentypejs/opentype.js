@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { Font, Path, Glyph, load, loadSync } from '../src/opentype';
+import { Font, Glyph, load, loadSync, Path } from '../src/opentype';
 
 describe('opentype.js', function() {
     it('can load a TrueType font', function() {
@@ -178,5 +178,70 @@ describe('opentype.js on low memory mode', function() {
             glyphs: [notdefGlyph]
         });
         assert.throws(function() { font.toArrayBuffer(); }, /advanceWidth is not a number/);
+    });
+
+    it('should force unicode undefined for .notdef glyph', function() {
+        const nullGlyph = new Glyph({
+            name: '.notdef',
+            path: new Path()
+        });
+        const font = new Font({
+            familyName: 'TestFont',
+            styleName: 'Medium',
+            unitsPerEm: 1000,
+            ascender: 800,
+            descender: -200,
+            glyphs: [nullGlyph]
+        });
+        const ndGlyph = font.glyphs.get(0);
+        assert.equal(ndGlyph.name, '.notdef');
+        assert.equal(ndGlyph.unicode, undefined);
+    });
+
+    it('should correctly set unicode 0 for .null glyph', function() {
+        const nullGlyph = new Glyph({
+            name: '.null',
+            unicode: 0,
+            path: new Path()
+        });
+        const font = new Font({
+            familyName: 'TestFont',
+            styleName: 'Medium',
+            unitsPerEm: 1000,
+            ascender: 800,
+            descender: -200,
+            glyphs: [nullGlyph]
+        });
+        const ndGlyph = font.glyphs.get(0);
+        assert.equal(ndGlyph.name, '.null');
+        assert.equal(ndGlyph.unicode, 0);
+    });
+
+    it('should force unicode 0 for .null glyph', function() {
+        const nullGlyph = new Glyph({
+            name: '.null',
+            path: new Path()
+        });
+        const font = new Font({
+            familyName: 'TestFont',
+            styleName: 'Medium',
+            unitsPerEm: 1000,
+            ascender: 800,
+            descender: -200,
+            glyphs: [nullGlyph]
+        });
+        const ndGlyph = font.glyphs.get(0);
+        assert.equal(ndGlyph.name, '.null');
+        assert.equal(ndGlyph.unicode, 0);
+    });
+
+    it('should not allow unicode 0 for any other glyph', function() {
+        assert.throws(() => {
+            new Glyph({
+                name: 'space',
+                unicode: 0,
+                path: new Path()
+            });
+        }, /The unicode value "0" is reserved for the glyph name ".null" and cannot be used by any other glyph./);
     });
 });
