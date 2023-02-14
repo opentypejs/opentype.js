@@ -10,7 +10,7 @@ import arabicSentenceCheck from './features/arab/contextCheck/arabicSentence';
 import arabicPresentationForms from './features/arab/arabicPresentationForms';
 import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures';
 import latinWordCheck from './features/latn/contextCheck/latinWord';
-import latinLigature from './features/latn/latinLigatures';
+import { latinRequiredLigature, latinLigature } from './features/latn/latinLigatures';
 
 /**
  * Create Bidi. features
@@ -164,17 +164,24 @@ function applyArabicRequireLigatures() {
 }
 
 /**
- * Apply required arabic ligatures
+ * Apply required and normal latin ligatures
  */
 function applyLatinLigatures() {
     const script = 'latn';
     if (!this.featuresTags.hasOwnProperty(script)) return;
     const tags = this.featuresTags[script];
-    if (tags.indexOf('liga') === -1) return;
+    if ((tags.indexOf('rlig') === -1) && (tags.indexOf('liga') === -1)) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('latinWord');
+
     ranges.forEach(range => {
-        latinLigature.call(this, range);
+        if (tags.indexOf('rlig') >= 0) {
+            latinRequiredLigature.call(this, range);
+        }
+
+        if (tags.indexOf('liga') >= 0) {
+            latinLigature.call(this, range);
+        }
     });
 }
 
