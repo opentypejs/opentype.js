@@ -15,7 +15,7 @@ subtableParsers[1] = function parseLookup1() {
         return {
             substFormat: 1,
             coverage: this.parsePointer(Parser.coverage),
-            deltaGlyphId: this.parseUShort()
+            deltaGlyphId: this.parseShort()
         };
     } else if (substFormat === 2) {
         return {
@@ -219,7 +219,7 @@ subtableMakers[1] = function makeLookup1(subtable) {
         return new table.Table('substitutionTable', [
             {name: 'substFormat', type: 'USHORT', value: 1},
             {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
-            {name: 'deltaGlyphID', type: 'USHORT', value: subtable.deltaGlyphId}
+            {name: 'deltaGlyphID', type: 'SHORT', value: subtable.deltaGlyphId}
         ]);
     } else {
         return new table.Table('substitutionTable', [

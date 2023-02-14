@@ -421,14 +421,14 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
     if (format === 0) {
         for (let i = 0; i < nGlyphs; i += 1) {
             sid = parser.parseSID();
-            charset.push(getCFFString(strings, sid));
+            charset.push(getCFFString(strings, sid) || sid);
         }
     } else if (format === 1) {
         while (charset.length <= nGlyphs) {
             sid = parser.parseSID();
             count = parser.parseCard8();
             for (let i = 0; i <= count; i += 1) {
-                charset.push(getCFFString(strings, sid));
+                charset.push(getCFFString(strings, sid) || sid);
                 sid += 1;
             }
         }
@@ -437,7 +437,7 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
             sid = parser.parseSID();
             count = parser.parseCard16();
             for (let i = 0; i <= count; i += 1) {
-                charset.push(getCFFString(strings, sid));
+                charset.push(getCFFString(strings, sid) || sid);
                 sid += 1;
             }
         }
@@ -1169,14 +1169,15 @@ function glyphToOps(glyph) {
             const _23 = 2 / 3;
 
             // We're going to create a new command so we don't change the original path.
+            // Since all coordinates are relative, we round() them ASAP to avoid propagating errors.
             cmd = {
                 type: 'C',
                 x: cmd.x,
                 y: cmd.y,
-                x1: _13 * x + _23 * cmd.x1,
-                y1: _13 * y + _23 * cmd.y1,
-                x2: _13 * cmd.x + _23 * cmd.x1,
-                y2: _13 * cmd.y + _23 * cmd.y1
+                x1: Math.round(_13 * x + _23 * cmd.x1),
+                y1: Math.round(_13 * y + _23 * cmd.y1),
+                x2: Math.round(_13 * cmd.x + _23 * cmd.x1),
+                y2: Math.round(_13 * cmd.y + _23 * cmd.y1)
             };
         }
 

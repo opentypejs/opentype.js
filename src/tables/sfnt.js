@@ -19,6 +19,8 @@ import os2 from './os2';
 import post from './post';
 import gsub from './gsub';
 import meta from './meta';
+import colr from './colr';
+import cpal from './cpal';
 
 function log2(v) {
     return Math.log(v) / Math.log(2) | 0;
@@ -264,27 +266,58 @@ function fontToSfntTable(font) {
         names[n] = font.names[n];
     }
 
-    if (!names.uniqueID) {
-        names.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
+    names.unicode = names.unicode || {};
+    names.macintosh = names.macintosh || {};
+    names.windows = names.windows || {};
+
+    const fontNamesUnicode = font.names.unicode || {};
+    const fontNamesMacintosh = font.names.macintosh || {};
+    const fontNamesWindows = font.names.windows || {};
+
+    // do this as a loop to reduce redundant code
+    for (const platform in ['unicode', 'macintosh', 'windows']) {
+
+        names[platform] = names[platform] || {};
+
+        if (!names[platform].uniqueID) {
+            names.unicode.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
+        }
+
+        if (!names[platform].postScriptName) {
+            names.unicode.postScriptName = {en: postScriptName};
+        }
     }
 
-    if (!names.postScriptName) {
-        names.postScriptName = {en: postScriptName};
+    // this cannot be done as a loop as each one is unique.
+    if (!names.unicode.preferredFamily) {
+        names.unicode.preferredFamily = fontNamesUnicode.fontFamily || fontNamesMacintosh.fontFamily || fontNamesWindows.fontFamily;
     }
 
-    if (!names.preferredFamily) {
-        names.preferredFamily = font.names.fontFamily;
+    if (!names.macintosh.preferredFamily) {
+        names.macintosh.preferredFamily = fontNamesMacintosh.fontFamily || fontNamesUnicode.fontFamily || fontNamesWindows.fontFamily;
     }
 
-    if (!names.preferredSubfamily) {
-        names.preferredSubfamily = font.names.fontSubfamily;
+    if (!names.windows.preferredFamily) {
+        names.windows.preferredFamily = fontNamesWindows.fontFamily || fontNamesUnicode.fontFamily || fontNamesMacintosh.fontFamily;
+    }
+
+    if (!names.unicode.preferredSubfamily) {
+        names.unicode.preferredSubfamily = fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily || fontNamesWindows.fontSubFamily;
+    }
+
+    if (!names.macintosh.preferredSubfamily) {
+        names.macintosh.preferredSubfamily = fontNamesMacintosh.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesWindows.fontSubFamily;
+    }
+
+    if (!names.windows.preferredSubfamily) {
+        names.windows.preferredSubfamily = fontNamesWindows.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily;
     }
 
     const languageTags = [];
     const nameTable = _name.make(names, languageTags);
     const ltagTable = (languageTags.length > 0 ? ltag.make(languageTags) : undefined);
 
-    const postTable = post.make();
+    const postTable = post.make(font.tables.post);
     const cffTable = cff.make(font.glyphs, {
         version: font.getEnglishName('version'),
         fullName: englishFullName,
@@ -305,6 +338,12 @@ function fontToSfntTable(font) {
     // Optional tables
     if (font.tables.gsub) {
         tables.push(gsub.make(font.tables.gsub));
+    }
+    if (font.tables.cpal) {
+        tables.push(cpal.make(font.tables.cpal));
+    }
+    if (font.tables.colr) {
+        tables.push(colr.make(font.tables.colr));
     }
     if (metaTable) {
         tables.push(metaTable);

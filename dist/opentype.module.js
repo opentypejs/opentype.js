@@ -1,5 +1,5 @@
 /**
- * https://opentype.js.org v1.3.3 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
+ * https://opentype.js.org v1.3.4 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
  */
 
 /*! https://mths.be/codepointat v0.2.0 by @mathias */
@@ -988,6 +988,10 @@ sizeOf.CHAR = constant(1);
  * @returns {Array}
  */
 encode.CHARARRAY = function(v) {
+    if (typeof v === 'undefined') {
+        v = '';
+        console.warn('Undefined CHARARRAY encountered and treated as an empty string. This is probably caused by a missing glyph name.');
+    }
     var b = [];
     for (var i = 0; i < v.length; i += 1) {
         b[i] = v.charCodeAt(i);
@@ -1001,6 +1005,9 @@ encode.CHARARRAY = function(v) {
  * @returns {number}
  */
 sizeOf.CHARARRAY = function(v) {
+    if (typeof v === 'undefined') {
+        return 0;
+    }
     return v.length;
 };
 
@@ -1677,8 +1684,14 @@ encode.DICT = function(m) {
         var k = parseInt(keys[i], 0);
         var v = m[k];
         // Value comes before the key.
-        d = d.concat(encode.OPERAND(v.value, v.type));
-        d = d.concat(encode.OPERATOR(k));
+        var enc1 = encode.OPERAND(v.value, v.type);
+        var enc2 = encode.OPERATOR(k);
+        for (var j = 0; j < enc1.length; j++) {
+            d.push(enc1[j]);
+        }
+        for (var j$1 = 0; j$1 < enc2.length; j$1++) {
+            d.push(enc2[j$1]);
+        }
     }
 
     return d;
@@ -1714,19 +1727,34 @@ encode.OPERAND = function(v, type) {
     if (Array.isArray(type)) {
         for (var i = 0; i < type.length; i += 1) {
             check.argument(v.length === type.length, 'Not enough arguments given for type' + type);
-            d = d.concat(encode.OPERAND(v[i], type[i]));
+            var enc1 = encode.OPERAND(v[i], type[i]);
+            for (var j = 0; j < enc1.length; j++) {
+                d.push(enc1[j]);
+            }
         }
     } else {
         if (type === 'SID') {
-            d = d.concat(encode.NUMBER(v));
+            var enc1$1 = encode.NUMBER(v);
+            for (var j$1 = 0; j$1 < enc1$1.length; j$1++) {
+                d.push(enc1$1[j$1]);
+            }
         } else if (type === 'offset') {
             // We make it easy for ourselves and always encode offsets as
             // 4 bytes. This makes offset calculation for the top dict easier.
-            d = d.concat(encode.NUMBER32(v));
+            var enc1$2 = encode.NUMBER32(v);
+            for (var j$2 = 0; j$2 < enc1$2.length; j$2++) {
+                d.push(enc1$2[j$2]);
+            }
         } else if (type === 'number') {
-            d = d.concat(encode.NUMBER(v));
+            var enc1$3 = encode.NUMBER(v);
+            for (var j$3 = 0; j$3 < enc1$3.length; j$3++) {
+                d.push(enc1$3[j$3]);
+            }
         } else if (type === 'real') {
-            d = d.concat(encode.REAL(v));
+            var enc1$4 = encode.REAL(v);
+            for (var j$4 = 0; j$4 < enc1$4.length; j$4++) {
+                d.push(enc1$4[j$4]);
+            }
         } else {
             throw new Error('Unknown operand type ' + type);
             // FIXME Add support for booleans
@@ -1761,7 +1789,10 @@ encode.CHARSTRING = function(ops) {
 
     for (var i = 0; i < length; i += 1) {
         var op = ops[i];
-        d = d.concat(encode[op.type](op.value));
+        var enc1 = encode[op.type](op.value);
+        for (var j = 0; j < enc1.length; j++) {
+            d.push(enc1[j]);
+        }
     }
 
     if (wmm) {
@@ -1828,10 +1859,12 @@ encode.TABLE = function(table) {
 
         if (field.type === 'TABLE') {
             subtableOffsets.push(d.length);
-            d = d.concat([0, 0]);
+            d.push(0, 0);
             subtables.push(bytes);
         } else {
-            d = d.concat(bytes);
+            for (var j = 0; j < bytes.length; j++) {
+                d.push(bytes[j]);
+            }
         }
     }
 
@@ -1841,7 +1874,9 @@ encode.TABLE = function(table) {
         check.argument(offset < 65536, 'Table ' + table.tableName + ' too big.');
         d[o] = offset >> 8;
         d[o + 1] = offset & 0xff;
-        d = d.concat(subtables[i$1]);
+        for (var j$1 = 0; j$1 < subtables[i$1].length; j$1++) {
+            d.push(subtables[i$1][j$1]);
+        }
     }
 
     return d;
@@ -1898,9 +1933,14 @@ sizeOf.LITERAL = function(v) {
  * @constructor
  */
 function Table(tableName, fields, options) {
-    for (var i = 0; i < fields.length; i += 1) {
-        var field = fields[i];
-        this[field.name] = field.value;
+    // For coverage tables with coverage format 2, we do not want to add the coverage data directly to the table object,
+    // as this will result in wrong encoding order of the coverage data on serialization to bytes.
+    // The fallback of using the field values directly when not present on the table is handled in types.encode.TABLE() already.
+    if (fields.length && (fields[0].name !== 'coverageFormat' || fields[0].value === 1)) {
+        for (var i = 0; i < fields.length; i += 1) {
+            var field = fields[i];
+            this[field.name] = field.value;
+        }
     }
 
     this.tableName = tableName;
@@ -1989,8 +2029,18 @@ function Coverage(coverageTable) {
             [{name: 'coverageFormat', type: 'USHORT', value: 1}]
             .concat(ushortList('glyph', coverageTable.glyphs))
         );
+    } else if (coverageTable.format === 2) {
+        Table.call(this, 'coverageTable',
+            [{name: 'coverageFormat', type: 'USHORT', value: 2}]
+            .concat(recordList('rangeRecord', coverageTable.ranges, function(RangeRecord) {
+                return [
+                    {name: 'startGlyphID', type: 'USHORT', value: RangeRecord.start},
+                    {name: 'endGlyphID', type: 'USHORT', value: RangeRecord.end},
+                    {name: 'startCoverageIndex', type: 'USHORT', value: RangeRecord.index} ];
+            }))
+        );
     } else {
-        check.assert(false, 'Can\'t create coverage table format 2 yet.');
+        check.assert(false, 'Coverage format must be 1 or 2.');
     }
 }
 Coverage.prototype = Object.create(Table.prototype);
@@ -3327,6 +3377,7 @@ function getPathDefinition(glyph, path) {
         }
     };
 }
+
 /**
  * @typedef GlyphOptions
  * @type Object
@@ -3338,6 +3389,7 @@ function getPathDefinition(glyph, path) {
  * @property {number} [xMax]
  * @property {number} [yMax]
  * @property {number} [advanceWidth]
+ * @property {number} [leftSideBearing]
  */
 
 // A Glyph is an individual mark that often corresponds to a character.
@@ -3388,6 +3440,10 @@ Glyph.prototype.bindConstructorValues = function(options) {
 
     if ('advanceWidth' in options) {
         this.advanceWidth = options.advanceWidth;
+    }
+
+    if ('leftSideBearing' in options) {
+        this.leftSideBearing = options.leftSideBearing;
     }
 
     // The path for a glyph is the most memory intensive, and is bound as a value
@@ -4196,6 +4252,8 @@ function gatherCFFTopDicts(data, start, cffIndex, strings) {
         var topDict = parseCFFTopDict(topDictData, strings);
         topDict._subrs = [];
         topDict._subrsBias = 0;
+        topDict._defaultWidthX = 0;
+        topDict._nominalWidthX = 0;
         var privateSize = topDict.private[0];
         var privateOffset = topDict.private[1];
         if (privateSize !== 0 && privateOffset !== 0) {
@@ -4979,14 +5037,15 @@ function glyphToOps(glyph) {
             var _23 = 2 / 3;
 
             // We're going to create a new command so we don't change the original path.
+            // Since all coordinates are relative, we round() them ASAP to avoid propagating errors.
             cmd = {
                 type: 'C',
                 x: cmd.x,
                 y: cmd.y,
-                x1: _13 * x + _23 * cmd.x1,
-                y1: _13 * y + _23 * cmd.y1,
-                x2: _13 * cmd.x + _23 * cmd.x1,
-                y2: _13 * cmd.y + _23 * cmd.y1
+                x1: Math.round(_13 * x + _23 * cmd.x1),
+                y1: Math.round(_13 * y + _23 * cmd.y1),
+                x2: Math.round(_13 * cmd.x + _23 * cmd.x1),
+                y2: Math.round(_13 * cmd.y + _23 * cmd.y1)
             };
         }
 
@@ -6004,6 +6063,17 @@ function getEncoding(platformID, encodingID, languageID) {
     return undefined;
 }
 
+var platforms = {
+    0: 'unicode',
+    1: 'macintosh',
+    2: 'reserved',
+    3: 'windows'
+};
+
+function getPlatform(platformID) {
+    return platforms[platformID];
+}
+
 // Parse the naming `name` table.
 // FIXME: Format 1 additional fields are not supported yet.
 // ltag is the content of the `ltag' table, such as ['en', 'zh-Hans', 'de-CH-1904'].
@@ -6023,7 +6093,8 @@ function parseNameTable(data, start, ltag) {
         var offset = p.parseUShort();
         var language = getLanguageCode(platformID, languageID, ltag);
         var encoding = getEncoding(platformID, encodingID, languageID);
-        if (encoding !== undefined && language !== undefined) {
+        var platformName = getPlatform(platformID);
+        if (encoding !== undefined && language !== undefined && platformName !== undefined) {
             var text = (void 0);
             if (encoding === utf16) {
                 text = decode.UTF16(data, stringOffset + offset, byteLength);
@@ -6032,9 +6103,13 @@ function parseNameTable(data, start, ltag) {
             }
 
             if (text) {
-                var translations = name[property];
+                var platform = name[platformName];
+                if (platform === undefined) {
+                    platform = name[platformName] = {};
+                }
+                var translations = platform[property];
                 if (translations === undefined) {
-                    translations = name[property] = {};
+                    translations = platform[property] = {};
                 }
 
                 translations[language] = text;
@@ -6111,80 +6186,90 @@ function addStringToPool(s, pool) {
 }
 
 function makeNameTable(names, ltag) {
-    var nameID;
-    var nameIDs = [];
-
-    var namesWithNumericKeys = {};
-    var nameTableIds = reverseDict(nameTableNames);
-    for (var key in names) {
-        var id = nameTableIds[key];
-        if (id === undefined) {
-            id = key;
-        }
-
-        nameID = parseInt(id);
-
-        if (isNaN(nameID)) {
-            throw new Error('Name table entry "' + key + '" does not exist, see nameTableNames for complete list.');
-        }
-
-        namesWithNumericKeys[nameID] = names[key];
-        nameIDs.push(nameID);
-    }
-
+    var platformNameIds = reverseDict(platforms);
     var macLanguageIds = reverseDict(macLanguages);
     var windowsLanguageIds = reverseDict(windowsLanguages);
 
     var nameRecords = [];
     var stringPool = [];
 
-    for (var i = 0; i < nameIDs.length; i++) {
-        nameID = nameIDs[i];
-        var translations = namesWithNumericKeys[nameID];
-        for (var lang in translations) {
-            var text = translations[lang];
+    for (var platform in names) {
+        var nameID = (void 0);
+        var nameIDs = [];
 
-            // For MacOS, we try to emit the name in the form that was introduced
-            // in the initial version of the TrueType spec (in the late 1980s).
-            // However, this can fail for various reasons: the requested BCP 47
-            // language code might not have an old-style Mac equivalent;
-            // we might not have a codec for the needed character encoding;
-            // or the name might contain characters that cannot be expressed
-            // in the old-style Macintosh encoding. In case of failure, we emit
-            // the name in a more modern fashion (Unicode encoding with BCP 47
-            // language tags) that is recognized by MacOS 10.5, released in 2009.
-            // If fonts were only read by operating systems, we could simply
-            // emit all names in the modern form; this would be much easier.
-            // However, there are many applications and libraries that read
-            // 'name' tables directly, and these will usually only recognize
-            // the ancient form (silently skipping the unrecognized names).
-            var macPlatform = 1;  // Macintosh
-            var macLanguage = macLanguageIds[lang];
-            var macScript = macLanguageToScript[macLanguage];
-            var macEncoding = getEncoding(macPlatform, macScript, macLanguage);
-            var macName = encode.MACSTRING(text, macEncoding);
-            if (macName === undefined) {
-                macPlatform = 0;  // Unicode
-                macLanguage = ltag.indexOf(lang);
-                if (macLanguage < 0) {
-                    macLanguage = ltag.length;
-                    ltag.push(lang);
-                }
+        var namesWithNumericKeys = {};
+        var nameTableIds = reverseDict(nameTableNames);
 
-                macScript = 4;  // Unicode 2.0 and later
-                macName = encode.UTF16(text);
+        var platformID = platformNameIds[platform];
+
+        for (var key in names[platform]) {
+            var id = nameTableIds[key];
+            if (id === undefined) {
+                id = key;
             }
 
-            var macNameOffset = addStringToPool(macName, stringPool);
-            nameRecords.push(makeNameRecord(macPlatform, macScript, macLanguage,
-                                            nameID, macName.length, macNameOffset));
+            nameID = parseInt(id);
 
-            var winLanguage = windowsLanguageIds[lang];
-            if (winLanguage !== undefined) {
-                var winName = encode.UTF16(text);
-                var winNameOffset = addStringToPool(winName, stringPool);
-                nameRecords.push(makeNameRecord(3, 1, winLanguage,
-                                                nameID, winName.length, winNameOffset));
+            if (isNaN(nameID)) {
+                throw new Error('Name table entry "' + key + '" does not exist, see nameTableNames for complete list.');
+            }
+
+            namesWithNumericKeys[nameID] = names[platform][key];
+            nameIDs.push(nameID);
+        }
+
+        for (var i = 0; i < nameIDs.length; i++) {
+            nameID = nameIDs[i];
+            var translations = namesWithNumericKeys[nameID];
+            for (var lang in translations) {
+                var text = translations[lang];
+
+                // For MacOS, we try to emit the name in the form that was introduced
+                // in the initial version of the TrueType spec (in the late 1980s).
+                // However, this can fail for various reasons: the requested BCP 47
+                // language code might not have an old-style Mac equivalent;
+                // we might not have a codec for the needed character encoding;
+                // or the name might contain characters that cannot be expressed
+                // in the old-style Macintosh encoding. In case of failure, we emit
+                // the name in a more modern fashion (Unicode encoding with BCP 47
+                // language tags) that is recognized by MacOS 10.5, released in 2009.
+                // If fonts were only read by operating systems, we could simply
+                // emit all names in the modern form; this would be much easier.
+                // However, there are many applications and libraries that read
+                // 'name' tables directly, and these will usually only recognize
+                // the ancient form (silently skipping the unrecognized names).
+                if (platformID === 1 || platformID === 0) {
+                    var macLanguage = macLanguageIds[lang];
+                    var macScript = macLanguageToScript[macLanguage];
+                    var macEncoding = getEncoding(platformID, macScript, macLanguage);
+                    var macName = encode.MACSTRING(text, macEncoding);
+                    if (platformID === 0) {
+                        macLanguage = ltag.indexOf(lang);
+                        if (macLanguage < 0) {
+                            macLanguage = ltag.length;
+                            ltag.push(lang);
+                        }
+
+                        macScript = 4;  // Unicode 2.0 and later
+                        macName = encode.UTF16(text);
+                    }
+
+                    if (macName !== undefined) {
+                        var macNameOffset = addStringToPool(macName, stringPool);
+                        nameRecords.push(makeNameRecord(platformID, macScript,
+                                macLanguage, nameID, macName.length, macNameOffset));
+                    }
+                }
+
+                if (platformID === 3) {
+                    var winLanguage = windowsLanguageIds[lang];
+                    if (winLanguage !== undefined) {
+                        var winName = encode.UTF16(text);
+                        var winNameOffset = addStringToPool(winName, stringPool);
+                        nameRecords.push(makeNameRecord(3, 1, winLanguage,
+                                                    nameID, winName.length, winNameOffset));
+                    }
+                }
             }
         }
     }
@@ -6533,7 +6618,7 @@ subtableParsers[1] = function parseLookup1() {
         return {
             substFormat: 1,
             coverage: this.parsePointer(Parser.coverage),
-            deltaGlyphId: this.parseUShort()
+            deltaGlyphId: this.parseShort()
         };
     } else if (substFormat === 2) {
         return {
@@ -6737,7 +6822,7 @@ subtableMakers[1] = function makeLookup1(subtable) {
         return new table.Table('substitutionTable', [
             {name: 'substFormat', type: 'USHORT', value: 1},
             {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
-            {name: 'deltaGlyphID', type: 'USHORT', value: subtable.deltaGlyphId}
+            {name: 'deltaGlyphID', type: 'SHORT', value: subtable.deltaGlyphId}
         ]);
     } else {
         return new table.Table('substitutionTable', [
@@ -6745,6 +6830,16 @@ subtableMakers[1] = function makeLookup1(subtable) {
             {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
         ].concat(table.ushortList('substitute', subtable.substitute)));
     }
+};
+
+subtableMakers[2] = function makeLookup2(subtable) {
+    check.assert(subtable.substFormat === 1, 'Lookup type 2 substFormat must be 1.');
+    return new table.Table('substitutionTable', [
+        {name: 'substFormat', type: 'USHORT', value: 1},
+        {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
+    ].concat(table.tableList('seqSet', subtable.sequences, function(sequenceSet) {
+        return new table.Table('sequenceSetTable', table.ushortList('sequence', sequenceSet));
+    })));
 };
 
 subtableMakers[3] = function makeLookup3(subtable) {
@@ -6770,6 +6865,61 @@ subtableMakers[4] = function makeLookup4(subtable) {
             );
         }));
     })));
+};
+
+subtableMakers[6] = function makeLookup6(subtable) {
+    if (subtable.substFormat === 1) {
+        var returnTable = new table.Table('chainContextTable', [
+            {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
+        ].concat(table.tableList('chainRuleSet', subtable.chainRuleSets, function(chainRuleSet) {
+            return new table.Table('chainRuleSetTable', table.tableList('chainRule', chainRuleSet, function(chainRule) {
+                var tableData = table.ushortList('backtrackGlyph', chainRule.backtrack, chainRule.backtrack.length)
+                    .concat(table.ushortList('inputGlyph', chainRule.input, chainRule.input.length + 1))
+                    .concat(table.ushortList('lookaheadGlyph', chainRule.lookahead, chainRule.lookahead.length))
+                    .concat(table.ushortList('substitution', [], chainRule.lookupRecords.length));
+
+                chainRule.lookupRecords.forEach(function (record, i) {
+                    tableData = tableData
+                        .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
+                        .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+                });
+                return new table.Table('chainRuleTable', tableData);
+            }));
+        })));
+        return returnTable;
+    } else if (subtable.substFormat === 2) {
+        check.assert(false, 'lookup type 6 format 2 is not yet supported.');
+    } else if (subtable.substFormat === 3) {
+        var tableData = [
+            {name: 'substFormat', type: 'USHORT', value: subtable.substFormat} ];
+
+        tableData.push({name: 'backtrackGlyphCount', type: 'USHORT', value: subtable.backtrackCoverage.length});
+        subtable.backtrackCoverage.forEach(function (coverage, i) {
+            tableData.push({name: 'backtrackCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
+        });
+        tableData.push({name: 'inputGlyphCount', type: 'USHORT', value: subtable.inputCoverage.length});
+        subtable.inputCoverage.forEach(function (coverage, i) {
+            tableData.push({name: 'inputCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
+        });
+        tableData.push({name: 'lookaheadGlyphCount', type: 'USHORT', value: subtable.lookaheadCoverage.length});
+        subtable.lookaheadCoverage.forEach(function (coverage, i) {
+            tableData.push({name: 'lookaheadCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
+        });
+
+        tableData.push({name: 'substitutionCount', type: 'USHORT', value: subtable.lookupRecords.length});
+        subtable.lookupRecords.forEach(function (record, i) {
+            tableData = tableData
+                .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
+                .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+        });
+
+        var returnTable$1 = new table.Table('chainContextTable', tableData);
+
+        return returnTable$1;
+    }
+
+    check.assert(false, 'lookup type 6 format must be 1, 2 or 3.');
 };
 
 function makeGsubTable(gsub) {
@@ -6800,6 +6950,8 @@ function parseMetaTable(data, start) {
         var tag = p.parseTag();
         var dataOffset = p.parseULong();
         var dataLength = p.parseULong();
+        if (tag === 'appl' || tag === 'bild')
+           { continue; }
         var text = decode.UTF8(data, start + dataOffset, dataLength);
 
         tags[tag] = text;
@@ -6834,6 +6986,103 @@ function makeMetaTable(tags) {
 }
 
 var meta = { parse: parseMetaTable, make: makeMetaTable };
+
+// The `COLR` table adds support for multi-colored glyphs
+
+function parseColrTable(data, start) {
+    var p = new Parser(data, start);
+    var version = p.parseUShort();
+    check.argument(version === 0x0000, 'Only COLRv0 supported.');
+    var numBaseGlyphRecords = p.parseUShort();
+    var baseGlyphRecordsOffset = p.parseOffset32();
+    var layerRecordsOffset = p.parseOffset32();
+    var numLayerRecords = p.parseUShort();
+    p.relativeOffset = baseGlyphRecordsOffset;
+    var baseGlyphRecords = p.parseRecordList(numBaseGlyphRecords, {
+        glyphID: Parser.uShort,
+        firstLayerIndex: Parser.uShort,
+        numLayers: Parser.uShort,
+    });
+    p.relativeOffset = layerRecordsOffset;
+    var layerRecords = p.parseRecordList(numLayerRecords, {
+        glyphID: Parser.uShort,
+        paletteIndex: Parser.uShort
+    });
+
+    return {
+        version: version,
+        baseGlyphRecords: baseGlyphRecords,
+        layerRecords: layerRecords,
+    };
+}
+
+function makeColrTable(ref) {
+    var version = ref.version; if ( version === void 0 ) version = 0x0000;
+    var baseGlyphRecords = ref.baseGlyphRecords; if ( baseGlyphRecords === void 0 ) baseGlyphRecords = [];
+    var layerRecords = ref.layerRecords; if ( layerRecords === void 0 ) layerRecords = [];
+
+    check.argument(version === 0x0000, 'Only COLRv0 supported.');
+    var baseGlyphRecordsOffset = 14;
+    var layerRecordsOffset = baseGlyphRecordsOffset + (baseGlyphRecords.length * 6);
+    return new table.Table('COLR', [
+        { name: 'version', type: 'USHORT', value: version },
+        { name: 'numBaseGlyphRecords', type: 'USHORT', value: baseGlyphRecords.length },
+        { name: 'baseGlyphRecordsOffset', type: 'ULONG', value: baseGlyphRecordsOffset },
+        { name: 'layerRecordsOffset', type: 'ULONG', value: layerRecordsOffset },
+        { name: 'numLayerRecords', type: 'USHORT', value: layerRecords.length } ].concat( baseGlyphRecords.map(function (glyph, i) { return [
+            { name: 'glyphID_' + i, type: 'USHORT', value: glyph.glyphID },
+            { name: 'firstLayerIndex_' + i, type: 'USHORT', value: glyph.firstLayerIndex },
+            { name: 'numLayers_' + i, type: 'USHORT', value: glyph.numLayers } ]; }).flat(),
+        layerRecords.map(function (layer, i) { return [
+            { name: 'LayerGlyphID_' + i, type: 'USHORT', value: layer.glyphID },
+            { name: 'paletteIndex_' + i, type: 'USHORT', value: layer.paletteIndex } ]; }).flat() ));
+}
+
+var colr = { parse: parseColrTable, make: makeColrTable };
+
+// The `CPAL` define a contiguous list of colors (colorRecords)
+
+// Parse the header `head` table
+function parseCpalTable(data, start) {
+    var p = new Parser(data, start);
+    var version = p.parseShort();
+    var numPaletteEntries = p.parseShort();
+    var numPalettes = p.parseShort();
+    var numColorRecords = p.parseShort();
+    var colorRecordsArrayOffset = p.parseOffset32();
+    var colorRecordIndices = p.parseUShortList(numPalettes);
+    p.relativeOffset = colorRecordsArrayOffset;
+    var colorRecords = p.parseULongList(numColorRecords);
+    return {
+        version: version,
+        numPaletteEntries: numPaletteEntries,
+        colorRecords: colorRecords,
+        colorRecordIndices: colorRecordIndices,
+    };
+}
+
+function makeCpalTable(ref) {
+    var version = ref.version; if ( version === void 0 ) version = 0;
+    var numPaletteEntries = ref.numPaletteEntries; if ( numPaletteEntries === void 0 ) numPaletteEntries = 0;
+    var colorRecords = ref.colorRecords; if ( colorRecords === void 0 ) colorRecords = [];
+    var colorRecordIndices = ref.colorRecordIndices; if ( colorRecordIndices === void 0 ) colorRecordIndices = [0];
+
+    check.argument(version === 0, 'Only CPALv0 are supported.');
+    check.argument(colorRecords.length, 'No colorRecords given.');
+    check.argument(colorRecordIndices.length, 'No colorRecordIndices given.');
+    if (colorRecordIndices.length > 1) {
+        check.argument(numPaletteEntries, 'Can\'t infer numPaletteEntries on multiple colorRecordIndices');
+    }
+    return new table.Table('CPAL', [
+        { name: 'version', type: 'USHORT', value: version },
+        { name: 'numPaletteEntries', type: 'USHORT', value: numPaletteEntries || colorRecords.length },
+        { name: 'numPalettes', type: 'USHORT', value: colorRecordIndices.length },
+        { name: 'numColorRecords', type: 'USHORT', value: colorRecords.length },
+        { name: 'colorRecordsArrayOffset', type: 'ULONG', value: 12 + 2 * colorRecordIndices.length } ].concat( colorRecordIndices.map(function (palette, i) { return ({ name: 'colorRecordIndices_' + i, type: 'USHORT', value: palette }); }),
+        colorRecords.map(function (color, i) { return ({ name: 'colorRecords_' + i, type: 'ULONG', value: color }); }) ));
+}
+
+var cpal = { parse: parseCpalTable, make: makeCpalTable };
 
 // The `sfnt` wrapper provides organization for the tables in the font.
 
@@ -7081,20 +7330,51 @@ function fontToSfntTable(font) {
         names[n] = font.names[n];
     }
 
-    if (!names.uniqueID) {
-        names.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
+    names.unicode = names.unicode || {};
+    names.macintosh = names.macintosh || {};
+    names.windows = names.windows || {};
+
+    var fontNamesUnicode = font.names.unicode || {};
+    var fontNamesMacintosh = font.names.macintosh || {};
+    var fontNamesWindows = font.names.windows || {};
+
+    // do this as a loop to reduce redundant code
+    for (var platform in ['unicode', 'macintosh', 'windows']) {
+
+        names[platform] = names[platform] || {};
+
+        if (!names[platform].uniqueID) {
+            names.unicode.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
+        }
+
+        if (!names[platform].postScriptName) {
+            names.unicode.postScriptName = {en: postScriptName};
+        }
     }
 
-    if (!names.postScriptName) {
-        names.postScriptName = {en: postScriptName};
+    // this cannot be done as a loop as each one is unique.
+    if (!names.unicode.preferredFamily) {
+        names.unicode.preferredFamily = fontNamesUnicode.fontFamily || fontNamesMacintosh.fontFamily || fontNamesWindows.fontFamily;
     }
 
-    if (!names.preferredFamily) {
-        names.preferredFamily = font.names.fontFamily;
+    if (!names.macintosh.preferredFamily) {
+        names.macintosh.preferredFamily = fontNamesMacintosh.fontFamily || fontNamesUnicode.fontFamily || fontNamesWindows.fontFamily;
     }
 
-    if (!names.preferredSubfamily) {
-        names.preferredSubfamily = font.names.fontSubfamily;
+    if (!names.windows.preferredFamily) {
+        names.windows.preferredFamily = fontNamesWindows.fontFamily || fontNamesUnicode.fontFamily || fontNamesMacintosh.fontFamily;
+    }
+
+    if (!names.unicode.preferredSubfamily) {
+        names.unicode.preferredSubfamily = fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily || fontNamesWindows.fontSubFamily;
+    }
+
+    if (!names.macintosh.preferredSubfamily) {
+        names.macintosh.preferredSubfamily = fontNamesMacintosh.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesWindows.fontSubFamily;
+    }
+
+    if (!names.windows.preferredSubfamily) {
+        names.windows.preferredSubfamily = fontNamesWindows.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily;
     }
 
     var languageTags = [];
@@ -7122,6 +7402,12 @@ function fontToSfntTable(font) {
     // Optional tables
     if (font.tables.gsub) {
         tables.push(gsub.make(font.tables.gsub));
+    }
+    if (font.tables.cpal) {
+        tables.push(cpal.make(font.tables.cpal));
+    }
+    if (font.tables.colr) {
+        tables.push(colr.make(font.tables.colr));
     }
     if (metaTable) {
         tables.push(metaTable);
@@ -7656,6 +7942,33 @@ Substitution.prototype.getSingle = function(feature, script, language) {
 };
 
 /**
+ * List all multiple substitutions (lookup type 2) for a given script, language, and feature.
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dflt']
+ * @param {string} feature - 4-character feature name ('ccmp', 'stch')
+ * @return {Array} substitutions - The list of substitutions.
+ */
+Substitution.prototype.getMultiple = function(feature, script, language) {
+    var substitutions = [];
+    var lookupTables = this.getLookupTables(script, language, feature, 2);
+    for (var idx = 0; idx < lookupTables.length; idx++) {
+        var subtables = lookupTables[idx].subtables;
+        for (var i = 0; i < subtables.length; i++) {
+            var subtable = subtables[i];
+            var glyphs = this.expandCoverage(subtable.coverage);
+            var j = (void 0);
+
+            for (j = 0; j < glyphs.length; j++) {
+                var glyph = glyphs[j];
+                var replacements = subtable.sequences[j];
+                substitutions.push({ sub: glyph, by: replacements });
+            }
+        }
+    }
+    return substitutions;
+};
+
+/**
  * List all alternates (lookup type 3) for a given script, language, and feature.
  * @param {string} [script='DFLT']
  * @param {string} [language='dflt']
@@ -7716,7 +8029,7 @@ Substitution.prototype.getLigatures = function(feature, script, language) {
  * Add or modify a single substitution (lookup type 1)
  * Format 2, more flexible, is always used.
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
- * @param {Object} substitution - { sub: id, delta: number } for format 1 or { sub: id, by: id } for format 2.
+ * @param {Object} substitution - { sub: id, by: id } (format 1 is not supported)
  * @param {string} [script='DFLT']
  * @param {string} [language='dflt']
  */
@@ -7727,7 +8040,7 @@ Substitution.prototype.addSingle = function(feature, substitution, script, langu
         coverage: {format: 1, glyphs: []},
         substitute: []
     });
-    check.assert(subtable.coverage.format === 1, 'Ligature: unable to modify coverage table format ' + subtable.coverage.format);
+    check.assert(subtable.coverage.format === 1, 'Single: unable to modify coverage table format ' + subtable.coverage.format);
     var coverageGlyph = substitution.sub;
     var pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
     if (pos < 0) {
@@ -7739,7 +8052,33 @@ Substitution.prototype.addSingle = function(feature, substitution, script, langu
 };
 
 /**
- * Add or modify an alternate substitution (lookup type 1)
+ * Add or modify a multiple substitution (lookup type 2)
+ * @param {string} feature - 4-letter feature name ('ccmp', 'stch')
+ * @param {Object} substitution - { sub: id, by: [id] } for format 2.
+ * @param {string} [script='DFLT']
+ * @param {string} [language='dflt']
+ */
+Substitution.prototype.addMultiple = function(feature, substitution, script, language) {
+    check.assert(substitution.by instanceof Array && substitution.by.length > 1, 'Multiple: "by" must be an array of two or more ids');
+    var lookupTable = this.getLookupTables(script, language, feature, 2, true)[0];
+    var subtable = getSubstFormat(lookupTable, 1, {                // lookup type 2 subtable, format 1, coverage format 1
+        substFormat: 1,
+        coverage: {format: 1, glyphs: []},
+        sequences: []
+    });
+    check.assert(subtable.coverage.format === 1, 'Multiple: unable to modify coverage table format ' + subtable.coverage.format);
+    var coverageGlyph = substitution.sub;
+    var pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
+    if (pos < 0) {
+        pos = -1 - pos;
+        subtable.coverage.glyphs.splice(pos, 0, coverageGlyph);
+        subtable.sequences.splice(pos, 0, 0);
+    }
+    subtable.sequences[pos] = substitution.by;
+};
+
+/**
+ * Add or modify an alternate substitution (lookup type 3)
  * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
  * @param {Object} substitution - { sub: id, by: [ids] }
  * @param {string} [script='DFLT']
@@ -7752,7 +8091,7 @@ Substitution.prototype.addAlternate = function(feature, substitution, script, la
         coverage: {format: 1, glyphs: []},
         alternateSets: []
     });
-    check.assert(subtable.coverage.format === 1, 'Ligature: unable to modify coverage table format ' + subtable.coverage.format);
+    check.assert(subtable.coverage.format === 1, 'Alternate: unable to modify coverage table format ' + subtable.coverage.format);
     var coverageGlyph = substitution.sub;
     var pos = this.binSearch(subtable.coverage.glyphs, coverageGlyph);
     if (pos < 0) {
@@ -7828,7 +8167,13 @@ Substitution.prototype.getFeature = function(feature, script, language) {
                     .concat(this.getAlternates(feature, script, language));
         case 'dlig':
         case 'liga':
-        case 'rlig': return this.getLigatures(feature, script, language);
+        case 'rlig':
+            return this.getLigatures(feature, script, language);
+        case 'ccmp':
+            return this.getMultiple(feature, script, language)
+                .concat(this.getLigatures(feature, script, language));
+        case 'stch':
+            return this.getMultiple(feature, script, language);
     }
     return undefined;
 };
@@ -7856,6 +8201,11 @@ Substitution.prototype.add = function(feature, sub, script, language) {
         case 'liga':
         case 'rlig':
             return this.addLigature(feature, sub, script, language);
+        case 'ccmp':
+            if (sub.by instanceof Array) {
+                return this.addMultiple(feature, sub, script, language);
+            }
+            return this.addLigature(feature, sub, script, language);
     }
     return undefined;
 };
@@ -7875,7 +8225,7 @@ function nodeBufferToArrayBuffer(buffer) {
 }
 
 function arrayBufferToNodeBuffer(ab) {
-    var buffer = new Buffer(ab.byteLength);
+    var buffer = Buffer.alloc(ab.byteLength);
     var view = new Uint8Array(ab);
     for (var i = 0; i < buffer.length; ++i) {
         buffer[i] = view[i];
@@ -12221,7 +12571,7 @@ FeatureQuery.prototype.lookupFeature = function (query) {
         tag: query.tag, script: query.script
     });
     if (!feature) { return new Error(
-        "font '" + (this.font.names.fullName.en) + "' " +
+        "font '" + ((this.font.names.unicode || this.font.names.windows || this.font.names.macintosh).fullName.en) + "' " +
         "doesn't support feature '" + (query.tag) + "' " +
         "for script '" + (query.script) + "'."
     ); }
@@ -12915,6 +13265,26 @@ Bidi.prototype.getTextGlyphs = function (text) {
 
 // The Font object
 
+function createDefaultNamesInfo(options) {
+    return {
+        fontFamily: {en: options.familyName || ' '},
+        fontSubfamily: {en: options.styleName || ' '},
+        fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
+        // postScriptName may not contain any whitespace
+        postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
+        designer: {en: options.designer || ' '},
+        designerURL: {en: options.designerURL || ' '},
+        manufacturer: {en: options.manufacturer || ' '},
+        manufacturerURL: {en: options.manufacturerURL || ' '},
+        license: {en: options.license || ' '},
+        licenseURL: {en: options.licenseURL || ' '},
+        version: {en: options.version || 'Version 0.1'},
+        description: {en: options.description || ' '},
+        copyright: {en: options.copyright || ' '},
+        trademark: {en: options.trademark || ' '}
+    };
+}
+
 /**
  * @typedef FontOptions
  * @type Object
@@ -12964,23 +13334,10 @@ function Font(options) {
         checkArgument(options.descender <= 0, 'When creating a new Font object, negative descender value is required.');
 
         // OS X will complain if the names are empty, so we put a single space everywhere by default.
-        this.names = {
-            fontFamily: {en: options.familyName || ' '},
-            fontSubfamily: {en: options.styleName || ' '},
-            fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
-            // postScriptName may not contain any whitespace
-            postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
-            designer: {en: options.designer || ' '},
-            designerURL: {en: options.designerURL || ' '},
-            manufacturer: {en: options.manufacturer || ' '},
-            manufacturerURL: {en: options.manufacturerURL || ' '},
-            license: {en: options.license || ' '},
-            licenseURL: {en: options.licenseURL || ' '},
-            version: {en: options.version || 'Version 0.1'},
-            description: {en: options.description || ' '},
-            copyright: {en: options.copyright || ' '},
-            trademark: {en: options.trademark || ' '}
-        };
+        this.names = {};
+        this.names.unicode = createDefaultNamesInfo(options);
+        this.names.macintosh = createDefaultNamesInfo(options);
+        this.names.windows = createDefaultNamesInfo(options);
         this.unitsPerEm = options.unitsPerEm || 1000;
         this.ascender = options.ascender;
         this.descender = options.descender;
@@ -13345,7 +13702,7 @@ Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
  * @return {string}
  */
 Font.prototype.getEnglishName = function(name) {
-    var translations = this.names[name];
+    var translations = (this.names.unicode || this.names.macintosh || this.names.windows)[name];
     if (translations) {
         return translations.en;
     }
@@ -13616,6 +13973,65 @@ function parseFvarTable(data, start, names) {
 }
 
 var fvar = { make: makeFvarTable, parse: parseFvarTable };
+
+// The `GDEF` table contains various glyph properties
+
+var attachList = function() {
+    return {
+        coverage: this.parsePointer(Parser.coverage),
+        attachPoints: this.parseList(Parser.pointer(Parser.uShortList))
+    };
+};
+
+var caretValue = function() {
+    var format = this.parseUShort();
+    check.argument(format === 1 || format === 2 || format === 3,
+        'Unsupported CaretValue table version.');
+    if (format === 1) {
+        return { coordinate: this.parseShort() };
+    } else if (format === 2) {
+        return { pointindex: this.parseShort() };
+    } else if (format === 3) {
+        // Device / Variation Index tables unsupported
+        return { coordinate: this.parseShort() };
+    }
+};
+
+var ligGlyph = function() {
+    return this.parseList(Parser.pointer(caretValue));
+};
+
+var ligCaretList = function() {
+    return {
+        coverage: this.parsePointer(Parser.coverage),
+        ligGlyphs: this.parseList(Parser.pointer(ligGlyph))
+    };
+};
+
+var markGlyphSets = function() {
+    this.parseUShort(); // Version
+    return this.parseList(Parser.pointer(Parser.coverage));
+};
+
+function parseGDEFTable(data, start) {
+    start = start || 0;
+    var p = new Parser(data, start);
+    var tableVersion = p.parseVersion(1);
+    check.argument(tableVersion === 1 || tableVersion === 1.2 || tableVersion === 1.3,
+        'Unsupported GDEF table version.');
+    var gdef = {
+        version: tableVersion,
+        classDef: p.parsePointer(Parser.classDef),
+        attachList: p.parsePointer(attachList),
+        ligCaretList: p.parsePointer(ligCaretList),
+        markAttachClassDef: p.parsePointer(Parser.classDef)
+    };
+    if (tableVersion >= 1.2) {
+        gdef.markGlyphSets = p.parsePointer(markGlyphSets);
+    }
+    return gdef;
+}
+var gdef = { parse: parseGDEFTable };
 
 // The `GPOS` table contains kerning pairs, among other things.
 
@@ -14007,6 +14423,9 @@ function parseBuffer(buffer, opt) {
 
         numTables = parse.getUShort(data, 12);
         tableEntries = parseWOFFTableEntries(data, numTables);
+    } else if (signature === 'wOF2') {
+        var issue = 'https://github.com/opentypejs/opentype.js/issues/183#issuecomment-1147228025';
+        throw new Error('WOFF2 require an external decompressor library, see examples at: ' + issue);
     } else {
         throw new Error('Unsupported OpenType signature ' + signature);
     }
@@ -14014,6 +14433,7 @@ function parseBuffer(buffer, opt) {
     var cffTableEntry;
     var fvarTableEntry;
     var glyfTableEntry;
+    var gdefTableEntry;
     var gposTableEntry;
     var gsubTableEntry;
     var hmtxTableEntry;
@@ -14065,6 +14485,14 @@ function parseBuffer(buffer, opt) {
                 table = uncompressTable(data, tableEntry);
                 ltagTable = ltag.parse(table.data, table.offset);
                 break;
+            case 'COLR':
+                table = uncompressTable(data, tableEntry);
+                font.tables.colr = colr.parse(table.data, table.offset);
+                break;
+            case 'CPAL':
+                table = uncompressTable(data, tableEntry);
+                font.tables.cpal = cpal.parse(table.data, table.offset);
+                break;
             case 'maxp':
                 table = uncompressTable(data, tableEntry);
                 font.tables.maxp = maxp.parse(table.data, table.offset);
@@ -14098,6 +14526,9 @@ function parseBuffer(buffer, opt) {
                 break;
             case 'kern':
                 kernTableEntry = tableEntry;
+                break;
+            case 'GDEF':
+                gdefTableEntry = tableEntry;
                 break;
             case 'GPOS':
                 gposTableEntry = tableEntry;
@@ -14139,6 +14570,11 @@ function parseBuffer(buffer, opt) {
         font.kerningPairs = {};
     }
 
+    if (gdefTableEntry) {
+        var gdefTable = uncompressTable(data, gdefTableEntry);
+        font.tables.gdef = gdef.parse(gdefTable.data, gdefTable.offset);
+    }
+
     if (gposTableEntry) {
         var gposTable = uncompressTable(data, gposTableEntry);
         font.tables.gpos = gpos.parse(gposTable.data, gposTable.offset);
@@ -14175,8 +14611,9 @@ function parseBuffer(buffer, opt) {
  * @param  {Function} callback - The callback.
  */
 function load(url, callback, opt) {
+    opt = (opt === undefined || opt === null) ?  {} : opt;
     var isNode = typeof window === 'undefined';
-    var loadFn = isNode ? loadFromFile : loadFromUrl;
+    var loadFn = isNode && !opt.isUrl ? loadFromFile : loadFromUrl;
 
     return new Promise(function (resolve, reject) {
         loadFn(url, function(err, arrayBuffer) {

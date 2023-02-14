@@ -1,5 +1,11 @@
 OpenType.js is written and maintained by Frederik De Bleser <frederik@debleser.be> & contributors.
 
+Mantainers
+==========
+* Frederik De Bleser
+* Patrick Rhodes Martin
+* Connum
+
 Contributors
 ============================
 * Andreas Köberle
@@ -34,3 +40,5 @@ Contributors
 * 王集鹄
 * Axel Kittenberger
 * Tom Shinnick
+* Patrick Martin
+* Connum
