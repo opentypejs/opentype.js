@@ -5,8 +5,11 @@ import { loadSync } from '../src/opentype';
 describe('bidi.js', function() {
     let latinFont;
     let arabicFont;
+    let scriptFont;
     let bidiFira;
     let bidiScheherazade;
+    let bidiPecita;
+    let bidiPecitaNoRlig;
     let arabicTokenizer;
     before(function () {
         /**
@@ -37,6 +40,28 @@ describe('bidi.js', function() {
             tags: ['liga', 'rlig']
         }];
         bidiFira.applyFeatures(latinFont, latinFeatures);
+        /**
+         * script font for rlig tests
+         */
+        scriptFont = loadSync('./fonts/Pecita.ttf');
+        bidiPecita = new Bidi();
+        bidiPecita.registerModifier(
+            'glyphIndex', null, token => scriptFont.charToGlyphIndex(token.char)
+            );
+        bidiPecitaNoRlig = new Bidi();
+        bidiPecitaNoRlig.registerModifier(
+            'glyphIndex', null, token => scriptFont.charToGlyphIndex(token.char)
+        );
+        const scriptFeatures = [{
+            script: 'latn',
+            tags: ['liga', 'rlig']
+        }];
+        const scriptFeaturesNoRlig = [{
+            script: 'latn',
+            tags: ['liga']
+        }];
+        bidiPecita.applyFeatures(scriptFont, scriptFeatures);
+        bidiPecitaNoRlig.applyFeatures(scriptFont, scriptFeaturesNoRlig);
     });
     describe('arabic contexts', function() {
         it('should match arabic words in a given text', function() {
@@ -79,6 +104,14 @@ describe('bidi.js', function() {
         it('should apply arabic required composition ligature', function () {
             let glyphIndexes = bidiScheherazade.getTextGlyphs('َّ'); // Arabic word 'َّ' : 'Fatha & Shadda'
             assert.deepEqual(glyphIndexes, [1311]);
+        });
+        it('should apply required latin ligature', function () {
+            let glyphIndexes = bidiPecita.getTextGlyphs('quick');
+            assert.deepEqual(glyphIndexes, [4130, 79, 3676]); // "qu" and "ck" rlig
+        });
+        it('should render differently without required latin ligatures', function () {
+            let glyphIndexes = bidiPecitaNoRlig.getTextGlyphs('quick'); // no rligs
+            assert.deepEqual(glyphIndexes, [87, 91, 79, 73, 81]);
         });
         it('should apply latin ligature', function () {
             let glyphIndexes = bidiFira.getTextGlyphs('fi'); // fi => ﬁ
