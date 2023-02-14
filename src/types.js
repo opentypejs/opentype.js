@@ -900,6 +900,8 @@ encode.TABLE = function(table) {
     const length = table.fields.length;
     const subtables = [];
     const subtableOffsets = [];
+    const extensionTables = [];
+    const extensionOffsets = [];
 
     for (let i = 0; i < length; i += 1) {
         const field = table.fields[i];
@@ -916,6 +918,10 @@ encode.TABLE = function(table) {
             subtableOffsets.push(d.length);
             d = d.concat([0, 0]);
             subtables.push(bytes);
+
+            if ( value.extensionTable ) {
+                extensionTables.push(encode.TABLE(value.extensionTable));
+            }
         } else {
             d = d.concat(bytes);
         }
@@ -924,10 +930,17 @@ encode.TABLE = function(table) {
     for (let i = 0; i < subtables.length; i += 1) {
         const o = subtableOffsets[i];
         const offset = d.length;
-        check.argument(offset < 65536, 'Table ' + table.tableName + ' too big.');
+        const maxOffset = table.tableName === 'lookupListTable' ? 4294967295 : 65536;
+        check.argument(offset < maxOffset, 'Table ' + table.tableName + ' too big.');
         d[o] = offset >> 8;
         d[o + 1] = offset & 0xff;
         d = d.concat(subtables[i]);
+    }
+
+    for (let i = 0; i < extensionTables.length; i += 1) {
+        // TODO: calculate offset value and replace in corresponding extensionSubstitutionTable
+        // Is this even the right spot to append the extensions data?
+        d = d.concat(extensionTables[i]);
     }
 
     return d;
