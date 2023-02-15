@@ -265,6 +265,37 @@ subtableMakers[4] = function makeLookup4(subtable) {
     })));
 };
 
+subtableMakers[5] = function makeLookup5(subtable) {
+    if (subtable.substFormat === 1) {
+        check.assert(false, 'lookup type 5 format 1 is not yet supported.');
+    } else if (subtable.substFormat === 2) {
+        return new table.Table('contextualSubstitutionTable', [
+            {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
+            {name: 'SetMarksHighCoverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+            {name: 'SetMarksHighClassDef', type: 'TABLE', value: new table.ClassDef(subtable.classDef)}
+        ].concat(table.tableList('classSeqRuleSet', subtable.classSets, function(classSeqRuleSet) {
+            if (!classSeqRuleSet) {
+                return new table.Table('NULL', null);
+            }
+            return new table.Table('classSeqRuleSetTable', table.tableList('classSeqRule', classSeqRuleSet, function(classSeqRule) {
+                let tableData = table.ushortList('classes', classSeqRule.classes, classSeqRule.classes.length + 1)
+                    .concat(table.ushortList('seqLookupCount', [], classSeqRule.lookupRecords.length));
+
+                classSeqRule.lookupRecords.forEach((record, i) => {
+                    tableData = tableData
+                        .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
+                        .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+                });
+                return new table.Table('classSeqRuleTable', tableData);
+            }));
+        })));
+    } else if (subtable.substFormat === 3) {
+        check.assert(false, 'lookup type 5 format 3 is not yet supported.');
+    }
+
+    check.assert(false, 'lookup type 5 format must be 1, 2 or 3.');
+};
+
 subtableMakers[6] = function makeLookup6(subtable) {
     if (subtable.substFormat === 1) {
         let returnTable = new table.Table('chainContextTable', [
