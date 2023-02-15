@@ -12,10 +12,7 @@ import { encode, sizeOf } from './types';
  * @constructor
  */
 function Table(tableName, fields, options) {
-    // For coverage tables with coverage format 2, we do not want to add the coverage data directly to the table object,
-    // as this will result in wrong encoding order of the coverage data on serialization to bytes.
-    // The fallback of using the field values directly when not present on the table is handled in types.encode.TABLE() already.
-    if (fields.length && (fields[0].name !== 'coverageFormat' || fields[0].value === 1)) {
+    if (fields && fields.length) {
         for (let i = 0; i < fields.length; i += 1) {
             const field = fields[i];
             this[field.name] = field.value;
@@ -111,11 +108,11 @@ function Coverage(coverageTable) {
     } else if (coverageTable.format === 2) {
         Table.call(this, 'coverageTable',
             [{name: 'coverageFormat', type: 'USHORT', value: 2}]
-            .concat(recordList('rangeRecord', coverageTable.ranges, function(RangeRecord) {
+            .concat(recordList('rangeRecord', coverageTable.ranges, function(RangeRecord, i) {
                 return [
-                    {name: 'startGlyphID', type: 'USHORT', value: RangeRecord.start},
-                    {name: 'endGlyphID', type: 'USHORT', value: RangeRecord.end},
-                    {name: 'startCoverageIndex', type: 'USHORT', value: RangeRecord.index},
+                    {name: 'startGlyphID' + i, type: 'USHORT', value: RangeRecord.start},
+                    {name: 'endGlyphID' + i, type: 'USHORT', value: RangeRecord.end},
+                    {name: 'startCoverageIndex' + i, type: 'USHORT', value: RangeRecord.index},
                 ];
             }))
         );
