@@ -480,6 +480,28 @@ describe('tables/gsub.js', function() {
     // is already tested above
 
     //// Lookup type 5 ////////////////////////////////////////////////////////
+    it('can write lookup5 substFormat 1', function() {
+        // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX7
+        const expectedData = unhexArray(
+            '0001 000A 0002 0012 0020' +                 // ContextSubstFormat1
+            '0001 0002 0028 005D' +                      // coverage format 1
+            '0001 0004 0002 0001 005D 0000 0001' +       // sub rule set "space and dash"
+            '0001 0004 0002 0001 0028 0001 0001'         // sub rule set "dash and space"
+        );
+
+        assert.deepEqual(makeLookup(5, {
+            substFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0x28, 0x5d]                                // space, dash
+            },
+            ruleSets: [
+                [{ input: [0x5d], lookupRecords: [{ sequenceIndex: 0, lookupListIndex: 1 }] }],
+                [{ input: [0x28], lookupRecords: [{ sequenceIndex: 1, lookupListIndex: 1 }] }]
+            ]
+        }));
+    });
+
     it('can write lookup5 substFormat2', function() {
         // https://learn.microsoft.com/en-gb/typography/opentype/spec/gsub#example-8-contextual-substitution-format-2
         const expectedData = unhexArray(
@@ -554,6 +576,35 @@ describe('tables/gsub.js', function() {
                 undefined,
                 [{ classes: [1], lookupRecords: [{ sequenceIndex: 1, lookupListIndex: 1 }] }],
                 [{ classes: [1], lookupRecords: [{ sequenceIndex: 1, lookupListIndex: 2 }] }]
+            ]
+        }), expectedData);
+    });
+
+    it('can write lookup5 substFormat 3', function() {
+        // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX9
+        const expectedData = unhexArray(
+            '0003 0003 0002 0014 0030 0052 0000 0001 0002 0002' + // ContextSubstFormat3
+            '0001 000C 0033 0035 0037 0038 0039 003B 003C 003D 0041 0042 0045 004A' + // coverage format 1
+            '0001 000F 0032 0034 0036 003A 003E 003F 0040 0043 0044 0045 0046 0047 0048 0049 004B' + // coverage format 1
+            '0001 0005 0038 003B 0041 0042 004A' // coverage format 1
+        );
+        assert.deepEqual(makeLookup(5, {
+            substFormat: 3,
+            coverages: [{
+                    format: 1,
+                    glyphs: [0x33, 0x35, 0x37, 0x38, 0x39, 0x3b, 0x3c, 0x3d, 0x41, 0x42, 0x45, 0x4a]
+                },
+                {
+                    format: 1,
+                    glyphs: [0x32, 0x34, 0x36, 0x3a, 0x3e, 0x3f, 0x40, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4b]
+                },
+                {
+                    format: 1,
+                    glyphs: [0x38, 0x3b, 0x41, 0x42, 0x4a]
+                }],
+            lookupRecords: [
+                { sequenceIndex: 0, lookupListIndex: 1 },
+                { sequenceIndex: 2, lookupListIndex: 2 }
             ]
         }), expectedData);
     });
