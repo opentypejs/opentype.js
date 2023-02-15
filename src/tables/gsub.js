@@ -312,7 +312,25 @@ subtableMakers[5] = function makeLookup5(subtable) {
             }));
         })));
     } else if (subtable.substFormat === 3) {
-        check.assert(false, 'lookup type 5 format 3 is not yet supported.');
+        let tableData = [
+            {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
+        ];
+
+        tableData.push({name: 'inputGlyphCount', type: 'USHORT', value: subtable.coverages.length});
+        tableData.push({name: 'substitutionCount', type: 'USHORT', value: subtable.lookupRecords.length});
+        subtable.coverages.forEach((coverage, i) => {
+            tableData.push({name: 'inputCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
+        });
+
+        subtable.lookupRecords.forEach((record, i) => {
+            tableData = tableData
+                .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
+                .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+        });
+
+        let returnTable = new table.Table('contextualSubstitutionTable', tableData);
+
+        return returnTable;
     }
 
     check.assert(false, 'lookup type 5 format must be 1, 2 or 3.');
