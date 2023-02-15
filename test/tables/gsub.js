@@ -269,6 +269,8 @@ describe('tables/gsub.js', function() {
         });
     });
 
+    // FIXME: test lookup6 substFormat2 (we already support parsing it!)
+
     it('can parse lookup6 substFormat3', function() {
         // https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#63-chaining-context-substitution-format-3-coverage-based-glyph-contexts
         // example taken from Inter Regular, with just offsets adapted to the structure when only creating the lookup
