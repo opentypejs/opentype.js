@@ -267,7 +267,29 @@ subtableMakers[4] = function makeLookup4(subtable) {
 
 subtableMakers[5] = function makeLookup5(subtable) {
     if (subtable.substFormat === 1) {
-        check.assert(false, 'lookup type 5 format 1 is not yet supported.');
+        return new table.Table('contextualSubstitutionTable', [
+            {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
+        ].concat(table.tableList('sequenceRuleSet', subtable.ruleSets, function(sequenceRuleSet) {
+            if (!sequenceRuleSet) {
+                return new table.Table('NULL', null);
+            }
+            return new table.Table('sequenceRuleSetTable', table.tableList('sequenceRule', sequenceRuleSet, function(sequenceRule) {
+                let tableData = table.ushortList('seqLookup', [], sequenceRule.lookupRecords.length)
+                    .concat(table.ushortList('inputSequence', sequenceRule.input, sequenceRule.input.length + 1));
+
+                // swap the first two elements, because inputSequenceCount
+                // ("glyphCount" in the spec) comes before seqLookupCount
+                [tableData[0], tableData[1]] = [tableData[1], tableData[0]];
+
+                sequenceRule.lookupRecords.forEach((record, i) => {
+                    tableData = tableData
+                        .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
+                        .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+                });
+                return new table.Table('sequenceRuleTable', tableData);
+            }));
+        })));
     } else if (subtable.substFormat === 2) {
         return new table.Table('contextualSubstitutionTable', [
             {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
