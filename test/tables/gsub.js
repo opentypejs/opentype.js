@@ -480,8 +480,8 @@ describe('tables/gsub.js', function() {
     // is already tested above
 
     //// Lookup type 5 ////////////////////////////////////////////////////////
-    it('can write lookup5 substFormat 1', function() {
-        // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX7
+    it('can write lookup5 substFormat1', function() {
+        // https://learn.microsoft.com/en-gb/typography/opentype/spec/gsub#example-7-contextual-substitution-format-1
         const expectedData = unhexArray(
             '0001 000A 0002 0012 0020' +                 // ContextSubstFormat1
             '0001 0002 0028 005D' +                      // coverage format 1
@@ -499,7 +499,7 @@ describe('tables/gsub.js', function() {
                 [{ input: [0x5d], lookupRecords: [{ sequenceIndex: 0, lookupListIndex: 1 }] }],
                 [{ input: [0x28], lookupRecords: [{ sequenceIndex: 1, lookupListIndex: 1 }] }]
             ]
-        }));
+        }), expectedData);
     });
 
     it('can write lookup5 substFormat2', function() {
@@ -580,7 +580,7 @@ describe('tables/gsub.js', function() {
         }), expectedData);
     });
 
-    it('can write lookup5 substFormat 3', function() {
+    it('can write lookup5 substFormat3', function() {
         // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX9
         const expectedData = unhexArray(
             '0003 0003 0002 0014 0030 0052 0000 0001 0002 0002' + // ContextSubstFormat3
