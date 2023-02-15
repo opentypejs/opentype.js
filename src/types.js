@@ -921,7 +921,7 @@ sizeOf.OBJECT = function(v) {
  */
 encode.TABLE = function(table) {
     let d = [];
-    const length = table.fields.length;
+    const length = (table.fields || []).length;
     const subtables = [];
     const subtableOffsets = [];
 
@@ -937,9 +937,14 @@ encode.TABLE = function(table) {
         const bytes = encodingFunction(value);
 
         if (field.type === 'TABLE') {
-            subtableOffsets.push(d.length);
+            // If the table.fields are set to NULL, don't add it as subtable data,
+            // so the offset will be set to 0 but no table data will be added.
+            // This is required e.g. for classSeqRuleSetOffsets with no defined contexts.
+            if (value.fields !== null) {
+                subtableOffsets.push(d.length);
+                subtables.push(bytes);
+            }
             d.push(...[0, 0]);
-            subtables.push(bytes);
         } else {
             for (let j = 0; j < bytes.length; j++) {
                 d.push(bytes[j]);
