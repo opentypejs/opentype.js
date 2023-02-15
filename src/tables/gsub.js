@@ -271,8 +271,8 @@ subtableMakers[5] = function makeLookup5(subtable) {
     } else if (subtable.substFormat === 2) {
         return new table.Table('contextualSubstitutionTable', [
             {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
-            {name: 'SetMarksHighCoverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
-            {name: 'SetMarksHighClassDef', type: 'TABLE', value: new table.ClassDef(subtable.classDef)}
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+            {name: 'classDef', type: 'TABLE', value: new table.ClassDef(subtable.classDef)}
         ].concat(table.tableList('classSeqRuleSet', subtable.classSets, function(classSeqRuleSet) {
             if (!classSeqRuleSet) {
                 return new table.Table('NULL', null);
