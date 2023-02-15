@@ -421,14 +421,14 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
     if (format === 0) {
         for (let i = 0; i < nGlyphs; i += 1) {
             sid = parser.parseSID();
-            charset.push(getCFFString(strings, sid));
+            charset.push(getCFFString(strings, sid) || sid);
         }
     } else if (format === 1) {
         while (charset.length <= nGlyphs) {
             sid = parser.parseSID();
             count = parser.parseCard8();
             for (let i = 0; i <= count; i += 1) {
-                charset.push(getCFFString(strings, sid));
+                charset.push(getCFFString(strings, sid) || sid);
                 sid += 1;
             }
         }
@@ -437,7 +437,7 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
             sid = parser.parseSID();
             count = parser.parseCard16();
             for (let i = 0; i <= count; i += 1) {
-                charset.push(getCFFString(strings, sid));
+                charset.push(getCFFString(strings, sid) || sid);
                 sid += 1;
             }
         }

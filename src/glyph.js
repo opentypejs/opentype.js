@@ -61,9 +61,19 @@ function Glyph(options) {
 Glyph.prototype.bindConstructorValues = function(options) {
     this.index = options.index || 0;
 
+    if (options.name === '.notdef') {
+        options.unicode = undefined;
+    } else if (options.name === '.null') {
+        options.unicode = 0;
+    }
+
+    if (options.unicode === 0 && options.name !== '.null') {
+        throw new Error('The unicode value "0" is reserved for the glyph name ".null" and cannot be used by any other glyph.');
+    }
+
     // These three values cannot be deferred for memory optimization:
     this.name = options.name || null;
-    this.unicode = options.unicode || undefined;
+    this.unicode = options.unicode;
     this.unicodes = options.unicodes || options.unicode !== undefined ? [options.unicode] : [];
 
     // But by binding these values only when necessary, we reduce can
