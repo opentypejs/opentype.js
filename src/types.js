@@ -972,7 +972,7 @@ encode.TABLE = function(table) {
  */
 sizeOf.TABLE = function(table) {
     let numBytes = 0;
-    const length = table.fields.length;
+    const length = (table.fields || []).length;
 
     for (let i = 0; i < length; i += 1) {
         const field = table.fields[i];
