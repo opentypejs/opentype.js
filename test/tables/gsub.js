@@ -477,6 +477,85 @@ describe('tables/gsub.js', function() {
     //// Lookup type 4 ////////////////////////////////////////////////////////
     // is already tested above
 
+    //// Lookup type 5 ////////////////////////////////////////////////////////
+    it('can write lookup5 substFormat2', function() {
+        // https://learn.microsoft.com/en-gb/typography/opentype/spec/gsub#example-8-contextual-substitution-format-2
+        const expectedData = unhexArray(
+            // SequenceContextFormat2 SetMarksHighSubtable
+            '0002  0010  001C' + // substFormat, SetMarksHighCoverage, SetMarksHighClassDef
+            '0004' +             // classSeqRuleSetCount
+            '0000  0000  0032 0040' + // classSeqRuleSetOffsets[0]-[3]
+            // CoverageFormat1 SetMarksHighCoverage
+            '0001  0004' +       // coverageFormat: lists, glyphCount
+            '0030' +             // tahGlyphID: glyphArray[0], high base glyph
+            '0031' +             // dhahGlyphID: glyphArray[1], high base glyph
+            '0040' +             // cafGlyphID:	glyphArray[2], very high base glyph
+            '0041' +             // gafGlyphID: glyphArray[3], very high base glyph
+            // ClassDefFormat2 SetMarksHighClassDef
+            '0002  0003' +       // classFormat: ranges, classRangeCount
+            // classRangeRecords[0]:
+            // ClassRangeRecords ordered by startGlyphID; record for Class 2, high base glyphs
+            '0030' +             // tahGlyphID: Start, first Glyph ID in range
+            '0031' +             // dhahGlyphID: End, last Glyph ID in range
+            '0002' +             // class
+            // classRangeRecords[1]:
+            // ClassRangeRecord for Class 3, very high base glyphs
+            '0040' +             // cafGlyphID: Start, first Glyph ID in range
+            '0041' +             // gafGlyphID: End, last Glyph ID in range
+            '0003' +             // class (ClassRange[2] for Class 1, mark gyphs)            )
+            // classRangeRecords[2]:
+            // ClassRangeRecord for Class 1, mark glyphs
+            '00D2' +             // fathatanDefaultGlyphID: Start, first Glyph ID in range default fathatan mark
+            '00D3' +             // dammatanDefaultGlyphID: End, last Glyph ID in the range default dammatan mark
+            '0001' +             // class
+            // ClassSequencRuleSet SetMarksHighSubClassSet2
+            '0001' +             // classSeqRuleCount
+            '0004' +             // SetMarksHighSubClassRule2: classSeqRuleOffsets[0] (offset to ClassSequenceRule table 0) — ClassSequenceRule tables ordered by preference
+            // ClassSequenceRule SetMarksHighSubClassRule2:
+            // ClassSequenceRule[0] table definition, Class 2 glyph (high base) glyph followed by a Class 1 glyph (mark)
+            '0002' +             // glyphCount
+            '0001' +             // seqLookupCount
+            '0001' +             // inputSequence[0] — input sequence beginning with the second Class in the input context sequence; Class 1, mark glyphs
+            // seqLookupRecords[0]:
+            // seqLookupRecords array in design order
+            '0001' +             // sequenceIndex — apply substitution to position 2, a mark
+            '0001' +             // lookupListIndex
+            // ClassSequencRuleSet SetMarksVeryHighSubClassSet3:
+            // ClassSequencRuleSet[3] table definition — all contexts that begin with Class 3 glyphs
+            '0001' +             // classSeqRuleCount
+            '0004' +             // SetMarksVeryHighSubClassRule3: classSeqRuleOffsets[0]
+            // ClassSequenceRule: SetMarksVeryHighSubClassRule3
+            // ClassSequenceRule[0] table definition — Class 3 glyph (very high base glyph) followed by a Class 1 glyph (mark)
+            '0002' +             // glyphCount
+            '0001' +             // seqLookupCount
+            '0001' +             // inputSequence[0] — input sequence beginning with the second Class in the input context sequence; Class 1, mark glyphs
+            // seqLookupRecords[0]:	seqLookupRecords array in design order
+            '0001' +             // sequenceIndex — apply substitution to position 2, second glyph class (mark)
+            '0002'               // lookupListIndex
+        );
+        assert.deepEqual(makeLookup(5, {
+            substFormat: 2,
+            coverage: {
+                format: 1,
+                glyphs: [0x30, 0x31, 0x40, 0x41]
+            },
+            classDef: {
+                format: 2,
+                ranges: [
+                    { start: 0x30, end: 0x31, classId: 2 },
+                    { start: 0x40, end: 0x41, classId: 3 },
+                    { start: 0xD2, end: 0xD3, classId: 1 }
+                ]
+            },
+            classSets: [
+                undefined,
+                undefined,
+                [{ classes: [1], lookupRecords: [{ sequenceIndex: 1, lookupListIndex: 1 }] }],
+                [{ classes: [1], lookupRecords: [{ sequenceIndex: 1, lookupListIndex: 2 }] }]
+            ]
+        }), expectedData);
+    });
+
     //// Lookup type 6 ////////////////////////////////////////////////////////
     it('can write lookup6 substFormat1', function() {
         // https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#lookuptype-6-chaining-contextual-substitution-subtable
