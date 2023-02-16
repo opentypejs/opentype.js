@@ -1,10 +1,10 @@
 // The `glyf` table describes the glyphs in TrueType outline format.
 // http://www.microsoft.com/typography/otspec/glyf.htm
 
-import check from '../check';
-import glyphset from '../glyphset';
-import parse from '../parse';
-import Path from '../path';
+import check from '../check.js';
+import glyphset from '../glyphset.js';
+import parse from '../parse.js';
+import Path from '../path.js';
 
 // Parse the coordinate data for a glyph.
 function parseGlyphCoordinate(p, flag, previousValue, shortVectorBitMask, sameBitMask) {

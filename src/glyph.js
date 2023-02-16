@@ -1,8 +1,8 @@
 // The Glyph object
 
-import check from './check';
-import draw from './draw';
-import Path from './path';
+import check from './check.js';
+import draw from './draw.js';
+import Path from './path.js';
 // import glyf from './tables/glyf' Can't be imported here, because it's a circular dependency
 
 function getPathDefinition(glyph, path) {

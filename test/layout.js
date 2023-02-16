@@ -1,6 +1,6 @@
 import assert  from 'assert';
-import { Font, Path, Glyph } from '../src/opentype';
-import Layout  from '../src/layout';
+import { Font, Path, Glyph } from '../src/opentype.js';
+import Layout  from '../src/layout.js';
 
 describe('layout.js', function() {
     let font;

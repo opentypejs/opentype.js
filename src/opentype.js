@@ -3,38 +3,33 @@
 // (c) 2015 Frederik De Bleser
 // opentype.js may be freely distributed under the MIT license.
 
-/* global DataView, Uint8Array, XMLHttpRequest  */
-
-import 'string.prototype.codepointat';
-import inflate from 'tiny-inflate';
-import Font from './font';
-import Glyph from './glyph';
-import { CmapEncoding, GlyphNames, addGlyphNames } from './encoding';
-import parse from './parse';
-import BoundingBox from './bbox';
-import Path from './path';
-import { nodeBufferToArrayBuffer } from './util';
-import cpal from './tables/cpal';
-import colr from './tables/colr';
-import cmap from './tables/cmap';
-import cff from './tables/cff';
-import fvar from './tables/fvar';
-import glyf from './tables/glyf';
-import gdef from './tables/gdef';
-import gpos from './tables/gpos';
-import gsub from './tables/gsub';
-import head from './tables/head';
-import hhea from './tables/hhea';
-import hmtx from './tables/hmtx';
-import kern from './tables/kern';
-import ltag from './tables/ltag';
-import loca from './tables/loca';
-import maxp from './tables/maxp';
-import _name from './tables/name';
-import os2 from './tables/os2';
-import post from './tables/post';
-import meta from './tables/meta';
-
+import { tinf_uncompress as inflate } from './tiny-inflate@1.0.3.esm.js'; // from code4fukui/tiny-inflate-es
+import Font from './font.js';
+import Glyph from './glyph.js';
+import { CmapEncoding, GlyphNames, addGlyphNames } from './encoding.js';
+import parse from './parse.js';
+import BoundingBox from './bbox.js';
+import Path from './path.js';
+import cpal from './tables/cpal.js';
+import colr from './tables/colr.js';
+import cmap from './tables/cmap.js';
+import cff from './tables/cff.js';
+import fvar from './tables/fvar.js';
+import glyf from './tables/glyf.js';
+import gdef from './tables/gdef.js';
+import gpos from './tables/gpos.js';
+import gsub from './tables/gsub.js';
+import head from './tables/head.js';
+import hhea from './tables/hhea.js';
+import hmtx from './tables/hmtx.js';
+import kern from './tables/kern.js';
+import ltag from './tables/ltag.js';
+import loca from './tables/loca.js';
+import maxp from './tables/maxp.js';
+import _name from './tables/name.js';
+import os2 from './tables/os2.js';
+import post from './tables/post.js';
+import meta from './tables/meta.js';
 /**
  * The opentype library.
  * @namespace opentype

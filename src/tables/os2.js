@@ -1,8 +1,8 @@
 // The `OS/2` table contains metrics required in OpenType fonts.
 // https://www.microsoft.com/typography/OTSPEC/os2.htm
 
-import parse from '../parse';
-import table from '../table';
+import parse from '../parse.js';
+import table from '../table.js';
 
 const unicodeRanges = [
     {begin: 0x0000, end: 0x007F}, // Basic Latin

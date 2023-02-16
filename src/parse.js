@@ -1,6 +1,6 @@
 // Parsing utility functions
 
-import check from './check';
+import check from './check.js';
 
 // Retrieve an unsigned byte from the DataView.
 function getByte(dataView, offset) {

@@ -1,14 +1,14 @@
 // The Font object
 
-import Path from './path';
-import sfnt from './tables/sfnt';
-import { DefaultEncoding } from './encoding';
-import glyphset from './glyphset';
-import Position from './position';
-import Substitution from './substitution';
-import { isBrowser, checkArgument, arrayBufferToNodeBuffer } from './util';
-import HintingTrueType from './hintingtt';
-import Bidi from './bidi';
+import Path from './path.js';
+import sfnt from './tables/sfnt.js';
+import { DefaultEncoding } from './encoding.js';
+import glyphset from './glyphset.js';
+import Position from './position.js';
+import Substitution from './substitution.js';
+import { isBrowser, checkArgument } from './util.js';
+import HintingTrueType from './hintingtt.js';
+import Bidi from './bidi.js';
 
 function createDefaultNamesInfo(options) {
     return {

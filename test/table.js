@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { unhexArray } from './testutil';
-import table from '../src/table';
+import { unhexArray } from './testutil.js';
+import table from '../src/table.js';
 
 describe('table.js', function() {
     it('should make a ScriptList table', function() {

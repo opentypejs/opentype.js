@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { hex, unhex } from '../testutil';
-import ltag from '../../src/tables/ltag';
+import { hex, unhex } from '../testutil.js';
+import ltag from '../../src/tables/ltag.js';
 
 describe('tables/ltag.js', function() {
     const data =

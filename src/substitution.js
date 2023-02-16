@@ -1,8 +1,8 @@
 // The Substitution object provides utility methods to manipulate
 // the GSUB substitution table.
 
-import check from './check';
-import Layout from './layout';
+import check from './check.js';
+import Layout from './layout.js';
 
 /**
  * @exports opentype.Substitution

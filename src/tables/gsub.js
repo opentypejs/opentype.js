@@ -1,9 +1,9 @@
 // The `GSUB` table contains ligatures, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gsub.htm
 
-import check from '../check';
-import { Parser } from '../parse';
-import table from '../table';
+import check from '../check.js';
+import { Parser } from '../parse.js';
+import table from '../table.js';
 
 const subtableParsers = new Array(9);         // subtableParsers[0] is unused
 

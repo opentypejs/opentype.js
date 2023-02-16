@@ -1,9 +1,9 @@
 // The `GPOS` table contains kerning pairs, among other things.
 // https://docs.microsoft.com/en-us/typography/opentype/spec/gpos
 
-import check from '../check';
-import { Parser } from '../parse';
-import table from '../table';
+import check from '../check.js';
+import { Parser } from '../parse.js';
+import table from '../table.js';
 
 const subtableParsers = new Array(10);         // subtableParsers[0] is unused
 

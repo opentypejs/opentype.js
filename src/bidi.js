@@ -3,14 +3,14 @@
  * the corresponding layout rules.
  */
 
-import Tokenizer from './tokenizer';
-import FeatureQuery from './features/featureQuery';
-import arabicWordCheck from './features/arab/contextCheck/arabicWord';
-import arabicSentenceCheck from './features/arab/contextCheck/arabicSentence';
-import arabicPresentationForms from './features/arab/arabicPresentationForms';
-import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures';
-import latinWordCheck from './features/latn/contextCheck/latinWord';
-import latinLigature from './features/latn/latinLigatures';
+import Tokenizer from './tokenizer.js';
+import FeatureQuery from './features/featureQuery.js';
+import arabicWordCheck from './features/arab/contextCheck/arabicWord.js';
+import arabicSentenceCheck from './features/arab/contextCheck/arabicSentence.js';
+import arabicPresentationForms from './features/arab/arabicPresentationForms.js';
+import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures.js';
+import latinWordCheck from './features/latn/contextCheck/latinWord.js';
+import latinLigature from './features/latn/latinLigatures.js';
 
 /**
  * Create Bidi. features
