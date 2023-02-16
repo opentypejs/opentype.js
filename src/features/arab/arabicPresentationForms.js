@@ -48,10 +48,10 @@ function arabicPresentationForms(range) {
     if (tokens.length === 1) return;
     let contextParams = new ContextParams(
         tokens.map(token => token.getState('glyphIndex')
-    ), 0);
+        ), 0);
     const charContextParams = new ContextParams(
         tokens.map(token => token.char
-    ), 0);
+        ), 0);
     tokens.forEach((token, index) => {
         if (isTashkeelArabicChar(token.char)) return;
         contextParams.setCurrentIndex(index);

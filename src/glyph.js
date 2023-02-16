@@ -177,11 +177,11 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
             p.lineTo(x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'Q') {
             p.quadraticCurveTo(x + (cmd.x1 * xScale), y + (-cmd.y1 * yScale),
-                               x + (cmd.x * xScale), y + (-cmd.y * yScale));
+                x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'C') {
             p.curveTo(x + (cmd.x1 * xScale), y + (-cmd.y1 * yScale),
-                      x + (cmd.x2 * xScale), y + (-cmd.y2 * yScale),
-                      x + (cmd.x * xScale), y + (-cmd.y * yScale));
+                x + (cmd.x2 * xScale), y + (-cmd.y2 * yScale),
+                x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'Z') {
             p.closePath();
         }

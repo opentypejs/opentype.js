@@ -87,7 +87,7 @@ Bidi.prototype.registerFeatures = function (script, tags) {
     const supportedTags = tags.filter(
         tag => this.query.supports({script, tag})
     );
-    if (!this.featuresTags.hasOwnProperty(script)) {
+    if (!Object.prototype.hasOwnProperty.call(this.featuresTags, script)) {
         this.featuresTags[script] = supportedTags;
     } else {
         this.featuresTags[script] =
@@ -140,7 +140,7 @@ function checkGlyphIndexStatus() {
  */
 function applyArabicPresentationForms() {
     const script = 'arab';
-    if (!this.featuresTags.hasOwnProperty(script)) return;
+    if (!Object.prototype.hasOwnProperty.call(this.featuresTags, script)) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('arabicWord');
     ranges.forEach(range => {
@@ -153,7 +153,7 @@ function applyArabicPresentationForms() {
  */
 function applyArabicRequireLigatures() {
     const script = 'arab';
-    if (!this.featuresTags.hasOwnProperty(script)) return;
+    if (!Object.prototype.hasOwnProperty.call(this.featuresTags, script)) return;
     const tags = this.featuresTags[script];
     if (tags.indexOf('rlig') === -1) return;
     checkGlyphIndexStatus.call(this);
@@ -168,7 +168,7 @@ function applyArabicRequireLigatures() {
  */
 function applyLatinLigatures() {
     const script = 'latn';
-    if (!this.featuresTags.hasOwnProperty(script)) return;
+    if (!Object.prototype.hasOwnProperty.call(this.featuresTags, script)) return;
     const tags = this.featuresTags[script];
     if (tags.indexOf('liga') === -1) return;
     checkGlyphIndexStatus.call(this);

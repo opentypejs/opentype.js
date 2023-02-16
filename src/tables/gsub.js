@@ -221,7 +221,7 @@ subtableMakers[1] = function makeLookup1(subtable) {
             {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
             {name: 'deltaGlyphID', type: 'SHORT', value: subtable.deltaGlyphId}
         ]);
-    } else {
+    } else if (subtable.substFormat === 2) {
         return new table.Table('substitutionTable', [
             {name: 'substFormat', type: 'USHORT', value: 2},
             {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
@@ -259,7 +259,7 @@ subtableMakers[4] = function makeLookup4(subtable) {
         return new table.Table('ligatureSetTable', table.tableList('ligature', ligatureSet, function(ligature) {
             return new table.Table('ligatureTable',
                 [{name: 'ligGlyph', type: 'USHORT', value: ligature.ligGlyph}]
-                .concat(table.ushortList('component', ligature.components, ligature.components.length + 1))
+                    .concat(table.ushortList('component', ligature.components, ligature.components.length + 1))
             );
         }));
     })));
