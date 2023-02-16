@@ -1,0 +1,31 @@
+name: Deploy to GH Pages
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  pages: write
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v2
+      with:
+        node-version: 18
+    - run: npm install
+    - run: npm run build
+    - run: npm run dist
+    - run: mv dist docs
+    - uses: actions/configure-pages@v3
+    - uses: actions/upload-pages-artifact@v1
+      with:
+        path: docs
+    - run: find docs
+    - uses: actions/deploy-pages@v1
+
