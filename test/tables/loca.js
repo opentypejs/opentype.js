@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { unhex } from '../testutil';
-import loca from '../../src/tables/loca';
+import { unhex } from '../testutil.js';
+import loca from '../../src/tables/loca.js';
 
 describe('tables/loca.js', function() {
     it('can parse the short version', function() {

@@ -1,7 +1,7 @@
 // The Position object provides utility methods to manipulate
 // the GPOS position table.
 
-import Layout from './layout';
+import Layout from './layout.js';
 
 /**
  * @exports opentype.Position

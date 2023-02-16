@@ -1,6 +1,8 @@
 import assert from 'assert';
-import Bidi from '../src/bidi';
-import { loadSync } from '../src/opentype';
+import Bidi from '../src/bidi.js';
+import { parse } from '../src/opentype.js';
+import { readFileSync } from 'fs';
+const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('bidi.js', function() {
     let latinFont;

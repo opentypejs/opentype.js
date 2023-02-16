@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { unhex } from './testutil';
-import { Parser } from '../src/parse';
+import { unhex } from './testutil.js';
+import { Parser } from '../src/parse.js';
 
 describe('parse.js', function() {
     describe('parseUShortList', function() {

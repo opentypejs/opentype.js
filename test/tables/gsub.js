@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { unhex, unhexArray } from '../testutil';
-import gsub from '../../src/tables/gsub';
+import { unhex, unhexArray } from '../testutil.js';
+import gsub from '../../src/tables/gsub.js';
 
 // Helper that builds a minimal GSUB table to test a lookup subtable.
 function parseLookup(lookupType, subTableData) {

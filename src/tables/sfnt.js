@@ -4,23 +4,23 @@
 // Recommendations for creating OpenType Fonts:
 // http://www.microsoft.com/typography/otspec140/recom.htm
 
-import check from '../check';
-import table from '../table';
+import check from '../check.js';
+import table from '../table.js';
 
-import cmap from './cmap';
-import cff from './cff';
-import head from './head';
-import hhea from './hhea';
-import hmtx from './hmtx';
-import ltag from './ltag';
-import maxp from './maxp';
-import _name from './name';
-import os2 from './os2';
-import post from './post';
-import gsub from './gsub';
-import meta from './meta';
-import colr from './colr';
-import cpal from './cpal';
+import cmap from './cmap.js';
+import cff from './cff.js';
+import head from './head.js';
+import hhea from './hhea.js';
+import hmtx from './hmtx.js';
+import ltag from './ltag.js';
+import maxp from './maxp.js';
+import _name from './name.js';
+import os2 from './os2.js';
+import post from './post.js';
+import gsub from './gsub.js';
+import meta from './meta.js';
+import colr from './colr.js';
+import cpal from './cpal.js';
 
 function log2(v) {
     return Math.log(v) / Math.log(2) | 0;

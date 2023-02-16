@@ -1,7 +1,7 @@
 // Table metadata
 
-import check from './check';
-import { encode, sizeOf } from './types';
+import check from './check.js';
+import { encode, sizeOf } from './types.js';
 
 /**
  * @exports opentype.Table

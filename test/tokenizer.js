@@ -1,6 +1,6 @@
 import assert from 'assert';
-import Tokenizer, { Token } from '../src/tokenizer';
-import { isWhiteSpace, isArabicChar } from '../src/char';
+import Tokenizer, { Token } from '../src/tokenizer.js';
+import { isWhiteSpace, isArabicChar } from '../src/char.js';
 
 describe('tokenizer.js', function() {
     describe('tokenize', function() {

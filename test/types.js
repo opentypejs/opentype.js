@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { hex, unhex } from './testutil';
-import { decode, encode, sizeOf } from '../src/types';
+import { hex, unhex } from './testutil.js';
+import { decode, encode, sizeOf } from '../src/types.js';
 
 describe('types.js', function() {
     it('can handle BYTE', function() {

@@ -2,7 +2,7 @@
  * Arabic sentence context checkers
  */
 
-import { isArabicChar, isWhiteSpace, isTashkeelArabicChar } from '../../../char';
+import { isArabicChar, isWhiteSpace, isTashkeelArabicChar } from '../../../char.js';
 
 function arabicSentenceStartCheck(contextParams) {
     const char = contextParams.current;

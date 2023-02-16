@@ -27,7 +27,7 @@
 */
 'use strict';
 
-import glyf from './tables/glyf';
+import glyf from './tables/glyf.js';
 
 let instructionTable;
 let exec;

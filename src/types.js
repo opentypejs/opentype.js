@@ -1,7 +1,7 @@
 // Data types used in the OpenType font file.
 // All OpenType fonts use Motorola-style byte ordering (Big Endian)
 
-import check from './check';
+import check from './check.js';
 
 const LIMIT16 = 32768; // The limit at which a 16-bit number switches signs == 2^15
 const LIMIT32 = 2147483648; // The limit at which a 32-bit number switches signs == 2 ^ 31

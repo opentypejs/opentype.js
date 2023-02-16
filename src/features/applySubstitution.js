@@ -1,4 +1,4 @@
-import { SubstitutionAction } from './featureQuery';
+import { SubstitutionAction } from './featureQuery.js';
 
 /**
  * Apply single substitution format 1

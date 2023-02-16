@@ -3,11 +3,11 @@
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/type2.pdf
 
-import { CffEncoding, cffStandardEncoding, cffExpertEncoding, cffStandardStrings } from '../encoding';
-import glyphset from '../glyphset';
-import parse from '../parse';
-import Path from '../path';
-import table from '../table';
+import { CffEncoding, cffStandardEncoding, cffExpertEncoding, cffStandardStrings } from '../encoding.js';
+import glyphset from '../glyphset.js';
+import parse from '../parse.js';
+import Path from '../path.js';
+import table from '../table.js';
 
 // Custom equals function that can also check lists.
 function equals(a, b) {
