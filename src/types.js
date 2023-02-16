@@ -207,9 +207,9 @@ sizeOf.LONGDATETIME = constant(8);
 encode.TAG = function(v) {
     check.argument(v.length === 4, 'Tag should be exactly 4 ASCII characters.');
     return [v.charCodeAt(0),
-            v.charCodeAt(1),
-            v.charCodeAt(2),
-            v.charCodeAt(3)];
+        v.charCodeAt(1),
+        v.charCodeAt(2),
+        v.charCodeAt(3)];
 };
 
 /**
@@ -733,9 +733,9 @@ encode.INDEX = function(l) {
     }
 
     return Array.prototype.concat(encode.Card16(l.length),
-                           encode.OffSize(offSize),
-                           encodedOffsets,
-                           data);
+        encode.OffSize(offSize),
+        encodedOffsets,
+        data);
 };
 
 /**

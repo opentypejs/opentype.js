@@ -1516,8 +1516,8 @@ function SHP(a, state) {
             console.log(
                 state.step,
                 (state.loop > 1 ?
-                   'loop ' + (state.loop - loop) + ': ' :
-                   ''
+                    'loop ' + (state.loop - loop) + ': ' :
+                    ''
                 ) +
                 'SHP[' + (a ? 'rp1' : 'rp2') + ']', pi
             );

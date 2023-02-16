@@ -19,7 +19,7 @@ function arabicSentenceEndCheck(contextParams) {
     switch (true) {
         case nextChar === null:
             return true;
-        case (!isArabicChar(nextChar) && !isTashkeelArabicChar(nextChar)):
+        case (!isArabicChar(nextChar) && !isTashkeelArabicChar(nextChar)): {
             const nextIsWhitespace = isWhiteSpace(nextChar);
             if (!nextIsWhitespace) return true;
             if (nextIsWhitespace) {
@@ -32,6 +32,7 @@ function arabicSentenceEndCheck(contextParams) {
                 if (!arabicCharAhead) return true;
             }
             break;
+        }
         default:
             return false;
     }

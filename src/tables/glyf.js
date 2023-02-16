@@ -222,7 +222,6 @@ function getPath(points) {
     for (let contourIndex = 0; contourIndex < contours.length; ++contourIndex) {
         const contour = contours[contourIndex];
 
-        let prev = null;
         let curr = contour[contour.length - 1];
         let next = contour[0];
 
@@ -239,7 +238,6 @@ function getPath(points) {
         }
 
         for (let i = 0; i < contour.length; ++i) {
-            prev = curr;
             curr = next;
             next = contour[(i + 1) % contour.length];
 
@@ -247,12 +245,7 @@ function getPath(points) {
                 // This is a straight line.
                 p.lineTo(curr.x, curr.y);
             } else {
-                let prev2 = prev;
                 let next2 = next;
-
-                if (!prev.onCurve) {
-                    prev2 = { x: (curr.x + prev.x) * 0.5, y: (curr.y + prev.y) * 0.5 };
-                }
 
                 if (!next.onCurve) {
                     next2 = { x: (curr.x + next.x) * 0.5, y: (curr.y + next.y) * 0.5 };

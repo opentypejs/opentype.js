@@ -113,6 +113,7 @@ function Font(options) {
             if (this.outlinesFormat === 'truetype') {
                 return (this._hinting = new HintingTrueType(this));
             }
+            return null;
         }
     });
 }
@@ -191,8 +192,8 @@ Font.prototype.stringToGlyphIndexes = function(s, options) {
 
     // roll-back to default features
     let features = options ?
-    this.updateFeatures(options.features) :
-    this.defaultRenderOptions.features;
+        this.updateFeatures(options.features) :
+        this.defaultRenderOptions.features;
 
     bidi.applyFeatures(this, features);
 
@@ -335,8 +336,8 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
             // We should apply position adjustment lookups in a more generic way.
             // Here we only use the xAdvance value.
             const kerningValue = kerningLookups ?
-                  this.position.getKerningValue(kerningLookups, glyph.index, glyphs[i + 1].index) :
-                  this.getKerningValue(glyph, glyphs[i + 1]);
+                this.position.getKerningValue(kerningLookups, glyph.index, glyphs[i + 1].index) :
+                this.getKerningValue(glyph, glyphs[i + 1]);
             x += kerningValue * fontScale;
         }
 
@@ -479,7 +480,7 @@ Font.prototype.validate = function() {
     function assertNamePresent(name) {
         const englishName = _this.getEnglishName(name);
         assert(englishName && englishName.trim().length > 0,
-               'No English ' + name + ' specified.');
+            'No English ' + name + ' specified.');
     }
 
     // Identification information
@@ -553,7 +554,7 @@ Font.prototype.download = function(fileName) {
     } else {
         const fs = require('fs');
         const buffer = Buffer.alloc(arrayBuffer.byteLength);
-        const view = new Uint8Array(ab);
+        const view = new Uint8Array(arrayBuffer);
         for (let i = 0; i < buffer.length; ++i) {
             buffer[i] = view[i];
         }

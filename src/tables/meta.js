@@ -22,7 +22,7 @@ function parseMetaTable(data, start) {
         const dataOffset = p.parseULong();
         const dataLength = p.parseULong();
         if (tag === 'appl' || tag === 'bild')
-           continue;
+            continue;
         const text = decode.UTF8(data, start + dataOffset, dataLength);
 
         tags[tag] = text;

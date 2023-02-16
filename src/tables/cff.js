@@ -122,7 +122,7 @@ function parseFloatOperand(parser) {
     let s = '';
     const eof = 15;
     const lookup = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', 'E', 'E-', null, '-'];
-    while (true) {
+    for (;;) {
         const b = parser.parseByte();
         const n1 = b >> 4;
         const n2 = b & 15;
@@ -198,7 +198,7 @@ function entriesToObject(entries) {
             value = values;
         }
 
-        if (o.hasOwnProperty(key) && !isNaN(o[key])) {
+        if (Object.prototype.hasOwnProperty.call(o, key) && !isNaN(o[key])) {
             throw new Error('Object ' + o + ' already has key ' + key);
         }
 

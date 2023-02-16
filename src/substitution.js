@@ -319,7 +319,7 @@ Substitution.prototype.getFeature = function(feature, script, language) {
         case 'aalt':
         case 'salt':
             return this.getSingle(feature, script, language)
-                    .concat(this.getAlternates(feature, script, language));
+                .concat(this.getAlternates(feature, script, language));
         case 'dlig':
         case 'liga':
         case 'rlig':
