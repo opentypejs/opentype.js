@@ -231,9 +231,10 @@ Path.prototype.draw = function(ctx) {
  * Convert the Path to a string of path data instructions
  * See http://www.w3.org/TR/SVG/paths.html#PathData
  * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @param  {boolean} [optimize=false] - Whether to optimize the SVG path
  * @return {string}
  */
-Path.prototype.toPathData = function(decimalPlaces) {
+Path.prototype.toPathData = function(decimalPlaces, optimize = false) {
     decimalPlaces = decimalPlaces !== undefined ? decimalPlaces : 2;
 
     function floatToString(v) {
@@ -258,9 +259,42 @@ Path.prototype.toPathData = function(decimalPlaces) {
         return s;
     }
 
+    let commandsCopy = this.commands;
+    if (optimize) {
+        // apply path optimizations
+        commandsCopy = JSON.parse(JSON.stringify(this.commands)); // make a deep clone
+        // separate subpaths
+        let subpaths = [[]];
+        for (let i = 0; i < commandsCopy.length; i += 1) {
+            const subpath = subpaths[subpaths.length - 1];
+            const cmd = commandsCopy[i];
+            const firstCommand = subpath[0];
+            const secondCommand = subpath[1];
+            const previousCommand = subpath[subpath.length - 1];
+            subpath.push(cmd);
+            if (cmd.type === 'Z') {
+                if (
+                    firstCommand.type === 'M' &&
+                    secondCommand.type === 'L' &&
+                    previousCommand.type === 'L' &&
+                    previousCommand.x === firstCommand.x &&
+                    previousCommand.y === firstCommand.y
+                ) {
+                    subpath.shift();
+                    subpath[0].type = 'M';
+                }
+
+                if (i + 1 < commandsCopy.length) {
+                    subpaths.push([]);
+                }
+            }
+        }
+        commandsCopy = [].concat.apply([], subpaths); // flatten again
+    }
+
     let d = '';
-    for (let i = 0; i < this.commands.length; i += 1) {
-        const cmd = this.commands[i];
+    for (let i = 0; i < commandsCopy.length; i += 1) {
+        const cmd = commandsCopy[i];
         if (cmd.type === 'M') {
             d += 'M' + packValues(cmd.x, cmd.y);
         } else if (cmd.type === 'L') {
@@ -280,11 +314,12 @@ Path.prototype.toPathData = function(decimalPlaces) {
 /**
  * Convert the path to an SVG <path> element, as a string.
  * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @param  {boolean} [optimize=false] - Whether to optimize the SVG path
  * @return {string}
  */
-Path.prototype.toSVG = function(decimalPlaces) {
+Path.prototype.toSVG = function(decimalPlaces, optimize = false) {
     let svg = '<path d="';
-    svg += this.toPathData(decimalPlaces);
+    svg += this.toPathData(decimalPlaces, optimize);
     svg += '"';
     if (this.fill && this.fill !== 'black') {
         if (this.fill === null) {
