@@ -1,5 +1,7 @@
 import assert from 'assert';
-import { Font, Glyph, Path, loadSync } from '../src/opentype';
+import { Font, Glyph, Path, parse } from '../src/opentype.js';
+import { readFileSync } from 'fs';
+const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('font.js', function() {
     let font;

@@ -1,5 +1,7 @@
 import assert  from 'assert';
-import { loadSync, Glyph, Path } from '../src/opentype';
+import { parse, Glyph, Path } from '../src/opentype.js';
+import { readFileSync } from 'fs';
+const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('glyph.js', function() {
     describe('lazy loading', function() {

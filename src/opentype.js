@@ -43,15 +43,15 @@ import meta from './tables/meta.js';
  * @param  {Function} callback - The function to call when the font load completes
  */
 function loadFromFile(path, callback) {
-    const fs = require('fs');
-    fs.readFile(path, function(err, buffer) {
+    require('fs').readFile(path, function(err, buffer) {
         if (err) {
             return callback(err.message);
         }
 
-        callback(null, nodeBufferToArrayBuffer(buffer));
+        callback(null, buffer);
     });
 }
+
 /**
  * Loads a font from a URL. The callback throws an error message as the first parameter if it fails
  * and the font as an ArrayBuffer in the second parameter if it succeeds.
@@ -165,9 +165,7 @@ function uncompressTable(data, tableEntry) {
  * @param  {Object} opt - options for parsing
  * @return {opentype.Font}
  */
-function parseBuffer(buffer, opt) {
-    opt = (opt === undefined || opt === null) ?  {} : opt;
-
+function parseBuffer(buffer, opt={}) {
     let indexToLocFormat;
     let ltagTable;
 
@@ -175,6 +173,9 @@ function parseBuffer(buffer, opt) {
     // should be an empty font that we'll fill with our own data.
     const font = new Font({empty: true});
 
+    if (buffer.constructor !== ArrayBuffer) { // convert node Buffer
+        buffer = new Uint8Array(buffer).buffer;
+    }
     // OpenType fonts use big endian byte ordering.
     // We can't rely on typed array view types, because they operate with the endianness of the host computer.
     // Instead we use DataViews where we can specify endianness.
@@ -389,13 +390,12 @@ function parseBuffer(buffer, opt) {
  * @param  {string} url - The URL of the font to load.
  * @param  {Function} callback - The callback.
  */
-function load(url, callback, opt) {
-    opt = (opt === undefined || opt === null) ?  {} : opt;
+function load(url, callback, opt = {}) {
     const isNode = typeof window === 'undefined';
     const loadFn = isNode && !opt.isUrl ? loadFromFile : loadFromUrl;
 
     return new Promise((resolve, reject) => {
-        loadFn(url, function(err, arrayBuffer) {
+        loadFn(url, function(err, buffer) {
             if (err) {
                 if (callback) {
                     return callback(err);
@@ -405,7 +405,7 @@ function load(url, callback, opt) {
             }
             let font;
             try {
-                font = parseBuffer(arrayBuffer, opt);
+                font = parseBuffer(buffer, opt);
             } catch (e) {
                 if (callback) {
                     return callback(e, null);
@@ -431,9 +431,7 @@ function load(url, callback, opt) {
  * @return {opentype.Font}
  */
 function loadSync(url, opt) {
-    const fs = require('fs');
-    const buffer = fs.readFileSync(url);
-    return parseBuffer(nodeBufferToArrayBuffer(buffer), opt);
+    return parseBuffer(require('fs').readFileSync(url), opt);
 }
 
 export {
