@@ -47,11 +47,10 @@ describe('tables/cff.js', function () {
     /**
      * @see https://github.com/opentypejs/opentype.js/issues/524
      */
-    it('can fall back to CIDs instead of strings when parsing the charset', function() {
-        load('./fonts/FiraSansOT-Medium.otf', (err, font) => {
-            assert.equal((new Set(font.cffEncoding.charset)).size, 1509);
-            assert.equal(font.cffEncoding.charset.includes(undefined), false);
-        }, {lowMemory: true});
+    it('can fall back to CIDs instead of strings when parsing the charset', function () {
+        const font = loadSync('./test/fonts/FiraSansOT-Medium.otf', { lowMemory: true });
+        assert.equal((new Set(font.cffEncoding.charset)).size, 1509);
+        assert.equal(font.cffEncoding.charset.includes(undefined), false);
     });
 
 });

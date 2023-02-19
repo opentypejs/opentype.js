@@ -552,7 +552,11 @@ Font.prototype.download = function(fileName) {
         }
     } else {
         const fs = require('fs');
-        const buffer = arrayBufferToNodeBuffer(arrayBuffer);
+        const buffer = Buffer.alloc(arrayBuffer.byteLength);
+        const view = new Uint8Array(ab);
+        for (let i = 0; i < buffer.length; ++i) {
+            buffer[i] = view[i];
+        }
         fs.writeFileSync(fileName, buffer);
     }
 };
