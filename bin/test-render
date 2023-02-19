@@ -67,7 +67,7 @@ function renderSVG() {
         const symbolId = testcase + '.' + glyph.name;
         if (!glyphSet.has(glyph)) {
             glyphSet.add(glyph);
-            const svgPath = glyph.path.toSVG(undefined, true);
+            const svgPath = glyph.path.toSVG({optimize: true});
             svgSymbols.push(`  <symbol id="${symbolId}" overflow="visible">${svgPath}</symbol>`);
         }
         svgBody.push(`  <use xlink:href="#${symbolId}" x="${x}" y="0"/>`);

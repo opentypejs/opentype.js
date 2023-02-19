@@ -19,11 +19,17 @@ function Path() {
 /**
  * Sets the path data from an SVG path element or path notation
  * @param  {string|SVGPathElement}
+ * @param  {object}
  */
-Path.prototype.fromSVG = function(path) {
+Path.prototype.fromSVG = function(path, options = {}) {
     if (typeof SVGPathElement !== 'undefined' && path instanceof SVGPathElement) {
         path = path.getAttribute('d');
     }
+
+    const defaultOptions = {
+        flipY: false
+    };
+    options = Object.assign({}, defaultOptions, options);
 
     this.commands = [];
 
@@ -157,10 +163,11 @@ Path.prototype.fromSVG = function(path) {
 /**
  * Generates a new Path() from an SVG path element or path notation
  * @param  {string|SVGPathElement}
+ * @param  {object}
  */
-Path.fromSVG = function(path) {
+Path.fromSVG = function(path, options) {
     const newPath = new Path();
-    return newPath.fromSVG(path);
+    return newPath.fromSVG(path, options);
 };
 
 /**
@@ -377,12 +384,21 @@ Path.prototype.draw = function(ctx) {
 /**
  * Convert the Path to a string of path data instructions
  * See http://www.w3.org/TR/SVG/paths.html#PathData
- * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
- * @param  {boolean} [optimize=false] - Whether to optimize the SVG path
+ * @param  {object|number} [options={decimalPlaces:2, optimize:false}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
  * @return {string}
  */
-Path.prototype.toPathData = function(decimalPlaces, optimize = false) {
-    decimalPlaces = decimalPlaces !== undefined ? decimalPlaces : 2;
+Path.prototype.toPathData = function(options) {
+    // accept number for backwards compatibility
+    if (parseInt(options) === options) {
+        options = { decimalPlaces: options };
+    }
+
+    // set default options
+    const defaultOptions = {
+        decimalPlaces: 2,
+        optimize: false
+    };
+    options = Object.assign({}, defaultOptions, options);
 
     function floatToString(v) {
         if (Math.round(v) === v) {
@@ -407,7 +423,7 @@ Path.prototype.toPathData = function(decimalPlaces, optimize = false) {
     }
 
     let commandsCopy = this.commands;
-    if (optimize) {
+    if (options.optimize) {
         // apply path optimizations
         commandsCopy = JSON.parse(JSON.stringify(this.commands)); // make a deep clone
         // separate subpaths
@@ -460,13 +476,12 @@ Path.prototype.toPathData = function(decimalPlaces, optimize = false) {
 
 /**
  * Convert the path to an SVG <path> element, as a string.
- * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
- * @param  {boolean} [optimize=false] - Whether to optimize the SVG path
+ * @param  {object|number} [options={decimalPlaces:2, optimize:false}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
  * @return {string}
  */
-Path.prototype.toSVG = function(decimalPlaces, optimize = false) {
+Path.prototype.toSVG = function(options) {
     let svg = '<path d="';
-    svg += this.toPathData(decimalPlaces, optimize);
+    svg += this.toPathData(options);
     svg += '"';
     if (this.fill && this.fill !== 'black') {
         if (this.fill === null) {
@@ -486,11 +501,11 @@ Path.prototype.toSVG = function(decimalPlaces, optimize = false) {
 
 /**
  * Convert the path to a DOM element.
- * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @param  {object|number} [options={decimalPlaces:2, optimize:false}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
  * @return {SVGPathElement}
  */
-Path.prototype.toDOMElement = function(decimalPlaces) {
-    const temporaryPath = this.toPathData(decimalPlaces);
+Path.prototype.toDOMElement = function(options) {
+    const temporaryPath = this.toPathData(options);
     const newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
     newPath.setAttribute('d', temporaryPath);
