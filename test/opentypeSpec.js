@@ -5,7 +5,7 @@ const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('opentype.js', function() {
     it('can load a TrueType font', function() {
-        const font = loadSync('./fonts/Roboto-Black.ttf');
+        const font = loadSync('./test/fonts/Roboto-Black.ttf');
         assert.deepEqual(font.names.macintosh.fontFamily, {en: 'Roboto Black'});
         assert.deepEqual(font.names.windows.fontFamily, {en: 'Roboto Black'});
         assert.equal(font.unitsPerEm, 2048);
@@ -29,7 +29,7 @@ describe('opentype.js', function() {
     });
 
     it('can load a OpenType/CFF font', function() {
-        const font = loadSync('./fonts/FiraSansOT-Medium.otf');
+        const font = loadSync('./test/fonts/FiraSansOT-Medium.otf');
         assert.deepEqual(font.names.macintosh.fontFamily, {en: 'Fira Sans OT Medium'});
         assert.deepEqual(font.names.windows.fontFamily, {en: 'Fira Sans OT Medium'});
         assert.equal(font.unitsPerEm, 1000);
@@ -41,7 +41,7 @@ describe('opentype.js', function() {
     });
 
     it('can load a CID-keyed font', function() {
-        const font = loadSync('./fonts/FDArrayTest257.otf');
+        const font = loadSync('./test/fonts/FDArrayTest257.otf');
         assert.deepEqual(font.names.windows.fontFamily, {en: 'FDArray Test 257'});
         assert.deepEqual(font.tables.cff.topDict.ros, ['Adobe', 'Identity', 0]);
         assert.equal(font.tables.cff.topDict._fdArray.length, 256);
@@ -57,7 +57,7 @@ describe('opentype.js', function() {
     });
 
     it('can load a WOFF/CFF font', function() {
-        const font = loadSync('./fonts/FiraSansMedium.woff');
+        const font = loadSync('./test/fonts/FiraSansMedium.woff');
         assert.deepEqual(font.names.macintosh.fontFamily, {en: 'Fira Sans OT'});
         assert.deepEqual(font.names.windows.fontFamily, {en: 'Fira Sans OT'});
         assert.equal(font.unitsPerEm, 1000);
@@ -107,7 +107,7 @@ describe('opentype.js on low memory mode', function() {
     const opt = { lowMemory: true };
 
     it('can load a TrueType font', function() {
-        const font = loadSync('./fonts/Roboto-Black.ttf', opt);
+        const font = loadSync('./test/fonts/Roboto-Black.ttf', opt);
         assert.deepEqual(font.names.macintosh.fontFamily, {en: 'Roboto Black'});
         assert.deepEqual(font.names.windows.fontFamily, {en: 'Roboto Black'});
         assert.equal(font.unitsPerEm, 2048);
@@ -118,7 +118,7 @@ describe('opentype.js on low memory mode', function() {
     });
 
     it('can load a OpenType/CFF font', function() {
-        const font = loadSync('./fonts/FiraSansOT-Medium.otf', opt);
+        const font = loadSync('./test/fonts/FiraSansOT-Medium.otf', opt);
         assert.deepEqual(font.names.macintosh.fontFamily, {en: 'Fira Sans OT Medium'});
         assert.deepEqual(font.names.windows.fontFamily, {en: 'Fira Sans OT Medium'});
         assert.equal(font.unitsPerEm, 1000);
@@ -130,7 +130,7 @@ describe('opentype.js on low memory mode', function() {
     });
 
     it('can load a CID-keyed font', function() {
-        const font = loadSync('./fonts/FDArrayTest257.otf', opt);
+        const font = loadSync('./test/fonts/FDArrayTest257.otf', opt);
         assert.deepEqual(font.names.windows.fontFamily, {en: 'FDArray Test 257'});
         assert.deepEqual(font.tables.cff.topDict.ros, ['Adobe', 'Identity', 0]);
         assert.equal(font.tables.cff.topDict._fdArray.length, 256);
@@ -146,7 +146,7 @@ describe('opentype.js on low memory mode', function() {
     });
 
     it('can load a WOFF/CFF font', function() {
-        const font = loadSync('./fonts/FiraSansMedium.woff', opt);
+        const font = loadSync('./test/fonts/FiraSansMedium.woff', opt);
         assert.deepEqual(font.names.macintosh.fontFamily, {en: 'Fira Sans OT'});
         assert.deepEqual(font.names.windows.fontFamily, {en: 'Fira Sans OT'});
         assert.equal(font.unitsPerEm, 1000);

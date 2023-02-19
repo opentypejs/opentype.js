@@ -9,7 +9,7 @@ describe('glyph.js', function() {
         let glyph;
 
         before(function() {
-            font = loadSync('./fonts/Roboto-Black.ttf');
+            font = loadSync('./test/fonts/Roboto-Black.ttf');
             glyph = font.charToGlyph('A');
         });
 
@@ -39,8 +39,8 @@ describe('glyph.js', function() {
         let openTypeFont;
 
         before(function() {
-            trueTypeFont = loadSync('./fonts/Roboto-Black.ttf');
-            openTypeFont = loadSync('./fonts/FiraSansMedium.woff');
+            trueTypeFont = loadSync('./test/fonts/Roboto-Black.ttf');
+            openTypeFont = loadSync('./test/fonts/FiraSansMedium.woff');
         });
 
         it('calculates a box for a linear shape', function() {
@@ -98,7 +98,7 @@ describe('glyph.js on low memory mode', function() {
         let glyph;
 
         before(function() {
-            font = loadSync('./fonts/Roboto-Black.ttf', opt);
+            font = loadSync('./test/fonts/Roboto-Black.ttf', opt);
             glyph = font.charToGlyph('A');
         });
 
@@ -128,8 +128,8 @@ describe('glyph.js on low memory mode', function() {
         let openTypeFont;
 
         before(function() {
-            trueTypeFont = loadSync('./fonts/Roboto-Black.ttf', opt);
-            openTypeFont = loadSync('./fonts/FiraSansMedium.woff', opt);
+            trueTypeFont = loadSync('./test/fonts/Roboto-Black.ttf', opt);
+            openTypeFont = loadSync('./test/fonts/FiraSansMedium.woff', opt);
         });
 
         it('calculates a box for a linear shape', function() {
