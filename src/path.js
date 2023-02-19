@@ -66,8 +66,8 @@ Path.prototype.fromSVG = function(path, options = {}) {
         if (!parsedBuffer.length && commandType !== 'Z') {
             return;
         }
-        if (relative) {
-            parsedBuffer = makeRelative(parsedBuffer);
+        if (relative && commandType !== 'H' && commandType !== 'V') {
+            parsedBuffer = makeRelative.apply(this, [parsedBuffer]);
         }
         switch (commandType) {
             case 'M':
@@ -77,12 +77,26 @@ Path.prototype.fromSVG = function(path, options = {}) {
                 this.lineTo(...parsedBuffer);
                 break;
             case 'V':
-                const currentX = this.commands.length ? this.commands[this.commands.length - 1].y || 0 : 0;
-                this.lineTo(currentX, parsedBuffer[1] || 0);
+                const currentX = this.commands.length ? this.commands[this.commands.length - 1].x || 0 : 0;
+                // multiple values interpreted as consecutive commands
+                for (let i = 0; i < parsedBuffer.length; i++) {
+                    let offset = 0;
+                    if (relative) {
+                        offset = this.commands.length ? (this.commands[this.commands.length - 1].y || 0) : 0;
+                    }
+                    this.lineTo(currentX, parsedBuffer[i] + offset);
+                }
                 break;
             case 'H':
                 const currentY = this.commands.length ? this.commands[this.commands.length - 1].y || 0 : 0;
-                this.lineTo(parsedBuffer[0], currentY);
+                // multiple values interpreted as consecutive commands
+                for (let i = 0; i < parsedBuffer.length; i++) {
+                    let offset = 0;
+                    if (relative) {
+                        offset = this.commands.length ? (this.commands[this.commands.length - 1].x || 0) : 0;
+                    }
+                    this.lineTo(parsedBuffer[i] + offset, currentY);
+                }
                 break;
             case 'C':
                 this.bezierCurveTo(...parsedBuffer);
@@ -91,7 +105,9 @@ Path.prototype.fromSVG = function(path, options = {}) {
                 this.quadraticCurveTo(...parsedBuffer);
                 break;
             case 'Z':
-                this.close();
+                if (this.commands.length < 1 || this.commands[this.commands.length - 1].type !== 'Z') {
+                    this.close();
+                }
                 break;
         }
 
@@ -115,15 +131,15 @@ Path.prototype.fromSVG = function(path, options = {}) {
             }
 
             if (token === '-') {
-                if (!command.type || lastBuffer.indexOf('-') > -1 || lastBuffer.indexOf('.') > -1) {
+                if (!command.type || lastBuffer.indexOf('-') > 0) {
                     isUnexpected = true;
                 } else if (lastBuffer.length) {
-                    buffer.push('');
+                    buffer.push('-');
                 } else {
                     buffer[buffer.length - 1] = token;
                 }
             } else {
-                if (!command.type || lastBuffer.indexOf('-') > -1 || lastBuffer.indexOf('.') > -1) {
+                if (!command.type || lastBuffer.length > 0) {
                     isUnexpected = true;
                 } else {
                     continue;
@@ -400,11 +416,15 @@ Path.prototype.toPathData = function(options) {
     };
     options = Object.assign({}, defaultOptions, options);
 
+    function roundDecimal(float, places) {
+        return +(Math.round(float + 'e+' + places) + 'e-' + places);
+    }
+
     function floatToString(v) {
-        if (Math.round(v) === v) {
-            return '' + Math.round(v);
+        if (Math.round(v) === roundDecimal(v, options.decimalPlaces)) {
+            return '' + roundDecimal(v, options.decimalPlaces);
         } else {
-            return v.toFixed(decimalPlaces);
+            return roundDecimal(v, options.decimalPlaces).toFixed(options.decimalPlaces);
         }
     }
 
