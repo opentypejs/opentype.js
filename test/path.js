@@ -1,5 +1,5 @@
 import assert  from 'assert';
-import Path from '../src/path.js';
+import { loadSync, Path } from '../src/opentype';
 
 describe('path.js', function() {
     const testPath1 = new Path();
@@ -78,5 +78,25 @@ describe('path.js', function() {
         );
         const expectedResult = '<path d="M199 97L313 97Q396 97 444 61Q493 25 493-36Q493-108 428-151Q363-195 255-195Q150-195 90-156Z"/>';
         assert.equal(path.toSVG({optimize: true}), expectedResult);
+        // we can't test toDOMElement() in node context!
+    });
+
+    // Testing Glyph SVG functions here in path.js, as they are basically wrapper functions providing options to their Path counterparts
+    it('should flip the path Y coordinates when generating SVG paths from a Glyph via Glyph.', function() {
+        const font = loadSync('./fonts/FiraSansMedium.woff');
+        const glyph = font.charToGlyph('j');
+        const svgPath = glyph.toPathData();
+        const svgMarkup = glyph.toSVG();
+        const expectedPath = 'M25 772C130 725 185 680 185 528L185 33L93 33L93 534C93 647 60 673-9 705ZM204-150' +
+            'C204-185 177-212 139-212C101-212 75-185 75-150C75-114 101-87 139-87C177-87 204-114 204-150Z';
+        assert.equal(
+            svgPath,
+            expectedPath
+        );
+        assert.equal(
+            svgMarkup,
+            '<path d="' + expectedPath + '"/>'
+        );
+        // we can't test toDOMElement() in node context!
     });
 });

@@ -21,9 +21,7 @@ function Path() {
  * @param {object} options (optional)
  */
 function defaultSVGParsingOptions(options) {
-    const defaultOptions = {
-        flipY: false
-    };
+    const defaultOptions = {};
     return Object.assign({}, defaultOptions, options);
 }
 
@@ -33,11 +31,20 @@ function defaultSVGParsingOptions(options) {
  * @param {object} options (optional)
  */
 function defaultSVGOutputOptions(options) {
+    // accept number for backwards compatibility
+    if (parseInt(options) === options) {
+        options = { decimalPlaces: options };
+    }
     const defaultOptions = {
         decimalPlaces: 2,
-        optimize: true
+        optimize: true,
+        flipY: undefined
     };
-    return Object.assign({}, defaultOptions, options);
+    const newOptions = Object.assign({}, defaultOptions, options);
+    if (newOptions.flipY === false) {
+        newOptions.flipY = undefined;
+    }
+    return newOptions;
 }
 
 /**
@@ -50,7 +57,7 @@ Path.prototype.fromSVG = function(path, options = {}) {
         path = path.getAttribute('d');
     }
 
-    // set default options
+    // set/merge default options
     options = defaultSVGParsingOptions(options);
 
     this.commands = [];
@@ -426,12 +433,7 @@ Path.prototype.draw = function(ctx) {
  * @return {string}
  */
 Path.prototype.toPathData = function(options) {
-    // accept number for backwards compatibility
-    if (parseInt(options) === options) {
-        options = { decimalPlaces: options };
-    }
-
-    // set default options
+    // set/merge default options
     options = defaultSVGOutputOptions(options);
 
     function roundDecimal(float, places) {
@@ -500,17 +502,36 @@ Path.prototype.toPathData = function(options) {
         commandsCopy = [].concat.apply([], subpaths); // flatten again
     }
 
+    let offsetY = options.flipY;
     let d = '';
     for (let i = 0; i < commandsCopy.length; i += 1) {
         const cmd = commandsCopy[i];
         if (cmd.type === 'M') {
-            d += 'M' + packValues(cmd.x, cmd.y);
+            d += 'M' + packValues(
+                cmd.x,
+                offsetY === undefined ? cmd.y : offsetY - cmd.y
+            );
         } else if (cmd.type === 'L') {
-            d += 'L' + packValues(cmd.x, cmd.y);
+            d += 'L' + packValues(
+                cmd.x,
+                offsetY === undefined ? cmd.y : offsetY - cmd.y
+            );
         } else if (cmd.type === 'C') {
-            d += 'C' + packValues(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
+            d += 'C' + packValues(
+                cmd.x1,
+                offsetY === undefined ? cmd.y1 : offsetY - cmd.y1,
+                cmd.x2,
+                offsetY === undefined ? cmd.y2 : offsetY - cmd.y2,
+                cmd.x,
+                offsetY === undefined ? cmd.y : offsetY - cmd.y
+            );
         } else if (cmd.type === 'Q') {
-            d += 'Q' + packValues(cmd.x1, cmd.y1, cmd.x, cmd.y);
+            d += 'Q' + packValues(
+                cmd.x1,
+                offsetY === undefined ? cmd.y1 : offsetY - cmd.y1,
+                cmd.x,
+                offsetY === undefined ? cmd.y : offsetY - cmd.y
+            );
         } else if (cmd.type === 'Z') {
             d += 'Z';
         }
@@ -522,11 +543,15 @@ Path.prototype.toPathData = function(options) {
 /**
  * Convert the path to an SVG <path> element, as a string.
  * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {string} - will be calculated automatically, but can be provided from Glyph's wrapper function
  * @return {string}
  */
-Path.prototype.toSVG = function(options) {
+Path.prototype.toSVG = function(options, pathData) {
+    if (!pathData) {
+        pathData = this.toPathData(options);
+    }
     let svg = '<path d="';
-    svg += this.toPathData(options);
+    svg += pathData;
     svg += '"';
     if (this.fill && this.fill !== 'black') {
         if (this.fill === null) {
@@ -547,10 +572,14 @@ Path.prototype.toSVG = function(options) {
 /**
  * Convert the path to a DOM element.
  * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {string} - will be calculated automatically, but can be provided from Glyph's wrapper functionions object (or amount of decimal places for floating-point values for backwards compatibility)
  * @return {SVGPathElement}
  */
-Path.prototype.toDOMElement = function(options) {
-    const temporaryPath = this.toPathData(options);
+Path.prototype.toDOMElement = function(options, pathData) {
+    if (!pathData) {
+        pathData = this.toPathData(options);
+    }
+    const temporaryPath = pathData;
     const newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
     newPath.setAttribute('d', temporaryPath);
@@ -559,4 +588,4 @@ Path.prototype.toDOMElement = function(options) {
 };
 
 export default Path;
-export { Path, defaultSVGParsingOptions, defaultSVGOutputOptions }
+export { Path, defaultSVGParsingOptions, defaultSVGOutputOptions };
