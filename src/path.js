@@ -17,6 +17,30 @@ function Path() {
 }
 
 /**
+ * Returns options merged with the default options for parsing SVG data
+ * @param {object} options (optional)
+ */
+function defaultSVGParsingOptions(options) {
+    const defaultOptions = {
+        flipY: false
+    };
+    return Object.assign({}, defaultOptions, options);
+}
+
+
+/**
+ * Returns options merged with the default options for outputting SVG data
+ * @param {object} options (optional)
+ */
+function defaultSVGOutputOptions(options) {
+    const defaultOptions = {
+        decimalPlaces: 2,
+        optimize: false
+    };
+    return Object.assign({}, defaultOptions, options);
+}
+
+/**
  * Sets the path data from an SVG path element or path notation
  * @param  {string|SVGPathElement}
  * @param  {object}
@@ -26,10 +50,8 @@ Path.prototype.fromSVG = function(path, options = {}) {
         path = path.getAttribute('d');
     }
 
-    const defaultOptions = {
-        flipY: false
-    };
-    options = Object.assign({}, defaultOptions, options);
+    // set default options
+    options = defaultSVGParsingOptions(options);
 
     this.commands = [];
 
@@ -410,11 +432,7 @@ Path.prototype.toPathData = function(options) {
     }
 
     // set default options
-    const defaultOptions = {
-        decimalPlaces: 2,
-        optimize: false
-    };
-    options = Object.assign({}, defaultOptions, options);
+    options = defaultSVGOutputOptions(options);
 
     function roundDecimal(float, places) {
         return +(Math.round(float + 'e+' + places) + 'e-' + places);
@@ -456,6 +474,8 @@ Path.prototype.toPathData = function(options) {
             const previousCommand = subpath[subpath.length - 1];
             subpath.push(cmd);
             if (cmd.type === 'Z') {
+                // When closing at the same position as the path started,
+                // remove unnecessary line command
                 if (
                     firstCommand.type === 'M' &&
                     secondCommand.type === 'L' &&
@@ -469,6 +489,11 @@ Path.prototype.toPathData = function(options) {
 
                 if (i + 1 < commandsCopy.length) {
                     subpaths.push([]);
+                }
+            } else if ( cmd.type === 'L' ) {
+                // remove lines that lead to the same position as the previous command
+                if ( previousCommand.x === cmd.x && previousCommand.y === cmd.y ) {
+                    subpath.pop();
                 }
             }
         }
@@ -534,3 +559,4 @@ Path.prototype.toDOMElement = function(options) {
 };
 
 export default Path;
+export { Path, defaultSVGParsingOptions, defaultSVGOutputOptions }
