@@ -386,12 +386,12 @@ Glyph.prototype.toPathData = function(options) {
     let yMin = this.yMin;
     let yMax = this.yMax;
 
-    if( yMin === undefined || yMax === undefined ) {
+    if (yMin === undefined || yMax === undefined) {
         const metrics = this.getMetrics();
-        if ( yMin === undefined ) {
+        if (yMin === undefined) {
             yMin = metrics.yMin;
         }
-        if ( yMax === undefined ) {
+        if (yMax === undefined) {
             yMax = metrics.yMax;
         }
     }

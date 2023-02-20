@@ -25,7 +25,6 @@ function defaultSVGParsingOptions(options) {
     return Object.assign({}, defaultOptions, options);
 }
 
-
 /**
  * Returns options merged with the default options for outputting SVG data
  * @param {object} options (optional)
@@ -492,9 +491,9 @@ Path.prototype.toPathData = function(options) {
                 if (i + 1 < commandsCopy.length) {
                     subpaths.push([]);
                 }
-            } else if ( cmd.type === 'L' ) {
+            } else if (cmd.type === 'L') {
                 // remove lines that lead to the same position as the previous command
-                if ( previousCommand.x === cmd.x && previousCommand.y === cmd.y ) {
+                if (previousCommand.x === cmd.x && previousCommand.y === cmd.y) {
                     subpath.pop();
                 }
             }
