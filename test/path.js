@@ -70,4 +70,13 @@ describe('path.js', function() {
         const optimizedResult = 'M0 250L50 250L100 250L150 250L200 250L200 50L0 50ZM250 250L300 250L350 250L400 250L450 250L450 50L250 50Z';
         assert.equal(testPath2.toPathData({optimize: true}), optimizedResult);
     });
+
+    it('should optimize SVG paths if they include unnecessary lineTo commands', function() {
+        const path = (new Path()).fromSVG(
+            'M199 97 L 199 97 L 313 97 L 313 97 Q 396 97 444 61 L 444 61 L 444 61 Q 493 25 493 -36 L 493 -36 L 493 -36' +
+            'Q 493 -108 428 -151 L 428 -151 L 428 -151 Q 363 -195 255 -195 L 255 -195 L 255 -195 Q 150 -195 90 -156 Z'
+        );
+        const optimizedResult = 'M199 97L313 97Q396 97 444 61Q493 25 493-36Q493-108 428-151Q363-195 255-195Q150-195 90-156Z';
+        assert.equal(path.toPathData({optimize: true}), optimizedResult);
+    });
 });
