@@ -35,7 +35,7 @@ function defaultSVGParsingOptions(options) {
 function defaultSVGOutputOptions(options) {
     const defaultOptions = {
         decimalPlaces: 2,
-        optimize: false
+        optimize: true
     };
     return Object.assign({}, defaultOptions, options);
 }
@@ -422,7 +422,7 @@ Path.prototype.draw = function(ctx) {
 /**
  * Convert the Path to a string of path data instructions
  * See http://www.w3.org/TR/SVG/paths.html#PathData
- * @param  {object|number} [options={decimalPlaces:2, optimize:false}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
  * @return {string}
  */
 Path.prototype.toPathData = function(options) {
@@ -521,7 +521,7 @@ Path.prototype.toPathData = function(options) {
 
 /**
  * Convert the path to an SVG <path> element, as a string.
- * @param  {object|number} [options={decimalPlaces:2, optimize:false}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
  * @return {string}
  */
 Path.prototype.toSVG = function(options) {
@@ -546,7 +546,7 @@ Path.prototype.toSVG = function(options) {
 
 /**
  * Convert the path to a DOM element.
- * @param  {object|number} [options={decimalPlaces:2, optimize:false}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
  * @return {SVGPathElement}
  */
 Path.prototype.toDOMElement = function(options) {
