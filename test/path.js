@@ -76,7 +76,7 @@ describe('path.js', function() {
             'M199 97 L 199 97 L 313 97 L 313 97 Q 396 97 444 61 L 444 61 L 444 61 Q 493 25 493 -36 L 493 -36 L 493 -36' +
             'Q 493 -108 428 -151 L 428 -151 L 428 -151 Q 363 -195 255 -195 L 255 -195 L 255 -195 Q 150 -195 90 -156 Z'
         );
-        const optimizedResult = 'M199 97L313 97Q396 97 444 61Q493 25 493-36Q493-108 428-151Q363-195 255-195Q150-195 90-156Z';
-        assert.equal(path.toPathData({optimize: true}), optimizedResult);
+        const expectedResult = '<path d="M199 97L313 97Q396 97 444 61Q493 25 493-36Q493-108 428-151Q363-195 255-195Q150-195 90-156Z"/>';
+        assert.equal(path.toSVG({optimize: true}), expectedResult);
     });
 });
