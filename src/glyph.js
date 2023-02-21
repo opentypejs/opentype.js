@@ -2,7 +2,7 @@
 
 import check from './check';
 import draw from './draw';
-import Path from './path';
+import { Path, defaultSVGParsingOptions, defaultSVGOutputOptions } from './path';
 // import glyf from './tables/glyf' Can't be imported here, because it's a circular dependency
 
 function getPathDefinition(glyph, path) {
@@ -372,6 +372,45 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
     // Draw the advance width
     ctx.strokeStyle = 'green';
     draw.line(ctx, x + (advanceWidth * scale), -10000, x + (advanceWidth * scale), 10000);
+};
+
+/**
+ * Convert the Glyph's Path to a string of path data instructions
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @return {string}
+ * @see Path.toPathData
+ */
+Glyph.prototype.toPathData = function(options) {
+    options = defaultSVGOutputOptions(options);
+    return this.path.toPathData(options);
+};
+
+/**
+ * Sets the path data from an SVG path element or path notation
+ * @param  {string|SVGPathElement}
+ * @param  {object}
+ */
+Glyph.prototype.fromSVG = function(pathData, options = {}) {
+    options = defaultSVGParsingOptions(options);
+    return this.path.fromSVG(pathData, options);
+};
+
+/**
+ * Convert the Glyph's Path to an SVG <path> element, as a string.
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @return {string}
+ */
+Glyph.prototype.toSVG = function(options) {
+    return this.path.toSVG(options, this.toPathData.apply(this, [options]));
+};
+
+/**
+ * Convert the path to a DOM element.
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @return {SVGPathElement}
+ */
+Glyph.prototype.toDOMElement = function(options) {
+    return this.path.toDOMElement(options);
 };
 
 export default Glyph;

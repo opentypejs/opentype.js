@@ -589,12 +589,16 @@ Path.prototype.toPathData = function(options) {
 
 /**
  * Convert the path to an SVG <path> element, as a string.
- * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {string} - will be calculated automatically, but can be provided from Glyph's wrapper function
  * @return {string}
  */
-Path.prototype.toSVG = function(decimalPlaces) {
+Path.prototype.toSVG = function(options, pathData) {
+    if (!pathData) {
+        pathData = this.toPathData(options);
+    }
     let svg = '<path d="';
-    svg += this.toPathData(decimalPlaces);
+    svg += pathData;
     svg += '"';
     if (this.fill && this.fill !== 'black') {
         if (this.fill === null) {
@@ -614,11 +618,15 @@ Path.prototype.toSVG = function(decimalPlaces) {
 
 /**
  * Convert the path to a DOM element.
- * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {string} - will be calculated automatically, but can be provided from Glyph's wrapper functionions object (or amount of decimal places for floating-point values for backwards compatibility)
  * @return {SVGPathElement}
  */
-Path.prototype.toDOMElement = function(decimalPlaces) {
-    const temporaryPath = this.toPathData(decimalPlaces);
+Path.prototype.toDOMElement = function(options, pathData) {
+    if (!pathData) {
+        pathData = this.toPathData(options);
+    }
+    const temporaryPath = pathData;
     const newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
     newPath.setAttribute('d', temporaryPath);
@@ -627,3 +635,4 @@ Path.prototype.toDOMElement = function(decimalPlaces) {
 };
 
 export default Path;
+export { Path, defaultSVGParsingOptions, defaultSVGOutputOptions };
