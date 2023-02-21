@@ -12,10 +12,7 @@ import { encode, sizeOf } from './types';
  * @constructor
  */
 function Table(tableName, fields, options) {
-    // For coverage tables with coverage format 2, we do not want to add the coverage data directly to the table object,
-    // as this will result in wrong encoding order of the coverage data on serialization to bytes.
-    // The fallback of using the field values directly when not present on the table is handled in types.encode.TABLE() already.
-    if (fields.length && (fields[0].name !== 'coverageFormat' || fields[0].value === 1)) {
+    if (fields && fields.length) {
         for (let i = 0; i < fields.length; i += 1) {
             const field = fields[i];
             this[field.name] = field.value;
@@ -111,11 +108,11 @@ function Coverage(coverageTable) {
     } else if (coverageTable.format === 2) {
         Table.call(this, 'coverageTable',
             [{name: 'coverageFormat', type: 'USHORT', value: 2}]
-            .concat(recordList('rangeRecord', coverageTable.ranges, function(RangeRecord) {
+            .concat(recordList('rangeRecord', coverageTable.ranges, function(RangeRecord, i) {
                 return [
-                    {name: 'startGlyphID', type: 'USHORT', value: RangeRecord.start},
-                    {name: 'endGlyphID', type: 'USHORT', value: RangeRecord.end},
-                    {name: 'startCoverageIndex', type: 'USHORT', value: RangeRecord.index},
+                    {name: 'startGlyphID' + i, type: 'USHORT', value: RangeRecord.start},
+                    {name: 'endGlyphID' + i, type: 'USHORT', value: RangeRecord.end},
+                    {name: 'startCoverageIndex' + i, type: 'USHORT', value: RangeRecord.index},
                 ];
             }))
         );
@@ -200,12 +197,50 @@ function LookupList(lookupListTable, subtableMakers) {
 LookupList.prototype = Object.create(Table.prototype);
 LookupList.prototype.constructor = LookupList;
 
+/**
+ * @exports opentype.ClassDef
+ * @class
+ * @param {opentype.Table}
+ * @param {Object}
+ * @constructor
+ * @extends opentype.Table
+ *
+ * @see https://learn.microsoft.com/en-us/typography/opentype/spec/chapter2#class-definition-table
+ */
+function ClassDef(classDefTable) {
+    if (classDefTable.format === 1) {
+        Table.call(this, 'classDefTable',
+            [
+                {name: 'classFormat', type: 'USHORT', value: 1},
+                {name: 'startGlyphID', type: 'USHORT', value: classDefTable.startGlyph}
+            ]
+            .concat(ushortList('glyph', classDefTable.classes))
+        );
+    } else if (classDefTable.format === 2) {
+        Table.call(this, 'classDefTable',
+            [{name: 'classFormat', type: 'USHORT', value: 2}]
+            .concat(recordList('rangeRecord', classDefTable.ranges, function(RangeRecord, i) {
+                return [
+                    {name: 'startGlyphID' + i, type: 'USHORT', value: RangeRecord.start},
+                    {name: 'endGlyphID' + i, type: 'USHORT', value: RangeRecord.end},
+                    {name: 'class' + i, type: 'USHORT', value: RangeRecord.classId},
+                ];
+            }))
+        );
+    } else {
+        check.assert(false, 'Class format must be 1 or 2.');
+    }
+}
+ClassDef.prototype = Object.create(Table.prototype);
+ClassDef.prototype.constructor = ClassDef;
+
 // Record = same as Table, but inlined (a Table has an offset and its data is further in the stream)
 // Don't use offsets inside Records (probable bug), only in Tables.
 export default {
     Table,
     Record: Table,
     Coverage,
+    ClassDef,
     ScriptList,
     FeatureList,
     LookupList,
