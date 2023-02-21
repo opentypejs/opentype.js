@@ -265,6 +265,77 @@ subtableMakers[4] = function makeLookup4(subtable) {
     })));
 };
 
+subtableMakers[5] = function makeLookup5(subtable) {
+    if (subtable.substFormat === 1) {
+        return new table.Table('contextualSubstitutionTable', [
+            {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
+        ].concat(table.tableList('sequenceRuleSet', subtable.ruleSets, function(sequenceRuleSet) {
+            if (!sequenceRuleSet) {
+                return new table.Table('NULL', null);
+            }
+            return new table.Table('sequenceRuleSetTable', table.tableList('sequenceRule', sequenceRuleSet, function(sequenceRule) {
+                let tableData = table.ushortList('seqLookup', [], sequenceRule.lookupRecords.length)
+                    .concat(table.ushortList('inputSequence', sequenceRule.input, sequenceRule.input.length + 1));
+
+                // swap the first two elements, because inputSequenceCount
+                // ("glyphCount" in the spec) comes before seqLookupCount
+                [tableData[0], tableData[1]] = [tableData[1], tableData[0]];
+
+                sequenceRule.lookupRecords.forEach((record, i) => {
+                    tableData = tableData
+                        .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
+                        .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+                });
+                return new table.Table('sequenceRuleTable', tableData);
+            }));
+        })));
+    } else if (subtable.substFormat === 2) {
+        return new table.Table('contextualSubstitutionTable', [
+            {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+            {name: 'classDef', type: 'TABLE', value: new table.ClassDef(subtable.classDef)}
+        ].concat(table.tableList('classSeqRuleSet', subtable.classSets, function(classSeqRuleSet) {
+            if (!classSeqRuleSet) {
+                return new table.Table('NULL', null);
+            }
+            return new table.Table('classSeqRuleSetTable', table.tableList('classSeqRule', classSeqRuleSet, function(classSeqRule) {
+                let tableData = table.ushortList('classes', classSeqRule.classes, classSeqRule.classes.length + 1)
+                    .concat(table.ushortList('seqLookupCount', [], classSeqRule.lookupRecords.length));
+
+                classSeqRule.lookupRecords.forEach((record, i) => {
+                    tableData = tableData
+                        .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
+                        .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+                });
+                return new table.Table('classSeqRuleTable', tableData);
+            }));
+        })));
+    } else if (subtable.substFormat === 3) {
+        let tableData = [
+            {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
+        ];
+
+        tableData.push({name: 'inputGlyphCount', type: 'USHORT', value: subtable.coverages.length});
+        tableData.push({name: 'substitutionCount', type: 'USHORT', value: subtable.lookupRecords.length});
+        subtable.coverages.forEach((coverage, i) => {
+            tableData.push({name: 'inputCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
+        });
+
+        subtable.lookupRecords.forEach((record, i) => {
+            tableData = tableData
+                .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
+                .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+        });
+
+        let returnTable = new table.Table('contextualSubstitutionTable', tableData);
+
+        return returnTable;
+    }
+
+    check.assert(false, 'lookup type 5 format must be 1, 2 or 3.');
+};
+
 subtableMakers[6] = function makeLookup6(subtable) {
     if (subtable.substFormat === 1) {
         let returnTable = new table.Table('chainContextTable', [
