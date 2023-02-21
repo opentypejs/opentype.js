@@ -16,6 +16,66 @@ function Path() {
     this.strokeWidth = 1;
 }
 
+function roundDecimal(float, places) {
+    return +(Math.round(float + 'e+' + places) + 'e-' + places);
+}
+
+function optimizeCommands(commands) {
+    // separate subpaths
+    let subpaths = [[]];
+    for (let i = 0; i < commands.length; i += 1) {
+        const subpath = subpaths[subpaths.length - 1];
+        const cmd = commands[i];
+        const firstCommand = subpath[0];
+        const secondCommand = subpath[1];
+        const previousCommand = subpath[subpath.length - 1];
+        subpath.push(cmd);
+        if (cmd.type === 'Z') {
+            // When closing at the same position as the path started,
+            // remove unnecessary line command
+            if (
+                firstCommand.type === 'M' &&
+                secondCommand.type === 'L' &&
+                previousCommand.type === 'L' &&
+                previousCommand.x === firstCommand.x &&
+                previousCommand.y === firstCommand.y
+            ) {
+                subpath.shift();
+                subpath[0].type = 'M';
+            }
+
+            if (i + 1 < commands.length) {
+                subpaths.push([]);
+            }
+        } else if (cmd.type === 'L') {
+            // remove lines that lead to the same position as the previous command
+            if (previousCommand.x === cmd.x && previousCommand.y === cmd.y) {
+                subpath.pop();
+            }
+        }
+    }
+    commands = [].concat.apply([], subpaths); // flatten again
+    return commands;
+}
+
+/**
+ * Returns options merged with the default options for outputting SVG data
+ * @param {object} options (optional)
+ */
+function defaultSVGOutputOptions(options) {
+    // accept number for backwards compatibility
+    // and in that case set flipY to false
+    if (parseInt(options) === options) {
+        options = { decimalPlaces: options, flipY: false };
+    }
+    const defaultOptions = {
+        decimalPlaces: 2,
+        optimize: true,
+        flipY: true
+    };
+    const newOptions = Object.assign({}, defaultOptions, options);
+    return newOptions;
+}
 /**
  * @param  {number} x
  * @param  {number} y
@@ -230,17 +290,18 @@ Path.prototype.draw = function(ctx) {
 /**
  * Convert the Path to a string of path data instructions
  * See http://www.w3.org/TR/SVG/paths.html#PathData
- * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
  * @return {string}
  */
-Path.prototype.toPathData = function(decimalPlaces) {
-    decimalPlaces = decimalPlaces !== undefined ? decimalPlaces : 2;
+Path.prototype.toPathData = function(options) {
+    // set/merge default options
+    options = defaultSVGOutputOptions(options);
 
     function floatToString(v) {
-        if (Math.round(v) === v) {
-            return '' + Math.round(v);
+        if (Math.round(v) === roundDecimal(v, options.decimalPlaces)) {
+            return '' + roundDecimal(v, options.decimalPlaces);
         } else {
-            return v.toFixed(decimalPlaces);
+            return roundDecimal(v, options.decimalPlaces).toFixed(options.decimalPlaces);
         }
     }
 
@@ -258,17 +319,49 @@ Path.prototype.toPathData = function(decimalPlaces) {
         return s;
     }
 
+    let commandsCopy = this.commands;
+    if (options.optimize) {
+        // apply path optimizations
+        commandsCopy = JSON.parse(JSON.stringify(this.commands)); // make a deep clone
+        commandsCopy = optimizeCommands(commandsCopy);
+    }
+
+    let flipY = options.flipY;
+    if (flipY === true) {
+        const tempPath = new Path();
+        tempPath.extend(commandsCopy);
+        const boundingBox = tempPath.getBoundingBox();
+        flipY = boundingBox.y1 + boundingBox.y2;
+    }
     let d = '';
-    for (let i = 0; i < this.commands.length; i += 1) {
-        const cmd = this.commands[i];
+    for (let i = 0; i < commandsCopy.length; i += 1) {
+        const cmd = commandsCopy[i];
         if (cmd.type === 'M') {
-            d += 'M' + packValues(cmd.x, cmd.y);
+            d += 'M' + packValues(
+                cmd.x,
+                flipY === false ? cmd.y : flipY - cmd.y
+            );
         } else if (cmd.type === 'L') {
-            d += 'L' + packValues(cmd.x, cmd.y);
+            d += 'L' + packValues(
+                cmd.x,
+                flipY === false ? cmd.y : flipY - cmd.y
+            );
         } else if (cmd.type === 'C') {
-            d += 'C' + packValues(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
+            d += 'C' + packValues(
+                cmd.x1,
+                flipY === false ? cmd.y1 : flipY - cmd.y1,
+                cmd.x2,
+                flipY === false ? cmd.y2 : flipY - cmd.y2,
+                cmd.x,
+                flipY === false ? cmd.y : flipY - cmd.y
+            );
         } else if (cmd.type === 'Q') {
-            d += 'Q' + packValues(cmd.x1, cmd.y1, cmd.x, cmd.y);
+            d += 'Q' + packValues(
+                cmd.x1,
+                flipY === false ? cmd.y1 : flipY - cmd.y1,
+                cmd.x,
+                flipY === false ? cmd.y : flipY - cmd.y
+            );
         } else if (cmd.type === 'Z') {
             d += 'Z';
         }
