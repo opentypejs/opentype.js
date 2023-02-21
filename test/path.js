@@ -1,5 +1,5 @@
 import assert  from 'assert';
-import { loadSync, Path } from '../src/opentype';
+import { Path } from '../src/opentype';
 
 describe('path.js', function() {
     const testPath1 = new Path();
@@ -39,14 +39,14 @@ describe('path.js', function() {
         ];
         const svg = 'M1 2L3 4C5 6 7 8 9 10Q11 12 13 14Z';
         assert.deepEqual(testPath1.commands, expectedCommands);
-        assert.deepEqual(Path.fromSVG(svg).commands, expectedCommands);
+        assert.deepEqual(Path.fromSVG(svg, {flipY: false}).commands, expectedCommands);
     });
 
     it('should return a streamlined SVG path (no commas, no additional spaces, only absolute commands)', function() {
         const input = 'M1,2 L 3 4Z M  .5 6.7 L 8 9 l 2,1 m1 1 c 1 2,3 4 5, 6q-7.8-9.0 -1.011 12 m-13.99-28 h 13 15 V 17 19 v21 23 25 H27 V28 zzzZZzzz';
         const expectedSVG = 'M1 2L3 4ZM0.50 6.70L8 9L10 10M11 11C12 13 14 15 16 17Q8.20 8 14.99 29M1 1L14 1L29 1L29 17L29 19L29 40L29 63L29 88L27 88L27 28Z';
-        const path = Path.fromSVG(input);
-        assert.deepEqual(path.toPathData(), expectedSVG);
+        const path = Path.fromSVG(input, {flipY: false});
+        assert.deepEqual(path.toPathData({flipY: false}), expectedSVG);
     });
 
     it('should accept integer or correct fallback for decimalPlaces backwards compatibility', function() {
@@ -55,20 +55,20 @@ describe('path.js', function() {
         const path = new Path();
         path.moveTo(0.575, 0.75);
         path.lineTo(1.7567, -1.2543);
-        assert.equal(path.toPathData(), expectedResult);
-        assert.equal(path.toPathData({optimize: true}), expectedResult);
+        assert.equal(path.toPathData({flipY: false}), expectedResult);
+        assert.equal(path.toPathData({optimize: true, flipY: false}), expectedResult);
         assert.equal(path.toPathData(3), expectedResult2);
     });
 
     it('should not optimize SVG paths if parameter is set falsy', function() {
         const unoptimizedResult = 'M0 50L0 250L50 250L100 250L150 250L200 250L200 50L0 50ZM250 50L250 250L300 250L350 250L400 250L450 250L450 50L250 50Z';
-        assert.equal(testPath2.toPathData({optimize: false}), unoptimizedResult);
+        assert.equal(testPath2.toPathData({optimize: false, flipY: false}), unoptimizedResult);
     });
 
     it('should optimize SVG paths if path closing point matches starting point', function() {
         const optimizedResult = 'M0 250L50 250L100 250L150 250L200 250L200 50L0 50ZM250 250L300 250L350 250L400 250L450 250L450 50L250 50Z';
-        assert.equal(testPath2.toPathData(), optimizedResult);
-        assert.equal(testPath2.toPathData({optimize: true}), optimizedResult);
+        assert.equal(testPath2.toPathData({flipY: false}), optimizedResult);
+        assert.equal(testPath2.toPathData({optimize: true, flipY: false}), optimizedResult);
     });
 
     it('should optimize SVG paths if they include unnecessary lineTo commands', function() {
@@ -81,22 +81,20 @@ describe('path.js', function() {
         // we can't test toDOMElement() in node context!
     });
 
-    // Testing Glyph SVG functions here in path.js, as they are basically wrapper functions providing options to their Path counterparts
-    it('should flip the path Y coordinates when generating SVG paths from a Glyph via Glyph.', function() {
-        const font = loadSync('./fonts/FiraSansMedium.woff');
-        const glyph = font.charToGlyph('j');
-        const svgPath = glyph.toPathData();
-        const svgMarkup = glyph.toSVG();
-        const expectedPath = 'M25 772C130 725 185 680 185 528L185 33L93 33L93 534C93 647 60 673-9 705ZM204-150' +
+    it('should calculate flipY from bounding box if set to true', function() {
+        const jNormal = 'M25 772C130 725 185 680 185 528L185 33L93 33L93 534C93 647 60 673-9 705ZM204-150' +
             'C204-185 177-212 139-212C101-212 75-185 75-150C75-114 101-87 139-87C177-87 204-114 204-150Z';
-        assert.equal(
-            svgPath,
-            expectedPath
-        );
-        assert.equal(
-            svgMarkup,
-            '<path d="' + expectedPath + '"/>'
-        );
-        // we can't test toDOMElement() in node context!
+        const jUpsideDown = 'M25-212C130-165 185-120 185 32L185 527L93 527L93 26C93-87 60-113-9-145ZM204 710' +
+            'C204 745 177 772 139 772C101 772 75 745 75 710C75 674 101 647 139 647C177 647 204 674 204 710Z';
+        const path = Path.fromSVG(jNormal);
+        assert.equal(path.toPathData({flipY: false}), jUpsideDown);
+        assert.equal(path.toPathData(), jNormal);
+    });
+
+    it('should handle scaling and offset', function() {
+        const inputPath = 'M0 1L2 0L3 0L5 1L5 5L0 5Z';
+        const expectedPath = 'M1 4.50L6 2L8.50 2L13.50 4.50L13.50 14.50L1 14.50Z';
+        const path = Path.fromSVG(inputPath, { x: 1, y: 2, scale: 2.5 });
+        assert.equal(path.toPathData(), expectedPath);
     });
 });

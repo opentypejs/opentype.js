@@ -16,13 +16,63 @@ function Path() {
     this.strokeWidth = 1;
 }
 
+function roundDecimal(float, places) {
+    return +(Math.round(float + 'e+' + places) + 'e-' + places);
+}
+
+function optimizeCommands(commands) {
+    // separate subpaths
+    let subpaths = [[]];
+    for (let i = 0; i < commands.length; i += 1) {
+        const subpath = subpaths[subpaths.length - 1];
+        const cmd = commands[i];
+        const firstCommand = subpath[0];
+        const secondCommand = subpath[1];
+        const previousCommand = subpath[subpath.length - 1];
+        subpath.push(cmd);
+        if (cmd.type === 'Z') {
+            // When closing at the same position as the path started,
+            // remove unnecessary line command
+            if (
+                firstCommand.type === 'M' &&
+                secondCommand.type === 'L' &&
+                previousCommand.type === 'L' &&
+                previousCommand.x === firstCommand.x &&
+                previousCommand.y === firstCommand.y
+            ) {
+                subpath.shift();
+                subpath[0].type = 'M';
+            }
+
+            if (i + 1 < commands.length) {
+                subpaths.push([]);
+            }
+        } else if (cmd.type === 'L') {
+            // remove lines that lead to the same position as the previous command
+            if (previousCommand.x === cmd.x && previousCommand.y === cmd.y) {
+                subpath.pop();
+            }
+        }
+    }
+    commands = [].concat.apply([], subpaths); // flatten again
+    return commands;
+}
+
 /**
  * Returns options merged with the default options for parsing SVG data
  * @param {object} options (optional)
  */
 function defaultSVGParsingOptions(options) {
-    const defaultOptions = {};
-    return Object.assign({}, defaultOptions, options);
+    const defaultOptions = {
+        decimalPlaces: 2,
+        optimize: true,
+        flipY: true,
+        scale: 1,
+        x: 0,
+        y: 0
+    };
+    const newOptions = Object.assign({}, defaultOptions, options);
+    return newOptions;
 }
 
 /**
@@ -31,18 +81,16 @@ function defaultSVGParsingOptions(options) {
  */
 function defaultSVGOutputOptions(options) {
     // accept number for backwards compatibility
+    // and in that case set flipY to false
     if (parseInt(options) === options) {
-        options = { decimalPlaces: options };
+        options = { decimalPlaces: options, flipY: false };
     }
     const defaultOptions = {
         decimalPlaces: 2,
         optimize: true,
-        flipY: undefined
+        flipY: true
     };
     const newOptions = Object.assign({}, defaultOptions, options);
-    if (newOptions.flipY === false) {
-        newOptions.flipY = undefined;
-    }
     return newOptions;
 }
 
@@ -51,9 +99,9 @@ function defaultSVGOutputOptions(options) {
  * @param  {string|SVGPathElement}
  * @param  {object}
  */
-Path.prototype.fromSVG = function(path, options = {}) {
-    if (typeof SVGPathElement !== 'undefined' && path instanceof SVGPathElement) {
-        path = path.getAttribute('d');
+Path.prototype.fromSVG = function(pathData, options = {}) {
+    if (typeof SVGPathElement !== 'undefined' && pathData instanceof SVGPathElement) {
+        pathData = pathData.getAttribute('d');
     }
 
     // set/merge default options
@@ -72,7 +120,13 @@ Path.prototype.fromSVG = function(path, options = {}) {
     let isUnexpected = false;
 
     function parseBuffer(buffer) {
-        return buffer.filter(b => b.length).map(b => parseFloat(b));
+        return buffer.filter(b => b.length).map(b => {
+            let float = parseFloat(b);
+            if (options.decimalPlaces || options.decimalPlaces === 0) {
+                float = roundDecimal(float, options.decimalPlaces);
+            }
+            return float;
+        });
     }
 
     function makeRelative(buffer) {
@@ -87,6 +141,10 @@ Path.prototype.fromSVG = function(path, options = {}) {
     }
 
     function applyCommand() {
+        // ignore empty commands
+        if (command.type === undefined) {
+            return;
+        }
         const commandType = command.type.toUpperCase();
         const relative = commandType !== 'Z' && command.type.toUpperCase() !== command.type;
         let parsedBuffer = parseBuffer(buffer);
@@ -148,8 +206,8 @@ Path.prototype.fromSVG = function(path, options = {}) {
         }
     }
 
-    for (let i = 0; i < path.length; i++) {
-        const token = path.charAt(i);
+    for (let i = 0; i < pathData.length; i++) {
+        const token = pathData.charAt(i);
         const lastBuffer = buffer[buffer.length - 1];
         if (number.indexOf(token) > -1) {
             buffer[buffer.length - 1] += token;
@@ -200,6 +258,27 @@ Path.prototype.fromSVG = function(path, options = {}) {
         }
     }
     applyCommand.apply(this);
+
+    if (options.optimize) {
+        this.commands = optimizeCommands(this.commands);
+    }
+
+    let flipY = options.flipY;
+    if (flipY === true) {
+        const boundingBox = this.getBoundingBox();
+        flipY = boundingBox.y1 + boundingBox.y2;
+    }
+    // apply x/y offset, flipping and scaling
+    for (const i in this.commands) {
+        const cmd = this.commands[i];
+        for (const prop in cmd) {
+            if (['x', 'x1', 'x2'].includes(prop)) {
+                this.commands[i][prop] = options.x + cmd[prop] * options.scale;
+            } else if (['y', 'y1', 'y2'].includes(prop)) {
+                this.commands[i][prop] = options.y + (flipY !== false ? flipY - cmd[prop] : cmd[prop]) * options.scale;
+            }
+        }
+    }
 
     return this;
 };
@@ -435,10 +514,6 @@ Path.prototype.toPathData = function(options) {
     // set/merge default options
     options = defaultSVGOutputOptions(options);
 
-    function roundDecimal(float, places) {
-        return +(Math.round(float + 'e+' + places) + 'e-' + places);
-    }
-
     function floatToString(v) {
         if (Math.round(v) === roundDecimal(v, options.decimalPlaces)) {
             return '' + roundDecimal(v, options.decimalPlaces);
@@ -465,71 +540,44 @@ Path.prototype.toPathData = function(options) {
     if (options.optimize) {
         // apply path optimizations
         commandsCopy = JSON.parse(JSON.stringify(this.commands)); // make a deep clone
-        // separate subpaths
-        let subpaths = [[]];
-        for (let i = 0; i < commandsCopy.length; i += 1) {
-            const subpath = subpaths[subpaths.length - 1];
-            const cmd = commandsCopy[i];
-            const firstCommand = subpath[0];
-            const secondCommand = subpath[1];
-            const previousCommand = subpath[subpath.length - 1];
-            subpath.push(cmd);
-            if (cmd.type === 'Z') {
-                // When closing at the same position as the path started,
-                // remove unnecessary line command
-                if (
-                    firstCommand.type === 'M' &&
-                    secondCommand.type === 'L' &&
-                    previousCommand.type === 'L' &&
-                    previousCommand.x === firstCommand.x &&
-                    previousCommand.y === firstCommand.y
-                ) {
-                    subpath.shift();
-                    subpath[0].type = 'M';
-                }
-
-                if (i + 1 < commandsCopy.length) {
-                    subpaths.push([]);
-                }
-            } else if (cmd.type === 'L') {
-                // remove lines that lead to the same position as the previous command
-                if (previousCommand.x === cmd.x && previousCommand.y === cmd.y) {
-                    subpath.pop();
-                }
-            }
-        }
-        commandsCopy = [].concat.apply([], subpaths); // flatten again
+        commandsCopy = optimizeCommands(commandsCopy);
     }
 
-    let offsetY = options.flipY;
+    let flipY = options.flipY;
+    if (flipY === true) {
+        const tempPath = new Path();
+        tempPath.extend(commandsCopy);
+        const boundingBox = tempPath.getBoundingBox();
+        flipY = boundingBox.y1 + boundingBox.y2;
+    }
     let d = '';
     for (let i = 0; i < commandsCopy.length; i += 1) {
         const cmd = commandsCopy[i];
         if (cmd.type === 'M') {
             d += 'M' + packValues(
                 cmd.x,
-                offsetY === undefined ? cmd.y : offsetY - cmd.y
+                flipY === false ? cmd.y : flipY - cmd.y
             );
         } else if (cmd.type === 'L') {
             d += 'L' + packValues(
                 cmd.x,
-                offsetY === undefined ? cmd.y : offsetY - cmd.y
+                flipY === false ? cmd.y : flipY - cmd.y
             );
         } else if (cmd.type === 'C') {
             d += 'C' + packValues(
                 cmd.x1,
-                offsetY === undefined ? cmd.y1 : offsetY - cmd.y1,
+                flipY === false ? cmd.y1 : flipY - cmd.y1,
                 cmd.x2,
-                offsetY === undefined ? cmd.y2 : offsetY - cmd.y2,
+                flipY === false ? cmd.y2 : flipY - cmd.y2,
                 cmd.x,
-                offsetY === undefined ? cmd.y : offsetY - cmd.y
+                flipY === false ? cmd.y : flipY - cmd.y
             );
         } else if (cmd.type === 'Q') {
             d += 'Q' + packValues(
                 cmd.x1,
-                offsetY === undefined ? cmd.y1 : offsetY - cmd.y1,
+                flipY === false ? cmd.y1 : flipY - cmd.y1,
                 cmd.x,
-                offsetY === undefined ? cmd.y : offsetY - cmd.y
+                flipY === false ? cmd.y : flipY - cmd.y
             );
         } else if (cmd.type === 'Z') {
             d += 'Z';

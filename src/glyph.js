@@ -2,7 +2,7 @@
 
 import check from './check';
 import draw from './draw';
-import { Path, defaultSVGOutputOptions } from './path';
+import { Path, defaultSVGParsingOptions, defaultSVGOutputOptions } from './path';
 // import glyf from './tables/glyf' Can't be imported here, because it's a circular dependency
 
 function getPathDefinition(glyph, path) {
@@ -381,24 +381,18 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
  * @see Path.toPathData
  */
 Glyph.prototype.toPathData = function(options) {
-    // while some fonts (e.g. Roboto-Black.ttf) have the values set for their glyphs,
-    // for others (like FiraSansMedium.woff) they have to be calculated
-    let yMin = this.yMin;
-    let yMax = this.yMax;
-
-    if (yMin === undefined || yMax === undefined) {
-        const metrics = this.getMetrics();
-        if (yMin === undefined) {
-            yMin = metrics.yMin;
-        }
-        if (yMax === undefined) {
-            yMax = metrics.yMax;
-        }
-    }
-
-    // set/merge default options
-    options = Object.assign({}, defaultSVGOutputOptions(options), {flipY: yMax + yMin});
+    options = defaultSVGOutputOptions(options);
     return this.path.toPathData(options);
+};
+
+/**
+ * Sets the path data from an SVG path element or path notation
+ * @param  {string|SVGPathElement}
+ * @param  {object}
+ */
+Glyph.prototype.fromSVG = function(pathData, options = {}) {
+    options = defaultSVGParsingOptions(options);
+    return this.path.fromSVG(pathData, options);
 };
 
 /**
