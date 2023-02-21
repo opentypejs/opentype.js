@@ -635,4 +635,3 @@ Path.prototype.toDOMElement = function(options, pathData) {
 };
 
 export default Path;
-export { Path, defaultSVGParsingOptions, defaultSVGOutputOptions };

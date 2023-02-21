@@ -2,7 +2,7 @@
 
 import check from './check';
 import draw from './draw';
-import { Path, defaultSVGParsingOptions, defaultSVGOutputOptions } from './path';
+import Path from './path';
 // import glyf from './tables/glyf' Can't be imported here, because it's a circular dependency
 
 function getPathDefinition(glyph, path) {
@@ -381,7 +381,6 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
  * @see Path.toPathData
  */
 Glyph.prototype.toPathData = function(options) {
-    options = defaultSVGOutputOptions(options);
     return this.path.toPathData(options);
 };
 
@@ -391,7 +390,6 @@ Glyph.prototype.toPathData = function(options) {
  * @param  {object}
  */
 Glyph.prototype.fromSVG = function(pathData, options = {}) {
-    options = defaultSVGParsingOptions(options);
     return this.path.fromSVG(pathData, options);
 };
 
