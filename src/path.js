@@ -59,6 +59,23 @@ function optimizeCommands(commands) {
 }
 
 /**
+ * Returns options merged with the default options for parsing SVG data
+ * @param {object} options (optional)
+ */
+function defaultSVGParsingOptions(options) {
+    const defaultOptions = {
+        decimalPlaces: 2,
+        optimize: true,
+        flipY: true,
+        scale: 1,
+        x: 0,
+        y: 0
+    };
+    const newOptions = Object.assign({}, defaultOptions, options);
+    return newOptions;
+}
+
+/**
  * Returns options merged with the default options for outputting SVG data
  * @param {object} options (optional)
  */
@@ -76,6 +93,206 @@ function defaultSVGOutputOptions(options) {
     const newOptions = Object.assign({}, defaultOptions, options);
     return newOptions;
 }
+
+/**
+ * Sets the path data from an SVG path element or path notation
+ * @param  {string|SVGPathElement}
+ * @param  {object}
+ */
+Path.prototype.fromSVG = function(pathData, options = {}) {
+    if (typeof SVGPathElement !== 'undefined' && pathData instanceof SVGPathElement) {
+        pathData = pathData.getAttribute('d');
+    }
+
+    // set/merge default options
+    options = defaultSVGParsingOptions(options);
+
+    this.commands = [];
+
+    const number = '0123456789';
+    const supportedCommands = 'MmLlQqCcZzHhVv';
+    const unsupportedCommands = 'SsTtAa';
+    const sign = '-+';
+
+    let command = {};
+    let buffer = [''];
+
+    let isUnexpected = false;
+
+    function parseBuffer(buffer) {
+        return buffer.filter(b => b.length).map(b => {
+            let float = parseFloat(b);
+            if (options.decimalPlaces || options.decimalPlaces === 0) {
+                float = roundDecimal(float, options.decimalPlaces);
+            }
+            return float;
+        });
+    }
+
+    function makeRelative(buffer) {
+        if (!this.commands.length) {
+            return buffer;
+        }
+        const lastCommand = this.commands[this.commands.length - 1];
+        for (let i = 0; i < buffer.length; i++) {
+            buffer[i] += lastCommand[i % 2 ? 'y' : 'x'];
+        }
+        return buffer;
+    }
+
+    function applyCommand() {
+        // ignore empty commands
+        if (command.type === undefined) {
+            return;
+        }
+        const commandType = command.type.toUpperCase();
+        const relative = commandType !== 'Z' && command.type.toUpperCase() !== command.type;
+        let parsedBuffer = parseBuffer(buffer);
+        buffer = [''];
+        if (!parsedBuffer.length && commandType !== 'Z') {
+            return;
+        }
+        if (relative && commandType !== 'H' && commandType !== 'V') {
+            parsedBuffer = makeRelative.apply(this, [parsedBuffer]);
+        }
+        switch (commandType) {
+            case 'M':
+                this.moveTo(...parsedBuffer);
+                break;
+            case 'L':
+                this.lineTo(...parsedBuffer);
+                break;
+            case 'V':
+                const currentX = this.commands.length ? this.commands[this.commands.length - 1].x || 0 : 0;
+                // multiple values interpreted as consecutive commands
+                for (let i = 0; i < parsedBuffer.length; i++) {
+                    let offset = 0;
+                    if (relative) {
+                        offset = this.commands.length ? (this.commands[this.commands.length - 1].y || 0) : 0;
+                    }
+                    this.lineTo(currentX, parsedBuffer[i] + offset);
+                }
+                break;
+            case 'H':
+                const currentY = this.commands.length ? this.commands[this.commands.length - 1].y || 0 : 0;
+                // multiple values interpreted as consecutive commands
+                for (let i = 0; i < parsedBuffer.length; i++) {
+                    let offset = 0;
+                    if (relative) {
+                        offset = this.commands.length ? (this.commands[this.commands.length - 1].x || 0) : 0;
+                    }
+                    this.lineTo(parsedBuffer[i] + offset, currentY);
+                }
+                break;
+            case 'C':
+                this.bezierCurveTo(...parsedBuffer);
+                break;
+            case 'Q':
+                this.quadraticCurveTo(...parsedBuffer);
+                break;
+            case 'Z':
+                if (this.commands.length < 1 || this.commands[this.commands.length - 1].type !== 'Z') {
+                    this.close();
+                }
+                break;
+        }
+
+        if (this.commands.length) {
+            for (const prop in this.commands[this.commands.length - 1]) {
+                if (this.commands[this.commands.length - 1][prop] === undefined) {
+                    this.commands[this.commands.length - 1][prop] = 0;
+                }
+            }
+        }
+    }
+
+    for (let i = 0; i < pathData.length; i++) {
+        const token = pathData.charAt(i);
+        const lastBuffer = buffer[buffer.length - 1];
+        if (number.indexOf(token) > -1) {
+            buffer[buffer.length - 1] += token;
+        } else if (sign.indexOf(token) > -1) {
+            if (!command.type && !this.commands.length) {
+                command.type = 'L';
+            }
+
+            if (token === '-') {
+                if (!command.type || lastBuffer.indexOf('-') > 0) {
+                    isUnexpected = true;
+                } else if (lastBuffer.length) {
+                    buffer.push('-');
+                } else {
+                    buffer[buffer.length - 1] = token;
+                }
+            } else {
+                if (!command.type || lastBuffer.length > 0) {
+                    isUnexpected = true;
+                } else {
+                    continue;
+                }
+            }
+        } else if (supportedCommands.indexOf(token) > -1) {
+            if (command.type) {
+                applyCommand.apply(this);
+                command = { type: token };
+            } else {
+                command.type = token;
+            }
+        } else if (unsupportedCommands.indexOf(token) > -1) {
+            // TODO: try to interpolate commands not directly supported?
+            throw new Error('Unsupported path command: ' + token + '. Currently supported commands are ' + supportedCommands.split('').join(', ') + '.');
+        } else if (' ,\t\n\r\f\v'.indexOf(token) > -1) {
+            buffer.push('');
+        } else if (token === '.') {
+            if (!command.type || lastBuffer.indexOf(token) > -1) {
+                isUnexpected = true;
+            } else {
+                buffer[buffer.length - 1] += token;
+            }
+        } else {
+            isUnexpected = true;
+        }
+
+        if (isUnexpected) {
+            throw new Error('Unexpected character: ' + token + ' at offset ' + i);
+        }
+    }
+    applyCommand.apply(this);
+
+    if (options.optimize) {
+        this.commands = optimizeCommands(this.commands);
+    }
+
+    let flipY = options.flipY;
+    if (flipY === true) {
+        const boundingBox = this.getBoundingBox();
+        flipY = boundingBox.y1 + boundingBox.y2;
+    }
+    // apply x/y offset, flipping and scaling
+    for (const i in this.commands) {
+        const cmd = this.commands[i];
+        for (const prop in cmd) {
+            if (['x', 'x1', 'x2'].includes(prop)) {
+                this.commands[i][prop] = options.x + cmd[prop] * options.scale;
+            } else if (['y', 'y1', 'y2'].includes(prop)) {
+                this.commands[i][prop] = options.y + (flipY !== false ? flipY - cmd[prop] : cmd[prop]) * options.scale;
+            }
+        }
+    }
+
+    return this;
+};
+
+/**
+ * Generates a new Path() from an SVG path element or path notation
+ * @param  {string|SVGPathElement}
+ * @param  {object}
+ */
+Path.fromSVG = function(path, options) {
+    const newPath = new Path();
+    return newPath.fromSVG(path, options);
+};
+
 /**
  * @param  {number} x
  * @param  {number} y
