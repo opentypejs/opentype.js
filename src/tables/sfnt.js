@@ -21,6 +21,9 @@ import gsub from './gsub.js';
 import meta from './meta.js';
 import colr from './colr.js';
 import cpal from './cpal.js';
+import fvar from './fvar.js';
+import stat from './stat.js';
+import avar from './avar.js';
 
 function log2(v) {
     return Math.log(v) / Math.log(2) | 0;
@@ -313,6 +316,9 @@ function fontToSfntTable(font) {
         names.windows.preferredSubfamily = fontNamesWindows.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily;
     }
 
+    // we have to handle fvar before name, because it may modify name IDs
+    const fvarTable = font.tables.fvar ? fvar.make(font.tables.fvar, font.names) : undefined;
+
     const languageTags = [];
     const nameTable = _name.make(names, languageTags);
     const ltagTable = (languageTags.length > 0 ? ltag.make(languageTags) : undefined);
@@ -335,16 +341,32 @@ function fontToSfntTable(font) {
     if (ltagTable) {
         tables.push(ltagTable);
     }
+
     // Optional tables
-    if (font.tables.gsub) {
-        tables.push(gsub.make(font.tables.gsub));
+    const optionalTables = {
+        gsub,
+        cpal,
+        colr,
+        stat,
+        avar
+    };
+
+    const optionalTableArgs = {
+        avar: [font.tables.fvar]
+    };
+
+    // fvar table is already handled above
+    if (fvarTable) {
+        tables.push(fvarTable);
     }
-    if (font.tables.cpal) {
-        tables.push(cpal.make(font.tables.cpal));
+
+    for (let tableName in optionalTables) {
+        const table = font.tables[tableName];
+        if (table) {
+            tables.push(optionalTables[tableName].make.call(font, table, ...(optionalTableArgs[tableName] || [])));
+        }
     }
-    if (font.tables.colr) {
-        tables.push(colr.make(font.tables.colr));
-    }
+
     if (metaTable) {
         tables.push(metaTable);
     }
