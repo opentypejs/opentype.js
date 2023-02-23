@@ -137,7 +137,7 @@ Path.prototype.fromSVG = function(pathData, options = {}) {
         }
         const lastCommand = this.commands[this.commands.length - 1];
         for (let i = 0; i < buffer.length; i++) {
-            buffer[i] += lastCommand[x & 1 ? 'y' : 'x'];
+            buffer[i] += lastCommand[i & 1 ? 'y' : 'x'];
         }
         return buffer;
     }
