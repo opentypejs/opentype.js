@@ -62,7 +62,7 @@ function optimizeCommands(commands) {
  * Returns options merged with the default options for parsing SVG data
  * @param {object} options (optional)
  */
-function defaultSVGParsingOptions(options) {
+function createSVGParsingOptions(options) {
     const defaultOptions = {
         decimalPlaces: 2,
         optimize: true,
@@ -79,7 +79,7 @@ function defaultSVGParsingOptions(options) {
  * Returns options merged with the default options for outputting SVG data
  * @param {object} options (optional)
  */
-function defaultSVGOutputOptions(options) {
+function createSVGOutputOptions(options) {
     // accept number for backwards compatibility
     // and in that case set flipY to false
     if (parseInt(options) === options) {
@@ -105,10 +105,12 @@ Path.prototype.fromSVG = function(pathData, options = {}) {
     }
 
     // set/merge default options
-    options = defaultSVGParsingOptions(options);
+    options = createSVGParsingOptions(options);
 
     this.commands = [];
 
+    // TODO: a generator function could possibly increase performance and reduce memory usage,
+    // but our current build process doesn't allow to use those yet.
     const number = '0123456789';
     const supportedCommands = 'MmLlQqCcZzHhVv';
     const unsupportedCommands = 'SsTtAa';
@@ -135,7 +137,7 @@ Path.prototype.fromSVG = function(pathData, options = {}) {
         }
         const lastCommand = this.commands[this.commands.length - 1];
         for (let i = 0; i < buffer.length; i++) {
-            buffer[i] += lastCommand[i % 2 ? 'y' : 'x'];
+            buffer[i] += lastCommand[x & 1 ? 'y' : 'x'];
         }
         return buffer;
     }
@@ -512,7 +514,7 @@ Path.prototype.draw = function(ctx) {
  */
 Path.prototype.toPathData = function(options) {
     // set/merge default options
-    options = defaultSVGOutputOptions(options);
+    options = createSVGOutputOptions(options);
 
     function floatToString(v) {
         if (Math.round(v) === roundDecimal(v, options.decimalPlaces)) {
