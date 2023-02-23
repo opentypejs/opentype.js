@@ -174,16 +174,15 @@ Font.prototype.updateFeatures = function (options) {
 };
 
 /**
- * Convert the given text to a list of Glyph objects.
+ * Convert the given text to a list of Glyph indexes.
  * Note that there is no strict one-to-one mapping between characters and
- * glyphs, so the list of returned glyphs can be larger or smaller than the
+ * glyphs, so the list of returned glyph indexes can be larger or smaller than the
  * length of the given string.
  * @param  {string}
  * @param  {GlyphRenderOptions} [options]
- * @return {opentype.Glyph[]}
+ * @return {number[]}
  */
-Font.prototype.stringToGlyphs = function(s, options) {
-
+Font.prototype.stringToGlyphIndexes = function(s, options) {
     const bidi = new Bidi();
 
     // Create and register 'glyphIndex' state modifier
@@ -197,7 +196,20 @@ Font.prototype.stringToGlyphs = function(s, options) {
 
     bidi.applyFeatures(this, features);
 
-    const indexes = bidi.getTextGlyphs(s);
+    return bidi.getTextGlyphs(s);
+};
+
+/**
+ * Convert the given text to a list of Glyph objects.
+ * Note that there is no strict one-to-one mapping between characters and
+ * glyphs, so the list of returned glyphs can be larger or smaller than the
+ * length of the given string.
+ * @param  {string}
+ * @param  {GlyphRenderOptions} [options]
+ * @return {opentype.Glyph[]}
+ */
+Font.prototype.stringToGlyphs = function(s, options) {
+    const indexes = this.stringToGlyphIndexes(s, options);
 
     let length = indexes.length;
 
