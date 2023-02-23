@@ -266,7 +266,8 @@ Path.prototype.fromSVG = function(pathData, options = {}) {
     }
 
     let flipY = options.flipY;
-    if (flipY === true) {
+    const doFlipY = !!flipY || flipY === 0;
+    if (options.flipY === true) {
         const boundingBox = this.getBoundingBox();
         flipY = boundingBox.y1 + boundingBox.y2;
     }
@@ -277,7 +278,7 @@ Path.prototype.fromSVG = function(pathData, options = {}) {
             if (['x', 'x1', 'x2'].includes(prop)) {
                 this.commands[i][prop] = options.x + cmd[prop] * options.scale;
             } else if (['y', 'y1', 'y2'].includes(prop)) {
-                this.commands[i][prop] = options.y + (flipY !== false ? flipY - cmd[prop] : cmd[prop]) * options.scale;
+                this.commands[i][prop] = options.y + (doFlipY ? flipY - cmd[prop] : cmd[prop]) * options.scale;
             }
         }
     }
@@ -546,7 +547,8 @@ Path.prototype.toPathData = function(options) {
     }
 
     let flipY = options.flipY;
-    if (flipY === true) {
+    const doFlipY = !!flipY || flipY === 0;
+    if (options.flipY === true) {
         const tempPath = new Path();
         tempPath.extend(commandsCopy);
         const boundingBox = tempPath.getBoundingBox();
@@ -558,28 +560,28 @@ Path.prototype.toPathData = function(options) {
         if (cmd.type === 'M') {
             d += 'M' + packValues(
                 cmd.x,
-                flipY === false ? cmd.y : flipY - cmd.y
+                doFlipY ? flipY - cmd.y : cmd.y
             );
         } else if (cmd.type === 'L') {
             d += 'L' + packValues(
                 cmd.x,
-                flipY === false ? cmd.y : flipY - cmd.y
+                doFlipY ? flipY - cmd.y : cmd.y
             );
         } else if (cmd.type === 'C') {
             d += 'C' + packValues(
                 cmd.x1,
-                flipY === false ? cmd.y1 : flipY - cmd.y1,
+                doFlipY ? flipY - cmd.y1 : cmd.y1,
                 cmd.x2,
-                flipY === false ? cmd.y2 : flipY - cmd.y2,
+                doFlipY ? flipY - cmd.y2 : cmd.y2,
                 cmd.x,
-                flipY === false ? cmd.y : flipY - cmd.y
+                doFlipY ? flipY - cmd.y : cmd.y
             );
         } else if (cmd.type === 'Q') {
             d += 'Q' + packValues(
                 cmd.x1,
-                flipY === false ? cmd.y1 : flipY - cmd.y1,
+                doFlipY ? flipY - cmd.y1 : cmd.y1,
                 cmd.x,
-                flipY === false ? cmd.y : flipY - cmd.y
+                doFlipY ? flipY - cmd.y : cmd.y
             );
         } else if (cmd.type === 'Z') {
             d += 'Z';
