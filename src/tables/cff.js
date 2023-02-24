@@ -527,7 +527,7 @@ function parseCFFCharstring(font, glyph, code) {
 
         // The number of stem operators on the stack is always even.
         // If the value is uneven, that means a width is specified.
-        hasWidthArg = stack.length % 2 !== 0;
+        hasWidthArg = (stack.length & 1) !== 0;
         if (hasWidthArg && !haveWidth) {
             width = stack.shift() + nominalWidthX;
         }
@@ -780,7 +780,7 @@ function parseCFFCharstring(font, glyph, code) {
                     p.curveTo(c1x, c1y, c2x, c2y, x, y);
                     break;
                 case 26: // vvcurveto
-                    if (stack.length % 2) {
+                    if (stack.length & 1) {
                         x += stack.shift();
                     }
 
@@ -796,7 +796,7 @@ function parseCFFCharstring(font, glyph, code) {
 
                     break;
                 case 27: // hhcurveto
-                    if (stack.length % 2) {
+                    if (stack.length & 1) {
                         y += stack.shift();
                     }
 

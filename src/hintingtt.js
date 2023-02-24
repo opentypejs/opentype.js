@@ -1950,7 +1950,7 @@ function ODD(state) {
 
     if (exports.DEBUG) console.log(state.step, 'ODD[]', n);
 
-    stack.push(Math.trunc(n) % 2 ? 1 : 0);
+    stack.push(Math.trunc(n) & 1 ? 1 : 0);
 }
 
 // EVEN[] EVEN
@@ -1961,7 +1961,7 @@ function EVEN(state) {
 
     if (exports.DEBUG) console.log(state.step, 'EVEN[]', n);
 
-    stack.push(Math.trunc(n) % 2 ? 0 : 1);
+    stack.push(Math.trunc(n) & 1 ? 0 : 1);
 }
 
 // IF[] IF test
