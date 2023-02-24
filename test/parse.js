@@ -237,4 +237,27 @@ describe('parse.js', function() {
             assert.equal(p.relativeOffset, 2);
         });
     });
+
+    describe('parseLongDateTime', function() {
+        it('should parse LONGDATETIME fields correctly', function() {
+            const data =
+                '00 00 00 00 7C 25 B0 80' +
+                '00 00 00 00 D2 4D 45 A6' +
+                '00 00 00 00 FD EE FB 7F' +
+                '00 00 00 00 FF FF FF FF';
+
+            const p = new Parser(unhex(data), 0);
+            const parsed = p.parseStruct({
+                t1: Parser.prototype.parseLongDateTime,
+                t2: Parser.prototype.parseLongDateTime,
+                t3: Parser.prototype.parseLongDateTime,
+                t4: Parser.prototype.parseLongDateTime
+            });
+            assert.equal(new Date(parsed.t1 * 1000).toUTCString(), 'Thu, 01 Jan 1970 00:00:00 GMT');
+            assert.equal(new Date(parsed.t2 * 1000).toUTCString(), 'Wed, 21 Oct 2015 13:37:42 GMT');
+            assert.equal(new Date(parsed.t3 * 1000).toUTCString(), 'Fri, 31 Dec 2038 23:59:59 GMT');
+            assert.equal(new Date(parsed.t4 * 1000).toUTCString(), 'Mon, 06 Feb 2040 06:28:15 GMT');
+            assert.equal(p.relativeOffset, 32);
+        });
+    });
 });

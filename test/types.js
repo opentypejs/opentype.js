@@ -63,7 +63,15 @@ describe('types.js', function() {
         assert.equal(sizeOf.UFWORD(0xDEED), 2);
     });
 
-    // FIXME: Test LONGDATETIME when it gets implemented.
+    it('can handle LONGDATETIME', function() {
+        const timestamp1 = Math.round(new Date(Date.UTC(1970, 0, 1, 0, 0, 0, 0)).getTime() / 1000) + 2082844800;
+        const timestamp2 = Math.round(new Date(Date.UTC(2015, 9, 21, 13, 37, 42, 0)).getTime() / 1000) + 2082844800;
+        const timestamp3 = Math.round(new Date(Date.UTC(2038, 11, 31, 23, 59, 59, 0)).getTime() / 1000) + 2082844800;
+        assert.equal(hex(encode.LONGDATETIME(timestamp1)), '00 00 00 00 7C 25 B0 80');
+        assert.equal(hex(encode.LONGDATETIME(timestamp2)), '00 00 00 00 D2 4D 45 A6');
+        assert.equal(hex(encode.LONGDATETIME(timestamp3)), '00 00 00 00 FD EE FB 7F');
+        assert.equal(sizeOf.LONGDATETIME(), 8);
+    });
 
     it('can handle TAG', function() {
         assert.equal(hex(encode.TAG('Font')), '46 6F 6E 74');
