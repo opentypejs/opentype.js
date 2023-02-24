@@ -15,6 +15,8 @@ describe('font.js', function() {
         fGlyph, iGlyph, ffGlyph, fiGlyph, ffiGlyph
     ];
 
+    glyphs.forEach((glyph, index) => glyph.index = index);
+
     beforeEach(function() {
         font = new Font({
             familyName: 'MyFont',
@@ -44,6 +46,20 @@ describe('font.js', function() {
         it('tables definition shall be serialized', function() {
             const os2 = font.toTables().tables.find(table => table.tableName === 'OS/2');
             assert.equal(os2.achVendID, 'TEST');
+        });
+    });
+
+    describe('stringToGlyphIndexes', function() {
+        it('must support standard ligatures', function() {
+            assert.deepEqual(font.stringToGlyphIndexes('fi'), [fGlyph.index, iGlyph.index]);
+            font.substitution.add('liga', { sub: [1, 1, 2], by: 5 });
+            font.substitution.add('liga', { sub: [1, 1], by: 3 });
+            font.substitution.add('liga', { sub: [1, 2], by: 4 });
+            assert.deepEqual(font.stringToGlyphIndexes('ff'), [ffGlyph.index]);
+            assert.deepEqual(font.stringToGlyphIndexes('fi'), [fiGlyph.index]);
+            assert.deepEqual(font.stringToGlyphIndexes('ffi'), [ffiGlyph.index]);
+            assert.deepEqual(font.stringToGlyphIndexes('fffiffif'),
+                [ffGlyph.index, fiGlyph.index, ffiGlyph.index, fGlyph.index]);
         });
     });
 
