@@ -31,6 +31,7 @@
     "start": "node ./bin/server.js",
     "watch": "rollup -c -w",
     "test": "mocha --require reify --recursive && jshint . && jscs .",
+    "test-dev": "mocha --require reify --recursive -g \"CFF2\"",
     "build": "rollup -c",
     "minify": "uglifyjs --source-map \"url='opentype.min.js.map'\" --compress --mangle --output ./dist/opentype.min.js -- ./dist/opentype.js",
     "dist": "npm run test && npm run build && npm run minify"
