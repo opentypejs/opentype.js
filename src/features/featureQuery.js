@@ -150,15 +150,27 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
             const lookupListIndex = lookupRecord.lookupListIndex;
             const lookupTable = this.getLookupByIndex(lookupListIndex);
             for (let s = 0; s < lookupTable.subtables.length; s++) {
-                const subtable = lookupTable.subtables[s];
-                const lookup = this.getLookupMethod(lookupTable, subtable);
-                const substitutionType = this.getSubstitutionType(lookupTable, subtable);
+                let subtable = lookupTable.subtables[s];
+                let lookup;
+                let substitutionType = this.getSubstitutionType(lookupTable, subtable);
+
+                if (substitutionType === '71') {
+                    // This is an extension subtable, so lookup the target subtable
+                    substitutionType = this.getSubstitutionType(subtable, subtable.extension);
+                    lookup = this.getLookupMethod(subtable, subtable.extension);
+                    subtable = subtable.extension;
+                } else {
+                    lookup = this.getLookupMethod(lookupTable, subtable);
+                }
+
                 if (substitutionType === '12') {
                     for (let n = 0; n < inputLookups.length; n++) {
                         const glyphIndex = contextParams.get(n);
                         const substitution = lookup(glyphIndex);
                         if (substitution) substitutions.push(substitution);
                     }
+                } else {
+                    throw new Error(`Substitution type ${substitutionType} is not supported in chaining substitution`);
                 }
             }
         }
@@ -368,9 +380,19 @@ FeatureQuery.prototype.lookupFeature = function (query) {
         const lookupTable = lookups[l];
         const subtables = this.getLookupSubtables(lookupTable);
         for (let s = 0; s < subtables.length; s++) {
-            const subtable = subtables[s];
-            const substType = this.getSubstitutionType(lookupTable, subtable);
-            const lookup = this.getLookupMethod(lookupTable, subtable);
+            let subtable = subtables[s];
+            let substType = this.getSubstitutionType(lookupTable, subtable);
+            let lookup;
+
+            if (substType === '71') {
+                // This is an extension subtable, so lookup the target subtable
+                substType = this.getSubstitutionType(subtable, subtable.extension);
+                lookup = this.getLookupMethod(subtable, subtable.extension);
+                subtable = subtable.extension;
+            } else {
+                lookup = this.getLookupMethod(lookupTable, subtable);
+            }
+
             let substitution;
             switch (substType) {
                 case '11':

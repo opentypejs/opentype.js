@@ -325,7 +325,28 @@ describe('tables/gsub.js', function() {
     });
 
     //// Lookup type 7 ////////////////////////////////////////////////////////
-    // TODO (no example in the doc from Microsoft)
+    it('can parse lookup7 subtable format 1', function() {
+
+        const data =
+            '00 01' +                    // substFormat
+            '00 01' +                    // extensionLookupType
+            '00 00 00 08' +              //	extensionOffset
+            '0001 0006 00C0   0002 0001 004E 0058 0000' // data equal to that from the lookup1 substFormat 1 test
+            ;
+        const parsed = parseLookup(7, data);
+        assert.deepEqual(parsed, {
+            extension: { // object equal to that from the lookup1 substFormat 1 test
+                substFormat: 1,
+                coverage: {
+                    format: 2,
+                    ranges: [{ start: 0x4e, end: 0x58, index: 0 }]
+                },
+                deltaGlyphId: 0xc0
+            },
+            lookupType: 1,
+            substFormat: 1
+        });
+    });
 
     //// Lookup type 8 ////////////////////////////////////////////////////////
     it('can parse lookup8', function() {
