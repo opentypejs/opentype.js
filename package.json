@@ -20,6 +20,7 @@
     "type": "git",
     "url": "git://github.com/opentypejs/opentype.js.git"
   },
+  "type": "module",
   "main": "./dist/opentype.js",
   "browser": "./dist/opentype.js",
   "module": "./dist/opentype.module.js",
