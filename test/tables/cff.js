@@ -54,6 +54,7 @@ describe('tables/cff.js', function () {
     });
 
     it('can parse a CFF2 table', function() {
+        // https://learn.microsoft.com/en-us/typography/opentype/spec/cff2#appendix-a-example-cff2-font
         const data =
             '02 00 05 00 07 CF 0C 24 C3 11 9B 18 00 00 00 00 ' +
             '00 26 00 01 00 00 00 0C 00 01 00 00 00 1C 00 01 ' +
@@ -70,17 +71,27 @@ describe('tables/cff.js', function () {
             '13 00 00 00 01 01 01 1B BD BD EF 8C 10 8B 15 F8 ' +
             '88 27 FB 5C 8C 10 06 F8 88 07 FC 88 EF F7 5C 8C ' +
             '10 06';
-        const expected = {};
         const font = {
             encoding: 'cmap_encoding',
             tables: []
         };
+        const expectedTopDict = {
+            fontMatrix: [0.001, 0, 0, 0.001, 0, 0],
+            charStrings: 56,
+            fdArray: 68,
+            fdSelect: null,
+            vstore: 16,
+            _subrs: [],
+            _subrsBias: 0,
+            _defaultWidthX: 0,
+            _nominalWidthX: 0
+        };
         const opt = {};
         cff.parse(unhex(data), 0, font, opt);
-        console.log(Object.keys(font));
         assert.notEqual(font.tables.cff2, undefined);
         assert.equal(font.encoding, 'cmap_encoding');
-        assert.equal(font.nGlyphs, 512);
-        assert.equal(font.glyphs.length, 512);
+        assert.equal(font.nGlyphs, 0);
+        assert.equal(font.glyphs.length, 0);
+        assert.deepEqual(font.tables.cff2.topDict, expectedTopDict);
     });
 });
