@@ -1,14 +1,12 @@
 import assert from 'assert';
-import { parse as parseBuffer } from '../dist/opentype.js';
-import { parse as parseBufferMin } from '../dist/opentype.min.js';
 import { parse as parseBufferMod } from '../dist/opentype.module.js';
 import { parse as parseBufferModMin } from '../dist/opentype.module.min.js';
 import { readFileSync } from 'fs';
 
 describe('opentype.js dist', function () {
     const dist_matrix = [
-        [parseBuffer, '.js'],
-        [parseBufferMin, '.min.js'],
+//        [require('../dist/opentype.js').parse, '.js'], require() is forbidden for {type:"module"} package
+//        [require('../dist/opentype.min.js').parse, '.min.js'],
         [parseBufferMod, '.module.js'],
         [parseBufferModMin, '.module.min.js'],
     ]

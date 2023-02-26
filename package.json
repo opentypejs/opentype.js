@@ -20,13 +20,14 @@
     "type": "git",
     "url": "git://github.com/opentypejs/opentype.js.git"
   },
-  "main": "./dist/opentype.js",
+  "type": "module",
+  "main": "./dist/opentype.cjs",
   "browser": "./dist/opentype.js",
   "module": "./dist/opentype.module.js",
   "scripts": {
-    "build": "npm run b:umd && npm run b:esm",
-    "dist": " npm run d:umd && npm run d:esm",
-    "test": "npm run build && npm run dist && mocha --require reify --recursive && npm run lint",
+    "build": "npm run b:umd && npm run b:esm && cp dist/opentype.js dist/opentype.cjs",
+    "dist": " npm run d:umd && npm run d:esm && cp dist/opentype.min.js dist/opentype.min.cjs",
+    "test": "npm run build && npm run dist && mocha  --recursive && npm run lint",
     "lint": "eslint src",
     "lint-fix": "eslint src --fix",
     "start": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --target=es2018 --format=iife --out-extension:.js=.js      --global-name=opentype --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\" --watch --servedir=. --footer:js=\"new EventSource('/esbuild').addEventListener('change', () => location.reload())\"",
@@ -38,8 +39,7 @@
   "devDependencies": {
     "esbuild": "^0.17.7",
     "eslint": "^8.34.0",
-    "mocha": "^8.4.0",
-    "reify": "^0.20.12"
+    "mocha": "^10.2.0"
   },
   "bin": {
     "ot": "./bin/ot"
@@ -47,6 +47,9 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=17.5"
+  },
   "sideEffects": false,
   "eslintConfig": {
     "env": {
@@ -57,7 +60,7 @@
     "plugins": ["eslint-plugin-local-rules"],
     "extends": "eslint:recommended",
     "parserOptions": {
-      "ecmaVersion": 2018,
+      "ecmaVersion": 2020,
       "sourceType": "module"
     },
     "rules": {

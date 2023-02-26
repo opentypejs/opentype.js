@@ -92,20 +92,6 @@ buffer.then(data => {
 })
 ```
 
-### Loading a font (1.x style)
-
-This example rely on the deprecated `.load()` method
-
-```js
-// case 1: from an URL
-const font = opentype.load('./fonts/my.woff', {}, {isUrl: true});
-// case 2: from filesystem
-const font = opentype.load('./fonts/my.woff', {}, {isUrl: false});
-
-// ... play with `font` ...
-console.log(font.supported);
-```
-
 ### Writing a font
 Once you have a `Font` object (either by using `opentype.load` or by creating a new one from scratch) you can write it
 back out as a binary file.

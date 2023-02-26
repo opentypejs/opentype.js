@@ -33,6 +33,7 @@ import _name from './tables/name.js';
 import os2 from './tables/os2.js';
 import post from './tables/post.js';
 import meta from './tables/meta.js';
+import { readFile, readFileSync} from 'fs';
 /**
  * The opentype library.
  * @namespace opentype
@@ -46,7 +47,7 @@ import meta from './tables/meta.js';
  * @param  {Function} callback - The function to call when the font load completes
  */
 function loadFromFile(path, callback) {
-    require('fs').readFile(path, function(err, buffer) {
+    readFile(path, function(err, buffer) {
         if (err) {
             return callback(err.message);
         }
@@ -439,7 +440,6 @@ function parseBuffer(buffer, opt={}) {
 function load(url, callback, opt = {}) {
     const isNode = typeof window === 'undefined';
     const loadFn = isNode && !opt.isUrl ? loadFromFile : loadFromUrl;
-
     return new Promise((resolve, reject) => {
         loadFn(url, function(err, buffer) {
             if (err) {
@@ -477,7 +477,7 @@ function load(url, callback, opt = {}) {
  * @return {opentype.Font}
  */
 function loadSync(url, opt) {
-    return parseBuffer(require('fs').readFileSync(url), opt);
+    return parseBuffer(readFileSync(url), opt);
 }
 
 export {
