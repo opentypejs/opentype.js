@@ -309,7 +309,7 @@ function parseBuffer(buffer, opt) {
             case 'CFF ':
                 cffTableEntry = tableEntry;
                 break;
-            case 'cff2':
+            case 'CFF2':
                 cff2TableEntry = tableEntry;
                 break;
             case 'kern':
@@ -327,6 +327,8 @@ function parseBuffer(buffer, opt) {
             case 'meta':
                 metaTableEntry = tableEntry;
                 break;
+            default:
+                console.warn(`Unknown table ${tableEntry.tag}`);
         }
     }
 
@@ -345,7 +347,7 @@ function parseBuffer(buffer, opt) {
         cff.parse(cffTable.data, cffTable.offset, font, opt);
     } else if (cff2TableEntry) {
         const cffTable2 = uncompressTable(data, cff2TableEntry);
-        cff.parse(cffTable2.data, cff2Table.offset, font, opt);
+        cff.parse(cffTable2.data, cffTable2.offset, font, opt);
     } else {
         throw new Error('Font doesn\'t contain TrueType, CFF or CFF2 outlines.');
     }
