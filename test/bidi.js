@@ -45,7 +45,7 @@ describe('bidi.js', function() {
         /**
          * script font for rlig tests
          */
-        scriptFont = loadSync('./fonts/Pecita.ttf');
+        scriptFont = loadSync('./test/fonts/Pecita.ttf');
         bidiPecita = new Bidi();
         bidiPecita.registerModifier(
             'glyphIndex', null, token => scriptFont.charToGlyphIndex(token.char)
