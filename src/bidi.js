@@ -10,7 +10,7 @@ import arabicSentenceCheck from './features/arab/contextCheck/arabicSentence.js'
 import arabicPresentationForms from './features/arab/arabicPresentationForms.js';
 import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures.js';
 import latinWordCheck from './features/latn/contextCheck/latinWord.js';
-import latinLigature from './features/latn/latinLigatures.js';
+import { latinRequiredLigature, latinLigature } from './features/latn/latinLigatures.js';
 
 /**
  * Create Bidi. features
