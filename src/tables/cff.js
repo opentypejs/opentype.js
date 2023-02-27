@@ -3,11 +3,11 @@
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/type2.pdf
 
-import { CffEncoding, cffStandardEncoding, cffExpertEncoding, cffStandardStrings } from '../encoding';
-import glyphset from '../glyphset';
-import parse from '../parse';
-import Path from '../path';
-import table from '../table';
+import { CffEncoding, cffStandardEncoding, cffExpertEncoding, cffStandardStrings } from '../encoding.js';
+import glyphset from '../glyphset.js';
+import parse from '../parse.js';
+import Path from '../path.js';
+import table from '../table.js';
 
 // Custom equals function that can also check lists.
 function equals(a, b) {
@@ -122,7 +122,7 @@ function parseFloatOperand(parser) {
     let s = '';
     const eof = 15;
     const lookup = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', 'E', 'E-', null, '-'];
-    while (true) {
+    for (;;) {
         const b = parser.parseByte();
         const n1 = b >> 4;
         const n2 = b & 15;
@@ -198,7 +198,7 @@ function entriesToObject(entries) {
             value = values;
         }
 
-        if (o.hasOwnProperty(key) && !isNaN(o[key])) {
+        if (Object.prototype.hasOwnProperty.call(o, key) && !isNaN(o[key])) {
             throw new Error('Object ' + o + ' already has key ' + key);
         }
 
@@ -527,7 +527,7 @@ function parseCFFCharstring(font, glyph, code) {
 
         // The number of stem operators on the stack is always even.
         // If the value is uneven, that means a width is specified.
-        hasWidthArg = stack.length % 2 !== 0;
+        hasWidthArg = (stack.length & 1) !== 0;
         if (hasWidthArg && !haveWidth) {
             width = stack.shift() + nominalWidthX;
         }
@@ -780,7 +780,7 @@ function parseCFFCharstring(font, glyph, code) {
                     p.curveTo(c1x, c1y, c2x, c2y, x, y);
                     break;
                 case 26: // vvcurveto
-                    if (stack.length % 2) {
+                    if (stack.length & 1) {
                         x += stack.shift();
                     }
 
@@ -796,7 +796,7 @@ function parseCFFCharstring(font, glyph, code) {
 
                     break;
                 case 27: // hhcurveto
-                    if (stack.length % 2) {
+                    if (stack.length & 1) {
                         y += stack.shift();
                     }
 

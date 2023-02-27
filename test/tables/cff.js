@@ -1,10 +1,12 @@
 import assert from 'assert';
-import { hex } from '../testutil';
-import Glyph from '../../src/glyph';
-import glyphset from '../../src/glyphset';
-import Path from '../../src/path';
-import cff from '../../src/tables/cff';
-import { load } from '../../src/opentype';
+import { hex } from '../testutil.js';
+import Glyph from '../../src/glyph.js';
+import glyphset from '../../src/glyphset.js';
+import Path from '../../src/path.js';
+import cff from '../../src/tables/cff.js';
+import { parse } from '../../src/opentype.js';
+import { readFileSync } from 'fs';
+const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('tables/cff.js', function () {
     const data =
@@ -45,11 +47,10 @@ describe('tables/cff.js', function () {
     /**
      * @see https://github.com/opentypejs/opentype.js/issues/524
      */
-    it('can fall back to CIDs instead of strings when parsing the charset', function() {
-        load('./fonts/FiraSansOT-Medium.otf', (err, font) => {
-            assert.equal((new Set(font.cffEncoding.charset)).size, 1509);
-            assert.equal(font.cffEncoding.charset.includes(undefined), false);
-        }, {lowMemory: true});
+    it('can fall back to CIDs instead of strings when parsing the charset', function () {
+        const font = loadSync('./test/fonts/FiraSansOT-Medium.otf', { lowMemory: true });
+        assert.equal((new Set(font.cffEncoding.charset)).size, 1509);
+        assert.equal(font.cffEncoding.charset.includes(undefined), false);
     });
 
 });

@@ -1,8 +1,8 @@
 // The Substitution object provides utility methods to manipulate
 // the GSUB substitution table.
 
-import check from './check';
-import Layout from './layout';
+import check from './check.js';
+import Layout from './layout.js';
 
 /**
  * @exports opentype.Substitution
@@ -319,7 +319,7 @@ Substitution.prototype.getFeature = function(feature, script, language) {
         case 'aalt':
         case 'salt':
             return this.getSingle(feature, script, language)
-                    .concat(this.getAlternates(feature, script, language));
+                .concat(this.getAlternates(feature, script, language));
         case 'dlig':
         case 'liga':
         case 'rlig':

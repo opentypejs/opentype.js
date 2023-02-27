@@ -1,7 +1,7 @@
 // Data types used in the OpenType font file.
 // All OpenType fonts use Motorola-style byte ordering (Big Endian)
 
-import check from './check';
+import check from './check.js';
 
 const LIMIT16 = 32768; // The limit at which a 16-bit number switches signs == 2^15
 const LIMIT32 = 2147483648; // The limit at which a 32-bit number switches signs == 2 ^ 31
@@ -207,9 +207,9 @@ sizeOf.LONGDATETIME = constant(8);
 encode.TAG = function(v) {
     check.argument(v.length === 4, 'Tag should be exactly 4 ASCII characters.');
     return [v.charCodeAt(0),
-            v.charCodeAt(1),
-            v.charCodeAt(2),
-            v.charCodeAt(3)];
+        v.charCodeAt(1),
+        v.charCodeAt(2),
+        v.charCodeAt(3)];
 };
 
 /**
@@ -733,9 +733,9 @@ encode.INDEX = function(l) {
     }
 
     return Array.prototype.concat(encode.Card16(l.length),
-                           encode.OffSize(offSize),
-                           encodedOffsets,
-                           data);
+        encode.OffSize(offSize),
+        encodedOffsets,
+        data);
 };
 
 /**
@@ -921,7 +921,7 @@ sizeOf.OBJECT = function(v) {
  */
 encode.TABLE = function(table) {
     let d = [];
-    const length = table.fields.length;
+    const length = (table.fields || []).length;
     const subtables = [];
     const subtableOffsets = [];
 
@@ -937,9 +937,14 @@ encode.TABLE = function(table) {
         const bytes = encodingFunction(value);
 
         if (field.type === 'TABLE') {
-            subtableOffsets.push(d.length);
+            // If the table.fields are set to NULL, don't add it as subtable data,
+            // so the offset will be set to 0 but no table data will be added.
+            // This is required e.g. for classSeqRuleSetOffsets with no defined contexts.
+            if (value.fields !== null) {
+                subtableOffsets.push(d.length);
+                subtables.push(bytes);
+            }
             d.push(...[0, 0]);
-            subtables.push(bytes);
         } else {
             for (let j = 0; j < bytes.length; j++) {
                 d.push(bytes[j]);
@@ -967,7 +972,7 @@ encode.TABLE = function(table) {
  */
 sizeOf.TABLE = function(table) {
     let numBytes = 0;
-    const length = table.fields.length;
+    const length = (table.fields || []).length;
 
     for (let i = 0; i < length; i += 1) {
         const field = table.fields[i];

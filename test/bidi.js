@@ -1,6 +1,8 @@
 import assert from 'assert';
-import Bidi from '../src/bidi';
-import { loadSync } from '../src/opentype';
+import Bidi from '../src/bidi.js';
+import { parse } from '../src/opentype.js';
+import { readFileSync } from 'fs';
+const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('bidi.js', function() {
     let latinFont;
@@ -15,7 +17,7 @@ describe('bidi.js', function() {
         /**
          * arab
          */
-        arabicFont = loadSync('./fonts/Scheherazade-Bold.ttf');
+        arabicFont = loadSync('./test/fonts/Scheherazade-Bold.ttf');
         bidiScheherazade = new Bidi();
         bidiScheherazade.registerModifier(
             'glyphIndex', null, token => arabicFont.charToGlyphIndex(token.char)
@@ -30,7 +32,7 @@ describe('bidi.js', function() {
         /**
          * latin
          */
-        latinFont = loadSync('./fonts/FiraSansMedium.woff');
+        latinFont = loadSync('./test/fonts/FiraSansMedium.woff');
         bidiFira = new Bidi();
         bidiFira.registerModifier(
             'glyphIndex', null, token => latinFont.charToGlyphIndex(token.char)

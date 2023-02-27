@@ -1,8 +1,6 @@
 {
   "name": "opentype.js",
   "description": "OpenType font parser",
-  "version": "2.0.0",
-  "sideEffects": false,
   "author": {
     "name": "Frederik De Bleser",
     "email": "frederik@debleser.be"
@@ -22,50 +20,65 @@
     "type": "git",
     "url": "git://github.com/opentypejs/opentype.js.git"
   },
-  "main": "dist/opentype.js",
-  "module": "dist/opentype.module.js",
+  "main": "./dist/opentype.js",
+  "browser": "./dist/opentype.js",
+  "module": "./dist/opentype.module.js",
+  "scripts": {
+    "build": "npm run b:umd && npm run b:esm",
+    "dist": " npm run d:umd && npm run d:esm",
+    "test": "npm run build && npm run dist && mocha --require reify --recursive && npm run lint",
+    "lint": "eslint src",
+    "lint-fix": "eslint src --fix",
+    "start": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --target=es2018 --format=iife --out-extension:.js=.js      --global-name=opentype --footer:js=\"(function (root, factory) {\nif (typeof define === 'function' && define.amd)define(factory);\nelse if (typeof module === 'object' && module.exports)module.exports = factory();\nelse root.opentype = factory();\n}(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\" --watch --servedir=. --footer:js=\"new EventSource('/esbuild').addEventListener('change', () => location.reload())\"",
+    "b:umd": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --target=es2018 --format=iife --out-extension:.js=.js      --global-name=opentype --footer:js=\"(function (root, factory) {\nif (typeof define === 'function' && define.amd)define(factory);\nelse if (typeof module === 'object' && module.exports)module.exports = factory();\nelse root.opentype = factory();\n}(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\"",
+    "d:umd": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --target=es2018 --format=iife --out-extension:.js=.min.js  --global-name=opentype --footer:js=\"(function (root, factory) {\nif (typeof define === 'function' && define.amd)define(factory);\nelse if (typeof module === 'object' && module.exports)module.exports = factory();\nelse root.opentype = factory();\n}(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\" --minify --sourcemap",
+    "b:esm": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --target=es2018 --format=esm  --out-extension:.js=.module.js",
+    "d:esm": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --target=es2018 --format=esm  --out-extension:.js=.module.min.js --minify --sourcemap"
+  },
+  "devDependencies": {
+    "esbuild": "^0.17.7",
+    "eslint": "^8.34.0",
+    "mocha": "^8.4.0",
+    "reify": "^0.20.12"
+  },
   "bin": {
     "ot": "./bin/ot"
   },
-  "scripts": {
-    "start": "node ./bin/server.js",
-    "watch": "rollup -c -w",
-    "test": "mocha --require reify --recursive && jshint . && jscs .",
-    "build": "rollup -c",
-    "minify": "uglifyjs --source-map \"url='opentype.min.js.map'\" --compress --mangle --output ./dist/opentype.min.js -- ./dist/opentype.js",
-    "dist": "npm run test && npm run build && npm run minify"
-  },
   "files": [
-    "LICENSE",
-    "RELEASES.md",
-    "README.md",
-    "bin",
-    "dist",
-    "src"
+    "dist"
   ],
-  "engines": {
-    "node": ">= 8.0.0"
-  },
-  "devDependencies": {
-    "@babel/preset-env": "^7.20.2",
-    "@rollup/plugin-buble": "^1.0.2",
-    "@rollup/plugin-commonjs": "^24.0.1",
-    "@rollup/plugin-node-resolve": "^15.0.1",
-    "buble": "^0.20.0",
-    "cross-env": "^7.0.3",
-    "jscs": "^3.0.7",
-    "jshint": "^2.13.6",
-    "mocha": "^8.4.0",
-    "reify": "^0.20.12",
-    "rollup": "^3.14.0",
-    "rollup-plugin-license": "^3.0.1",
-    "uglify-js": "^3.17.4"
-  },
-  "browser": {
-    "fs": false
-  },
-  "dependencies": {
-    "string.prototype.codepointat": "^1.0.0",
-    "tiny-inflate": "^1.0.3"
+  "sideEffects": false,
+  "eslintConfig": {
+    "env": {
+      "browser": true,
+      "es2021": true,
+      "node": true
+    },
+    "extends": "eslint:recommended",
+    "parserOptions": {
+      "ecmaVersion": 2018,
+      "sourceType": "module"
+    },
+    "rules": {
+      "indent": [
+        "error",
+        4,
+        {
+          "SwitchCase": 1
+        }
+      ],
+      "linebreak-style": [
+        "error",
+        "unix"
+      ],
+      "quotes": [
+        "error",
+        "single"
+      ],
+      "semi": [
+        "error",
+        "always"
+      ]
+    }
   }
 }

@@ -2,7 +2,7 @@
  * Apply Latin ligature feature to a range of tokens
  */
 
-import { applyFeatureToRange } from '../commonFeatureUtils';
+import { applyFeatureToRange } from '../commonFeatureUtils.js';
 
 /**
  * Apply Latin required ligatures to a context range
