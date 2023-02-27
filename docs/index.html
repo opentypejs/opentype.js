@@ -4,7 +4,6 @@
     <title>opentype.js – JavaScript parser/writer for OpenType and TrueType fonts.</title>
     <meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
     <meta charset="utf-8">
-    <script src="/dist/opentype.js"></script>
     <link rel="stylesheet" href="site.css">
 </head>
 <body>
@@ -22,7 +21,7 @@
     </div>
 </div>
 
-<div class="container">
+<form class="container" name="demo">
 
     <div class="explain">
         opentype.js is an OpenType and TrueType font parser and writer.
@@ -30,17 +29,16 @@
     </div>
 
     <input id="file" type="file">
-    <span class="info" id="font-name">Fira Sans</span>
+    <output class="info" name="fontname">Fira Sans</output>
     <canvas id="preview" width="940" height="300" class="text"></canvas>
-    <div id="message"></div>
-    <input type="text" class="text-input" onkeyup="renderText()" value="Hello, World!"
-           autofocus id="textField">
-    <label>Font Size<input type="range" min="6" max="500" step="2" value="150" id="font-size-range" autocomplete="off"><span id="fontSize">150</span></label>
-    <label><input type="checkbox" onchange="drawPointsChanged(this)" checked="checked">Draw Points</label>
-    <label><input type="checkbox" onchange="drawMetricsChanged(this)">Draw Metrics</label>
-    <label><input type="checkbox" onchange="kerningChanged(this)" checked="checked">Kerning</label>
-    <label><input type="checkbox" onchange="ligaturesChanged(this)" checked="checked">Ligatures</label>
-    <label id="hinting-label" class="disabled"><input id="hinting-checkbox" type="checkbox" onchange="hintingChanged(this)" disabled="true">Hinting</label>
+    <output id="message"></output>
+    <input class="text-input" value="Hello, World!" autofocus name="textField">
+    <label>Font Size<input type="range" min="6" max="500" step="2" value="150" name="fontsize" autocomplete="off" oninput="nextElementSibling.innerText=value"><output>150</output></label>
+    <label><input type="checkbox" name="drawPoints" checked="checked">Draw Points</label>
+    <label><input type="checkbox" name="drawMetrics">Draw Metrics</label>
+    <label><input type="checkbox" name="kerning" checked="checked">Kerning</label>
+    <label><input type="checkbox" name="ligatures" checked="checked">Ligatures</label>
+    <label class="disabled"><input name="hinting" type="checkbox" onchange="hintingChanged(this)" disabled="true">Hinting</label>
 
     <hr>
 
@@ -49,10 +47,10 @@
     </div>
 
     <canvas id="snap" width="940" height="300" class="text"></canvas>
-    <label>Strength <input type="range" min="0" max="100" value="80" oninput="snapStrengthChanged(this)"/><span id="snapStrength">80</span></label>
-    <label>Distance<input type="range" min="1" max="100" value="53" oninput="snapDistanceChanged(this)"/><span id="snapDistance">53</span></label>
-    <label>X<input type="range" min="-100" max="100" value="0" oninput="snapXChanged(this)"/><span id="snapX">0</span></label>
-    <label>Y<input type="range" min="-100" max="100" value="0" oninput="snapYChanged(this)"/><span id="snapY">0</span></label>
+    <label>Strength <input type="range" min="0" max="100" value="80" name="snapStrength" oninput="nextElementSibling.innerText=value"/><output>80</output></label>
+    <label>Distance<input type="range" min="1" max="100" value="53" name="snapDistance" oninput="nextElementSibling.innerText=value"/><output>53</output></label>
+    <label>X<input type="range" min="-100" max="100" value="0" name="snapX" oninput="snextElementSibling.innerText=value"/><output>0</output></label>
+    <label>Y<input type="range" min="-100" max="100" value="0" name="snapY" oninput="snextElementSibling.innerText=value"/><output>0</output></label>
 
     <hr>
 
@@ -74,92 +72,25 @@
     </div>
 
     <hr>
-</div>
+</form>
 
 
-<script>
-var font = null;
-var fontSize = 150;
-var textToRender = "Hello, World!";
-var drawPoints = true;
-var drawMetrics = false;
-var kerning = true;
-var ligatures = true;
-var hinting = false;
-var previewPath = null;
-var snapPath = null;
-var snapStrength = 80;
-var snapDistance = 53;
-var snapX = 0;
-var snapY = 0;
-var fontSizeSlider = document.getElementById("font-size-range");
-var hintingCheckbox = document.getElementById("hinting-checkbox");
-var hintingLabel = document.getElementById("hinting-label");
+<script type="module">
+import * as opentype from "/dist/opentype.module.js";
 
-function drawPointsChanged(e) {
-    drawPoints = e.checked;
-    renderText();
-}
+const form = document.forms.demo;
+form.oninput = renderText;
+let font = null;
 
-function drawMetricsChanged(e) {
-    drawMetrics = e.checked;
-    renderText();
-}
-
-function kerningChanged(e) {
-    kerning = e.checked;
-    renderText();
-}
-
-function ligaturesChanged(e) {
-    ligatures = e.checked;
-    renderText();
-}
-
-function hintingChanged(e) {
-    hinting = e.checked;
-    renderText();
-}
-
-function fontSizeChanged() {
-    fontSize = parseInt(fontSizeSlider.value, 10);
-    document.getElementById('fontSize').innerHTML = '' + fontSize;
-    renderText();
-}
-
-function snapStrengthChanged(e) {
-    snapStrength = e.value;
-    document.getElementById('snapStrength').innerHTML = '' + snapStrength;
-    renderText();
-}
-
-function snapDistanceChanged(e) {
-    snapDistance = e.value;
-    document.getElementById('snapDistance').innerHTML = '' + snapDistance;
-    renderText();
-}
-
-function snapXChanged(e) {
-    snapX = e.value * 1.0;
-    document.getElementById('snapX').innerHTML = '' + snapX;
-    renderText();
-}
-
-function snapYChanged(e) {
-    snapY = e.value * 1.0;
-    document.getElementById('snapY').innerHTML = '' + snapY;
-    renderText();
-}
-
-// Round a value to the nearest "step".
-function snap(v, distance, strength) {
-    return (v * (1.0 - strength)) + (strength * Math.round(v / distance) * distance);
-}
 
 function doSnap(path) {
-    var i;
-    var strength = snapStrength / 100.0;
-    for (i = 0; i < path.commands.length; i++) {
+    // Round a value to the nearest "step".
+    const snap = (v, distance, strength) => (v * (1.0 - strength)) + (strength * Math.round(v / distance) * distance);
+    const strength = +form.snapStrength.value / 100.0;
+    const snapDistance = +form.snapDistance.value;
+    const snapX = +form.snapX.value;
+    const snapY = +form.snapY.value;
+    for (let i = 0; i < path.commands.length; i++) {
         var cmd = path.commands[i];
         if (cmd.type !== 'Z') {
             cmd.x = snap(cmd.x + snapX, snapDistance, strength) - snapX;
@@ -177,27 +108,29 @@ function doSnap(path) {
 }
 
 function renderText() {
+    const font = window.font;
     if (!font) return;
-    textToRender = document.getElementById('textField').value;
+    const textToRender = form.textField.value;
     var previewCtx = document.getElementById('preview').getContext('2d');
     var options = {
-        kerning: kerning,
-        hinting: hinting,
+        kerning: form.kerning.checked,
+        hinting: form.hinting.checked,
         features: {
-            liga: ligatures,
-            rlig: ligatures
+            liga: form.ligatures.checked,
+            rlig: form.ligatures.checked
         }
     };
     previewCtx.clearRect(0, 0, 940, 300);
+    const fontSize = +form.fontsize.value;
     font.draw(previewCtx, textToRender, 0, 200, fontSize, options);
-    if (drawPoints) {
+    if (form.drawPoints.checked) {
         font.drawPoints(previewCtx, textToRender, 0, 200, fontSize, options);
     }
-    if (drawMetrics) {
+    if (form.drawMetrics.checked) {
         font.drawMetrics(previewCtx, textToRender, 0, 200, fontSize, options);
     }
 
-    snapPath = font.getPath(textToRender, 0, 200, fontSize, options);
+    const snapPath = font.getPath(textToRender, 0, 200, fontSize, options);
     doSnap(snapPath);
     var snapCtx = document.getElementById('snap').getContext('2d');
     snapCtx.clearRect(0, 0, 940, 300);
@@ -246,25 +179,26 @@ function showErrorMessage(message) {
 }
 
 function onFontLoaded(font) {
-    var glyphsDiv, i, x, y, fontSize;
     window.font = font;
 
     // Show the first 100 glyphs.
-    glyphsDiv = document.getElementById('glyphs');
+    const glyphsDiv = document.getElementById('glyphs');
     glyphsDiv.innerHTML = '';
 
-    amount = Math.min(100, font.glyphs.length);
-    x = 50;
-    y = 120;
-    fontSize = 72;
-    for (i = 0; i < amount; i++) {
-        glyph = font.glyphs.get(i);
-        ctx = createGlyphCanvas(glyph, 150);
+    const amount = Math.min(100, font.glyphs.length);
+    const x = 50;
+    const y = 120;
+    const fontSize = 72;
+    for (let i = 0; i < amount; i++) {
+        const glyph = font.glyphs.get(i);
+        const ctx = createGlyphCanvas(glyph, 150);
         glyph.draw(ctx, x, y, fontSize);
         glyph.drawPoints(ctx, x, y, fontSize);
         glyph.drawMetrics(ctx, x, y, fontSize);
     }
 
+    const hintingCheckbox = form.hinting;
+    const hintingLabel = form.hinting.parentElement;
     if (font.hinting) {
         hintingCheckbox.disabled = false;
         hintingLabel.className = '';
@@ -277,49 +211,28 @@ function onFontLoaded(font) {
     renderText();
 }
 
-function onReadFile(e) {
-    document.getElementById('font-name').innerHTML = '';
-    var file = e.target.files[0];
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            font = opentype.parse(e.target.result);
-            onFontLoaded(font);
-            showErrorMessage('');
-        } catch (err) {
-            showErrorMessage(err.toString());
-        }
-    };
-    reader.onerror = function(err) {
+const fontFileName = 'fonts/FiraSansMedium.woff';
+form.fontname.innerText = fontFileName.split('/').reverse()[0];
+form.file.onchange = async function(e) {
+    form.fontname.innerText = '';
+    try {
+        const buf = e.target.files[0].arrayBuffer();
+        onFontLoaded(opentype.parse(await buf));
+        showErrorMessage('');
+    } catch (err) {
         showErrorMessage(err.toString());
-    };
-
-    reader.readAsArrayBuffer(file);
-}
-
-var fontFileName = 'fonts/FiraSansMedium.woff';
-
-document.getElementById('font-name').innerHTML = fontFileName.split('/')[1];
-
-var fileButton = document.getElementById('file');
-fileButton.addEventListener('change', onReadFile, false);
-
-// FireFox & Chrome fire the 'input' event continuously, then the 'change' event on mouse up.
-// IE 11 doesn't fire the 'input' event at all, but che 'change' event continuously.
-fontSizeSlider.addEventListener('input', fontSizeChanged, false);
-fontSizeSlider.addEventListener('change', fontSizeChanged, false);
+    }
+};
 
 enableHighDPICanvas('preview');
 enableHighDPICanvas('snap');
 
-opentype.load(fontFileName, function(err, font) {
-    var amount, glyph, ctx, x, y, fontSize;
-    if (err) {
-        showErrorMessage(err.toString());
-        return;
-    }
-    onFontLoaded(font);
-});
+const buf = await fetch(fontFileName).then(res => res.arrayBuffer());
+try {
+    onFontLoaded(opentype.parse(buf));
+} catch (err) {
+    showErrorMessage(err.toString());
+}
 </script>
 </body>
 </html>
