@@ -14,7 +14,10 @@ import cpal from './tables/cpal.js';
 import colr from './tables/colr.js';
 import cmap from './tables/cmap.js';
 import cff from './tables/cff.js';
+import stat from './tables/stat.js';
 import fvar from './tables/fvar.js';
+import gvar from './tables/gvar.js';
+import avar from './tables/avar.js';
 import glyf from './tables/glyf.js';
 import gdef from './tables/gdef.js';
 import gpos from './tables/gpos.js';
@@ -212,6 +215,9 @@ function parseBuffer(buffer, opt={}) {
 
     let cffTableEntry;
     let fvarTableEntry;
+    let statTableEntry;
+    let gvarTableEntry;
+    let avarTableEntry;
     let glyfTableEntry;
     let gdefTableEntry;
     let gposTableEntry;
@@ -227,6 +233,9 @@ function parseBuffer(buffer, opt={}) {
         const tableEntry = tableEntries[i];
         let table;
         switch (tableEntry.tag) {
+            case 'avar':
+                avarTableEntry = tableEntry;
+                break;
             case 'cmap':
                 table = uncompressTable(data, tableEntry);
                 font.tables.cmap = cmap.parse(table.data, table.offset);
@@ -239,6 +248,12 @@ function parseBuffer(buffer, opt={}) {
                 break;
             case 'fvar':
                 fvarTableEntry = tableEntry;
+                break;
+            case 'STAT':
+                statTableEntry = tableEntry;
+                break;
+            case 'gvar':
+                gvarTableEntry = tableEntry;
                 break;
             case 'fpgm' :
                 table = uncompressTable(data, tableEntry);
@@ -369,6 +384,30 @@ function parseBuffer(buffer, opt={}) {
     if (fvarTableEntry) {
         const fvarTable = uncompressTable(data, fvarTableEntry);
         font.tables.fvar = fvar.parse(fvarTable.data, fvarTable.offset, font.names);
+    }
+
+    if (statTableEntry) {
+        const statTable = uncompressTable(data, statTableEntry);
+        font.tables.stat = stat.parse(statTable.data, statTable.offset, font.tables.fvar);
+    }
+
+    if (gvarTableEntry) {
+        if (!fvarTableEntry) {
+            console.warn('This font provides a gvar table, but no fvar table, which is required for variable fonts.');
+        }
+        if (!glyfTableEntry) {
+            console.warn('This font provides a gvar table, but no glyf table. Glyph variation only works with TrueType outlines.');
+        }
+        const gvarTable = uncompressTable(data, gvarTableEntry);
+        font.tables.gvar = gvar.parse(gvarTable.data, gvarTable.offset, font.names);
+    }
+
+    if (avarTableEntry) {
+        if (!fvarTableEntry) {
+            console.warn('This font provides an avar table, but no fvar table, which is required for variable fonts.');
+        }
+        const avarTable = uncompressTable(data, avarTableEntry);
+        font.tables.avar = avar.parse(avarTable.data, avarTable.offset, font.tables.fvar);
     }
 
     if (metaTableEntry) {
