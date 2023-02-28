@@ -60,29 +60,40 @@ function renderSVG() {
     let svgBody = [];
 
     var glyphSet = new Set();
-    let x = 0;
-    const glyphs = font.stringToGlyphs(textToRender);
-    for (let i = 0; i < glyphs.length; i++) {
-        const glyph = glyphs[i];
+    let glyphData = [];
+
+    const fontSize = font.unitsPerEm;
+    let minWidth = 0;
+    font.forEachGlyph(textToRender, 0, 0, fontSize, {}, function(glyph, gX, gY, gFontSize) {
+        const glyphPath = glyph.getPath(gX, gY, gFontSize, {}, this);
+        const glyphWidth = glyph.getMetrics().xMax;
+        glyphData.push({glyph: glyph, path: glyphPath, gX, gY, w: glyphWidth});
+    });
+
+    for (let i = 0; i < glyphData.length; i++) {
+        const glyph = glyphData[i].glyph;
+        const path = glyphData[i].path;
         const symbolId = testcase + '.' + glyph.name;
         if (!glyphSet.has(glyph)) {
             glyphSet.add(glyph);
-            const svgPath = glyph.path.toSVG();
+            const svgPath = glyph.path.toSVG({optimize: true, decimalPlaces: 0, flipY: false});
             svgSymbols.push(`  <symbol id="${symbolId}" overflow="visible">${svgPath}</symbol>`);
         }
-        svgBody.push(`  <use xlink:href="#${symbolId}" x="${x}" y="0"/>`);
-        x += glyph.advanceWidth;
+        svgBody.push(`  <use xlink:href="#${symbolId}" x="${glyphData[i].gX}" y="${glyphData[i].gY}"/>`);
+        let xMax = glyphData[i].gX + glyph.advanceWidth;
+        if(xMax > minWidth) {
+            minWidth = xMax;
+        }
     }
 
     let minX = 0;
     let minY = Math.round(font.descender);
-    let width = Math.round(x);
     let height = Math.round(font.ascender - font.descender);
     let svgHeader = `<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1"
     xmlns="http://www.w3.org/2000/svg"
     xmlns:xlink="http://www.w3.org/1999/xlink"
-    viewBox="${minX} ${minY} ${width} ${height}">`;
+    viewBox="${minX} ${minY} ${minWidth} ${height}">`;
 
     return svgHeader + svgSymbols.join('\n') + svgBody.join('\n') + SVG_FOOTER;
 }

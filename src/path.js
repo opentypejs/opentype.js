@@ -16,6 +16,290 @@ function Path() {
     this.strokeWidth = 1;
 }
 
+function roundDecimal(float, places) {
+    return +(Math.round(float + 'e+' + places) + 'e-' + places);
+}
+
+function optimizeCommands(commands) {
+    // separate subpaths
+    let subpaths = [[]];
+    for (let i = 0; i < commands.length; i += 1) {
+        const subpath = subpaths[subpaths.length - 1];
+        const cmd = commands[i];
+        const firstCommand = subpath[0];
+        const secondCommand = subpath[1];
+        const previousCommand = subpath[subpath.length - 1];
+        subpath.push(cmd);
+        if (cmd.type === 'Z') {
+            // When closing at the same position as the path started,
+            // remove unnecessary line command
+            if (
+                firstCommand.type === 'M' &&
+                secondCommand.type === 'L' &&
+                previousCommand.type === 'L' &&
+                previousCommand.x === firstCommand.x &&
+                previousCommand.y === firstCommand.y
+            ) {
+                subpath.shift();
+                subpath[0].type = 'M';
+            }
+
+            if (i + 1 < commands.length) {
+                subpaths.push([]);
+            }
+        } else if (cmd.type === 'L') {
+            // remove lines that lead to the same position as the previous command
+            if (previousCommand.x === cmd.x && previousCommand.y === cmd.y) {
+                subpath.pop();
+            }
+        }
+    }
+    commands = [].concat.apply([], subpaths); // flatten again
+    return commands;
+}
+
+/**
+ * Returns options merged with the default options for parsing SVG data
+ * @param {object} options (optional)
+ */
+function createSVGParsingOptions(options) {
+    const defaultOptions = {
+        decimalPlaces: 2,
+        optimize: true,
+        flipY: true,
+        flipYBase: undefined,
+        scale: 1,
+        x: 0,
+        y: 0
+    };
+    const newOptions = Object.assign({}, defaultOptions, options);
+    return newOptions;
+}
+
+/**
+ * Returns options merged with the default options for outputting SVG data
+ * @param {object} options (optional)
+ */
+function createSVGOutputOptions(options) {
+    // accept number for backwards compatibility
+    // and in that case set flipY to false
+    if (parseInt(options) === options) {
+        options = { decimalPlaces: options, flipY: false };
+    }
+    const defaultOptions = {
+        decimalPlaces: 2,
+        optimize: true,
+        flipY: true,
+        flipYBase: undefined
+    };
+    const newOptions = Object.assign({}, defaultOptions, options);
+    return newOptions;
+}
+
+/**
+ * Sets the path data from an SVG path element or path notation
+ * @param  {string|SVGPathElement}
+ * @param  {object}
+ */
+Path.prototype.fromSVG = function(pathData, options = {}) {
+    if (typeof SVGPathElement !== 'undefined' && pathData instanceof SVGPathElement) {
+        pathData = pathData.getAttribute('d');
+    }
+
+    // set/merge default options
+    options = createSVGParsingOptions(options);
+
+    this.commands = [];
+
+    // TODO: a generator function could possibly increase performance and reduce memory usage,
+    // but our current build process doesn't allow to use those yet.
+    const number = '0123456789';
+    const supportedCommands = 'MmLlQqCcZzHhVv';
+    const unsupportedCommands = 'SsTtAa';
+    const sign = '-+';
+
+    let command = {};
+    let buffer = [''];
+
+    let isUnexpected = false;
+
+    function parseBuffer(buffer) {
+        return buffer.filter(b => b.length).map(b => {
+            let float = parseFloat(b);
+            if (options.decimalPlaces || options.decimalPlaces === 0) {
+                float = roundDecimal(float, options.decimalPlaces);
+            }
+            return float;
+        });
+    }
+
+    function makeRelative(buffer) {
+        if (!this.commands.length) {
+            return buffer;
+        }
+        const lastCommand = this.commands[this.commands.length - 1];
+        for (let i = 0; i < buffer.length; i++) {
+            buffer[i] += lastCommand[i & 1 ? 'y' : 'x'];
+        }
+        return buffer;
+    }
+
+    function applyCommand() {
+        // ignore empty commands
+        if (command.type === undefined) {
+            return;
+        }
+        const commandType = command.type.toUpperCase();
+        const relative = commandType !== 'Z' && command.type.toUpperCase() !== command.type;
+        let parsedBuffer = parseBuffer(buffer);
+        buffer = [''];
+        if (!parsedBuffer.length && commandType !== 'Z') {
+            return;
+        }
+        if (relative && commandType !== 'H' && commandType !== 'V') {
+            parsedBuffer = makeRelative.apply(this, [parsedBuffer]);
+        }
+
+        const currentX = this.commands.length ? this.commands[this.commands.length - 1].x || 0 : 0;
+        const currentY = this.commands.length ? this.commands[this.commands.length - 1].y || 0 : 0;
+
+        switch (commandType) {
+            case 'M':
+                this.moveTo(...parsedBuffer);
+                break;
+            case 'L':
+                this.lineTo(...parsedBuffer);
+                break;
+            case 'V':
+                // multiple values interpreted as consecutive commands
+                for (let i = 0; i < parsedBuffer.length; i++) {
+                    let offset = 0;
+                    if (relative) {
+                        offset = this.commands.length ? (this.commands[this.commands.length - 1].y || 0) : 0;
+                    }
+                    this.lineTo(currentX, parsedBuffer[i] + offset);
+                }
+                break;
+            case 'H':
+                // multiple values interpreted as consecutive commands
+                for (let i = 0; i < parsedBuffer.length; i++) {
+                    let offset = 0;
+                    if (relative) {
+                        offset = this.commands.length ? (this.commands[this.commands.length - 1].x || 0) : 0;
+                    }
+                    this.lineTo(parsedBuffer[i] + offset, currentY);
+                }
+                break;
+            case 'C':
+                this.bezierCurveTo(...parsedBuffer);
+                break;
+            case 'Q':
+                this.quadraticCurveTo(...parsedBuffer);
+                break;
+            case 'Z':
+                if (this.commands.length < 1 || this.commands[this.commands.length - 1].type !== 'Z') {
+                    this.close();
+                }
+                break;
+        }
+
+        if (this.commands.length) {
+            for (const prop in this.commands[this.commands.length - 1]) {
+                if (this.commands[this.commands.length - 1][prop] === undefined) {
+                    this.commands[this.commands.length - 1][prop] = 0;
+                }
+            }
+        }
+    }
+
+    for (let i = 0; i < pathData.length; i++) {
+        const token = pathData.charAt(i);
+        const lastBuffer = buffer[buffer.length - 1];
+        if (number.indexOf(token) > -1) {
+            buffer[buffer.length - 1] += token;
+        } else if (sign.indexOf(token) > -1) {
+            if (!command.type && !this.commands.length) {
+                command.type = 'L';
+            }
+
+            if (token === '-') {
+                if (!command.type || lastBuffer.indexOf('-') > 0) {
+                    isUnexpected = true;
+                } else if (lastBuffer.length) {
+                    buffer.push('-');
+                } else {
+                    buffer[buffer.length - 1] = token;
+                }
+            } else {
+                if (!command.type || lastBuffer.length > 0) {
+                    isUnexpected = true;
+                } else {
+                    continue;
+                }
+            }
+        } else if (supportedCommands.indexOf(token) > -1) {
+            if (command.type) {
+                applyCommand.apply(this);
+                command = { type: token };
+            } else {
+                command.type = token;
+            }
+        } else if (unsupportedCommands.indexOf(token) > -1) {
+            // TODO: try to interpolate commands not directly supported?
+            throw new Error('Unsupported path command: ' + token + '. Currently supported commands are ' + supportedCommands.split('').join(', ') + '.');
+        } else if (' ,\t\n\r\f\v'.indexOf(token) > -1) {
+            buffer.push('');
+        } else if (token === '.') {
+            if (!command.type || lastBuffer.indexOf(token) > -1) {
+                isUnexpected = true;
+            } else {
+                buffer[buffer.length - 1] += token;
+            }
+        } else {
+            isUnexpected = true;
+        }
+
+        if (isUnexpected) {
+            throw new Error('Unexpected character: ' + token + ' at offset ' + i);
+        }
+    }
+    applyCommand.apply(this);
+
+    if (options.optimize) {
+        this.commands = optimizeCommands(this.commands);
+    }
+
+    const flipY = options.flipY;
+    let flipYBase = options.flipYBase;
+    if (flipY === true && options.flipYBase === undefined) {
+        const boundingBox = this.getBoundingBox();
+        flipYBase = boundingBox.y1 + boundingBox.y2;
+    }
+    // apply x/y offset, flipping and scaling
+    for (const i in this.commands) {
+        const cmd = this.commands[i];
+        for (const prop in cmd) {
+            if (['x', 'x1', 'x2'].includes(prop)) {
+                this.commands[i][prop] = options.x + cmd[prop] * options.scale;
+            } else if (['y', 'y1', 'y2'].includes(prop)) {
+                this.commands[i][prop] = options.y + (flipY ? flipYBase - cmd[prop] : cmd[prop]) * options.scale;
+            }
+        }
+    }
+
+    return this;
+};
+
+/**
+ * Generates a new Path() from an SVG path element or path notation
+ * @param  {string|SVGPathElement}
+ * @param  {object}
+ */
+Path.fromSVG = function(path, options) {
+    const newPath = new Path();
+    return newPath.fromSVG(path, options);
+};
+
 /**
  * @param  {number} x
  * @param  {number} y
@@ -230,17 +514,18 @@ Path.prototype.draw = function(ctx) {
 /**
  * Convert the Path to a string of path data instructions
  * See http://www.w3.org/TR/SVG/paths.html#PathData
- * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
  * @return {string}
  */
-Path.prototype.toPathData = function(decimalPlaces) {
-    decimalPlaces = decimalPlaces !== undefined ? decimalPlaces : 2;
+Path.prototype.toPathData = function(options) {
+    // set/merge default options
+    options = createSVGOutputOptions(options);
 
     function floatToString(v) {
-        if (Math.round(v) === v) {
-            return '' + Math.round(v);
+        if (Math.round(v) === roundDecimal(v, options.decimalPlaces)) {
+            return '' + roundDecimal(v, options.decimalPlaces);
         } else {
-            return v.toFixed(decimalPlaces);
+            return roundDecimal(v, options.decimalPlaces).toFixed(options.decimalPlaces);
         }
     }
 
@@ -258,17 +543,50 @@ Path.prototype.toPathData = function(decimalPlaces) {
         return s;
     }
 
+    let commandsCopy = this.commands;
+    if (options.optimize) {
+        // apply path optimizations
+        commandsCopy = JSON.parse(JSON.stringify(this.commands)); // make a deep clone
+        commandsCopy = optimizeCommands(commandsCopy);
+    }
+
+    const flipY = options.flipY;
+    let flipYBase = options.flipYBase;
+    if (flipY === true && flipYBase === undefined) {
+        const tempPath = new Path();
+        tempPath.extend(commandsCopy);
+        const boundingBox = tempPath.getBoundingBox();
+        flipYBase = boundingBox.y1 + boundingBox.y2;
+    }
     let d = '';
-    for (let i = 0; i < this.commands.length; i += 1) {
-        const cmd = this.commands[i];
+    for (let i = 0; i < commandsCopy.length; i += 1) {
+        const cmd = commandsCopy[i];
         if (cmd.type === 'M') {
-            d += 'M' + packValues(cmd.x, cmd.y);
+            d += 'M' + packValues(
+                cmd.x,
+                flipY ? flipYBase - cmd.y : cmd.y
+            );
         } else if (cmd.type === 'L') {
-            d += 'L' + packValues(cmd.x, cmd.y);
+            d += 'L' + packValues(
+                cmd.x,
+                flipY ? flipYBase - cmd.y : cmd.y
+            );
         } else if (cmd.type === 'C') {
-            d += 'C' + packValues(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
+            d += 'C' + packValues(
+                cmd.x1,
+                flipY ? flipYBase - cmd.y1 : cmd.y1,
+                cmd.x2,
+                flipY ? flipYBase - cmd.y2 : cmd.y2,
+                cmd.x,
+                flipY ? flipYBase - cmd.y : cmd.y
+            );
         } else if (cmd.type === 'Q') {
-            d += 'Q' + packValues(cmd.x1, cmd.y1, cmd.x, cmd.y);
+            d += 'Q' + packValues(
+                cmd.x1,
+                flipY ? flipYBase - cmd.y1 : cmd.y1,
+                cmd.x,
+                flipY ? flipYBase - cmd.y : cmd.y
+            );
         } else if (cmd.type === 'Z') {
             d += 'Z';
         }
@@ -279,12 +597,16 @@ Path.prototype.toPathData = function(decimalPlaces) {
 
 /**
  * Convert the path to an SVG <path> element, as a string.
- * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {string} - will be calculated automatically, but can be provided from Glyph's wrapper function
  * @return {string}
  */
-Path.prototype.toSVG = function(decimalPlaces) {
+Path.prototype.toSVG = function(options, pathData) {
+    if (!pathData) {
+        pathData = this.toPathData(options);
+    }
     let svg = '<path d="';
-    svg += this.toPathData(decimalPlaces);
+    svg += pathData;
     svg += '"';
     if (this.fill && this.fill !== 'black') {
         if (this.fill === null) {
@@ -304,11 +626,15 @@ Path.prototype.toSVG = function(decimalPlaces) {
 
 /**
  * Convert the path to a DOM element.
- * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {string} - will be calculated automatically, but can be provided from Glyph's wrapper functionions object (or amount of decimal places for floating-point values for backwards compatibility)
  * @return {SVGPathElement}
  */
-Path.prototype.toDOMElement = function(decimalPlaces) {
-    const temporaryPath = this.toPathData(decimalPlaces);
+Path.prototype.toDOMElement = function(options, pathData) {
+    if (!pathData) {
+        pathData = this.toPathData(options);
+    }
+    const temporaryPath = pathData;
     const newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
     newPath.setAttribute('d', temporaryPath);
