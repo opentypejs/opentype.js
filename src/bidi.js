@@ -11,6 +11,8 @@ import arabicPresentationForms from './features/arab/arabicPresentationForms.js'
 import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures.js';
 import latinWordCheck from './features/latn/contextCheck/latinWord.js';
 import latinLigature from './features/latn/latinLigatures.js';
+import unicodeVariationSequenceCheck from './features/unicode/contextCheck/variationSequenceCheck.js';
+import unicodeVariationSequences from './features/unicode/variationSequences.js';
 
 /**
  * Create Bidi. features
@@ -38,7 +40,8 @@ Bidi.prototype.setText = function (text) {
 Bidi.prototype.contextChecks = ({
     latinWordCheck,
     arabicWordCheck,
-    arabicSentenceCheck
+    arabicSentenceCheck,
+    unicodeVariationSequenceCheck
 });
 
 /**
@@ -59,6 +62,7 @@ function tokenizeText() {
     registerContextChecker.call(this, 'latinWord');
     registerContextChecker.call(this, 'arabicWord');
     registerContextChecker.call(this, 'arabicSentence');
+    registerContextChecker.call(this, 'unicodeVariationSequence');
     return this.tokenizer.tokenize(this.text);
 }
 
@@ -178,6 +182,13 @@ function applyLatinLigatures() {
     });
 }
 
+function applyUnicodeVariationSequences() {
+    const ranges = this.tokenizer.getContextRanges('unicodeVariationSequence');
+    ranges.forEach(range => {
+        unicodeVariationSequences.call(this, range);
+    });
+}
+
 /**
  * Check if a context is registered
  * @param {string} contextId context id
@@ -199,6 +210,9 @@ Bidi.prototype.applyFeaturesToContexts = function () {
     }
     if (this.checkContextReady('arabicSentence')) {
         reverseArabicSentences.call(this);
+    }
+    if (this.checkContextReady('unicodeVariationSequence')) {
+        applyUnicodeVariationSequences.call(this);
     }
 };
 
