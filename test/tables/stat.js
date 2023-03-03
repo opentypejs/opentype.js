@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { hex, unhex } from '../testutil';
-import STAT from '../../src/tables/stat';
+import { hex, unhex } from '../testutil.js';
+import STAT from '../../src/tables/stat.js';
 
 describe('tables/stat.js', function() {
     // Style Attributes Header, v1.2
