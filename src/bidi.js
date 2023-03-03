@@ -14,6 +14,7 @@ import latinLigature from './features/latn/latinLigatures.js';
 import thaiWordCheck from './features/thai/contextCheck/thaiWord.js';
 import thaiGlyphComposition from './features/thai/thaiGlyphComposition.js';
 import thaiLigatures from './features/thai/thaiLigatures.js';
+import thaiRequiredLigatures from './features/thai/thaiRequiredLigatures.js';
 
 /**
  * Create Bidi. features
@@ -185,6 +186,7 @@ function applyThaiFeatures() {
     const ranges = this.tokenizer.getContextRanges('thaiWord');
     ranges.forEach(range => {
         if (this.hasFeatureEnabled('thai', 'liga')) thaiLigatures.call(this, range);
+        if (this.hasFeatureEnabled('thai', 'rlig')) thaiRequiredLigatures.call(this, range);
         if (this.hasFeatureEnabled('thai', 'ccmp')) thaiGlyphComposition.call(this, range);
     });
 

@@ -95,14 +95,14 @@ describe('bidi.js', function() {
         let bidiThai;
 
         before(()=> {
-            thaiFont = loadSync('./test/fonts/NotoSansThai-Medium.ttf');
+            thaiFont = loadSync('./test/fonts/NotoSansThai-Medium-Testing-v1.ttf');
             bidiThai = new Bidi();
             bidiThai.registerModifier(
                 'glyphIndex', null, token => thaiFont.charToGlyphIndex(token.char)
             );
             const requiredThaiFeatures = [{
                 script: 'thai',
-                tags: ['liga', 'ccmp']
+                tags: ['liga', 'rlig', 'ccmp']
             }];
             bidiThai.applyFeatures(thaiFont, requiredThaiFeatures);
         });
@@ -110,12 +110,17 @@ describe('bidi.js', function() {
         describe('thai features', () => {
             it('should apply glyph composition', () => {
                 let glyphIndexes = bidiThai.getTextGlyphs('่ํ');
-                assert.deepEqual(glyphIndexes, [63]);
+                assert.deepEqual(glyphIndexes, [451]);
             });
 
             it('should apply glyph ligatures', () => {
                 let glyphIndexes = bidiThai.getTextGlyphs('ฤๅ');
-                assert.deepEqual(glyphIndexes, [84]);
+                assert.deepEqual(glyphIndexes, [459]);
+            });
+
+            it('should apply glyph required ligatures', () => {
+                let glyphIndexes = bidiThai.getTextGlyphs('ลล');
+                assert.deepEqual(glyphIndexes, [352]);
             });
         });
 
