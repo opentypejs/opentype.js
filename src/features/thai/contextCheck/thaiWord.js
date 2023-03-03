@@ -1,4 +1,4 @@
-import { isThaiChar } from '../../../char';
+import { isThaiChar } from '../../../char.js';
 
 /**
  * Thai word context checkers

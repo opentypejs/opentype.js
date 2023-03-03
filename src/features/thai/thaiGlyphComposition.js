@@ -2,8 +2,8 @@
  * Apply Thai Glyph Composition feature to tokens
  */
 
-import { ContextParams } from '../../tokenizer';
-import applySubstitution from '../applySubstitution';
+import { ContextParams } from '../../tokenizer.js';
+import applySubstitution from '../applySubstitution.js';
 
 /**
   * Update context params
