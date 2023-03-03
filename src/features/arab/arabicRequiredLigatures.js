@@ -5,6 +5,9 @@
 import { ContextParams } from '../../tokenizer.js';
 import applySubstitution from '../applySubstitution.js';
 
+// @TODO: use commonFeatureUtils.js for reduction of code duplication
+// once #564 has been merged.
+
 /**
  * Update context params
  * @param {any} tokens a list of tokens
