@@ -8,14 +8,14 @@ function parseHmtxTableAll(data, start, numMetrics, numGlyphs, glyphs) {
     let advanceWidth;
     const p = new parse.Parser(data, start);
     for (let i = 0; i < numMetrics; i += 1) {
-          advanceWidth = p.parseUShort();  // 16 bits 
-         const   leftSideBearing = p.parseShort(); // 16 bits
+        advanceWidth = p.parseUShort();  // 16 bits 
+        const leftSideBearing = p.parseShort(); // 16 bits
 
         const glyph = glyphs.get(i);
         glyph.advanceWidth = advanceWidth;
         glyph.leftSideBearing = leftSideBearing;
     }
-// If numGlyphs > numMetrics
+    // If numGlyphs > numMetrics
     for (let i = numMetrics; i < numGlyphs; i += 1) {
         const glyph = glyphs.get(i);
         glyph.advanceWidth = advanceWidth;//same as from previous loop
@@ -36,8 +36,7 @@ function parseHmtxTableOnLowMemory(font, data, start, numMetrics, numGlyphs) {
             leftSideBearing: leftSideBearing,
         };
     }
-
-// If numGlyphs > numMetrics
+    // If numGlyphs > numMetrics
     for (let i = numMetrics; i < numGlyphs; i += 1) {
         font._hmtxTableData[i] = {
             advanceWidth: advanceWidth,//same as from previous loop
