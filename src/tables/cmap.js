@@ -183,7 +183,7 @@ function parseCmapTable(data, start) {
     } else if (cmap.format === 4) {
         parseCmapTableFormat4(cmap, p, data, start, offset);
     } else {
-        throw new Error('Only format 4 and 12 cmap tables are supported (found format ' + cmap.format + ').');
+        throw new Error('Only format 4, 12 and 14 cmap tables are supported (found format ' + cmap.format + ').');
     }
 
     // format 14 is the only one that's not exclusive but can be used as a supplement.
