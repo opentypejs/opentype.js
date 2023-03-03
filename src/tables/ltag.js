@@ -4,9 +4,9 @@
 // http://www.w3.org/International/articles/language-tags/
 // http://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
 
-import check from '../check';
-import parse from '../parse';
-import table from '../table';
+import check from '../check.js';
+import parse from '../parse.js';
+import table from '../table.js';
 
 function makeLtagTable(tags) {
     const result = new table.Table('ltag', [

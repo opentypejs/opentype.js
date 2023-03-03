@@ -1,6 +1,6 @@
 // Parsing utility functions
 
-import check from './check';
+import check from './check.js';
 
 // Retrieve an unsigned byte from the DataView.
 function getByte(dataView, offset) {
@@ -498,7 +498,11 @@ Parser.prototype.parseClassDef = function() {
             })
         };
     }
-    throw new Error('0x' + startOffset.toString(16) + ': ClassDef format must be 1 or 2.');
+
+    console.warn(`0x${startOffset.toString(16)}: This font file uses an invalid ClassDef format of ${format}. It might be corrupted and should be reacquired if it doesn't display as intended.`);
+    return {
+        format: format
+    };
 };
 
 ///// Static methods ///////////////////////////////////
@@ -546,6 +550,7 @@ Parser.uShort = Parser.offset16 = Parser.prototype.parseUShort;
 Parser.uShortList = Parser.prototype.parseUShortList;
 Parser.uLong = Parser.offset32 = Parser.prototype.parseULong;
 Parser.uLongList = Parser.prototype.parseULongList;
+Parser.fixed = Parser.prototype.parseFixed;
 Parser.struct = Parser.prototype.parseStruct;
 Parser.coverage = Parser.prototype.parseCoverage;
 Parser.classDef = Parser.prototype.parseClassDef;

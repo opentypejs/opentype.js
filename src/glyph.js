@@ -1,8 +1,8 @@
 // The Glyph object
 
-import check from './check';
-import draw from './draw';
-import Path from './path';
+import check from './check.js';
+import draw from './draw.js';
+import Path from './path.js';
 // import glyf from './tables/glyf' Can't be imported here, because it's a circular dependency
 
 function getPathDefinition(glyph, path) {
@@ -61,9 +61,19 @@ function Glyph(options) {
 Glyph.prototype.bindConstructorValues = function(options) {
     this.index = options.index || 0;
 
+    if (options.name === '.notdef') {
+        options.unicode = undefined;
+    } else if (options.name === '.null') {
+        options.unicode = 0;
+    }
+
+    if (options.unicode === 0 && options.name !== '.null') {
+        throw new Error('The unicode value "0" is reserved for the glyph name ".null" and cannot be used by any other glyph.');
+    }
+
     // These three values cannot be deferred for memory optimization:
     this.name = options.name || null;
-    this.unicode = options.unicode || undefined;
+    this.unicode = options.unicode;
     this.unicodes = options.unicodes || options.unicode !== undefined ? [options.unicode] : [];
 
     // But by binding these values only when necessary, we reduce can
@@ -167,11 +177,11 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
             p.lineTo(x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'Q') {
             p.quadraticCurveTo(x + (cmd.x1 * xScale), y + (-cmd.y1 * yScale),
-                               x + (cmd.x * xScale), y + (-cmd.y * yScale));
+                x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'C') {
             p.curveTo(x + (cmd.x1 * xScale), y + (-cmd.y1 * yScale),
-                      x + (cmd.x2 * xScale), y + (-cmd.y2 * yScale),
-                      x + (cmd.x * xScale), y + (-cmd.y * yScale));
+                x + (cmd.x2 * xScale), y + (-cmd.y2 * yScale),
+                x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'Z') {
             p.closePath();
         }

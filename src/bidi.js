@@ -3,17 +3,17 @@
  * the corresponding layout rules.
  */
 
-import Tokenizer from './tokenizer';
-import FeatureQuery from './features/featureQuery';
-import arabicWordCheck from './features/arab/contextCheck/arabicWord';
-import arabicSentenceCheck from './features/arab/contextCheck/arabicSentence';
-import arabicPresentationForms from './features/arab/arabicPresentationForms';
-import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures';
-import latinWordCheck from './features/latn/contextCheck/latinWord';
-import latinLigature from './features/latn/latinLigatures';
-import thaiWordCheck from './features/thai/contextCheck/thaiWord';
-import thaiGlyphComposition from './features/thai/thaiGlyphComposition';
-import thaiLigatures from './features/thai/thaiLigatures';
+import Tokenizer from './tokenizer.js';
+import FeatureQuery from './features/featureQuery.js';
+import arabicWordCheck from './features/arab/contextCheck/arabicWord.js';
+import arabicSentenceCheck from './features/arab/contextCheck/arabicSentence.js';
+import arabicPresentationForms from './features/arab/arabicPresentationForms.js';
+import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures.js';
+import latinWordCheck from './features/latn/contextCheck/latinWord.js';
+import latinLigature from './features/latn/latinLigatures.js';
+import thaiWordCheck from './features/thai/contextCheck/thaiWord.js';
+import thaiGlyphComposition from './features/thai/thaiGlyphComposition.js';
+import thaiLigatures from './features/thai/thaiLigatures.js';
 
 /**
  * Create Bidi. features
@@ -92,7 +92,7 @@ Bidi.prototype.registerFeatures = function (script, tags) {
     const supportedTags = tags.filter(
         tag => this.query.supports({script, tag})
     );
-    if (!this.featuresTags.hasOwnProperty(script)) {
+    if (!Object.prototype.hasOwnProperty.call(this.featuresTags, script)) {
         this.featuresTags[script] = supportedTags;
     } else {
         this.featuresTags[script] =
@@ -145,7 +145,7 @@ function checkGlyphIndexStatus() {
  */
 function applyArabicPresentationForms() {
     const script = 'arab';
-    if (!this.featuresTags.hasOwnProperty(script)) return;
+    if (!Object.prototype.hasOwnProperty.call(this.featuresTags, script)) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('arabicWord');
     ranges.forEach(range => {
