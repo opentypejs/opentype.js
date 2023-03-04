@@ -17,7 +17,8 @@ function Path() {
 }
 
 function roundDecimal(float, places) {
-    return +(Math.round(float + 'e+' + places) + 'e-' + places);
+    const shift = Math.pow(10, places);
+    return (Math.round(float * shift) / shift);
 }
 
 function optimizeCommands(commands) {
