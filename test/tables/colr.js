@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { hex, unhex } from '../testutil';
-import colr from '../../src/tables/colr';
+import { hex, unhex } from '../testutil.js';
+import colr from '../../src/tables/colr.js';
 
 describe('tables/colr.js', function () {
     const data = '00 00 00 02 00 00 00 0E 00 00 00 1A 00 03 ' +

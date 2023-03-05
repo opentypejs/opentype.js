@@ -1,7 +1,7 @@
 // The Layout object is the prototype of Substitution objects, and provides
 // utility methods to manipulate common layout tables (GPOS, GSUB, GDEF...)
 
-import check from './check';
+import check from './check.js';
 
 function searchTag(arr, tag) {
     /* jshint bitwise: false */
@@ -227,7 +227,7 @@ Layout.prototype = {
                 const lookupListIndexes = featureTable.lookupListIndexes;
                 for (let i = 0; i < lookupListIndexes.length; i++) {
                     const idx = `idx${lookupListIndexes[i]}`;
-                    if (lookupUnionList.hasOwnProperty(idx)) continue; // Skips a lookup table that is already on the processing list
+                    if (Object.prototype.hasOwnProperty.call(lookupUnionList, idx)) continue; // Skips a lookup table that is already on the processing list
                     lookupTable = allLookups[lookupListIndexes[i]];
                     if (!lookupTable) continue;
                     let validLookupType = supportedLookups.indexOf(lookupTable.lookupType) !== -1;
@@ -337,14 +337,16 @@ Layout.prototype = {
      */
     getGlyphClass: function(classDefTable, glyphIndex) {
         switch (classDefTable.format) {
-            case 1:
+            case 1: {
                 if (classDefTable.startGlyph <= glyphIndex && glyphIndex < classDefTable.startGlyph + classDefTable.classes.length) {
                     return classDefTable.classes[glyphIndex - classDefTable.startGlyph];
                 }
                 return 0;
-            case 2:
+            }
+            case 2: {
                 const range = searchRange(classDefTable.ranges, glyphIndex);
                 return range ? range.classId : 0;
+            }
         }
     },
 
@@ -357,12 +359,14 @@ Layout.prototype = {
      */
     getCoverageIndex: function(coverageTable, glyphIndex) {
         switch (coverageTable.format) {
-            case 1:
+            case 1: {
                 const index = binSearch(coverageTable.glyphs, glyphIndex);
                 return index >= 0 ? index : -1;
-            case 2:
+            }
+            case 2: {
                 const range = searchRange(coverageTable.ranges, glyphIndex);
                 return range ? range.index + glyphIndex - range.start : -1;
+            }
         }
     },
 

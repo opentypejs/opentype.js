@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { unhex } from '../testutil';
-import gpos from '../../src/tables/gpos';
+import { unhex } from '../testutil.js';
+import gpos from '../../src/tables/gpos.js';
 
 // Helper that builds a minimal GPOS table to test a lookup subtable.
 function parseLookup(lookupType, subTableData) {

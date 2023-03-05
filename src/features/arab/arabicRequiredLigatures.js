@@ -2,8 +2,11 @@
  * Apply Arabic required ligatures feature to a range of tokens
  */
 
-import { ContextParams } from '../../tokenizer';
-import applySubstitution from '../applySubstitution';
+import { ContextParams } from '../../tokenizer.js';
+import applySubstitution from '../applySubstitution.js';
+
+// @TODO: use commonFeatureUtils.js for reduction of code duplication
+// once #564 has been merged.
 
 /**
  * Update context params

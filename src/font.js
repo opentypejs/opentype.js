@@ -1,15 +1,35 @@
 // The Font object
 
-import Path from './path';
-import sfnt from './tables/sfnt';
-import { DefaultEncoding } from './encoding';
-import glyphset from './glyphset';
-import Position from './position';
-import Substitution from './substitution';
-import { isBrowser, checkArgument, arrayBufferToNodeBuffer } from './util';
-import HintingTrueType from './hintingtt';
-import Bidi from './bidi';
+import Path from './path.js';
+import sfnt from './tables/sfnt.js';
+import { DefaultEncoding } from './encoding.js';
+import glyphset from './glyphset.js';
+import Position from './position.js';
+import Substitution from './substitution.js';
+import { isBrowser, checkArgument } from './util.js';
+import HintingTrueType from './hintingtt.js';
+import Bidi from './bidi.js';
 import { kern, mark } from './features/positioning';
+
+function createDefaultNamesInfo(options) {
+    return {
+        fontFamily: {en: options.familyName || ' '},
+        fontSubfamily: {en: options.styleName || ' '},
+        fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
+        // postScriptName may not contain any whitespace
+        postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
+        designer: {en: options.designer || ' '},
+        designerURL: {en: options.designerURL || ' '},
+        manufacturer: {en: options.manufacturer || ' '},
+        manufacturerURL: {en: options.manufacturerURL || ' '},
+        license: {en: options.license || ' '},
+        licenseURL: {en: options.licenseURL || ' '},
+        version: {en: options.version || 'Version 0.1'},
+        description: {en: options.description || ' '},
+        copyright: {en: options.copyright || ' '},
+        trademark: {en: options.trademark || ' '}
+    };
+}
 
 /**
  * @typedef FontOptions
@@ -60,23 +80,10 @@ function Font(options) {
         checkArgument(options.descender <= 0, 'When creating a new Font object, negative descender value is required.');
 
         // OS X will complain if the names are empty, so we put a single space everywhere by default.
-        this.names = {
-            fontFamily: {en: options.familyName || ' '},
-            fontSubfamily: {en: options.styleName || ' '},
-            fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
-            // postScriptName may not contain any whitespace
-            postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
-            designer: {en: options.designer || ' '},
-            designerURL: {en: options.designerURL || ' '},
-            manufacturer: {en: options.manufacturer || ' '},
-            manufacturerURL: {en: options.manufacturerURL || ' '},
-            license: {en: options.license || ' '},
-            licenseURL: {en: options.licenseURL || ' '},
-            version: {en: options.version || 'Version 0.1'},
-            description: {en: options.description || ' '},
-            copyright: {en: options.copyright || ' '},
-            trademark: {en: options.trademark || ' '}
-        };
+        this.names = {};
+        this.names.unicode = createDefaultNamesInfo(options);
+        this.names.macintosh = createDefaultNamesInfo(options);
+        this.names.windows = createDefaultNamesInfo(options);
         this.unitsPerEm = options.unitsPerEm || 1000;
         this.ascender = options.ascender;
         this.descender = options.descender;
@@ -107,6 +114,7 @@ function Font(options) {
             if (this.outlinesFormat === 'truetype') {
                 return (this._hinting = new HintingTrueType(this));
             }
+            return null;
         }
     });
 }
@@ -169,8 +177,30 @@ Font.prototype.updateFeatures = function (options) {
 
 Font.prototype.getFeaturesConfig = function (options) {
     return options ?
-    this.updateFeatures(options.features) :
-    this.defaultRenderOptions.features;
+        this.updateFeatures(options.features) :
+        this.defaultRenderOptions.features;
+};
+
+/**
+ * Convert the given text to a list of Glyph indexes.
+ * Note that there is no strict one-to-one mapping between characters and
+ * glyphs, so the list of returned glyph indexes can be larger or smaller than the
+ * length of the given string.
+ * @param  {string}
+ * @param  {GlyphRenderOptions} [options]
+ * @return {number[]}
+ */
+Font.prototype.stringToGlyphIndexes = function(s, options) {
+    const bidi = new Bidi();
+
+    // Create and register 'glyphIndex' state modifier
+    const charToGlyphIndexMod = token => this.charToGlyphIndex(token.char);
+    bidi.registerModifier('glyphIndex', null, charToGlyphIndexMod);
+
+    const features = this.getFeaturesConfig(options);
+    bidi.applyFeatures(this, features);
+
+    return bidi.getTextGlyphs(s);
 };
 
 /**
@@ -183,17 +213,7 @@ Font.prototype.getFeaturesConfig = function (options) {
  * @return {opentype.Glyph[]}
  */
 Font.prototype.stringToGlyphs = function(s, options) {
-
-    const bidi = new Bidi();
-
-    // Create and register 'glyphIndex' state modifier
-    const charToGlyphIndexMod = token => this.charToGlyphIndex(token.char);
-    bidi.registerModifier('glyphIndex', null, charToGlyphIndexMod);
-
-    const features = this.getFeaturesConfig(options);
-    bidi.applyFeatures(this, features);
-
-    const indexes = bidi.getTextGlyphs(s);
+    const indexes = this.stringToGlyphIndexes(s, options);
 
     let length = indexes.length;
 
@@ -498,7 +518,7 @@ Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
  * @return {string}
  */
 Font.prototype.getEnglishName = function(name) {
-    const translations = this.names[name];
+    const translations = (this.names.unicode || this.names.macintosh || this.names.windows)[name];
     if (translations) {
         return translations.en;
     }
@@ -520,7 +540,7 @@ Font.prototype.validate = function() {
     function assertNamePresent(name) {
         const englishName = _this.getEnglishName(name);
         assert(englishName && englishName.trim().length > 0,
-               'No English ' + name + ' specified.');
+            'No English ' + name + ' specified.');
     }
 
     // Identification information
@@ -593,7 +613,11 @@ Font.prototype.download = function(fileName) {
         }
     } else {
         const fs = require('fs');
-        const buffer = arrayBufferToNodeBuffer(arrayBuffer);
+        const buffer = Buffer.alloc(arrayBuffer.byteLength);
+        const view = new Uint8Array(arrayBuffer);
+        for (let i = 0; i < buffer.length; ++i) {
+            buffer[i] = view[i];
+        }
         fs.writeFileSync(fileName, buffer);
     }
 };

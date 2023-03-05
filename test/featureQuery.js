@@ -1,7 +1,9 @@
 import assert from 'assert';
-import { loadSync } from '../src/opentype';
-import FeatureQuery from '../src/features/featureQuery';
-import { ContextParams } from '../src/tokenizer';
+import { parse } from '../src/opentype.js';
+import FeatureQuery from '../src/features/featureQuery.js';
+import { ContextParams } from '../src/tokenizer.js';
+import { readFileSync } from 'fs';
+const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('featureQuery.js', function() {
     let arabicFont;
@@ -12,14 +14,14 @@ describe('featureQuery.js', function() {
         /**
          * arab
          */
-        arabicFont = loadSync('./fonts/Scheherazade-Bold.ttf');
-        arabicFontChanga = loadSync('./fonts/Changa-Regular.ttf');
+        arabicFont = loadSync('./test/fonts/Scheherazade-Bold.ttf');
+        arabicFontChanga = loadSync('./test/fonts/Changa-Regular.ttf');
         query.arabic = new FeatureQuery(arabicFont);
         query.arabicChanga = new FeatureQuery(arabicFontChanga);
         /**
          * latin
          */
-        latinFont = loadSync('./fonts/FiraSansMedium.woff');
+        latinFont = loadSync('./test/fonts/FiraSansMedium.woff');
         query.latin = new FeatureQuery(latinFont);
     });
     describe('getScriptFeature', function () {

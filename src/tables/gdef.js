@@ -1,8 +1,8 @@
 // The `GDEF` table contains various glyph properties
 // https://docs.microsoft.com/en-us/typography/opentype/spec/gdef
 
-import check from '../check';
-import { Parser } from '../parse';
+import check from '../check.js';
+import { Parser } from '../parse.js';
 
 var attachList = function() {
     return {

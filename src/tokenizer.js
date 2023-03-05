@@ -85,7 +85,7 @@ function initializeCoreEvents(events) {
         });
     });
 
-    if (!!events) {
+    if (events) {
         coreEvents.forEach(eventId => {
             const event = events[eventId];
             if (typeof event === 'function') {
@@ -153,11 +153,11 @@ Tokenizer.prototype.composeRUD = function (RUDs) {
     ));
     const hasFAILObject = obj => (
         typeof obj === 'object' &&
-        obj.hasOwnProperty('FAIL')
+        Object.prototype.hasOwnProperty.call(obj, 'FAIL')
     );
     if (state.every(hasFAILObject)) {
         return {
-            FAIL: `composeRUD: one or more operations hasn't completed successfully`,
+            FAIL: 'composeRUD: one or more operations hasn\'t completed successfully',
             report: state.filter(hasFAILObject)
         };
     }
@@ -349,7 +349,7 @@ Tokenizer.prototype.getText = function () {
  */
 Tokenizer.prototype.getContext = function (contextName) {
     let context = this.registeredContexts[contextName];
-    return !!context ? context : null;
+    return context ? context : null;
 };
 
 /**
@@ -359,7 +359,7 @@ Tokenizer.prototype.getContext = function (contextName) {
  */
 Tokenizer.prototype.on = function(eventName, eventHandler) {
     const event = this.events[eventName];
-    if (!!event) {
+    if (event) {
         return event.subscribe(eventHandler);
     } else {
         return null;
@@ -388,17 +388,17 @@ Tokenizer.prototype.dispatch = function(eventName, args) {
  * TODO: call tokenize on registration to update context ranges with the new context.
  */
 Tokenizer.prototype.registerContextChecker = function(contextName, contextStartCheck, contextEndCheck) {
-    if (!!this.getContext(contextName)) return {
+    if (this.getContext(contextName)) return {
         FAIL:
         `context name '${contextName}' is already registered.`
     };
     if (typeof contextStartCheck !== 'function') return {
         FAIL:
-        `missing context start check.`
+        'missing context start check.'
     };
     if (typeof contextEndCheck !== 'function') return {
         FAIL:
-        `missing context end check.`
+        'missing context end check.'
     };
     const contextCheckers = new ContextChecker(
         contextName, contextStartCheck, contextEndCheck
@@ -426,7 +426,7 @@ Tokenizer.prototype.getRangeTokens = function(range) {
  */
 Tokenizer.prototype.getContextRanges = function(contextName) {
     const context = this.getContext(contextName);
-    if (!!context) {
+    if (context) {
         return context.ranges;
     } else {
         return { FAIL: `context checker '${contextName}' is not registered.` };
@@ -439,7 +439,7 @@ Tokenizer.prototype.getContextRanges = function(contextName) {
 Tokenizer.prototype.resetContextsRanges = function () {
     const registeredContexts = this.registeredContexts;
     for (const contextName in registeredContexts) {
-        if (registeredContexts.hasOwnProperty(contextName)) {
+        if (Object.prototype.hasOwnProperty.call(registeredContexts, contextName)) {
             const context = registeredContexts[contextName];
             context.ranges = [];
         }

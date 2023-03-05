@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { unhex } from './testutil';
-import { Parser } from '../src/parse';
+import { unhex } from './testutil.js';
+import { Parser } from '../src/parse.js';
 
 describe('parse.js', function() {
     describe('parseUShortList', function() {
@@ -369,6 +369,52 @@ describe('parse.js', function() {
                 { lookupType: 4, lookupFlag: 0x000c, subtables: [0x9abc], markFilteringSet: undefined },
             ]);
             assert.equal(p.relativeOffset, 2);
+        });
+    });
+
+    describe('parseDeltaSets', function() {
+        it('should parse DeltaSets without the LONG_WORDS flag', function() {
+            const data = '0123 4567 891A BCDE FADE C0FF EEEE';
+            const p = new Parser(unhex(data), 0);
+            assert.deepEqual(p.parseDeltaSets(4, 0x0000), [ 0x01, 0x23, 0x45, 0x67 ]);
+            assert.deepEqual(p.parseDeltaSets(3, 0x0001), [ 0x891A, 0xBC, 0xDE ]);
+            assert.deepEqual(p.parseDeltaSets(3, 0x0002), [ 0xFADE, 0xC0FF, 0xEE]);
+        });
+
+        it('should parse DeltaSets with the LONG_WORDS flag', function() {
+            const data = '0123 4567 891A BCDE FADE C0FF EEEE BA5E';
+            const p = new Parser(unhex(data), 0);
+            assert.deepEqual(p.parseDeltaSets(4, 0x8000), [ 0x0123, 0x4567, 0x891A, 0xBCDE ]);
+            assert.deepEqual(p.parseDeltaSets(3, 0x8001), [ 0xFADEC0FF, 0xEEEE, 0xBA5E ]);
+            p.relativeOffset = 8;
+            assert.deepEqual(p.parseDeltaSets(2, 0x8002), [ 0xFADEC0FF, 0xEEEEBA5E ]);
+        });
+    });
+
+    describe('parseVariationRegionList', function() {
+        it('should parse a VariationRegionList', function() {
+            // https://learn.microsoft.com/en-us/typography/opentype/spec/otvarcommonformats#variation-regions
+            const data = '0002 0002 ' + // axisCount: 2, regionCount: 2
+                'C000 E000 0000 ' + // variationRegions[0], regionAxes[0]
+                'C000 C000 E000 ' + // variationRegions[0], regionAxes[1]
+                'C000 C000 E000 ' + // variationRegions[1], regionAxes[0]
+                'C000 E000 0000 ';  // variationRegions[1], regionAxes[1]
+            const p = new Parser(unhex(data), 0);
+            assert.deepEqual(p.parseVariationRegionList(), [
+                {
+                    regionAxes: [
+                        { startCoord: -1.0, peakCoord: -0.5, endCoord: 0.0 },
+                        { startCoord: -1.0, peakCoord: -1.0, endCoord: -0.5 }
+                    ]
+                },
+                {
+                    regionAxes: [
+                        { startCoord: -1.0, peakCoord: -1.0, endCoord: -0.5 },
+                        { startCoord: -1.0, peakCoord: -0.5, endCoord: 0.0 }
+                    ]
+                }
+            ]);
+            assert.equal(p.relativeOffset, 28);
         });
     });
 });

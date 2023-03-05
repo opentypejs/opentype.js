@@ -1,8 +1,9 @@
 // The Substitution object provides utility methods to manipulate
 // the GSUB substitution table.
 
-import check from './check';
-import Layout from './layout';
+import check from './check.js';
+import Layout from './layout.js';
+import { arraysEqual } from './util.js';
 
 /**
  * @exports opentype.Substitution
@@ -16,16 +17,6 @@ function Substitution(font) {
         { featureName: 'rlig',  supportedLookups: [4] }
         // TODO: Define all supported features to use layout.getFeaturesLookups for a sequence ordered feature lookups
     ]);
-}
-
-// Check if 2 arrays of primitives are equal.
-function arraysEqual(ar1, ar2) {
-    const n = ar1.length;
-    if (n !== ar2.length) { return false; }
-    for (let i = 0; i < n; i++) {
-        if (ar1[i] !== ar2[i]) { return false; }
-    }
-    return true;
 }
 
 // Find the first subtable of a lookup table in a particular format.
@@ -322,7 +313,7 @@ Substitution.prototype.getFeature = function(feature, script, language) {
         case 'aalt':
         case 'salt':
             return this.getSingle(feature, script, language)
-                    .concat(this.getAlternates(feature, script, language));
+                .concat(this.getAlternates(feature, script, language));
         case 'dlig':
         case 'liga':
         case 'rlig':

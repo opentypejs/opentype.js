@@ -1,5 +1,7 @@
 import assert  from 'assert';
-import { loadSync, Glyph, Path } from '../src/opentype';
+import { parse, Glyph, Path } from '../src/opentype.js';
+import { readFileSync } from 'fs';
+const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('glyph.js', function() {
     describe('lazy loading', function() {
@@ -7,7 +9,7 @@ describe('glyph.js', function() {
         let glyph;
 
         before(function() {
-            font = loadSync('./fonts/Roboto-Black.ttf');
+            font = loadSync('./test/fonts/Roboto-Black.ttf');
             glyph = font.charToGlyph('A');
         });
 
@@ -37,8 +39,8 @@ describe('glyph.js', function() {
         let openTypeFont;
 
         before(function() {
-            trueTypeFont = loadSync('./fonts/Roboto-Black.ttf');
-            openTypeFont = loadSync('./fonts/FiraSansMedium.woff');
+            trueTypeFont = loadSync('./test/fonts/Roboto-Black.ttf');
+            openTypeFont = loadSync('./test/fonts/FiraSansMedium.woff');
         });
 
         it('calculates a box for a linear shape', function() {
@@ -96,7 +98,7 @@ describe('glyph.js on low memory mode', function() {
         let glyph;
 
         before(function() {
-            font = loadSync('./fonts/Roboto-Black.ttf', opt);
+            font = loadSync('./test/fonts/Roboto-Black.ttf', opt);
             glyph = font.charToGlyph('A');
         });
 
@@ -126,8 +128,8 @@ describe('glyph.js on low memory mode', function() {
         let openTypeFont;
 
         before(function() {
-            trueTypeFont = loadSync('./fonts/Roboto-Black.ttf', opt);
-            openTypeFont = loadSync('./fonts/FiraSansMedium.woff', opt);
+            trueTypeFont = loadSync('./test/fonts/Roboto-Black.ttf', opt);
+            openTypeFont = loadSync('./test/fonts/FiraSansMedium.woff', opt);
         });
 
         it('calculates a box for a linear shape', function() {

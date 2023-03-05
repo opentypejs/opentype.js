@@ -1,7 +1,8 @@
 import assert  from 'assert';
-import { Font, Path, Glyph } from '../src/opentype';
-import Position from '../src/position';
-import Substitution from '../src/substitution';
+import { Font, Path, Glyph } from '../src/opentype.js';
+import Layout  from '../src/layout.js';
+import Position from '../src/position.js';
+import Substitution from '../src/substitution.js';
 
 describe('layout.js', function() {
     let font;

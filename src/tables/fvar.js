@@ -1,29 +1,31 @@
 // The `fvar` table stores font variation axes and instances.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6fvar.html
 
-import check from '../check';
-import parse from '../parse';
-import table from '../table';
+import check from '../check.js';
+import parse from '../parse.js';
+import table from '../table.js';
+import { objectsEqual } from '../util.js';
 
 function addName(name, names) {
-    const nameString = JSON.stringify(name);
     let nameID = 256;
-    for (let nameKey in names) {
-        let n = parseInt(nameKey);
-        if (!n || n < 256) {
-            continue;
-        }
+    for (let platform in names) {
+        for (let nameKey in names[platform]) {
+            let n = parseInt(nameKey);
+            if (!n || n < 256) {
+                continue;
+            }
 
-        if (JSON.stringify(names[nameKey]) === nameString) {
-            return n;
-        }
+            if (objectsEqual(names[platform][nameKey], name)) {
+                return n;
+            }
 
-        if (nameID <= n) {
-            nameID = n + 1;
+            if (nameID <= n) {
+                nameID = n + 1;
+            }
         }
+        names[platform][nameID] = name;
     }
 
-    names[nameID] = name;
     return nameID;
 }
 
@@ -47,7 +49,7 @@ function parseFvarAxis(data, start, names) {
     axis.defaultValue = p.parseFixed();
     axis.maxValue = p.parseFixed();
     p.skip('uShort', 1);  // reserved for flags; no values defined
-    axis.name = names[p.parseUShort()] || {};
+    axis.name = (names.macintosh || names.windows || names.unicode)[p.parseUShort()] || {};
     return axis;
 }
 
@@ -73,7 +75,7 @@ function makeFvarInstance(n, inst, axes, names) {
 function parseFvarInstance(data, start, axes, names) {
     const inst = {};
     const p = new parse.Parser(data, start);
-    inst.name = names[p.parseUShort()] || {};
+    inst.name = (names.macintosh || names.windows || names.unicode)[p.parseUShort()] || {};
     p.skip('uShort', 1);  // reserved for flags; no values defined
 
     inst.coordinates = {};

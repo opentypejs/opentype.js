@@ -1,6 +1,6 @@
 // Parsing utility functions
 
-import check from './check';
+import check from './check.js';
 
 // Retrieve an unsigned byte from the DataView.
 function getByte(dataView, offset) {
@@ -84,6 +84,11 @@ const typeOffsets = {
     fixed: 4,
     longDateTime: 8,
     tag: 4
+};
+
+const masks = {
+    LONG_WORDS: 0x8000,
+    WORD_DELTA_COUNT_MASK: 0x7FFF
 };
 
 // A stateful parser that changes the offset whenever a value is retrieved.
@@ -566,7 +571,11 @@ Parser.prototype.parseClassDef = function() {
             })
         };
     }
-    throw new Error('0x' + startOffset.toString(16) + ': ClassDef format must be 1 or 2.');
+
+    console.warn(`0x${startOffset.toString(16)}: This font file uses an invalid ClassDef format of ${format}. It might be corrupted and should be reacquired if it doesn't display as intended.`);
+    return {
+        format: format
+    };
 };
 
 ///// Static methods ///////////////////////////////////
@@ -614,6 +623,8 @@ Parser.uShort = Parser.offset16 = Parser.prototype.parseUShort;
 Parser.uShortList = Parser.prototype.parseUShortList;
 Parser.uLong = Parser.offset32 = Parser.prototype.parseULong;
 Parser.uLongList = Parser.prototype.parseULongList;
+Parser.fixed = Parser.prototype.parseFixed;
+Parser.f2Dot14 = Parser.prototype.parseF2Dot14;
 Parser.struct = Parser.prototype.parseStruct;
 Parser.coverage = Parser.prototype.parseCoverage;
 Parser.anchor = Parser.prototype.parseAnchorPoint;
@@ -677,6 +688,83 @@ Parser.prototype.parseFeatureVariationsList = function() {
         });
         return featureVariations;
     }) || [];
+};
+
+// VariationStore, ItemVariationStore, VariationRegionList, regionAxes, ItemVariationSubtables ...
+// https://learn.microsoft.com/en-us/typography/opentype/spec/otvarcommonformats
+// https://learn.microsoft.com/en-us/typography/opentype/spec/otvarcommonformats#item-variation-store-header-and-item-variation-data-subtables
+
+Parser.prototype.parseVariationStore = function() {
+    const vsOffset = this.relativeOffset;
+    const length = this.parseUShort();
+    const variationStore = {
+        itemVariationStore: this.parseItemVariationStore()
+    };
+    this.relativeOffset = vsOffset + length + 2; // + 2 for length field
+    return variationStore;
+};
+
+Parser.prototype.parseItemVariationStore = function() {
+    const itemStoreOffset = this.relativeOffset;
+    const iVStore = {
+        format: this.parseUShort(),
+        variationRegions: [],
+        itemVariationSubtables: []
+    };
+
+    const variationRegionListOffset = this.parseOffset32();
+    const itemVariationDataCount = this.parseUShort();
+    const itemVariationDataOffsets = this.parseULongList(itemVariationDataCount);    
+    
+    this.relativeOffset = itemStoreOffset + variationRegionListOffset;
+    iVStore.variationRegions = this.parseVariationRegionList();
+    
+    for( let i = 0; i < itemVariationDataCount; i++ ) {
+        const subtableOffset = itemVariationDataOffsets[i];
+        this.relativeOffset = itemStoreOffset + subtableOffset;
+        iVStore.itemVariationSubtables.push(this.parseItemVariationSubtable());
+    }
+
+    return iVStore;
+};
+
+Parser.prototype.parseVariationRegionList = function() {
+    const axisCount = this.parseUShort();
+    const regionCount = this.parseUShort();
+    return  this.parseRecordList(regionCount, {
+        regionAxes: Parser.recordList(axisCount, {
+            startCoord: Parser.f2Dot14,
+            peakCoord: Parser.f2Dot14,
+            endCoord: Parser.f2Dot14,
+        })
+    });
+};
+
+Parser.prototype.parseItemVariationSubtable = function() {
+    const itemCount = this.parseUShort();
+    const wordDeltaCount = this.parseUShort();
+
+    const subtable = {
+        regionIndexes: this.parseUShortList(),
+        deltaSets: this.parseDeltaSets(itemCount, wordDeltaCount)
+    };
+
+    return subtable;
+};
+
+Parser.prototype.parseDeltaSets = function(itemCount, wordDeltaCount) {
+    const deltas = [];
+    const longFlag = wordDeltaCount & masks.LONG_WORDS;
+    const wordCount = wordDeltaCount & masks.WORD_DELTA_COUNT_MASK;
+
+    const wordParser = (longFlag ? this.parseULong : this.parseUShort).bind(this);
+    const restParser = (longFlag ? this.parseUShort : this.parseByte).bind(this);
+    for( let i = 0; i < itemCount; i++ ) {
+        const deltaParser = i < wordCount ? wordParser : restParser;
+        deltas.push(deltaParser());
+    }
+
+    return deltas;
 };
 
 export default {

@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { hex, unhex } from './testutil';
-import { decode, encode, sizeOf } from '../src/types';
+import { hex, unhex } from './testutil.js';
+import { decode, encode, sizeOf } from '../src/types.js';
 
 describe('types.js', function() {
     it('can handle BYTE', function() {
@@ -51,6 +51,23 @@ describe('types.js', function() {
     it('can handle FIXED', function() {
         assert.equal(hex(encode.FIXED(0xBEEFCAFE)), 'BE EF CA FE');
         assert.equal(sizeOf.FIXED(0xBEEFCAFE), 4);
+    });
+
+    it('can handle FLOAT', function() {
+        assert.equal(hex(encode.FLOAT(123.456)), '00 7B 74 BC');
+        assert.equal(sizeOf.FLOAT(123.456), 4);
+        assert.equal(hex(encode.FLOAT(-123.456)), 'FF 84 8B 44');
+        assert.equal(sizeOf.FLOAT(-123.456), 4);
+    });
+
+    it('handles the range guard for FLOAT (16.16) representation', function() {
+        const MIN_16_16 = -(1 << 15);
+        const MAX_16_16 = (1 << 15) - 1 + (1 / (1 << 16));
+        const error = /outside the range/;
+        assert.doesNotThrow(function() {encode.FLOAT(MIN_16_16);}, error);
+        assert.doesNotThrow(function() {encode.FLOAT(MAX_16_16);}, error);
+        assert.throws(function() {encode.FLOAT(MIN_16_16 - 0.001);}, error);
+        assert.throws(function() {encode.FLOAT(MAX_16_16 + 0.001);}, error);
     });
 
     it('can handle FWORD', function() {
