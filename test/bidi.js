@@ -87,5 +87,14 @@ describe('bidi.js', function() {
             assert.deepEqual(glyphIndexes, [1145]);
         });
     });
+
+    describe('Unicode Variation Sequences (UVSes)', function() {
+        it('should be handled correctly', function() {
+            const font = loadSync('./test/fonts/TestCMAP14.otf');
+            // the string '芦芦󠄀芦󠄁芦󠄂≩≩︀', containing (invisible) variation selectors after some of the characters
+            const string = [33446, 33446, 917760, 33446, 917761, 33446, 917762, 8809, 8809, 65024].map(p => String.fromCodePoint(p)).join('');
+            assert.deepEqual(font.stringToGlyphIndexes(string), [1, 1, 2, 1, 4, 3]);
+        });
+    });
 });
 
