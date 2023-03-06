@@ -546,16 +546,17 @@ Parser.prototype.parseAnchorPoint = function() {
                 yCoordinate: this.parseShort(),
                 anchorPoint: this.parseUShort()
             };
-
-        // TODO: Add a support Device offsets
-        // https://learn.microsoft.com/en-us/typography/opentype/otspec191alpha/gpos_delta#anchor-table-format-3-design-units-plus-device-or-variationindex-tables
         case 3:
             return {
                 format,
                 xCoordinate: this.parseShort(),
                 yCoordinate: this.parseShort(),
-                xDevice: 0x00,
-                yDevice: 0x00,
+                /**
+                 * TODO: Support xDevice & yDevice offsets by parsing pointers at location
+                 * https://learn.microsoft.com/en-us/typography/opentype/otspec191alpha/gpos_delta#anchor-table-format-3-design-units-plus-device-or-variationindex-tables
+                 */
+                xDevice: this.parseUShort(), // offset
+                yDevice: this.parseUShort(), // offset
             };
     }
 

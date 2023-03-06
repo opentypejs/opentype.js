@@ -214,7 +214,7 @@ Layout.prototype = {
             return [];
         }
 
-        // Fitler out only supported by layout table features
+        // Filter out only supported by layout table features
         requestedFeatures = this.supportedFeatures.filter(f => requestedFeatures.includes(f.featureName));
 
         const lookupUnionList = {};
