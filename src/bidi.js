@@ -15,6 +15,8 @@ import thaiWordCheck from './features/thai/contextCheck/thaiWord.js';
 import thaiGlyphComposition from './features/thai/thaiGlyphComposition.js';
 import thaiLigatures from './features/thai/thaiLigatures.js';
 import thaiRequiredLigatures from './features/thai/thaiRequiredLigatures.js';
+import unicodeVariationSequenceCheck from './features/unicode/contextCheck/variationSequenceCheck.js';
+import unicodeVariationSequences from './features/unicode/variationSequences.js';
 
 /**
  * Create Bidi. features
@@ -43,7 +45,8 @@ Bidi.prototype.contextChecks = ({
     latinWordCheck,
     arabicWordCheck,
     arabicSentenceCheck,
-    thaiWordCheck
+    thaiWordCheck,
+    unicodeVariationSequenceCheck
 });
 
 /**
@@ -65,6 +68,7 @@ function tokenizeText() {
     registerContextChecker.call(this, 'arabicWord');
     registerContextChecker.call(this, 'arabicSentence');
     registerContextChecker.call(this, 'thaiWord');
+    registerContextChecker.call(this, 'unicodeVariationSequence');
     return this.tokenizer.tokenize(this.text);
 }
 
@@ -178,6 +182,13 @@ function applyLatinLigatures() {
     });
 }
 
+function applyUnicodeVariationSequences() {
+    const ranges = this.tokenizer.getContextRanges('unicodeVariationSequence');
+    ranges.forEach(range => {
+        unicodeVariationSequences.call(this, range);
+    });
+}
+
 /**
  * Apply available thai features
  */
@@ -219,6 +230,9 @@ Bidi.prototype.applyFeaturesToContexts = function () {
     }
     if (this.checkContextReady('thaiWord')) {
         applyThaiFeatures.call(this);
+    }
+    if (this.checkContextReady('unicodeVariationSequence')) {
+        applyUnicodeVariationSequences.call(this);
     }
 };
 

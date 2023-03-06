@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { hex, unhex } from '../testutil';
-import avar from '../../src/tables/avar';
+import { hex, unhex } from '../testutil.js';
+import avar from '../../src/tables/avar.js';
 
 describe('tables/avar.js', function() {
     const fvar = {axes: [
