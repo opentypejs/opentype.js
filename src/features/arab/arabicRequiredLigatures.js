@@ -26,18 +26,19 @@ function arabicRequiredLigatures(range) {
     const script = 'arab';
     let tokens = this.tokenizer.getRangeTokens(range);
     let contextParams = getContextParams(tokens);
-    contextParams.context.forEach((glyphIndex, index) => {
+    for (let index = 0; index < contextParams.context.length; index++) {
         contextParams.setCurrentIndex(index);
         let substitutions = this.query.lookupFeature({
             tag: 'rlig', script, contextParams
         });
         if (substitutions.length) {
-            substitutions.forEach(
-                action => applySubstitution(action, tokens, index)
-            );
+            for(let i = 0; i < substitutions.length; i++) {
+                const action = substitutions[i];
+                applySubstitution(action, tokens, index);
+            }
             contextParams = getContextParams(tokens);
         }
-    });
+    }
 }
 
 export default arabicRequiredLigatures;
