@@ -80,7 +80,8 @@
         "error",
         "always"
       ],
-      "local-rules/ban-foreach": 2
+      "local-rules/ban-foreach": 2,
+      "local-rules/import-extensions": 2
     }
   },
   "dependencies": {
