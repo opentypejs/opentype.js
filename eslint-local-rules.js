@@ -4,10 +4,6 @@ module.exports = {
   'ban-foreach': {
     meta: {
       type: 'suggestion',
-      docs: {
-        description: 'Use `for()` loops instead of `.forEach()`',
-        category: 'Performance',
-      },
       schema: [],
     },
     create(context) {
@@ -20,4 +16,28 @@ module.exports = {
       }
     },
   },
+  'import-extensions': {
+    meta: {
+      type: 'problem',
+      schema: []
+    },
+    create(context) {
+      const checkImportPath = (node) => {
+        const importPath = node.source.value;
+        const isRelative = importPath.startsWith('.') || importPath.startsWith('/');
+        const extensionMissing = require('path').extname(importPath) === '';
+        if (!isRelative || !extensionMissing) {
+          return;
+        }
+        context.report({
+          node: node.source,
+          message: 'Import paths require a file extension to work in browser module context'
+        });
+      };
+
+      return {
+        ImportDeclaration: checkImportPath
+      };
+    },
+  }
 };
