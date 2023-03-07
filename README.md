@@ -257,6 +257,9 @@ Blue lines indicate the glyph bounding box.
 Green line indicates the advance width of the glyph.
 The arguments are the same as `Glyph.draw`.
 
+##### `Glyph.toPathData(options)`, `Glyph.toDOMElement(options)`, `Glyph.toSVG(options)`, `Glyph.fromSVG(pathData, options)`,
+These are currently only wrapper functions for their counterparts on Path objects (see documentation there), but may be extended in the future to pass on Glyph data for automatic calculation.
+
 ### The Path object
 Once you have a path through `Font.getPath` or `Glyph.getPath`, you can use it.
 
@@ -273,14 +276,35 @@ Draw the path on the given 2D context. This uses the `fill`, `stroke` and `strok
 Calculate the minimum bounding box for the given path. Returns an `opentype.BoundingBox` object that contains x1/y1/x2/y2.
 If the path is empty (e.g. a space character), all coordinates will be zero.
 
-##### `Path.toPathData(decimalPlaces)`
+##### `Path.toPathData(options)`
 Convert the Path to a string of path data instructions.
 See https://www.w3.org/TR/SVG/paths.html#PathData
-* `decimalPlaces`: The amount of decimal places for floating-point values. (default: 2)
+* `options`:
+  * `decimalPlaces`: The amount of decimal places for floating-point values. (default: 2)
+  * `optimize`: apply some optimizations to the path data, e.g. removing unnecessary/duplicate commands (true/false, default: true)
+  * `flipY`: whether to flip the Y axis of the path data, because SVG and font paths use inverted Y axes. (true: calculate from bounding box, false: disable; default: true)
+  * `flipYBase`: Base value for the base flipping calculation. You'll probably want to calculate this from the font's ascender and descender values. (default: automatically calculate from the path data's bounding box)
 
-##### `Path.toSVG(decimalPlaces)`
+
+##### `Path.toSVG(options)`
 Convert the path to a SVG &lt;path&gt; element, as a string.
-* `decimalPlaces`: The amount of decimal places for floating-point values. (default: 2)
+* `options`: see Path.toPathData
+
+##### `Path.fromSVG(pathData, options)`
+Retrieve path from SVG path data. Either overwriting the path data for an existing path
+```js
+const path = new Path();
+path.fromSVG('M0 0');
+```
+or creating a new Path directly:
+```js
+const path = Path.fromSVG('M0 0');
+```
+* `pathData`: Either a string of SVG path commands, or (only in browser context) an `SVGPathElement`
+* `options`:
+  * `decimalPlaces`, `optimize`, `flipY`, `flipYBase`: see Path.toPathData
+  * `scale`: scaling value applied to all command coordinates (default: 1)
+  * `x`/`y`: offset applied to all command coordinates on the x or y axis (default: 0)
 
 #### Path commands
 * **Move To**: Move to a new position. This creates a new contour. Example: `{type: 'M', x: 100, y: 200}`
