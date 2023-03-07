@@ -200,12 +200,12 @@ function applyUnicodeVariationSequences() {
 function applyThaiFeatures() {
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('thaiWord');
-    ranges.forEach(range => {
+    for(let i = 0; i < ranges.length; i++) {
+        const range = ranges[i];
         if (this.hasFeatureEnabled('thai', 'liga')) thaiLigatures.call(this, range);
         if (this.hasFeatureEnabled('thai', 'rlig')) thaiRequiredLigatures.call(this, range);
         if (this.hasFeatureEnabled('thai', 'ccmp')) thaiGlyphComposition.call(this, range);
-    });
-
+    }
 }
 
 /**
