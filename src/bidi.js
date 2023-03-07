@@ -11,6 +11,10 @@ import arabicPresentationForms from './features/arab/arabicPresentationForms.js'
 import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures.js';
 import latinWordCheck from './features/latn/contextCheck/latinWord.js';
 import latinLigature from './features/latn/latinLigatures.js';
+import thaiWordCheck from './features/thai/contextCheck/thaiWord.js';
+import thaiGlyphComposition from './features/thai/thaiGlyphComposition.js';
+import thaiLigatures from './features/thai/thaiLigatures.js';
+import thaiRequiredLigatures from './features/thai/thaiRequiredLigatures.js';
 import unicodeVariationSequenceCheck from './features/unicode/contextCheck/variationSequenceCheck.js';
 import unicodeVariationSequences from './features/unicode/variationSequences.js';
 
@@ -41,6 +45,7 @@ Bidi.prototype.contextChecks = ({
     latinWordCheck,
     arabicWordCheck,
     arabicSentenceCheck,
+    thaiWordCheck,
     unicodeVariationSequenceCheck
 });
 
@@ -62,6 +67,7 @@ function tokenizeText() {
     registerContextChecker.call(this, 'latinWord');
     registerContextChecker.call(this, 'arabicWord');
     registerContextChecker.call(this, 'arabicSentence');
+    registerContextChecker.call(this, 'thaiWord');
     registerContextChecker.call(this, 'unicodeVariationSequence');
     return this.tokenizer.tokenize(this.text);
 }
@@ -156,10 +162,7 @@ function applyArabicPresentationForms() {
  * Apply required arabic ligatures
  */
 function applyArabicRequireLigatures() {
-    const script = 'arab';
-    if (!Object.prototype.hasOwnProperty.call(this.featuresTags, script)) return;
-    const tags = this.featuresTags[script];
-    if (tags.indexOf('rlig') === -1) return;
+    if (!this.hasFeatureEnabled('arab', 'rlig')) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('arabicWord');
     ranges.forEach(range => {
@@ -171,10 +174,7 @@ function applyArabicRequireLigatures() {
  * Apply required arabic ligatures
  */
 function applyLatinLigatures() {
-    const script = 'latn';
-    if (!Object.prototype.hasOwnProperty.call(this.featuresTags, script)) return;
-    const tags = this.featuresTags[script];
-    if (tags.indexOf('liga') === -1) return;
+    if (!this.hasFeatureEnabled('latn', 'liga')) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('latinWord');
     ranges.forEach(range => {
@@ -190,6 +190,20 @@ function applyUnicodeVariationSequences() {
 }
 
 /**
+ * Apply available thai features
+ */
+function applyThaiFeatures() {
+    checkGlyphIndexStatus.call(this);
+    const ranges = this.tokenizer.getContextRanges('thaiWord');
+    ranges.forEach(range => {
+        if (this.hasFeatureEnabled('thai', 'liga')) thaiLigatures.call(this, range);
+        if (this.hasFeatureEnabled('thai', 'rlig')) thaiRequiredLigatures.call(this, range);
+        if (this.hasFeatureEnabled('thai', 'ccmp')) thaiGlyphComposition.call(this, range);
+    });
+
+}
+
+/**
  * Check if a context is registered
  * @param {string} contextId context id
  */
@@ -199,6 +213,9 @@ Bidi.prototype.checkContextReady = function (contextId) {
 
 /**
  * Apply features to registered contexts
+ *
+ * - A Glyph Composition (ccmp) feature should be always applied
+ * https://learn.microsoft.com/en-us/typography/opentype/spec/features_ae#tag-ccmp
  */
 Bidi.prototype.applyFeaturesToContexts = function () {
     if (this.checkContextReady('arabicWord')) {
@@ -211,9 +228,22 @@ Bidi.prototype.applyFeaturesToContexts = function () {
     if (this.checkContextReady('arabicSentence')) {
         reverseArabicSentences.call(this);
     }
+    if (this.checkContextReady('thaiWord')) {
+        applyThaiFeatures.call(this);
+    }
     if (this.checkContextReady('unicodeVariationSequence')) {
         applyUnicodeVariationSequences.call(this);
     }
+};
+
+/**
+ * Check whatever feature is successfully enabled for a script
+ * @param {string} script
+ * @param {string} tag feature name
+ * @returns {boolean}
+ */
+Bidi.prototype.hasFeatureEnabled = function(script, tag) {
+    return (this.featuresTags[script] || []).indexOf(tag) !== -1;
 };
 
 /**
