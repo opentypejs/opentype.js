@@ -100,6 +100,7 @@ describe('font.js', function() {
             assert.deepStrictEqual(configResult, [
                 { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
                 { script: 'latn', tags: ['liga', 'rlig'] },
+                { script: 'thai', tags: ['liga', 'rlig', 'ccmp'] },
                 { script: 'DFLT', tags: ['mark'] },
             ]);
         });
@@ -111,6 +112,7 @@ describe('font.js', function() {
             assert.deepStrictEqual(configResult, [
                 { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
                 { script: 'latn', tags: ['liga', 'rlig'] },
+                { script: 'thai', tags: ['liga', 'rlig', 'ccmp'] },
                 { script: 'DFLT', tags: ['mark'] },
             ]);
         });
@@ -123,6 +125,7 @@ describe('font.js', function() {
             assert.deepStrictEqual(configResult, [
                 { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
                 { script: 'latn', tags: [] },
+                { script: 'thai', tags: ['liga', 'rlig', 'ccmp'] },
                 { script: 'DFLT', tags: [] },
             ]);
 
@@ -133,6 +136,7 @@ describe('font.js', function() {
             assert.deepStrictEqual(configResult2, [
                 { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
                 { script: 'latn', tags: ['liga'] },
+                { script: 'thai', tags: ['liga', 'rlig', 'ccmp'] },
                 { script: 'DFLT', tags: ['mark'] },
             ]);
 
@@ -143,6 +147,7 @@ describe('font.js', function() {
             assert.deepStrictEqual(configResult3, [
                 { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
                 { script: 'latn', tags: ['liga', 'rlig'] },
+                { script: 'thai', tags: ['liga', 'rlig', 'ccmp'] },
                 { script: 'DFLT', tags: ['mark'] },
             ]);
 
@@ -153,6 +158,7 @@ describe('font.js', function() {
             assert.deepStrictEqual(configResult4, [
                 { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
                 { script: 'latn', tags: ['rlig'] },
+                { script: 'thai', tags: ['liga', 'rlig', 'ccmp'] },
                 { script: 'DFLT', tags: [] },
             ]);
         });
