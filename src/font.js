@@ -303,6 +303,7 @@ Font.prototype.defaultRenderOptions = {
          */
         { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
         { script: 'latn', tags: ['liga', 'rlig'] },
+        { script: 'thai', tags: ['liga', 'rlig', 'ccmp'] },
         { script: 'DFLT', tags: ['mark'] },
     ]
 };

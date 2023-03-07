@@ -88,6 +88,38 @@ describe('glyph.js', function() {
             assert.deepEqual(glyph.unicodes, [65]);
         });
     });
+
+    describe('SVG handling', function() {
+        it('should flip the path Y coordinates when generating or parsing SVG paths', function() {
+            const font = loadSync('./test/fonts/FiraSansMedium.woff');
+            const glyph = font.charToGlyph('j');
+            const svgPath = glyph.toPathData();
+            const svgMarkup = glyph.toSVG();
+            const expectedPath = 'M25 772C130 725 185 680 185 528L185 33L93 33L93 534C93 647 60 673-9 705ZM204-150' +
+                'C204-185 177-212 139-212C101-212 75-185 75-150C75-114 101-87 139-87C177-87 204-114 204-150Z';
+            assert.equal(
+                svgPath,
+                expectedPath
+            );
+            assert.equal(
+                svgMarkup,
+                '<path d="' + expectedPath + '"/>'
+            );
+            // we can't test toDOMElement() in node context!
+
+            const trianglePathUp = 'M318 230L182 230L250 93Z';
+            const trianglePathDown = 'M318 320L182 320L250 457Z';
+            const flipOption = {
+                minY: font.ascender,
+                maxY: font.ascender,
+                flipY: true,
+                flipYBase: font.ascender + font.descender
+            };
+            glyph.fromSVG(trianglePathUp, flipOption);
+            assert.equal(glyph.path.toPathData({flipY: false}), trianglePathDown);
+            assert.equal(glyph.toPathData(flipOption), trianglePathUp);
+        });
+    });
 });
 
 describe('glyph.js on low memory mode', function() {
