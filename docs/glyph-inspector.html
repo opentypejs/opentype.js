@@ -131,6 +131,7 @@ function displayGlyphData(glyphIndex) {
     var glyph = font.glyphs.get(glyphIndex),
         html = '<dl>';
     html += '<dt>name</dt><dd>'+glyph.name+'</dd>';
+    html += '<dt>glyph</dt><dd>'+String.fromCodePoint.apply(null, glyph.unicodes) + '</dd>';
 
     if (glyph.unicodes.length > 0) {
         html += '<dt>unicode</dt><dd>'+ glyph.unicodes.map(formatUnicode).join(', ') +'</dd>';
