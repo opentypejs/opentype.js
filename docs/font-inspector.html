@@ -5,7 +5,6 @@
     <meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
     <meta charset="utf-8">
     <link rel="stylesheet" href="site.css">
-    <script src="/dist/opentype.js"></script>
 </head>
 <body>
 <div class="header">
@@ -22,14 +21,14 @@
     </div>
 </div>
 
-<div class="container">
+<form class="container" name="demo">
 
     <div class="explain">
         <h1>Font Inspector</h1>
         <small>opentype.js is an OpenType and TrueType font parser. Here you can inspect the raw font metadata.</small>
     </div>
 
-    <input id="file" type="file">
+    <input name="file" type="file">
     <span class="info" id="font-name">Roboto-Black</span>
     <canvas id="preview" width="940" height="50" class="text"></canvas>
     <div id="message"></div>
@@ -91,14 +90,15 @@
     </div>
 
     <hr>
-</div>
+</form>
 
 
-<script>
+<script type="module">
+import * as opentype from '/dist/opentype.js';
+
 var font = null;
-var fontSize = 32;
-var textToRender = 'Grumpy wizards make toxic brew for the evil Queen and Jack.';
-var previewPath = null;
+const fontSize = 32;
+const textToRender = 'Grumpy wizards make toxic brew for the evil Queen and Jack.';
 
 function escapeHtml(unsafe) {
     return unsafe
@@ -124,7 +124,7 @@ function enableHighDPICanvas(canvas) {
     canvas.getContext('2d').scale(pixelRatio, pixelRatio);
 }
 
-function renderText() {
+function renderText(font) {
     if (!font) return;
 
     var previewCanvas = document.getElementById('preview');
@@ -193,7 +193,7 @@ function displayNames(names) {
     document.getElementById('name-table').innerHTML = html;
 }
 
-function displayFontData() {
+function displayFontData(font) {
     var html, tablename, table, property, value;
 
     for (tablename in font.tables) {
@@ -238,38 +238,24 @@ function displayFontData() {
 
 function onFontLoaded(font) {
     window.font = font;
-    renderText();
-    displayFontData();
+    renderText(font);
+    displayFontData(font);
 }
-
-function onReadFile(e) {
-    document.getElementById('font-name').innerHTML = '';
-    var file = e.target.files[0];
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            font = opentype.parse(e.target.result, {lowMemory:true});
-            onFontLoaded(font);
-            showErrorMessage('');
-        } catch (err) {
-            showErrorMessage(err.toString());
-            if (err.stack) console.log(err.stack);
-	    throw(err);
-        }
-    };
-    reader.onerror = function(err) {
+const form = document.forms.demo;
+form.file.onchange = async function(e) {
+    form.fontname.innerText = '';
+    try {
+        const buf = e.target.files[0].arrayBuffer();
+        onFontLoaded(opentype.parse(await buf, {lowMemory:true}));
+        showErrorMessage('');
+    } catch (err) {
         showErrorMessage(err.toString());
-    };
-
-    reader.readAsArrayBuffer(file);
-}
+    }
+};
 
 var fontFileName = 'fonts/FiraSansMedium.woff';
 
 document.getElementById('font-name').innerHTML = fontFileName.split('/')[1];
-
-var fileButton = document.getElementById('file');
-fileButton.addEventListener('change', onReadFile, false);
 
 var tableHeaders = document.getElementById('font-data').getElementsByTagName('h3');
 for(var i = tableHeaders.length; i--; ) {
@@ -280,14 +266,12 @@ for(var i = tableHeaders.length; i--; ) {
 
 enableHighDPICanvas('preview');
 
-opentype.load(fontFileName, function(err, font) {
-    var amount, glyph, ctx, x, y, fontSize;
-    if (err) {
-        showErrorMessage(err.toString());
-        return;
-    }
-    onFontLoaded(font);
-}, {lowMemory:true});
+const buf = await fetch(fontFileName).then(res => res.arrayBuffer());
+try {
+    onFontLoaded(opentype.parse(buf, {lowMemory:true}));
+} catch (err) {
+    showErrorMessage(err.toString());
+}
 </script>
 </body>
 </html>

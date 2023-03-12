@@ -1,14 +1,14 @@
 import assert from 'assert';
-import { parse as parseBuffer } from '../dist/opentype.js';
-import { parse as parseBufferMin } from '../dist/opentype.min.js';
 import { parse as parseBufferMod } from '../dist/opentype.module.js';
 import { parse as parseBufferModMin } from '../dist/opentype.module.min.js';
 import { readFileSync } from 'fs';
+import { createRequire } from 'module'; 
+const require = createRequire(import.meta.url);
 
 describe('opentype.js dist', function () {
     const dist_matrix = [
-        [parseBuffer, '.js'],
-        [parseBufferMin, '.min.js'],
+        [require('../dist/opentype.cjs').parse, '.cjs'],
+        [require('../dist/opentype.min.cjs').parse, '.min.cjs'],
         [parseBufferMod, '.module.js'],
         [parseBufferModMin, '.module.min.js'],
     ]

@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>OpenType writing</title>
-    <script src="/dist/opentype.js"></script>
     <style>
         body {
             font: 13px Helvetica, arial, freesans, sans-serif;
@@ -41,7 +40,8 @@
     <div id="glyphs"></div>
 </div>
 
-<script>
+<script type="module">
+import * as opentype from "/dist/opentype.js";
 
     var inFont, outFont;
 
@@ -60,7 +60,7 @@
         return ctx;
     }
 
-    opentype.load('../fonts/FiraSansOT-Medium.otf', function (err, font) {
+    fetch('../fonts/FiraSansOT-Medium.otf').then(res => res.arrayBuffer()).then(buf => opentype.load(buf)).then(function (err, font) {
         if (err) {
             console.log(err);
         }

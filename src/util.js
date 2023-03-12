@@ -1,11 +1,3 @@
-function isBrowser() {
-    return typeof window !== 'undefined';
-}
-
-function isNode() {
-    return typeof window === 'undefined';
-}
-
 function checkArgument(expression, message) {
     if (!expression) {
         throw message;
@@ -32,4 +24,4 @@ function objectsEqual(obj1, obj2) {
     return arraysEqual(val1, val2) && arraysEqual(keys1, keys2);
 }
 
-export { isBrowser, isNode, checkArgument, arraysEqual, objectsEqual };
+export { checkArgument, arraysEqual, objectsEqual };

@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { Font, Path, Glyph, parse, load} from '../src/opentype.js';
+import { Font, Path, Glyph, parse, load } from '../src/opentype.js';
 import { readFileSync } from 'fs';
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
@@ -68,21 +68,8 @@ describe('opentype.js', function() {
         assert.equal(aGlyph.path.commands.length, 14);
     });
 
-    it('[deprecated] .load() handles a parseBuffer error', function(done) {
-        load('./test/fonts/badfont.ttf', function(err) {
-            if (err) {
-                done();
-            }
-        });
-    });
-
     it('[deprecated] .load() handles a parseBuffer error as a rejected promise', function(done) {
-        load('./test/fonts/badfont.ttf')
-            .catch((err) => {
-                if (err) {
-                    done();
-                }
-            });
+        load('./test/fonts/badfont.ttf').catch((err) => done(!err));
     });
 
     it('throws an error when advanceWidth is not set', function() {

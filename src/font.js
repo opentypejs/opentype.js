@@ -6,7 +6,7 @@ import { DefaultEncoding } from './encoding.js';
 import glyphset from './glyphset.js';
 import Position from './position.js';
 import Substitution from './substitution.js';
-import { isBrowser, checkArgument } from './util.js';
+import { checkArgument } from './util.js';
 import HintingTrueType from './hintingtt.js';
 import Bidi from './bidi.js';
 
@@ -528,38 +528,41 @@ Font.prototype.toArrayBuffer = function() {
 
 /**
  * Initiate a download of the OpenType font.
+ * @deprecated given a `font` you shall either:
+ * - In a node context, write into a file using:
+ * ```js
+ * const buf = Buffer.from(font.toArrayBuffer());
+ * require('fs').appendFileSync('my.otf', buf);
+ * ```
+ * - In web context, trigger a download with:
+ * ```js
+ * const blob = new Blob([font.toArrayBuffer()], {type: 'font/opentype'});
+ * const attr = { download: 'my.otf', href: URL.createObjectURL(blob) }
+ * const anch = Object.assign(document.createElement('a'), attr);
+ * document.body.appendChild(anch).click();
+ * ```
+ * @param {string} filename - optional filename to write/download
  */
-Font.prototype.download = function(fileName) {
+Font.prototype.download = async function(fileName) {
     const familyName = this.getEnglishName('fontFamily');
     const styleName = this.getEnglishName('fontSubfamily');
-    fileName = fileName || familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
+    const autoName = familyName.replace(/\s/g, '') + '-' + styleName + '.otf';
     const arrayBuffer = this.toArrayBuffer();
 
-    if (isBrowser()) {
-        window.URL = window.URL || window.webkitURL;
-
-        if (window.URL) {
-            const dataView = new DataView(arrayBuffer);
-            const blob = new Blob([dataView], {type: 'font/opentype'});
-
-            let link = document.createElement('a');
-            link.href = window.URL.createObjectURL(blob);
-            link.download = fileName;
-
-            let event = document.createEvent('MouseEvents');
-            event.initEvent('click', true, false);
-            link.dispatchEvent(event);
-        } else {
-            console.warn('Font file could not be downloaded. Try using a different browser.');
-        }
+    if (typeof window === 'undefined') {
+        const fs = await import('fs');
+        fs.writeFileSync(fileName || autoName, Buffer.from(arrayBuffer));
     } else {
-        const fs = require('fs');
-        const buffer = Buffer.alloc(arrayBuffer.byteLength);
-        const view = new Uint8Array(arrayBuffer);
-        for (let i = 0; i < buffer.length; ++i) {
-            buffer[i] = view[i];
-        }
-        fs.writeFileSync(fileName, buffer);
+        const dataView = new DataView(arrayBuffer);
+        const blob = new Blob([dataView], {type: 'font/opentype'});
+
+        let link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = fileName || autoName;
+
+        let event = document.createEvent('MouseEvents');
+        event.initEvent('click', true, false);
+        link.dispatchEvent(event);
     }
 };
 /**
