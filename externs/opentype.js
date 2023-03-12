@@ -639,12 +639,6 @@ opentype.BoundingBox = function() {};
 opentype.load = function(url, callback) {};
 
 /**
- * @param  {string} url - The URL of the font to load.
- * @return {opentype.Font}
- */
-opentype.loadSync = function(url) {};
-
-/**
  * @param  {ArrayBuffer}
  * @return {opentype.Font}
  */

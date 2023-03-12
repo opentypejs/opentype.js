@@ -57,7 +57,6 @@
       "es2021": true,
       "node": true
     },
-    "plugins": ["eslint-plugin-local-rules"],
     "extends": "eslint:recommended",
     "parserOptions": {
       "ecmaVersion": 2020,
@@ -83,11 +82,13 @@
         "error",
         "always"
       ],
-      "local-rules/ban-foreach": 2,
-      "local-rules/import-extensions": 2
+      "no-restricted-syntax": [
+        "error",
+        {
+          "message": "Please use for() instead of .forEach()",
+          "selector": "MemberExpression > Identifier[name='forEach']"
+        }
+      ]
     }
-  },
-  "dependencies": {
-    "eslint-plugin-local-rules": "^1.3.2"
   }
 }

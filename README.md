@@ -81,13 +81,12 @@ const buffer = require('fs').promises.readFile('./my.woff');
 const buffer = document.getElementById('myfile').files[0].arrayBuffer();
 
 // if running in async context:
-const font = opentype.parse(await data);
+const font = opentype.parse(await buffer);
 console.log(font.supported);
 
 // if not running in async context:
 buffer.then(data => {
     const font = opentype.parse(data);
-    // ... play with `font` ...
     console.log(font.supported);
 })
 ```
@@ -126,7 +125,15 @@ const font = new opentype.Font({
     ascender: 800,
     descender: -200,
     glyphs: glyphs});
-font.download();
+
+// case 1: node fs
+require('fs').appendFileSync('font.otf', Buffer.from(font.toArrayBuffer()));
+
+// case 2: browser download
+const blob = new Blob([font.toArrayBuffer()], {type: 'font/opentype'});
+const attr = { download: 'my.otf', href: URL.createObjectURL(blob) }
+const anch = Object.assign(document.createElement('a'), attr);
+document.body.appendChild(anch).click();
 ```
 
 If you want to inspect the font, use `font.toTables()`

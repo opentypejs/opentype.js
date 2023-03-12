@@ -1,5 +1,5 @@
 import assert  from 'assert';
-import { Path } from '../src/opentype';
+import { Path } from '../src/opentype.js';
 
 describe('path.js', function() {
     const testPath1 = new Path();
