@@ -9,9 +9,8 @@
 <body>
 <div class="header">
     <div class="container">
-        <h1>opentype.js</h1>
+        <h1><a href="./">opentype.js</a></h1>
         <nav>
-            <a href="index.html">Home</a>
             <a href="font-inspector.html">Font Inspector</a>
             <a href="glyph-inspector.html">Glyph Inspector</a>
         </nav>
@@ -29,7 +28,7 @@
     </div>
 
     <input name="file" type="file">
-    <span class="info" id="font-name">Roboto-Black</span>
+    <output class="info" name="fontname"></output>
     <canvas id="preview" width="940" height="50" class="text"></canvas>
     <div id="message"></div>
 
@@ -94,7 +93,7 @@
 
 
 <script type="module">
-import * as opentype from '/dist/opentype.js';
+import * as opentype from "/dist/opentype.module.js";
 
 var font = null;
 const fontSize = 32;
@@ -241,21 +240,6 @@ function onFontLoaded(font) {
     renderText(font);
     displayFontData(font);
 }
-const form = document.forms.demo;
-form.file.onchange = async function(e) {
-    form.fontname.innerText = '';
-    try {
-        const buf = e.target.files[0].arrayBuffer();
-        onFontLoaded(opentype.parse(await buf, {lowMemory:true}));
-        showErrorMessage('');
-    } catch (err) {
-        showErrorMessage(err.toString());
-    }
-};
-
-var fontFileName = 'fonts/FiraSansMedium.woff';
-
-document.getElementById('font-name').innerHTML = fontFileName.split('/')[1];
 
 var tableHeaders = document.getElementById('font-data').getElementsByTagName('h3');
 for(var i = tableHeaders.length; i--; ) {
@@ -264,14 +248,31 @@ for(var i = tableHeaders.length; i--; ) {
     }, false);
 }
 
+const form = document.forms.demo;
+async function display(file, name) {
+    form.fontname.innerText = name;
+    const isWoff2 = name.endsWith('.woff2');
+    if (isWoff2 && !window.Module) {
+        const wasmReady = new Promise((onRuntimeInitialized) => window.Module = { onRuntimeInitialized });
+        await loadScript('https://unpkg.com/wawoff2@2.0.1/build/decompress_binding.js'); // wawoff2 is globaly loaded as 'Module'
+        await wasmReady; // WASM has called our onRuntimeInitialized() resolver
+    }
+    try {
+        const data = await file.arrayBuffer();
+        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
+        showErrorMessage('');
+    } catch (err) {
+        showErrorMessage(err.toString());
+    }
+}
+form.file.onchange = function(e) {
+    display(e.target.files[0], e.target.files[0].name);
+};
+
 enableHighDPICanvas('preview');
 
-const buf = await fetch(fontFileName).then(res => res.arrayBuffer());
-try {
-    onFontLoaded(opentype.parse(buf, {lowMemory:true}));
-} catch (err) {
-    showErrorMessage(err.toString());
-}
+const fontFileName = 'fonts/FiraSansMedium.woff';
+display(await fetch(fontFileName), fontFileName);
 </script>
 </body>
 </html>
