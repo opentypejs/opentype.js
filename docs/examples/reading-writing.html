@@ -1,87 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>OpenType writing</title>
-    <style>
-        body {
-            font: 13px Helvetica, arial, freesans, sans-serif;
-            line-height: 1.4;
-            color: #333;
-            margin: 0 0 50px 0;
-            padding: 0;
-        }
-        .container {
-            width: 940px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        #glyphs {
-            clear: both;
-        }
-        .wrapper {
-            float: left;
-            margin: 5px;
-            border: 1px solid #ccc;
-        }
-        .wrapper span {
-            text-align: center;
-            background: #ddd;
-            display: block;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h1 id="fontFamilyName"></h1>
+<meta charset="UTF-8">
+<title>OpenType writing</title>
+<style>
+    body {
+        font: 13px Helvetica, arial, freesans, sans-serif;
+        line-height: 1.4;
+        color: #333;
+        margin: 0 0 50px 0;
+        padding: 0;
+    }
+    .container {
+        width: 940px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    #glyphs {
+        clear: both;
+    }
+    .wrapper {
+        float: left;
+        margin: 5px;
+        border: 1px solid #ccc;
+    }
+    .wrapper span {
+        text-align: center;
+        background: #ddd;
+        display: block;
+    }
+    a:not([href]) {
+        display: none;
+    }
+</style>
+
+<form class="container" name="demo">
+    <h1><output name="fontFamilyName"></output></h1>
     <p>This font is generated dynamically in the browser.</p>
-    <button onclick="inFont.download()">Download Font</button>
+    <a id="link" download="generated.otf">Download Font</a>
 
     <div id="glyphs"></div>
-</div>
+</form>
 
 <script type="module">
-import * as opentype from "/dist/opentype.js";
+import * as opentype from "/dist/opentype.module.js";
 
-    var inFont, outFont;
+// Create a canvas and adds it to the document.
+// Returns the 2d drawing context.
+function createGlyphCanvas(glyph, size) {
+    const canvasId = 'c' + glyph.index;
+    const html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyph.index + '</span><span>' + glyph.name + '</span><span>U ' + glyph.unicode + '</span></div>';
+    const glyphsDiv = document.getElementById('glyphs');
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    glyphsDiv.appendChild(wrap);
+    const canvas = document.getElementById(canvasId);
+    return canvas.getContext('2d');
+}
 
-    // Create a canvas and adds it to the document.
-    // Returns the 2d drawing context.
-    function createGlyphCanvas(glyph, size) {
-        var canvasId, html, glyphsDiv, wrap, canvas, ctx;
-        canvasId = 'c' + glyph.index;
-        html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyph.index + '</span><span>' + glyph.name + '</span><span>U ' + glyph.unicode + '</span></div>';
-        glyphsDiv = document.getElementById('glyphs');
-        wrap = document.createElement('div');
-        wrap.innerHTML = html;
-        glyphsDiv.appendChild(wrap);
-        canvas = document.getElementById(canvasId);
-        ctx = canvas.getContext('2d');
-        return ctx;
-    }
+const buf = await fetch('../fonts/FiraSansMedium.woff');
+const font1 = opentype.parse(await buf.arrayBuffer()); // 1st gen
+const font2 = opentype.parse(font1.toArrayBuffer()); // 2st gen
+const form = document.forms.demo;
+form.fontFamilyName.innerText = font2.names.windows.fontFamily.en;
+const a = document.getElementById('link')
+a.href = window.URL.createObjectURL(new Blob([font2.toArrayBuffer()], {type: "font/otf"}))
 
-    fetch('../fonts/FiraSansOT-Medium.otf').then(res => res.arrayBuffer()).then(buf => opentype.load(buf)).then(function (err, font) {
-        if (err) {
-            console.log(err);
-        }
-        inFont = font;
-        var buffer = inFont.toArrayBuffer();
-        outFont = opentype.parse(buffer);
-        document.getElementById('fontFamilyName').innerHTML = outFont.names.fontFamily.en;
-
-        for (var i = 0; i < outFont.glyphs.length; i++) {
-            var glyph = outFont.glyphs.get(i);
-            var ctx = createGlyphCanvas(glyph, 150);
-            var x = 50;
-            var y = 120;
-            var fontSize = 72;
-            glyph.draw(ctx, x, y, fontSize);
-            glyph.drawPoints(ctx, x, y, fontSize);
-            glyph.drawMetrics(ctx, x, y, fontSize);
-        }
-    });
-
-
+for (let i = 0; i < font2.glyphs.length; i++) {
+    const glyph = font2.glyphs.get(i);
+    const ctx = createGlyphCanvas(glyph, 150);
+    const x = 50;
+    const y = 120;
+    const fontSize = 72;
+    glyph.draw(ctx, x, y, fontSize);
+    glyph.drawPoints(ctx, x, y, fontSize);
+    glyph.drawMetrics(ctx, x, y, fontSize);
+}
 </script>
 </body>
 </html>
