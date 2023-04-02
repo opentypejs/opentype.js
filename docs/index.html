@@ -1,12 +1,10 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>opentype.js – JavaScript parser/writer for OpenType and TrueType fonts.</title>
-    <meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="site.css">
-</head>
-<body>
+<html lang="en">
+<title>opentype.js – JavaScript parser/writer for OpenType and TrueType fonts.</title>
+<meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
+<meta charset="utf-8">
+<link rel="stylesheet" href="site.css">
+
 <div class="header">
     <div class="container">
         <h1><a href="./">opentype.js</a></h1>
@@ -209,14 +207,13 @@ function onFontLoaded(font) {
 
     renderText();
 }
-const loadScript = (src) => new Promise((onload, onerror) => document.head.append(Object.assign(document.createElement('script'), {src, onload, onerror})));
+const loadScript = (src) => new Promise((onload) => document.head.append(Object.assign(document.createElement('script'), {src, onload})));
 async function display(file, name) {
     form.fontname.innerText = name;
     const isWoff2 = name.endsWith('.woff2');
     if (isWoff2 && !window.Module) {
         const wasmReady = new Promise((onRuntimeInitialized) => window.Module = { onRuntimeInitialized });
-        await loadScript('https://unpkg.com/wawoff2@2.0.1/build/decompress_binding.js'); // wawoff2 is globaly loaded as 'Module'
-        await wasmReady; // WASM has called our onRuntimeInitialized() resolver
+        await loadScript('https://unpkg.com/wawoff2@2.0.1/build/decompress_binding.js').then(() => wasmReady);
     }
     try {
         const data = await file.arrayBuffer();
@@ -237,5 +234,3 @@ enableHighDPICanvas('snap');
 const fontFileName = 'fonts/FiraSansMedium.woff';
 display(await fetch(fontFileName), fontFileName);
 </script>
-</body>
-</html>
