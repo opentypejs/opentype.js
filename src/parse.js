@@ -600,7 +600,9 @@ Parser.prototype.parseFeatureList = function() {
     return this.parsePointer(Parser.recordList({
         tag: Parser.tag,
         feature: Parser.pointer({
-            featureParams: Parser.offset16,
+            featureParams: Parser.pointer({
+                version: Parser.uShort, 
+                nameID: Parser.uShort}),
             lookupListIndexes: Parser.uShortList
         })
     })) || [];
