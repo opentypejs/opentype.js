@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>OpenType writing</title>
-    <script src="/dist/opentype.js"></script>
+    <script src="https://opentype.js.org/dist/opentype.js"></script>
     <style>
         body {
             font: 13px Helvetica, arial, freesans, sans-serif;
@@ -60,14 +60,14 @@
         return ctx;
     }
 
-    opentype.load('../fonts/FiraSansOT-Medium.otf', function (err, font) {
+    opentype.load('../fonts/FiraSansMedium.woff', function (err, font) {
         if (err) {
             console.log(err);
         }
         inFont = font;
         var buffer = inFont.toArrayBuffer();
         outFont = opentype.parse(buffer);
-        document.getElementById('fontFamilyName').innerHTML = outFont.names.fontFamily.en;
+        document.getElementById('fontFamilyName').innerHTML = outFont.names.windows.fontFamily.en;
 
         for (var i = 0; i < outFont.glyphs.length; i++) {
             var glyph = outFont.glyphs.get(i);
