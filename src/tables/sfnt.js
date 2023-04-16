@@ -373,6 +373,8 @@ function fontToSfntTable(font) {
         tables.push(metaTable);
     }
 
+    if (gaspTable) {
+        tables.push(gaspTable);
     }
 
     const sfntTable = makeSfntTable(tables);
