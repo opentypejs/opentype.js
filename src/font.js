@@ -9,7 +9,7 @@ import Substitution from './substitution.js';
 import { isBrowser, checkArgument } from './util.js';
 import HintingTrueType from './hintingtt.js';
 import Bidi from './bidi.js';
-import { kern, mark } from './features/positioning';
+import { kern, mark } from './features/positioning/index.js';
 
 function createDefaultNamesInfo(options) {
     return {
@@ -375,7 +375,8 @@ Font.prototype.getGlyphsPositions = function(glyphs, options) {
 
     let kernLookupTableProcessed = false;
     const featuresLookups = this.position.getPositionFeatures(features, script, options.language);
-    featuresLookups.forEach(lookupTable => {
+    for (let i = 0; i < featuresLookups.length; i++) {
+        const lookupTable = featuresLookups[i];
         let kerningValue = 0;
         let pos = [];
         switch (lookupTable.feature) {
@@ -389,7 +390,8 @@ Font.prototype.getGlyphsPositions = function(glyphs, options) {
         }
 
         // Reposition glyphs
-        pos.forEach((glyphPosition, index) => {
+        for (let index = 0; index < pos.length; index++) {
+            const glyphPosition = pos[index];
             if (lookupTable.feature === 'kern') { 
                 kerningValue += glyphPosition.xAdvance; // kerning apply to entire sequence
                 glyphsPositions[index].xAdvance += kerningValue;
@@ -397,8 +399,8 @@ Font.prototype.getGlyphsPositions = function(glyphs, options) {
                 glyphsPositions[index].xAdvance += glyphPosition.xAdvance;
                 glyphsPositions[index].yAdvance += glyphPosition.yAdvance;
             }
-        });
-    });
+        }
+    }
 
     // Support for the 'kern' table glyph pairs
     if (options.kerning && kernLookupTableProcessed === false) {

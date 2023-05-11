@@ -219,7 +219,8 @@ Layout.prototype = {
 
         const lookupUnionList = {};
         const allLookups = this.font.tables[this.tableName].lookups;
-        requestedFeatures.forEach(feature => {
+        for (let idx = 0; idx < requestedFeatures.length; idx++) {
+            const feature = requestedFeatures[idx];
             const { featureName, supportedLookups } = feature;
             let featureTable = this.getFeatureTable(script, language, featureName);
             if (featureTable && supportedLookups.length) {
@@ -246,7 +247,7 @@ Layout.prototype = {
                     }
                 }
             }
-        });
+        }
         return Object.values(lookupUnionList);
     },
 
