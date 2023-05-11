@@ -1,18 +1,14 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>opentype.js glyph inspector</title>
-    <meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="site.css">
-    <script src="/dist/opentype.js"></script>
-</head>
-<body>
+<html lang="en">
+<title>opentype.js glyph inspector</title>
+<meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
+<meta charset="utf-8">
+<link rel="stylesheet" href="site.css">
+
 <div class="header">
     <div class="container">
-        <h1>opentype.js</h1>
+        <h1><a href="./">opentype.js</a></h1>
         <nav>
-            <a href="index.html">Home</a>
             <a href="font-inspector.html">Font Inspector</a>
             <a href="glyph-inspector.html">Glyph Inspector</a>
         </nav>
@@ -22,7 +18,7 @@
     </div>
 </div>
 
-<div class="container">
+<form class="container" name="demo">
 
     <div class="explain">
         <h1>Glyph Inspector</h1>
@@ -30,7 +26,7 @@
     </div>
 
     <input id="file" type="file">
-    <span class="info" id="font-name">Roboto-Black</span>
+    <output class="info" name="fontname"></output>
     <div id="message"></div>
 
     <hr>
@@ -58,10 +54,14 @@
     </div>
 
     <hr>
-</div>
+</form>
 
 
-<script>
+<script type="module">
+import * as opentype from "/dist/opentype.module.js";
+
+const form = document.forms.demo;
+
 var cellCount = 100,
     cellWidth = 44,
     cellHeight = 40,
@@ -122,6 +122,7 @@ function formatUnicode(unicode) {
 }
 
 function displayGlyphData(glyphIndex) {
+    const font = window.font;
     var container = document.getElementById('glyph-data');
     if (glyphIndex < 0) {
         container.innerHTML = '';
@@ -243,7 +244,7 @@ function displayGlyph(glyphIndex) {
         height = canvas.height / pixelRatio;
     ctx.clearRect(0, 0, width, height);
     if(glyphIndex < 0) return;
-    var glyph = font.glyphs.get(glyphIndex),
+    var glyph = window.font.glyphs.get(glyphIndex),
         glyphWidth = glyph.advanceWidth * glyphScale,
         xmin = (width - glyphWidth)/2,
         xmax = (width + glyphWidth)/2,
@@ -272,12 +273,12 @@ function renderGlyphItem(canvas, glyphIndex) {
     var cellMarkSize = 4;
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, cellWidth, cellHeight);
-    if (glyphIndex >= font.numGlyphs) return;
+    if (glyphIndex >= window.font.numGlyphs) return;
 
     ctx.fillStyle = '#606060';
     ctx.font = '9px sans-serif';
     ctx.fillText(glyphIndex, 1, cellHeight-1);
-    var glyph = font.glyphs.get(glyphIndex),
+    var glyph = window.font.glyphs.get(glyphIndex),
         glyphWidth = glyph.advanceWidth * fontScale,
         xmin = (cellWidth - glyphWidth)/2,
         xmax = (cellWidth + glyphWidth)/2,
@@ -307,7 +308,7 @@ function pageSelect(event) {
     displayGlyphPage(+event.target.id.substr(1));
 }
 
-function initGlyphDisplay() {
+function initGlyphDisplay(font) {
     var glyphBgCanvas = document.getElementById('glyph-bg'),
         w = glyphBgCanvas.width / pixelRatio,
         h = glyphBgCanvas.height / pixelRatio,
@@ -322,7 +323,7 @@ function initGlyphDisplay() {
     glyphBaseline = glyphMargin + glyphH * head.yMax / maxHeight;
 
     function hline(text, yunits) {
-        ypx = glyphBaseline - yunits * glyphScale;
+        const ypx = glyphBaseline - yunits * glyphScale;
         ctx.fillText(text, 2, ypx+3);
         ctx.fillRect(80, ypx, w, 1);
     }
@@ -366,40 +367,18 @@ function onFontLoaded(font) {
     }
     pagination.appendChild(fragment);
 
-    initGlyphDisplay();
+    initGlyphDisplay(font);
     displayGlyphPage(0);
     displayGlyph(-1);
     displayGlyphData(-1);
 }
 
-function onReadFile(e) {
-    document.getElementById('font-name').innerHTML = '';
-    var file = e.target.files[0];
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            font = opentype.parse(e.target.result, {lowMemory:true});
-            showErrorMessage('');
-            onFontLoaded(font);
-        } catch (err) {
-            showErrorMessage(err.toString());
-            if (err.stack) console.log(err.stack);
-            throw(err);
-        }
-    };
-    reader.onerror = function(err) {
-        showErrorMessage(err.toString());
-    };
-
-    reader.readAsArrayBuffer(file);
-}
-
 function cellSelect(event) {
-    if (!font) return;
+    if (!window.font) return;
     var firstGlyphIndex = pageSelected*cellCount,
         cellIndex = +event.target.id.substr(1),
         glyphIndex = firstGlyphIndex + cellIndex;
-    if (glyphIndex < font.numGlyphs) {
+    if (glyphIndex < window.font.numGlyphs) {
         displayGlyph(glyphIndex);
         displayGlyphData(glyphIndex);
     }
@@ -420,24 +399,35 @@ function prepareGlyphList() {
     }
 }
 
-var fontFileName = 'fonts/FiraSansMedium.woff';
-document.getElementById('font-name').innerHTML = fontFileName.split('/')[1];
+const loadScript = (src) => new Promise((onload, onerror) => document.head.append(Object.assign(document.createElement('script'), {src, onload, onerror})));
+async function display(file, name) {
+    form.fontname.innerText = name;
+    const isWoff2 = name.endsWith('.woff2');
+    if (isWoff2 && !window.Module) {
+        const wasmReady = new Promise((onRuntimeInitialized) => window.Module = { onRuntimeInitialized });
+        await loadScript('https://unpkg.com/wawoff2@2.0.1/build/decompress_binding.js'); // wawoff2 is globaly loaded as 'Module'
+        await wasmReady; // WASM has called our onRuntimeInitialized() resolver
+    }
+    try {
+        const data = await file.arrayBuffer();
+        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
+        showErrorMessage('');
+    } catch (err) {
+        showErrorMessage(err.toString());
+    }
+}
 
-var fileButton = document.getElementById('file');
-fileButton.addEventListener('change', onReadFile, false);
+form.file.onchange = function(e) {
+    display(e.target.files[0], e.target.files[0].name);
+};
 
 enableHighDPICanvas('glyph-bg');
 enableHighDPICanvas('glyph');
 
 prepareGlyphList();
-opentype.load(fontFileName, function(err, font) {
-    var amount, glyph, ctx, x, y, fontSize;
-    if (err) {
-        showErrorMessage(err.toString());
-        return;
-    }
-    onFontLoaded(font);
-}, {lowMemory:true});
+
+const fontFileName = 'fonts/FiraSansMedium.woff';
+display(await fetch(fontFileName), fontFileName);
 </script>
 </body>
 </html>

@@ -71,7 +71,7 @@ If you plan on improving or debugging opentype.js, you can:
 
 ## Usage
 
-### Loading a font
+### Loading a WOFF/OTF/TTF font
 
 ```js
 // case 1: from an URL
@@ -82,15 +82,39 @@ const buffer = require('fs').promises.readFile('./my.woff');
 const buffer = document.getElementById('myfile').files[0].arrayBuffer();
 
 // if running in async context:
-const font = opentype.parse(await data);
-console.log(font.supported);
+const font = opentype.parse(await buffer);
+console.log(font);
 
 // if not running in async context:
 buffer.then(data => {
     const font = opentype.parse(data);
-    // ... play with `font` ...
-    console.log(font.supported);
+    console.log(font);
 })
+```
+
+### Loading a WOFF2 font
+
+WOFF2 Brotli compression perform [29% better](https://www.w3.org/TR/WOFF20ER/#appendixB) than it WOFF predecessor.
+But this compression is also more complex, and would result having a much heavier opentype.js library (~120KB => ~1400KB).
+
+To solve this: Decompress the font beforehand (for example with [fontello/wawoff2](https://github.com/fontello/wawoff2)).
+
+```js
+// promise-based utility to load libraries using the good old <script> tag
+const loadScript = (src) => new Promise((onload) => document.documentElement.append(
+  Object.assign(document.createElement('script'), {src, onload})
+));
+
+const buffer = //...same as previous example...
+
+// load wawoff2 if needed and wait (!) for it to be ready
+if (!window.Module) {
+  const path = 'https://unpkg.com/wawoff2@2.0.1/build/decompress_binding.js'
+  const init = new Promise((done) => window.Module = { onRuntimeInitialized: done});
+  await loadScript(path).then(() => init);
+}
+// decompress before parsing
+const font = opentype.parse(Module.decompress(await buffer));
 ```
 
 ### Loading a font (1.x style)

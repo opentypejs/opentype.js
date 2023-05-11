@@ -78,14 +78,15 @@ function tokenizeText() {
  */
 function reverseArabicSentences() {
     const ranges = this.tokenizer.getContextRanges('arabicSentence');
-    ranges.forEach(range => {
+    for(let i = 0; i < ranges.length; i++) {
+        const range = ranges[i];
         let rangeTokens = this.tokenizer.getRangeTokens(range);
         this.tokenizer.replaceRange(
             range.startIndex,
             range.endOffset,
             rangeTokens.reverse()
         );
-    });
+    }
 }
 
 /**
@@ -153,9 +154,10 @@ function applyArabicPresentationForms() {
     if (!Object.prototype.hasOwnProperty.call(this.featuresTags, script)) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('arabicWord');
-    ranges.forEach(range => {
+    for(let i = 0; i < ranges.length; i++) {
+        const range = ranges[i];
         arabicPresentationForms.call(this, range);
-    });
+    }
 }
 
 /**
@@ -165,9 +167,10 @@ function applyArabicRequireLigatures() {
     if (!this.hasFeatureEnabled('arab', 'rlig')) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('arabicWord');
-    ranges.forEach(range => {
+    for(let i = 0; i < ranges.length; i++) {
+        const range = ranges[i];
         arabicRequiredLigatures.call(this, range);
-    });
+    }
 }
 
 /**
@@ -177,16 +180,18 @@ function applyLatinLigatures() {
     if (!this.hasFeatureEnabled('latn', 'liga')) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('latinWord');
-    ranges.forEach(range => {
+    for(let i = 0; i < ranges.length; i++) {
+        const range = ranges[i];
         latinLigature.call(this, range);
-    });
+    }
 }
 
 function applyUnicodeVariationSequences() {
     const ranges = this.tokenizer.getContextRanges('unicodeVariationSequence');
-    ranges.forEach(range => {
+    for(let i = 0; i < ranges.length; i++) {
+        const range = ranges[i];
         unicodeVariationSequences.call(this, range);
-    });
+    }
 }
 
 /**
@@ -195,12 +200,12 @@ function applyUnicodeVariationSequences() {
 function applyThaiFeatures() {
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('thaiWord');
-    ranges.forEach(range => {
+    for(let i = 0; i < ranges.length; i++) {
+        const range = ranges[i];
         if (this.hasFeatureEnabled('thai', 'liga')) thaiLigatures.call(this, range);
         if (this.hasFeatureEnabled('thai', 'rlig')) thaiRequiredLigatures.call(this, range);
         if (this.hasFeatureEnabled('thai', 'ccmp')) thaiGlyphComposition.call(this, range);
-    });
-
+    }
 }
 
 /**
