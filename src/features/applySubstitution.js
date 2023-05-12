@@ -58,19 +58,21 @@ function ligatureSubstitutionFormat1(action, tokens, index) {
  * @param {number} index token index
  */
 function multiSubstitutionFormat1(action, tokens, index) {
-    const newTokensList = [];
-    const substitution = action.substitution;
-    for (let i = 0; i < substitution.length; i++) {
-        const substitutionGlyphIndex = substitution[i];
-        const glyph = this.font.glyphs.get(substitutionGlyphIndex);
-        const token = new Token(String.fromCharCode(parseInt(glyph.unicode)));
-        token.setState('glyphIndex', substitutionGlyphIndex);
-        newTokensList.push(token);
-    }
+    if (this.font && this.tokenizer) {
+        const newTokensList = [];
+        const substitution = action.substitution;
+        for (let i = 0; i < substitution.length; i++) {
+            const substitutionGlyphIndex = substitution[i];
+            const glyph = this.font.glyphs.get(substitutionGlyphIndex);
+            const token = new Token(String.fromCharCode(parseInt(glyph.unicode)));
+            token.setState('glyphIndex', substitutionGlyphIndex);
+            newTokensList.push(token);
+        }
 
-    // Replace single range (glyph) index with multiple glyphs
-    if (newTokensList.length) {
-        this.tokenizer.replaceRange(index, 1, newTokensList);
+        // Replace single range (glyph) index with multiple glyphs
+        if (newTokensList.length) {
+            this.tokenizer.replaceRange(index, 1, newTokensList);
+        }
     }
 }
 
