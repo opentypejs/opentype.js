@@ -122,6 +122,11 @@ describe('bidi.js', function() {
                 assert.deepEqual(glyphIndexes, [451]);
             });
 
+            it('should apply glyph de-composition', () => {
+                let glyphIndexes = bidiThai.getTextGlyphs('น้ำ');
+                assert.deepEqual(glyphIndexes, [341, 453, 366]);
+            });
+
             it('should apply glyph ligatures', () => {
                 let glyphIndexes = bidiThai.getTextGlyphs('ฤๅ');
                 assert.deepEqual(glyphIndexes, [459]);
