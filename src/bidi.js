@@ -171,16 +171,16 @@ function applySubstitutions(script, features) {
                     const subtable = subtables[s];
                     const substType = this.query.getSubstitutionType(lookupTable, subtable);
                     const lookup = this.query.getLookupMethod(lookupTable, subtable);
-                    let substitution; 
+                    let substitution;
                     switch (substType) {
                         case '11':
                             substitution = lookup(contextParams.current);
                             if (substitution) {
-                                applySubstitution(
+                                applySubstitution.call(this,
                                     new SubstitutionAction({
                                         id: 11, tag: lookupTable.feature, substitution
-                                    }), 
-                                    tokens, 
+                                    }),
+                                    tokens,
                                     contextParams.index
                                 );
                             }
@@ -188,11 +188,11 @@ function applySubstitutions(script, features) {
                         case '12':
                             substitution = lookup(contextParams.current);
                             if (substitution) {
-                                applySubstitution(
+                                applySubstitution.call(this,
                                     new SubstitutionAction({
                                         id: 12, tag: lookupTable.feature, substitution
-                                    }), 
-                                    tokens, 
+                                    }),
+                                    tokens,
                                     contextParams.index
                                 );
                             }
@@ -200,11 +200,11 @@ function applySubstitutions(script, features) {
                         case '63':
                             substitution = lookup(contextParams);
                             if (Array.isArray(substitution) && substitution.length) {
-                                applySubstitution(
+                                applySubstitution.call(this,
                                     new SubstitutionAction({
                                         id: 63, tag: lookupTable.feature, substitution
-                                    }), 
-                                    tokens, 
+                                    }),
+                                    tokens,
                                     contextParams.index
                                 );
                             }
@@ -212,10 +212,10 @@ function applySubstitutions(script, features) {
                         case '41':
                             substitution = lookup(contextParams);
                             if (substitution) {
-                                applySubstitution(
+                                applySubstitution.call(this,
                                     new SubstitutionAction({
                                         id: 41, tag: lookupTable.feature, substitution
-                                    }), 
+                                    }),
                                     tokens,
                                     contextParams.index
                                 );
@@ -224,11 +224,11 @@ function applySubstitutions(script, features) {
                         case '21':
                             substitution = lookup(contextParams.current);
                             if (Array.isArray(substitution) && substitution.length) {
-                                applySubstitution.call(this, 
+                                applySubstitution.call(this,
                                     new SubstitutionAction({
                                         id: 21, tag: lookupTable.feature, substitution
-                                    }), 
-                                    tokens, 
+                                    }),
+                                    tokens,
                                     range.startIndex + index
                                 );
                             }

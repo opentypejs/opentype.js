@@ -362,7 +362,7 @@ FeatureQuery.prototype.getLookupMethod = function(lookupTable, subtable) {
 /**
  * Lookup a feature using a query parameters
  * @param {FQuery} query feature query
- * @deprecated
+ * @deprecated Use bidi.applySubstitutions(...)
  */
 FeatureQuery.prototype.lookupFeature = function (query) {
     let contextParams = query.contextParams;
@@ -446,7 +446,7 @@ FeatureQuery.prototype.lookupFeature = function (query) {
 };
 
 /**
- * Assembling features into ordered lookup list
+ * Assembling features into ordered lookup list (wrapper)
  * Assemble all features (including any required feature) for the glyph run’s language system.
  * Assemble all lookups in these features, in LookupList order, removing any duplicates.
  *
