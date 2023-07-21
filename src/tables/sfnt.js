@@ -206,6 +206,13 @@ function fontToSfntTable(font) {
     globals.ascender = font.ascender;
     globals.descender = font.descender;
 
+    var macStyle = 0;
+    if (font.italicAngle < 0) {
+        macStyle |= 2;
+    }
+    if (font.weightClass >= 600) {
+        macStyle |= 1;
+    }
     const headTable = head.make({
         flags: 3, // 00000011 (baseline for font at y=0; left sidebearing point at x=0)
         unitsPerEm: font.unitsPerEm,
@@ -214,6 +221,7 @@ function fontToSfntTable(font) {
         xMax: globals.xMax,
         yMax: globals.yMax,
         lowestRecPPEM: 3,
+        macStyle: macStyle,
         createdTimestamp: font.createdTimestamp
     });
 
@@ -224,7 +232,8 @@ function fontToSfntTable(font) {
         minLeftSideBearing: globals.minLeftSideBearing,
         minRightSideBearing: globals.minRightSideBearing,
         xMaxExtent: globals.maxLeftSideBearing + (globals.xMax - globals.xMin),
-        numberOfHMetrics: font.glyphs.length
+        numberOfHMetrics: font.glyphs.length,
+        slope: font.slope,
     });
 
     const maxpTable = maxp.make(font.glyphs.length);
@@ -323,7 +332,7 @@ function fontToSfntTable(font) {
     const nameTable = _name.make(names, languageTags);
     const ltagTable = (languageTags.length > 0 ? ltag.make(languageTags) : undefined);
 
-    const postTable = post.make(font.tables.post);
+    const postTable = post.make(font);
     const cffTable = cff.make(font.glyphs, {
         version: font.getEnglishName('version'),
         fullName: englishFullName,

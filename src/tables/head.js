@@ -52,7 +52,7 @@ function makeHeadTable(options) {
         {name: 'yMin', type: 'SHORT', value: 0},
         {name: 'xMax', type: 'SHORT', value: 0},
         {name: 'yMax', type: 'SHORT', value: 0},
-        {name: 'macStyle', type: 'USHORT', value: 0},
+        {name: 'macStyle', type: 'USHORT', value: options.macStyle},
         {name: 'lowestRecPPEM', type: 'USHORT', value: 0},
         {name: 'fontDirectionHint', type: 'SHORT', value: 2},
         {name: 'indexToLocFormat', type: 'SHORT', value: 0},
