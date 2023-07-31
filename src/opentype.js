@@ -33,6 +33,7 @@ import _name from './tables/name.js';
 import os2 from './tables/os2.js';
 import post from './tables/post.js';
 import meta from './tables/meta.js';
+import gasp from './tables/gasp.js';
 /**
  * The opentype library.
  * @namespace opentype
@@ -337,6 +338,10 @@ function parseBuffer(buffer, opt={}) {
                 break;
             case 'meta':
                 metaTableEntry = tableEntry;
+                break;
+            case 'gasp':
+                table = uncompressTable(data, tableEntry);
+                font.tables.gasp = gasp.parse(table.data, table.offset);
                 break;
         }
     }
