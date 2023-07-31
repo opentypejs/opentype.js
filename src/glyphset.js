@@ -42,9 +42,9 @@ function GlyphSet(font, glyphs) {
 }
 
 /**
- * @return {opentype.GlyphSet.Iterator}
+ * @return {opentype.GlyphSet[Symbol.iterator]}
  */
-GlyphSet.prototype.myGlyphs = function() {
+GlyphSet.prototype[Symbol.iterator] = function() {
     let n = -1;
     return {
         next: function() {

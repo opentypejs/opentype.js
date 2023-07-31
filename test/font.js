@@ -93,3 +93,51 @@ describe('font.js', function() {
 
     });
 });
+
+describe('glyphset.js', function() {
+    let font;
+
+    const fGlyph = new Glyph({name: 'f', unicode: 102, path: new Path(), advanceWidth: 1});
+    const iGlyph = new Glyph({name: 'i', unicode: 105, path: new Path(), advanceWidth: 1});
+    const ffGlyph = new Glyph({name: 'f_f', unicode: 0xfb01, path: new Path(), advanceWidth: 1});
+    const fiGlyph = new Glyph({name: 'f_i', unicode: 0xfb02, path: new Path(), advanceWidth: 1});
+    const ffiGlyph = new Glyph({name: 'f_f_i', unicode: 0xfb03, path: new Path(), advanceWidth: 1});
+
+    const glyphs = [
+        new Glyph({name: '.notdef', unicode: 0, path: new Path(), advanceWidth: 1}),
+        fGlyph, iGlyph, ffGlyph, fiGlyph, ffiGlyph
+    ];
+
+    beforeEach(function() {
+        font = new Font({
+            familyName: 'MyFont',
+            styleName: 'Medium',
+            unitsPerEm: 1000,
+            ascender: 800,
+            descender: 0,
+            fsSelection: 42,
+            tables: {os2: {achVendID: 'TEST'}},
+            glyphs: glyphs
+        });
+    });
+
+    describe('GlyphSet iterable', function() {
+        it('must be iterable', function() {
+            assert.ok(glyphs[Symbol.iterator]);
+        });
+
+        it('must iterate over glyphs', function() {
+            for (const glyph of glyphs) {
+                assert.ok(glyph instanceof Glyph);
+            }
+        });
+
+        it('must iterate over glyphs in order', function() {
+            let i = 0;
+            for (const glyph of glyphs) {
+                assert.equal(glyph.name, glyphs[i].name);
+                i++;
+            }
+        });
+    })
+});
