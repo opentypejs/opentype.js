@@ -139,5 +139,5 @@ describe('glyphset.js', function() {
                 i++;
             }
         });
-    })
+    });
 });
