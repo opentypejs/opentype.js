@@ -45,15 +45,15 @@ function GlyphSet(font, glyphs) {
  * @return {opentype.GlyphSet.Iterator}
  */
 GlyphSet.prototype.myGlyphs = function() {
-    n = -1;
+    let n = -1;
     return {
         next: function() {
             n++;
-            done = n >= this.length - 1;
+            const done = n >= this.length - 1;
             return {value:this.get(n), done:done};
         }
     };
-}
+};
 
 /**
  * @param  {number} index
