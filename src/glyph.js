@@ -74,7 +74,7 @@ Glyph.prototype.bindConstructorValues = function(options) {
     // These three values cannot be deferred for memory optimization:
     this.name = options.name || null;
     this.unicode = options.unicode;
-    this.unicodes = options.unicodes || options.unicode !== undefined ? [options.unicode] : [];
+    this.unicodes = options.unicodes || (options.unicode !== undefined ? [options.unicode] : []);
 
     // But by binding these values only when necessary, we reduce can
     // the memory requirements by almost 3% for larger fonts.
