@@ -102,6 +102,12 @@ function Font(options) {
         if (selection == 0) {
             selection = this.fsSelectionValues.REGULAR;
         }
+        if (options.fsSelection) {
+            selection = options.fsSelection;
+        }
+        if (!options.panose || !Array.isArray(options.panose)) {
+            options.panose = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+        }
 
         this.tables = Object.assign(options.tables, {
             os2: Object.assign({
