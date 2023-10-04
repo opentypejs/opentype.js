@@ -24,6 +24,7 @@ import cpal from './cpal.js';
 import fvar from './fvar.js';
 import stat from './stat.js';
 import avar from './avar.js';
+import gasp from './gasp.js';
 
 function log2(v) {
     return Math.log(v) / Math.log(2) | 0;
@@ -327,6 +328,7 @@ function fontToSfntTable(font) {
 
     // we have to handle fvar before name, because it may modify name IDs
     const fvarTable = font.tables.fvar ? fvar.make(font.tables.fvar, font.names) : undefined;
+    const gaspTable = font.tables.gasp ? gasp.make(font.tables.gasp) : undefined;
 
     const languageTags = [];
     const nameTable = _name.make(names, languageTags);
@@ -378,6 +380,10 @@ function fontToSfntTable(font) {
 
     if (metaTable) {
         tables.push(metaTable);
+    }
+
+    if (gaspTable) {
+        tables.push(gaspTable);
     }
 
     const sfntTable = makeSfntTable(tables);

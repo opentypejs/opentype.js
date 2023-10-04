@@ -75,6 +75,7 @@ describe('glyph.js', function() {
         let glyph = new Glyph({
             name: 'Test Glyph',
             unicode: 65,
+            unicodes: [65, 66],
             path: new Path(),
             advanceWidth: 400,
             leftSideBearing: -100
@@ -85,7 +86,7 @@ describe('glyph.js', function() {
             assert.equal(glyph.unicode, 65);
             assert.equal(glyph.advanceWidth, 400);
             assert.equal(glyph.leftSideBearing, -100);
-            assert.deepEqual(glyph.unicodes, [65]);
+            assert.deepEqual(glyph.unicodes, [65, 66]);
         });
     });
 
