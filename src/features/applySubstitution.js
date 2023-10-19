@@ -27,10 +27,11 @@ function singleSubstitutionFormat2(action, tokens, index) {
  * @param {number} index token index
  */
 function chainingSubstitutionFormat3(action, tokens, index) {
-    action.substitution.forEach((subst, offset) => {
-        const token = tokens[index + offset];
+    for(let i = 0; i < action.substitution.length; i++) {
+        const subst = action.substitution[i];
+        const token = tokens[index + i];
         token.setState(action.tag, subst);
-    });
+    }
 }
 
 /**

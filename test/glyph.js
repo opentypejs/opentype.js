@@ -75,6 +75,7 @@ describe('glyph.js', function() {
         let glyph = new Glyph({
             name: 'Test Glyph',
             unicode: 65,
+            unicodes: [65, 66],
             path: new Path(),
             advanceWidth: 400,
             leftSideBearing: -100
@@ -85,7 +86,7 @@ describe('glyph.js', function() {
             assert.equal(glyph.unicode, 65);
             assert.equal(glyph.advanceWidth, 400);
             assert.equal(glyph.leftSideBearing, -100);
-            assert.deepEqual(glyph.unicodes, [65]);
+            assert.deepEqual(glyph.unicodes, [65, 66]);
         });
     });
 
@@ -118,6 +119,18 @@ describe('glyph.js', function() {
             glyph.fromSVG(trianglePathUp, flipOption);
             assert.equal(glyph.path.toPathData({flipY: false}), trianglePathDown);
             assert.equal(glyph.toPathData(flipOption), trianglePathUp);
+        });
+
+        it('should not throw an error during optimization for paths with few points', function() {
+            const textToRender = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ffffiThe king said: เป็นคนใจดีสำหรับทุกคน because ความรักคือทุกสิ่งThe king said: ائتوني به أستخلصه لنفسيBe kind, هناش الإ ءيش نم عزن الو ، هناز الإ ءيش يف قفرلا ناك امفลลฤๅ';
+            assert.doesNotThrow(function() {
+                const font = loadSync('./test/fonts/Jomhuria-Regular.ttf');
+                const glyphs = font.stringToGlyphs(textToRender);
+                for (let i = 0; i < glyphs.length; i++) {
+                    const glyph = glyphs[i];
+                    glyph.path.toSVG();
+                }
+            });
         });
     });
 });

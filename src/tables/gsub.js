@@ -282,11 +282,12 @@ subtableMakers[5] = function makeLookup5(subtable) {
                 // ("glyphCount" in the spec) comes before seqLookupCount
                 [tableData[0], tableData[1]] = [tableData[1], tableData[0]];
 
-                sequenceRule.lookupRecords.forEach((record, i) => {
+                for(let i = 0; i < sequenceRule.lookupRecords.length; i++) {
+                    const record = sequenceRule.lookupRecords[i];
                     tableData = tableData
                         .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
                         .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
-                });
+                }
                 return new table.Table('sequenceRuleTable', tableData);
             }));
         })));
@@ -302,12 +303,12 @@ subtableMakers[5] = function makeLookup5(subtable) {
             return new table.Table('classSeqRuleSetTable', table.tableList('classSeqRule', classSeqRuleSet, function(classSeqRule) {
                 let tableData = table.ushortList('classes', classSeqRule.classes, classSeqRule.classes.length + 1)
                     .concat(table.ushortList('seqLookupCount', [], classSeqRule.lookupRecords.length));
-
-                classSeqRule.lookupRecords.forEach((record, i) => {
+                for(let i = 0; i < classSeqRule.lookupRecords.length; i++) {
+                    const record = classSeqRule.lookupRecords[i];
                     tableData = tableData
                         .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
                         .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
-                });
+                }
                 return new table.Table('classSeqRuleTable', tableData);
             }));
         })));
@@ -318,15 +319,17 @@ subtableMakers[5] = function makeLookup5(subtable) {
 
         tableData.push({name: 'inputGlyphCount', type: 'USHORT', value: subtable.coverages.length});
         tableData.push({name: 'substitutionCount', type: 'USHORT', value: subtable.lookupRecords.length});
-        subtable.coverages.forEach((coverage, i) => {
+        for(let i = 0; i < subtable.coverages.length; i++) {
+            const coverage = subtable.coverages[i];
             tableData.push({name: 'inputCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
-        });
+        }
 
-        subtable.lookupRecords.forEach((record, i) => {
+        for(let i = 0; i < subtable.lookupRecords.length; i++) {
+            const record = subtable.lookupRecords[i];
             tableData = tableData
                 .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
                 .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
-        });
+        }
 
         let returnTable = new table.Table('contextualSubstitutionTable', tableData);
 
@@ -348,11 +351,12 @@ subtableMakers[6] = function makeLookup6(subtable) {
                     .concat(table.ushortList('lookaheadGlyph', chainRule.lookahead, chainRule.lookahead.length))
                     .concat(table.ushortList('substitution', [], chainRule.lookupRecords.length));
 
-                chainRule.lookupRecords.forEach((record, i) => {
+                for(let i = 0; i < chainRule.lookupRecords.length; i++) {
+                    const record = chainRule.lookupRecords[i];
                     tableData = tableData
                         .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
                         .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
-                });
+                }
                 return new table.Table('chainRuleTable', tableData);
             }));
         })));
@@ -365,24 +369,30 @@ subtableMakers[6] = function makeLookup6(subtable) {
         ];
 
         tableData.push({name: 'backtrackGlyphCount', type: 'USHORT', value: subtable.backtrackCoverage.length});
-        subtable.backtrackCoverage.forEach((coverage, i) => {
+        for(let i = 0; i < subtable.backtrackCoverage.length; i++) {
+            const coverage = subtable.backtrackCoverage[i];
             tableData.push({name: 'backtrackCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
-        });
+        }
         tableData.push({name: 'inputGlyphCount', type: 'USHORT', value: subtable.inputCoverage.length});
-        subtable.inputCoverage.forEach((coverage, i) => {
+        
+        for(let i = 0; i < subtable.inputCoverage.length; i++) {
+            const coverage = subtable.inputCoverage[i];
             tableData.push({name: 'inputCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
-        });
+        }
         tableData.push({name: 'lookaheadGlyphCount', type: 'USHORT', value: subtable.lookaheadCoverage.length});
-        subtable.lookaheadCoverage.forEach((coverage, i) => {
+        
+        for(let i = 0; i < subtable.lookaheadCoverage.length; i++) {
+            const coverage = subtable.lookaheadCoverage[i];
             tableData.push({name: 'lookaheadCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
-        });
+        }
 
         tableData.push({name: 'substitutionCount', type: 'USHORT', value: subtable.lookupRecords.length});
-        subtable.lookupRecords.forEach((record, i) => {
+        for(let i = 0; i < subtable.lookupRecords.length; i++) {
+            const record = subtable.lookupRecords[i];
             tableData = tableData
                 .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
                 .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
-        });
+        }
 
         let returnTable = new table.Table('chainContextTable', tableData);
 

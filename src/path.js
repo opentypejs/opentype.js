@@ -34,6 +34,9 @@ function optimizeCommands(commands) {
             // When closing at the same position as the path started,
             // remove unnecessary line command
             if (
+                firstCommand &&
+                secondCommand &&
+                previousCommand &&
                 firstCommand.type === 'M' &&
                 secondCommand.type === 'L' &&
                 previousCommand.type === 'L' &&
@@ -49,7 +52,7 @@ function optimizeCommands(commands) {
             }
         } else if (cmd.type === 'L') {
             // remove lines that lead to the same position as the previous command
-            if (previousCommand.x === cmd.x && previousCommand.y === cmd.y) {
+            if (previousCommand && previousCommand.x === cmd.x && previousCommand.y === cmd.y) {
                 subpath.pop();
             }
         }
