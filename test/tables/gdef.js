@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { unhex } from '../testutil';
-import gdef from '../../src/tables/gdef';
+import { unhex } from '../testutil.js';
+import gdef from '../../src/tables/gdef.js';
 
 describe('tables/gdef.js', function() {
     const data =

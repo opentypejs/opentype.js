@@ -2,8 +2,11 @@
  * Apply Latin ligature feature to a range of tokens
  */
 
-import { ContextParams } from '../../tokenizer';
-import applySubstitution from '../applySubstitution';
+import { ContextParams } from '../../tokenizer.js';
+import applySubstitution from '../applySubstitution.js';
+
+// @TODO: use commonFeatureUtils.js for reduction of code duplication
+// once #564 has been merged.
 
 /**
  * Update context params
@@ -23,18 +26,19 @@ function latinLigature(range) {
     const script = 'latn';
     let tokens = this.tokenizer.getRangeTokens(range);
     let contextParams = getContextParams(tokens);
-    contextParams.context.forEach((glyphIndex, index) => {
+    for(let index = 0; index < contextParams.context.length; index++) {
         contextParams.setCurrentIndex(index);
         let substitutions = this.query.lookupFeature({
             tag: 'liga', script, contextParams
         });
         if (substitutions.length) {
-            substitutions.forEach(
-                action => applySubstitution(action, tokens, index)
-            );
+            for(let i = 0; i < substitutions.length; i++) {
+                const action = substitutions[i];
+                applySubstitution(action, tokens, index);
+            }
             contextParams = getContextParams(tokens);
         }
-    });
+    }
 }
 
 export default latinLigature;

@@ -1,6 +1,8 @@
 import assert from 'assert';
-import Bidi from '../src/bidi';
-import { loadSync } from '../src/opentype';
+import Bidi from '../src/bidi.js';
+import { parse } from '../src/opentype.js';
+import { readFileSync } from 'fs';
+const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('bidi.js', function() {
     let latinFont;
@@ -8,11 +10,12 @@ describe('bidi.js', function() {
     let bidiFira;
     let bidiScheherazade;
     let arabicTokenizer;
+
     before(function () {
         /**
          * arab
          */
-        arabicFont = loadSync('./fonts/Scheherazade-Bold.ttf');
+        arabicFont = loadSync('./test/fonts/Scheherazade-Bold.ttf');
         bidiScheherazade = new Bidi();
         bidiScheherazade.registerModifier(
             'glyphIndex', null, token => arabicFont.charToGlyphIndex(token.char)
@@ -27,7 +30,7 @@ describe('bidi.js', function() {
         /**
          * latin
          */
-        latinFont = loadSync('./fonts/FiraSansMedium.woff');
+        latinFont = loadSync('./test/fonts/FiraSansMedium.woff');
         bidiFira = new Bidi();
         bidiFira.registerModifier(
             'glyphIndex', null, token => latinFont.charToGlyphIndex(token.char)
@@ -85,5 +88,59 @@ describe('bidi.js', function() {
             assert.deepEqual(glyphIndexes, [1145]);
         });
     });
-});
 
+    describe('Unicode Variation Sequences (UVSes)', function() {
+        it('should be handled correctly', function() {
+            const font = loadSync('./test/fonts/TestCMAP14.otf');
+            // the string '芦芦󠄀芦󠄁芦󠄂≩≩︀', containing (invisible) variation selectors after some of the characters
+            const string = [33446, 33446, 917760, 33446, 917761, 33446, 917762, 8809, 8809, 65024].map(p => String.fromCodePoint(p)).join('');
+            assert.deepEqual(font.stringToGlyphIndexes(string), [1, 1, 2, 1, 4, 3]);
+        });
+    });
+
+    describe('thai scripts', () => {
+
+        let thaiFont;
+        let bidiThai;
+
+        before(()=> {
+            thaiFont = loadSync('./test/fonts/NotoSansThai-Medium-Testing-v1.ttf');
+            bidiThai = new Bidi();
+            bidiThai.registerModifier(
+                'glyphIndex', null, token => thaiFont.charToGlyphIndex(token.char)
+            );
+            const requiredThaiFeatures = [{
+                script: 'thai',
+                tags: ['liga', 'rlig', 'ccmp']
+            }];
+            bidiThai.applyFeatures(thaiFont, requiredThaiFeatures);
+        });
+
+        describe('thai features', () => {
+            it('should apply glyph composition', () => {
+                let glyphIndexes = bidiThai.getTextGlyphs('่ํ');
+                assert.deepEqual(glyphIndexes, [451]);
+            });
+
+            it('should apply glyph ligatures', () => {
+                let glyphIndexes = bidiThai.getTextGlyphs('ฤๅ');
+                assert.deepEqual(glyphIndexes, [459]);
+            });
+
+            it('should apply glyph required ligatures', () => {
+                let glyphIndexes = bidiThai.getTextGlyphs('ลล');
+                assert.deepEqual(glyphIndexes, [352]);
+            });
+        });
+
+        describe('thai contexts', () => {
+            it('should match thai words in a given text', () => {
+                const tokenizer = bidiThai.tokenizer;
+                tokenizer.tokenize('The king said: เป็นคนใจดีสำหรับทุกคน because ความรักคือทุกสิ่ง');
+                const ranges = tokenizer.getContextRanges('thaiWord');
+                const words = ranges.map(range => tokenizer.rangeToText(range));
+                assert.deepEqual(words, ['เป็นคนใจดีสำหรับทุกคน', 'ความรักคือทุกสิ่ง']);
+            });
+        });
+    });
+});

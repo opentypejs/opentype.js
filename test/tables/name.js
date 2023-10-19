@@ -1,8 +1,8 @@
 import assert from 'assert';
-import table from '../../src/table';
-import { encode } from '../../src/types';
-import _name from '../../src/tables/name';
-import { hex, unhex } from '../testutil';
+import table from '../../src/table.js';
+import { encode } from '../../src/types.js';
+import _name from '../../src/tables/name.js';
+import { hex, unhex } from '../testutil.js';
 
 // For testing, we need a custom function that builds name tables.
 // The public name.make() API of opentype.js is hiding the complexity

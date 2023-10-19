@@ -10,6 +10,8 @@ function Token(char) {
     this.char = char;
     this.state = {};
     this.activeState = null;
+
+
 }
 
 /**
@@ -79,29 +81,32 @@ function initializeCoreEvents(events) {
         'replaceToken', 'replaceRange', 'composeRUD', 'updateContextsRanges'
     ];
 
-    coreEvents.forEach(eventId => {
+    for(let i = 0; i < coreEvents.length; i++) {
+        const eventId = coreEvents[i];
         Object.defineProperty(this.events, eventId, {
             value: new Event(eventId)
         });
-    });
+    }
 
-    if (!!events) {
-        coreEvents.forEach(eventId => {
+    if (events) {
+        for(let i = 0; i < coreEvents.length; i++) {
+            const eventId = coreEvents[i];
             const event = events[eventId];
             if (typeof event === 'function') {
                 this.events[eventId].subscribe(event);
             }
-        });
+        }
     }
     const requiresContextUpdate = [
         'insertToken', 'removeToken', 'removeRange',
         'replaceToken', 'replaceRange', 'composeRUD'
     ];
-    requiresContextUpdate.forEach(eventId => {
+    for(let i = 0; i < requiresContextUpdate.length; i++) {
+        const eventId = requiresContextUpdate[i];
         this.events[eventId].subscribe(
             this.updateContextsRanges
         );
-    });
+    }
 }
 
 /**
@@ -153,11 +158,11 @@ Tokenizer.prototype.composeRUD = function (RUDs) {
     ));
     const hasFAILObject = obj => (
         typeof obj === 'object' &&
-        obj.hasOwnProperty('FAIL')
+        Object.prototype.hasOwnProperty.call(obj, 'FAIL')
     );
     if (state.every(hasFAILObject)) {
         return {
-            FAIL: `composeRUD: one or more operations hasn't completed successfully`,
+            FAIL: 'composeRUD: one or more operations hasn\'t completed successfully',
             report: state.filter(hasFAILObject)
         };
     }
@@ -349,7 +354,7 @@ Tokenizer.prototype.getText = function () {
  */
 Tokenizer.prototype.getContext = function (contextName) {
     let context = this.registeredContexts[contextName];
-    return !!context ? context : null;
+    return context ? context : null;
 };
 
 /**
@@ -359,7 +364,7 @@ Tokenizer.prototype.getContext = function (contextName) {
  */
 Tokenizer.prototype.on = function(eventName, eventHandler) {
     const event = this.events[eventName];
-    if (!!event) {
+    if (event) {
         return event.subscribe(eventHandler);
     } else {
         return null;
@@ -374,9 +379,10 @@ Tokenizer.prototype.on = function(eventName, eventHandler) {
 Tokenizer.prototype.dispatch = function(eventName, args) {
     const event = this.events[eventName];
     if (event instanceof Event) {
-        event.subscribers.forEach(subscriber => {
+        for(let i = 0; i < event.subscribers.length; i++) {
+            const subscriber = event.subscribers[i];
             subscriber.apply(this, args || []);
-        });
+        }
     }
 };
 
@@ -388,17 +394,17 @@ Tokenizer.prototype.dispatch = function(eventName, args) {
  * TODO: call tokenize on registration to update context ranges with the new context.
  */
 Tokenizer.prototype.registerContextChecker = function(contextName, contextStartCheck, contextEndCheck) {
-    if (!!this.getContext(contextName)) return {
+    if (this.getContext(contextName)) return {
         FAIL:
         `context name '${contextName}' is already registered.`
     };
     if (typeof contextStartCheck !== 'function') return {
         FAIL:
-        `missing context start check.`
+        'missing context start check.'
     };
     if (typeof contextEndCheck !== 'function') return {
         FAIL:
-        `missing context end check.`
+        'missing context end check.'
     };
     const contextCheckers = new ContextChecker(
         contextName, contextStartCheck, contextEndCheck
@@ -426,7 +432,7 @@ Tokenizer.prototype.getRangeTokens = function(range) {
  */
 Tokenizer.prototype.getContextRanges = function(contextName) {
     const context = this.getContext(contextName);
-    if (!!context) {
+    if (context) {
         return context.ranges;
     } else {
         return { FAIL: `context checker '${contextName}' is not registered.` };
@@ -439,7 +445,7 @@ Tokenizer.prototype.getContextRanges = function(contextName) {
 Tokenizer.prototype.resetContextsRanges = function () {
     const registeredContexts = this.registeredContexts;
     for (const contextName in registeredContexts) {
-        if (registeredContexts.hasOwnProperty(contextName)) {
+        if (Object.prototype.hasOwnProperty.call(registeredContexts, contextName)) {
             const context = registeredContexts[contextName];
             context.ranges = [];
         }
@@ -480,7 +486,8 @@ Tokenizer.prototype.setEndOffset = function (offset, contextName) {
  */
 Tokenizer.prototype.runContextCheck = function(contextParams) {
     const index = contextParams.index;
-    this.contextCheckers.forEach(contextChecker => {
+    for(let i = 0; i < this.contextCheckers.length; i++) {
+        const contextChecker = this.contextCheckers[i];
         let contextName = contextChecker.contextName;
         let openRange = this.getContext(contextName).openRange;
         if (!openRange && contextChecker.checkStart(contextParams)) {
@@ -493,7 +500,7 @@ Tokenizer.prototype.runContextCheck = function(contextParams) {
             const range = this.setEndOffset(offset, contextName);
             this.dispatch('contextEnd', [contextName, range]);
         }
-    });
+    }
 };
 
 /**

@@ -1,9 +1,9 @@
 // The `name` naming table.
 // https://www.microsoft.com/typography/OTSPEC/name.htm
 
-import { decode, encode } from '../types';
-import parse from '../parse';
-import table from '../table';
+import { decode, encode } from '../types.js';
+import parse from '../parse.js';
+import table from '../table.js';
 
 // NameIDs for the name table.
 const nameTableNames = [
@@ -677,10 +677,9 @@ function parseNameTable(data, start, ltag) {
         }
     }
 
-    let langTagCount = 0;
     if (format === 1) {
         // FIXME: Also handle Microsoft's 'name' table 1.
-        langTagCount = p.parseUShort();
+        p.parseUShort(); // langTagCount
     }
 
     return name;
@@ -817,7 +816,7 @@ function makeNameTable(names, ltag) {
                     if (macName !== undefined) {
                         const macNameOffset = addStringToPool(macName, stringPool);
                         nameRecords.push(makeNameRecord(platformID, macScript,
-                                macLanguage, nameID, macName.length, macNameOffset));
+                            macLanguage, nameID, macName.length, macNameOffset));
                     }
                 }
 
@@ -827,7 +826,7 @@ function makeNameTable(names, ltag) {
                         const winName = encode.UTF16(text);
                         const winNameOffset = addStringToPool(winName, stringPool);
                         nameRecords.push(makeNameRecord(3, 1, winLanguage,
-                                                    nameID, winName.length, winNameOffset));
+                            nameID, winName.length, winNameOffset));
                     }
                 }
             }

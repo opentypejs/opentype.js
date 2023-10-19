@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>opentype.js font inspector</title>
+<meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
+<meta charset="utf-8">
+<link rel="stylesheet" href="site.css">
+
+<div class="header">
+    <div class="container">
+        <h1><a href="./">opentype.js</a></h1>
+        <nav>
+            <a href="font-inspector.html">Font Inspector</a>
+            <a href="glyph-inspector.html">Glyph Inspector</a>
+        </nav>
+        <nav class="right">
+            <a class="github" href="https://github.com/opentypejs/opentype.js">Fork me on GitHub</a>
+        </nav>
+    </div>
+</div>
+
+<form class="container" name="demo">
+
+    <div class="explain">
+        <h1>Font Inspector</h1>
+        <small>opentype.js is an OpenType and TrueType font parser. Here you can inspect the raw font metadata.</small>
+    </div>
+
+    <input name="file" type="file">
+    <output class="info" name="fontname"></output>
+    <canvas id="preview" width="940" height="50" class="text"></canvas>
+    <div id="message"></div>
+
+    <hr>
+
+    <div id="font-data">
+        <h3 class="collapsed">Font Header table <a href="https://www.microsoft.com/typography/OTSPEC/head.htm" target="_blank">head</a></h3>
+        <dl id="head-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">Horizontal Header table <a href="https://www.microsoft.com/typography/OTSPEC/hhea.htm" target="_blank">hhea</a></h3>
+        <dl id="hhea-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">Maximum Profile table <a href="https://www.microsoft.com/typography/OTSPEC/maxp.htm" target="_blank">maxp</a></h3>
+        <dl id="maxp-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">Naming table <a href="https://www.microsoft.com/typography/OTSPEC/name.htm" target="_blank">name</a></h3>
+        <div id="name-table" class="data-content">
+            <dl><dt>Undefined</dt></dl>
+        </div>
+
+        <h3 class="collapsed">OS/2 and Windows Metrics table <a href="https://www.microsoft.com/typography/OTSPEC/os2.htm" target="_blank">OS/2</a></h3>
+        <dl id="os2-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">PostScript table <a href="https://www.microsoft.com/typography/OTSPEC/post.htm" target="_blank">post</a></h3>
+        <dl id="post-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">Character To Glyph Index Mapping Table <a href="https://www.microsoft.com/typography/OTSPEC/cmap.htm" target="_blank">cmap</a></h3>
+        <dl id="cmap-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">Font Variations table <a href="https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6fvar.html" target="_blank">fvar</a></h3>
+        <dl id="fvar-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">Metadata table <a href="https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6meta.html" target="_blank">meta</a></h3>
+        <dl id="meta-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">Control Value Table <a href="https://www.microsoft.com/typography/OTSPEC/cvt.htm" target="_blank">cvt</a></h3>
+        <dl id="cvt-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">CVT Program <a href="https://www.microsoft.com/typography/OTSPEC/prep.htm" target="_blank">prep</a></h3>
+        <dl id="prep-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">Font program <a href="https://www.microsoft.com/typography/OTSPEC/fpgm.htm" target="_blank">fpgm</a></h3>
+        <dl id="fpgm-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">Glyph Substitution Table <a href="https://www.microsoft.com/typography/OTSPEC/GSUB.htm" target="_blank">GSUB</a></h3>
+        <dl id="gsub-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">Kerning <a href="https://www.microsoft.com/typography/otspec/kern.htm" target="_blank">kern</a></h3>
+        <dl id="kern-table"><dt>Undefined</dt></dl>
+    </div>
+
+    <hr>
+
+    <div class="explain">
+        <h1>Free Software</h1>
+        <p>opentype.js is available on <a href="https://github.com/opentypejs/opentype.js">GitHub</a> under the <a href="https://raw.github.com/opentypejs/opentype.js/master/LICENSE">MIT License</a>.</p>
+        <p>Copyright &copy; 2020 Frederik De Bleser.</p>
+    </div>
+
+    <hr>
+</form>
+
+
+<script type="module">
+import * as opentype from "/dist/opentype.module.js";
+
+var font = null;
+const fontSize = 32;
+const textToRender = 'Grumpy wizards make toxic brew for the evil Queen and Jack.';
+
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, '&amp;')
+         .replace(/</g, '&lt;')
+         .replace(/>/g, '&gt;')
+         .replace(/\u0022/g, '&quot;')
+         .replace(/\u0027/g, '&#039;');
+}
+
+function enableHighDPICanvas(canvas) {
+    if (typeof canvas === 'string') {
+        canvas = document.getElementById(canvas);
+    }
+    var pixelRatio = window.devicePixelRatio || 1;
+    if (pixelRatio === 1) return;
+    var oldWidth = canvas.width;
+    var oldHeight = canvas.height;
+    canvas.width = oldWidth * pixelRatio;
+    canvas.height = oldHeight * pixelRatio;
+    canvas.style.width = oldWidth + 'px';
+    canvas.style.height = oldHeight + 'px';
+    canvas.getContext('2d').scale(pixelRatio, pixelRatio);
+}
+
+function renderText(font) {
+    if (!font) return;
+
+    var previewCanvas = document.getElementById('preview');
+    var previewCtx = previewCanvas.getContext("2d");
+    previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    font.draw(previewCtx, textToRender, 0, 32, fontSize, {
+        kerning: true,
+        features: [
+        /**
+         * these 4 features are required to render Arabic text properly
+         * and shouldn't be turned off when rendering arabic text.
+         */
+            { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
+            { script: 'latn', tags: ['liga', 'rlig'] }
+        ]
+    });
+}
+
+function showErrorMessage(message) {
+    var el = document.getElementById('message');
+    if (!message || message.trim().length === 0) {
+        el.style.display = 'none';
+    } else {
+        el.style.display = 'block';
+    }
+    el.innerHTML = message;
+}
+
+function sortKeys(dict) {
+    var keys = [];
+    for (var key in dict) {
+        keys.push(key);
+    }
+    keys.sort();
+    return keys;
+}
+
+function displayNames(names) {
+    var html = '';
+    ['unicode', 'macintosh', 'windows'].forEach( platform => {
+        var platformNames = (names ? names[platform] : null);
+
+        if ( ! platformNames ) return;
+
+        html += `<h4>${platform}</h4><dl id="name-table-${platform}">`;
+
+        var properties = sortKeys(platformNames);
+        for (var i = 0; i < properties.length; i++) {
+            var property = properties[i];
+            html += `<dt>${escapeHtml(property)}</dt><dd>`;
+            var translations = platformNames[property];
+            var langs = sortKeys(translations);
+            for (var j = 0; j < langs.length; j++) {
+                var lang = langs[j];
+                var esclang = escapeHtml(lang);
+                html += '<span class="langtag">' + esclang
+                    + '</span> <span class="langname" lang=' + esclang + '>'
+                    + escapeHtml(translations[lang]) + '</span> ';
+            }
+            html += '</dd>';
+        }
+
+        html += '</dl>';
+    });
+
+    document.getElementById('name-table').innerHTML = html;
+}
+
+function displayFontData(font) {
+    var html, tablename, table, property, value;
+
+    for (tablename in font.tables) {
+        table = font.tables[tablename];
+        if (tablename == 'name') {
+            displayNames(table);
+            continue;
+        }
+
+        html = '';
+        for (property in table) {
+            value = table[property];
+            html += '<dt>'+property+'</dt><dd>';
+            if (Array.isArray(value) && typeof value[0] === 'object') {
+                html += value.map(function(item) {
+                    return JSON.stringify(item);
+                }).join('<br>');
+            } else if (typeof value === 'object') {
+              html += JSON.stringify(value);
+            } else if (['created', 'modified'].indexOf(property) > -1) {
+                var date = new Date(value * 1000);
+                html += date;
+            }
+            else {
+                html += value;
+            }
+            html += '</dd>';
+        }
+        var element = document.getElementById(tablename+"-table");
+        if (element) {
+            element.innerHTML = html;
+        }
+    }
+
+    if(font.kerningPairs) {
+        var element = document.getElementById("kern-table");
+        if (element) {
+            element.innerHTML = '<dt>' + Object.keys(font.kerningPairs).length + ' Pairs</dt><dd>' + JSON.stringify(font.kerningPairs) + '</dd>';
+        }
+    }
+}
+
+function onFontLoaded(font) {
+    window.font = font;
+    renderText(font);
+    displayFontData(font);
+}
+
+var tableHeaders = document.getElementById('font-data').getElementsByTagName('h3');
+for(var i = tableHeaders.length; i--; ) {
+    tableHeaders[i].addEventListener('click', function(e) {
+        e.target.className = (e.target.className === 'collapsed') ? 'expanded' : 'collapsed';
+    }, false);
+}
+
+const form = document.forms.demo;
+async function display(file, name) {
+    form.fontname.innerText = name;
+    const isWoff2 = name.endsWith('.woff2');
+    if (isWoff2 && !window.Module) {
+        const wasmReady = new Promise((onRuntimeInitialized) => window.Module = { onRuntimeInitialized });
+        await loadScript('https://unpkg.com/wawoff2@2.0.1/build/decompress_binding.js'); // wawoff2 is globaly loaded as 'Module'
+        await wasmReady; // WASM has called our onRuntimeInitialized() resolver
+    }
+    try {
+        const data = await file.arrayBuffer();
+        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
+        showErrorMessage('');
+    } catch (err) {
+        showErrorMessage(err.toString());
+    }
+}
+form.file.onchange = function(e) {
+    display(e.target.files[0], e.target.files[0].name);
+};
+
+enableHighDPICanvas('preview');
+
+const fontFileName = 'fonts/FiraSansMedium.woff';
+display(await fetch(fontFileName), fontFileName);
+</script>
+</body>
+</html>

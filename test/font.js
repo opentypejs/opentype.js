@@ -1,5 +1,7 @@
 import assert from 'assert';
-import { Font, Glyph, Path, loadSync } from '../src/opentype';
+import { Font, Glyph, Path, parse } from '../src/opentype.js';
+import { readFileSync } from 'fs';
+const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('font.js', function() {
     let font;
@@ -14,6 +16,8 @@ describe('font.js', function() {
         new Glyph({name: '.notdef', unicode: 0, path: new Path(), advanceWidth: 1}),
         fGlyph, iGlyph, ffGlyph, fiGlyph, ffiGlyph
     ];
+
+    glyphs.forEach((glyph, index) => glyph.index = index);
 
     beforeEach(function() {
         font = new Font({
@@ -47,6 +51,20 @@ describe('font.js', function() {
         });
     });
 
+    describe('stringToGlyphIndexes', function() {
+        it('must support standard ligatures', function() {
+            assert.deepEqual(font.stringToGlyphIndexes('fi'), [fGlyph.index, iGlyph.index]);
+            font.substitution.add('liga', { sub: [1, 1, 2], by: 5 });
+            font.substitution.add('liga', { sub: [1, 1], by: 3 });
+            font.substitution.add('liga', { sub: [1, 2], by: 4 });
+            assert.deepEqual(font.stringToGlyphIndexes('ff'), [ffGlyph.index]);
+            assert.deepEqual(font.stringToGlyphIndexes('fi'), [fiGlyph.index]);
+            assert.deepEqual(font.stringToGlyphIndexes('ffi'), [ffiGlyph.index]);
+            assert.deepEqual(font.stringToGlyphIndexes('fffiffif'),
+                [ffGlyph.index, fiGlyph.index, ffiGlyph.index, fGlyph.index]);
+        });
+    });
+
     describe('stringToGlyphs', function() {
         it('must support standard ligatures', function() {
             assert.deepEqual(font.stringToGlyphs('fi'), [fGlyph, iGlyph]);
@@ -60,14 +78,14 @@ describe('font.js', function() {
         });
 
         it('works on fonts with coverage table format 2', function() {
-            const vibur = loadSync('./fonts/Vibur.woff');
+            const vibur = loadSync('./test/fonts/Vibur.woff');
             const glyphs = vibur.stringToGlyphs('er');
             assert.equal(glyphs.length, 1);
             assert.equal(glyphs[0].name, 'er');
         });
 
         it('works on fonts with coverage table format 2 on low memory mode', function() {
-            const vibur = loadSync('./fonts/Vibur.woff', {lowMemory: true});
+            const vibur = loadSync('./test/fonts/Vibur.woff', {lowMemory: true});
             const glyphs = vibur.stringToGlyphs('er');
             assert.equal(glyphs.length, 1);
             assert.equal(glyphs[0].name, 'er');

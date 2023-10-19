@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { unhex, unhexArray } from '../testutil';
-import gsub from '../../src/tables/gsub';
+import { unhex, unhexArray } from '../testutil.js';
+import gsub from '../../src/tables/gsub.js';
 
 // Helper that builds a minimal GSUB table to test a lookup subtable.
 function parseLookup(lookupType, subTableData) {
@@ -269,6 +269,8 @@ describe('tables/gsub.js', function() {
         });
     });
 
+    // FIXME: test lookup6 substFormat2 (we already support parsing it!)
+
     it('can parse lookup6 substFormat3', function() {
         // https://docs.microsoft.com/de-de/typography/opentype/spec/gsub#63-chaining-context-substitution-format-3-coverage-based-glyph-contexts
         // example taken from Inter Regular, with just offsets adapted to the structure when only creating the lookup
@@ -497,6 +499,136 @@ describe('tables/gsub.js', function() {
 
     //// Lookup type 4 ////////////////////////////////////////////////////////
     // is already tested above
+
+    //// Lookup type 5 ////////////////////////////////////////////////////////
+    it('can write lookup5 substFormat1', function() {
+        // https://learn.microsoft.com/en-gb/typography/opentype/spec/gsub#example-7-contextual-substitution-format-1
+        const expectedData = unhexArray(
+            '0001 000A 0002 0012 0020' +                 // ContextSubstFormat1
+            '0001 0002 0028 005D' +                      // coverage format 1
+            '0001 0004 0002 0001 005D 0000 0001' +       // sub rule set "space and dash"
+            '0001 0004 0002 0001 0028 0001 0001'         // sub rule set "dash and space"
+        );
+
+        assert.deepEqual(makeLookup(5, {
+            substFormat: 1,
+            coverage: {
+                format: 1,
+                glyphs: [0x28, 0x5d]                                // space, dash
+            },
+            ruleSets: [
+                [{ input: [0x5d], lookupRecords: [{ sequenceIndex: 0, lookupListIndex: 1 }] }],
+                [{ input: [0x28], lookupRecords: [{ sequenceIndex: 1, lookupListIndex: 1 }] }]
+            ]
+        }), expectedData);
+    });
+
+    it('can write lookup5 substFormat2', function() {
+        // https://learn.microsoft.com/en-gb/typography/opentype/spec/gsub#example-8-contextual-substitution-format-2
+        const expectedData = unhexArray(
+            // SequenceContextFormat2 SetMarksHighSubtable
+            '0002  0010  001C' + // substFormat, SetMarksHighCoverage, SetMarksHighClassDef
+            '0004' +             // classSeqRuleSetCount
+            '0000  0000  0032 0040' + // classSeqRuleSetOffsets[0]-[3]
+            // CoverageFormat1 SetMarksHighCoverage
+            '0001  0004' +       // coverageFormat: lists, glyphCount
+            '0030' +             // tahGlyphID: glyphArray[0], high base glyph
+            '0031' +             // dhahGlyphID: glyphArray[1], high base glyph
+            '0040' +             // cafGlyphID:	glyphArray[2], very high base glyph
+            '0041' +             // gafGlyphID: glyphArray[3], very high base glyph
+            // ClassDefFormat2 SetMarksHighClassDef
+            '0002  0003' +       // classFormat: ranges, classRangeCount
+            // classRangeRecords[0]:
+            // ClassRangeRecords ordered by startGlyphID; record for Class 2, high base glyphs
+            '0030' +             // tahGlyphID: Start, first Glyph ID in range
+            '0031' +             // dhahGlyphID: End, last Glyph ID in range
+            '0002' +             // class
+            // classRangeRecords[1]:
+            // ClassRangeRecord for Class 3, very high base glyphs
+            '0040' +             // cafGlyphID: Start, first Glyph ID in range
+            '0041' +             // gafGlyphID: End, last Glyph ID in range
+            '0003' +             // class (ClassRange[2] for Class 1, mark gyphs)            )
+            // classRangeRecords[2]:
+            // ClassRangeRecord for Class 1, mark glyphs
+            '00D2' +             // fathatanDefaultGlyphID: Start, first Glyph ID in range default fathatan mark
+            '00D3' +             // dammatanDefaultGlyphID: End, last Glyph ID in the range default dammatan mark
+            '0001' +             // class
+            // ClassSequencRuleSet SetMarksHighSubClassSet2
+            '0001' +             // classSeqRuleCount
+            '0004' +             // SetMarksHighSubClassRule2: classSeqRuleOffsets[0] (offset to ClassSequenceRule table 0) — ClassSequenceRule tables ordered by preference
+            // ClassSequenceRule SetMarksHighSubClassRule2:
+            // ClassSequenceRule[0] table definition, Class 2 glyph (high base) glyph followed by a Class 1 glyph (mark)
+            '0002' +             // glyphCount
+            '0001' +             // seqLookupCount
+            '0001' +             // inputSequence[0] — input sequence beginning with the second Class in the input context sequence; Class 1, mark glyphs
+            // seqLookupRecords[0]:
+            // seqLookupRecords array in design order
+            '0001' +             // sequenceIndex — apply substitution to position 2, a mark
+            '0001' +             // lookupListIndex
+            // ClassSequencRuleSet SetMarksVeryHighSubClassSet3:
+            // ClassSequencRuleSet[3] table definition — all contexts that begin with Class 3 glyphs
+            '0001' +             // classSeqRuleCount
+            '0004' +             // SetMarksVeryHighSubClassRule3: classSeqRuleOffsets[0]
+            // ClassSequenceRule: SetMarksVeryHighSubClassRule3
+            // ClassSequenceRule[0] table definition — Class 3 glyph (very high base glyph) followed by a Class 1 glyph (mark)
+            '0002' +             // glyphCount
+            '0001' +             // seqLookupCount
+            '0001' +             // inputSequence[0] — input sequence beginning with the second Class in the input context sequence; Class 1, mark glyphs
+            // seqLookupRecords[0]:	seqLookupRecords array in design order
+            '0001' +             // sequenceIndex — apply substitution to position 2, second glyph class (mark)
+            '0002'               // lookupListIndex
+        );
+        assert.deepEqual(makeLookup(5, {
+            substFormat: 2,
+            coverage: {
+                format: 1,
+                glyphs: [0x30, 0x31, 0x40, 0x41]
+            },
+            classDef: {
+                format: 2,
+                ranges: [
+                    { start: 0x30, end: 0x31, classId: 2 },
+                    { start: 0x40, end: 0x41, classId: 3 },
+                    { start: 0xD2, end: 0xD3, classId: 1 }
+                ]
+            },
+            classSets: [
+                undefined,
+                undefined,
+                [{ classes: [1], lookupRecords: [{ sequenceIndex: 1, lookupListIndex: 1 }] }],
+                [{ classes: [1], lookupRecords: [{ sequenceIndex: 1, lookupListIndex: 2 }] }]
+            ]
+        }), expectedData);
+    });
+
+    it('can write lookup5 substFormat3', function() {
+        // https://www.microsoft.com/typography/OTSPEC/GSUB.htm#EX9
+        const expectedData = unhexArray(
+            '0003 0003 0002 0014 0030 0052 0000 0001 0002 0002' + // ContextSubstFormat3
+            '0001 000C 0033 0035 0037 0038 0039 003B 003C 003D 0041 0042 0045 004A' + // coverage format 1
+            '0001 000F 0032 0034 0036 003A 003E 003F 0040 0043 0044 0045 0046 0047 0048 0049 004B' + // coverage format 1
+            '0001 0005 0038 003B 0041 0042 004A' // coverage format 1
+        );
+        assert.deepEqual(makeLookup(5, {
+            substFormat: 3,
+            coverages: [{
+                    format: 1,
+                    glyphs: [0x33, 0x35, 0x37, 0x38, 0x39, 0x3b, 0x3c, 0x3d, 0x41, 0x42, 0x45, 0x4a]
+                },
+                {
+                    format: 1,
+                    glyphs: [0x32, 0x34, 0x36, 0x3a, 0x3e, 0x3f, 0x40, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4b]
+                },
+                {
+                    format: 1,
+                    glyphs: [0x38, 0x3b, 0x41, 0x42, 0x4a]
+                }],
+            lookupRecords: [
+                { sequenceIndex: 0, lookupListIndex: 1 },
+                { sequenceIndex: 2, lookupListIndex: 2 }
+            ]
+        }), expectedData);
+    });
 
     //// Lookup type 6 ////////////////////////////////////////////////////////
     it('can write lookup6 substFormat1', function() {

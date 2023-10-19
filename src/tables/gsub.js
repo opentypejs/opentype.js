@@ -1,9 +1,9 @@
 // The `GSUB` table contains ligatures, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gsub.htm
 
-import check from '../check';
-import { Parser } from '../parse';
-import table from '../table';
+import check from '../check.js';
+import { Parser } from '../parse.js';
+import table from '../table.js';
 
 const subtableParsers = new Array(9);         // subtableParsers[0] is unused
 
@@ -221,7 +221,7 @@ subtableMakers[1] = function makeLookup1(subtable) {
             {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
             {name: 'deltaGlyphID', type: 'SHORT', value: subtable.deltaGlyphId}
         ]);
-    } else {
+    } else if (subtable.substFormat === 2) {
         return new table.Table('substitutionTable', [
             {name: 'substFormat', type: 'USHORT', value: 2},
             {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
@@ -259,10 +259,84 @@ subtableMakers[4] = function makeLookup4(subtable) {
         return new table.Table('ligatureSetTable', table.tableList('ligature', ligatureSet, function(ligature) {
             return new table.Table('ligatureTable',
                 [{name: 'ligGlyph', type: 'USHORT', value: ligature.ligGlyph}]
-                .concat(table.ushortList('component', ligature.components, ligature.components.length + 1))
+                    .concat(table.ushortList('component', ligature.components, ligature.components.length + 1))
             );
         }));
     })));
+};
+
+subtableMakers[5] = function makeLookup5(subtable) {
+    if (subtable.substFormat === 1) {
+        return new table.Table('contextualSubstitutionTable', [
+            {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
+        ].concat(table.tableList('sequenceRuleSet', subtable.ruleSets, function(sequenceRuleSet) {
+            if (!sequenceRuleSet) {
+                return new table.Table('NULL', null);
+            }
+            return new table.Table('sequenceRuleSetTable', table.tableList('sequenceRule', sequenceRuleSet, function(sequenceRule) {
+                let tableData = table.ushortList('seqLookup', [], sequenceRule.lookupRecords.length)
+                    .concat(table.ushortList('inputSequence', sequenceRule.input, sequenceRule.input.length + 1));
+
+                // swap the first two elements, because inputSequenceCount
+                // ("glyphCount" in the spec) comes before seqLookupCount
+                [tableData[0], tableData[1]] = [tableData[1], tableData[0]];
+
+                for(let i = 0; i < sequenceRule.lookupRecords.length; i++) {
+                    const record = sequenceRule.lookupRecords[i];
+                    tableData = tableData
+                        .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
+                        .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+                }
+                return new table.Table('sequenceRuleTable', tableData);
+            }));
+        })));
+    } else if (subtable.substFormat === 2) {
+        return new table.Table('contextualSubstitutionTable', [
+            {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+            {name: 'classDef', type: 'TABLE', value: new table.ClassDef(subtable.classDef)}
+        ].concat(table.tableList('classSeqRuleSet', subtable.classSets, function(classSeqRuleSet) {
+            if (!classSeqRuleSet) {
+                return new table.Table('NULL', null);
+            }
+            return new table.Table('classSeqRuleSetTable', table.tableList('classSeqRule', classSeqRuleSet, function(classSeqRule) {
+                let tableData = table.ushortList('classes', classSeqRule.classes, classSeqRule.classes.length + 1)
+                    .concat(table.ushortList('seqLookupCount', [], classSeqRule.lookupRecords.length));
+                for(let i = 0; i < classSeqRule.lookupRecords.length; i++) {
+                    const record = classSeqRule.lookupRecords[i];
+                    tableData = tableData
+                        .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
+                        .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+                }
+                return new table.Table('classSeqRuleTable', tableData);
+            }));
+        })));
+    } else if (subtable.substFormat === 3) {
+        let tableData = [
+            {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
+        ];
+
+        tableData.push({name: 'inputGlyphCount', type: 'USHORT', value: subtable.coverages.length});
+        tableData.push({name: 'substitutionCount', type: 'USHORT', value: subtable.lookupRecords.length});
+        for(let i = 0; i < subtable.coverages.length; i++) {
+            const coverage = subtable.coverages[i];
+            tableData.push({name: 'inputCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
+        }
+
+        for(let i = 0; i < subtable.lookupRecords.length; i++) {
+            const record = subtable.lookupRecords[i];
+            tableData = tableData
+                .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
+                .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+        }
+
+        let returnTable = new table.Table('contextualSubstitutionTable', tableData);
+
+        return returnTable;
+    }
+
+    check.assert(false, 'lookup type 5 format must be 1, 2 or 3.');
 };
 
 subtableMakers[6] = function makeLookup6(subtable) {
@@ -277,11 +351,12 @@ subtableMakers[6] = function makeLookup6(subtable) {
                     .concat(table.ushortList('lookaheadGlyph', chainRule.lookahead, chainRule.lookahead.length))
                     .concat(table.ushortList('substitution', [], chainRule.lookupRecords.length));
 
-                chainRule.lookupRecords.forEach((record, i) => {
+                for(let i = 0; i < chainRule.lookupRecords.length; i++) {
+                    const record = chainRule.lookupRecords[i];
                     tableData = tableData
                         .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
                         .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
-                });
+                }
                 return new table.Table('chainRuleTable', tableData);
             }));
         })));
@@ -294,24 +369,30 @@ subtableMakers[6] = function makeLookup6(subtable) {
         ];
 
         tableData.push({name: 'backtrackGlyphCount', type: 'USHORT', value: subtable.backtrackCoverage.length});
-        subtable.backtrackCoverage.forEach((coverage, i) => {
+        for(let i = 0; i < subtable.backtrackCoverage.length; i++) {
+            const coverage = subtable.backtrackCoverage[i];
             tableData.push({name: 'backtrackCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
-        });
+        }
         tableData.push({name: 'inputGlyphCount', type: 'USHORT', value: subtable.inputCoverage.length});
-        subtable.inputCoverage.forEach((coverage, i) => {
+        
+        for(let i = 0; i < subtable.inputCoverage.length; i++) {
+            const coverage = subtable.inputCoverage[i];
             tableData.push({name: 'inputCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
-        });
+        }
         tableData.push({name: 'lookaheadGlyphCount', type: 'USHORT', value: subtable.lookaheadCoverage.length});
-        subtable.lookaheadCoverage.forEach((coverage, i) => {
+        
+        for(let i = 0; i < subtable.lookaheadCoverage.length; i++) {
+            const coverage = subtable.lookaheadCoverage[i];
             tableData.push({name: 'lookaheadCoverage' + i, type: 'TABLE', value: new table.Coverage(coverage)});
-        });
+        }
 
         tableData.push({name: 'substitutionCount', type: 'USHORT', value: subtable.lookupRecords.length});
-        subtable.lookupRecords.forEach((record, i) => {
+        for(let i = 0; i < subtable.lookupRecords.length; i++) {
+            const record = subtable.lookupRecords[i];
             tableData = tableData
                 .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
                 .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
-        });
+        }
 
         let returnTable = new table.Table('chainContextTable', tableData);
 

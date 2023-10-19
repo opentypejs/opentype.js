@@ -2,8 +2,8 @@
  * Query a feature by some of it's properties to lookup a glyph substitution.
  */
 
-import { ContextParams } from '../tokenizer';
-import { isTashkeelArabicChar } from '../char';
+import { ContextParams } from '../tokenizer.js';
+import { isTashkeelArabicChar } from '../char.js';
 
 /**
  * Create feature query instance
@@ -43,7 +43,7 @@ function lookupCoverage(glyphIndex, coverage) {
         case 1:
             return coverage.glyphs.indexOf(glyphIndex);
 
-        case 2:
+        case 2: {
             let ranges = coverage.ranges;
             for (let i = 0; i < ranges.length; i++) {
                 const range = ranges[i];
@@ -53,6 +53,7 @@ function lookupCoverage(glyphIndex, coverage) {
                 }
             }
             break;
+        }
         default:
             return -1; // not found
     }
@@ -242,7 +243,7 @@ FeatureQuery.prototype.getScriptFeaturesIndexes = function(scriptTag) {
             return script.script.defaultLangSys.featureIndexes;
         } else {
             let langSysRecords = script.langSysRecords;
-            if (!!langSysRecords) {
+            if (langSysRecords) {
                 for (let j = 0; j < langSysRecords.length; j++) {
                     const langSysRecord = langSysRecords[j];
                     if (langSysRecord.tag === scriptTag) {
@@ -277,7 +278,7 @@ FeatureQuery.prototype.mapTagsToFeatures = function (features, scriptTag) {
  */
 FeatureQuery.prototype.getScriptFeatures = function (scriptTag) {
     let features = this.features[scriptTag];
-    if (this.features.hasOwnProperty(scriptTag)) return features;
+    if (Object.prototype.hasOwnProperty.call(this.features, scriptTag)) return features;
     const featuresIndexes = this.getScriptFeaturesIndexes(scriptTag);
     if (!featuresIndexes) return null;
     const gsub = this.font.tables.gsub;
@@ -330,7 +331,7 @@ FeatureQuery.prototype.getLookupMethod = function(lookupTable, subtable) {
             throw new Error(
                 `lookupType: ${lookupTable.lookupType} - ` +
                 `substFormat: ${subtable.substFormat} ` +
-                `is not yet supported`
+                'is not yet supported'
             );
     }
 };
@@ -450,7 +451,7 @@ FeatureQuery.prototype.lookupFeature = function (query) {
 FeatureQuery.prototype.supports = function (query) {
     if (!query.script) return false;
     this.getScriptFeatures(query.script);
-    const supportedScript = this.features.hasOwnProperty(query.script);
+    const supportedScript = Object.prototype.hasOwnProperty.call(this.features, query.script);
     if (!query.tag) return supportedScript;
     const supportedFeature = (
         this.features[query.script].some(feature => feature.tag === query.tag)
@@ -489,8 +490,8 @@ FeatureQuery.prototype.getFeatureLookups = function (feature) {
  * @param {any} query an object that describes the properties of a query
  */
 FeatureQuery.prototype.getFeature = function getFeature(query) {
-    if (!this.font) return { FAIL: `No font was found`};
-    if (!this.features.hasOwnProperty(query.script)) {
+    if (!this.font) return { FAIL: 'No font was found'};
+    if (!Object.prototype.hasOwnProperty.call(this.features, query.script)) {
         this.getScriptFeatures(query.script);
     }
     const scriptFeatures = this.features[query.script];

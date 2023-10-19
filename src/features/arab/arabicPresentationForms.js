@@ -2,10 +2,10 @@
  * Apply Arabic presentation forms to a range of tokens
  */
 
-import { ContextParams } from '../../tokenizer';
-import { isIsolatedArabicChar, isTashkeelArabicChar } from '../../char';
-import { SubstitutionAction } from '../featureQuery';
-import applySubstitution from '../applySubstitution';
+import { ContextParams } from '../../tokenizer.js';
+import { isIsolatedArabicChar, isTashkeelArabicChar } from '../../char.js';
+import { SubstitutionAction } from '../featureQuery.js';
+import applySubstitution from '../applySubstitution.js';
 
 /**
  * Check if a char can be connected to it's preceding char
@@ -48,14 +48,15 @@ function arabicPresentationForms(range) {
     if (tokens.length === 1) return;
     let contextParams = new ContextParams(
         tokens.map(token => token.getState('glyphIndex')
-    ), 0);
+        ), 0);
     const charContextParams = new ContextParams(
         tokens.map(token => token.char
-    ), 0);
-    tokens.forEach((token, index) => {
-        if (isTashkeelArabicChar(token.char)) return;
-        contextParams.setCurrentIndex(index);
-        charContextParams.setCurrentIndex(index);
+        ), 0);
+    for(let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        if (isTashkeelArabicChar(token.char)) continue;
+        contextParams.setCurrentIndex(i);
+        charContextParams.setCurrentIndex(i);
         let CONNECT = 0; // 2 bits 00 (10: can connect next) (01: can connect prev)
         if (willConnectPrev(charContextParams)) CONNECT |= 1;
         if (willConnectNext(charContextParams)) CONNECT |= 2;
@@ -65,18 +66,22 @@ function arabicPresentationForms(range) {
             case 2: (tag = 'init'); break;
             case 3: (tag = 'medi'); break;
         }
-        if (tags.indexOf(tag) === -1) return;
+        if (tags.indexOf(tag) === -1) continue;
         let substitutions = this.query.lookupFeature({
             tag, script, contextParams
         });
-        if (substitutions instanceof Error) return console.info(substitutions.message);
-        substitutions.forEach((action, index) => {
+        if (substitutions instanceof Error) {
+            console.info(substitutions.message);
+            continue;
+        }
+        for(let j = 0; j < substitutions.length; j++) {
+            const action = substitutions[j];
             if (action instanceof SubstitutionAction) {
-                applySubstitution(action, tokens, index);
-                contextParams.context[index] = action.substitution;
+                applySubstitution(action, tokens, j);
+                contextParams.context[j] = action.substitution;
             }
-        });
-    });
+        }
+    }
 }
 
 export default arabicPresentationForms;

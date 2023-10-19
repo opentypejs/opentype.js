@@ -3,9 +3,9 @@
 // every palettes share the same size (numPaletteEntries) and can overlap to refere the same colors
 // https://www.microsoft.com/typography/OTSPEC/cpal.htm
 
-import { Parser } from '../parse';
-import check from '../check';
-import table from '../table';
+import { Parser } from '../parse.js';
+import check from '../check.js';
+import table from '../table.js';
 
 // Parse the header `head` table
 function parseCpalTable(data, start) {

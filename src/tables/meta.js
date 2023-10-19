@@ -1,10 +1,10 @@
 // The `GPOS` table contains kerning pairs, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 
-import check from '../check';
-import { decode } from '../types';
-import parse from '../parse';
-import table from '../table';
+import check from '../check.js';
+import { decode } from '../types.js';
+import parse from '../parse.js';
+import table from '../table.js';
 
 // Parse the metadata `meta` table.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6meta.html
@@ -22,7 +22,7 @@ function parseMetaTable(data, start) {
         const dataOffset = p.parseULong();
         const dataLength = p.parseULong();
         if (tag === 'appl' || tag === 'bild')
-           continue;
+            continue;
         const text = decode.UTF8(data, start + dataOffset, dataLength);
 
         tags[tag] = text;
