@@ -187,6 +187,10 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
         }
     }
 
+    if ( options.style !== undefined ) {
+        p.applyStyles(options.style);
+    }
+
     return p;
 };
 

@@ -658,4 +658,22 @@ Path.prototype.toDOMElement = function(options, pathData) {
     return newPath;
 };
 
+/**
+ * Apply styles to the path
+ * @param  {object} [styles] - Styles object {fill,stroke,strokeWidth}
+ * @return {Path}
+ */
+Path.prototype.applyStyles = function(styles) {
+    if ( styles !== undefined ) {
+        const pathStyles = ['fill','stroke','strokeWidth'];
+        for(let s = 0; s < pathStyles.length; s++) {
+            const styleProp = pathStyles[s];
+            if ( styles[styleProp] !== undefined ) {
+                this[styleProp] = styles[styleProp];
+            }
+        }
+    }
+    return this;
+}
+
 export default Path;
