@@ -133,6 +133,24 @@ describe('glyph.js', function() {
             });
         });
     });
+    
+    describe('style handling', function() {
+        let font;
+        let glyph;
+
+        before(function() {
+            font = loadSync('./test/fonts/Roboto-Black.ttf');
+            glyph = font.charToGlyph('A');
+        });
+        
+        it('should apply style options to the path', function() {
+            const options = {
+                style: { fill: '#ffaa00' }
+            };
+            const path = glyph.getPath(0, 0, 72, options, font);
+            assert.equal(path.fill, '#ffaa00');
+        });
+    });
 });
 
 describe('glyph.js on low memory mode', function() {

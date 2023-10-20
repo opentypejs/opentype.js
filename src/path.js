@@ -674,6 +674,6 @@ Path.prototype.applyStyles = function(styles) {
         }
     }
     return this;
-}
+};
 
 export default Path;
