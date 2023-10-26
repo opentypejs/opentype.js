@@ -86,12 +86,44 @@ function Font(options) {
         this.unitsPerEm = options.unitsPerEm || 1000;
         this.ascender = options.ascender;
         this.descender = options.descender;
+        this.slope = options.slope;
+        this.italicAngle = options.italicAngle;
         this.createdTimestamp = options.createdTimestamp;
+
+        var selection = 0;
+        if (this.italicAngle < 0) {
+            selection |= this.fsSelectionValues.ITALIC;
+        } else if (this.italicAngle > 0) {
+            selection |= this.fsSelectionValues.OBLIQUE;
+        }
+        if (this.weightClass >= 600) {
+            selection |= this.fsSelectionValues.BOLD;
+        }
+        if (selection == 0) {
+            selection = this.fsSelectionValues.REGULAR;
+        }
+        if (options.fsSelection) {
+            selection = options.fsSelection;
+        }
+        if (!options.panose || !Array.isArray(options.panose)) {
+            options.panose = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+        }
+
         this.tables = Object.assign(options.tables, {
             os2: Object.assign({
                 usWeightClass: options.weightClass || this.usWeightClasses.MEDIUM,
                 usWidthClass: options.widthClass || this.usWidthClasses.MEDIUM,
-                fsSelection: options.fsSelection || this.fsSelectionValues.REGULAR,
+                bFamilyType: options.panose[0] || 0,
+                bSerifStyle: options.panose[1] || 0,
+                bWeight: options.panose[2] || 0,
+                bProportion: options.panose[3] || 0,
+                bContrast: options.panose[4] || 0,
+                bStrokeVariation: options.panose[5] || 0,
+                bArmStyle: options.panose[6] || 0,
+                bLetterform: options.panose[7] || 0,
+                bMidline: options.panose[8] || 0,
+                bXHeight: options.panose[9] || 0,
+                fsSelection: selection,
             }, options.tables.os2)
         });
     }
