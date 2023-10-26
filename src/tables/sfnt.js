@@ -207,13 +207,14 @@ function fontToSfntTable(font) {
     globals.ascender = font.ascender;
     globals.descender = font.descender;
 
-    var macStyle = 0;
+    let macStyle = 0;
     if (font.italicAngle < 0) {
         macStyle |= 2;
     }
     if (font.weightClass >= 600) {
         macStyle |= 1;
     }
+
     const headTable = head.make({
         flags: 3, // 00000011 (baseline for font at y=0; left sidebearing point at x=0)
         unitsPerEm: font.unitsPerEm,
@@ -234,7 +235,7 @@ function fontToSfntTable(font) {
         minRightSideBearing: globals.minRightSideBearing,
         xMaxExtent: globals.maxLeftSideBearing + (globals.xMax - globals.xMin),
         numberOfHMetrics: font.glyphs.length,
-        slope: font.slope,
+        slope: font.slope
     });
 
     const maxpTable = maxp.make(font.glyphs.length);
