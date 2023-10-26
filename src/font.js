@@ -86,11 +86,11 @@ function Font(options) {
         this.unitsPerEm = options.unitsPerEm || 1000;
         this.ascender = options.ascender;
         this.descender = options.descender;
+        this.createdTimestamp = options.createdTimestamp;
         this.slope = options.slope;
         this.italicAngle = options.italicAngle;
-        this.createdTimestamp = options.createdTimestamp;
 
-        var selection = 0;
+        let selection = 0;
         if (this.italicAngle < 0) {
             selection |= this.fsSelectionValues.ITALIC;
         } else if (this.italicAngle > 0) {
