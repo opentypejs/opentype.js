@@ -165,6 +165,7 @@ subtableParsers[7] = function parseLookup7() {
     const substFormat = this.parseUShort();
     check.argument(substFormat === 1, 'GSUB Extension Substitution subtable identifier-format must be 1');
     const extensionLookupType = this.parseUShort();
+    check.argument(extensionLookupType !== 7, 'GSUB Extension Substitution lookup type must not be 7');
     const extensionParser = new Parser(this.data, this.offset + this.parseULong());
     return {
         substFormat: 1,
