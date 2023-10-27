@@ -2,32 +2,54 @@ import assert  from 'assert';
 import { Path } from '../src/opentype';
 
 describe('path.js', function() {
-    const testPath1 = new Path();
-    testPath1.moveTo(1, 2);
-    testPath1.lineTo(3, 4);
-    testPath1.curveTo(5, 6, 7, 8, 9, 10);
-    testPath1.quadTo(11, 12, 13, 14, 15, 16);
-    testPath1.close();
+    let emptyPath;
+    let testPath1;
+    let testPath2;
 
-    const testPath2 = new Path(); // two squares
-    testPath2.moveTo(0, 50);
-    testPath2.lineTo(0, 250);
-    testPath2.lineTo(50, 250);
-    testPath2.lineTo(100, 250);
-    testPath2.lineTo(150, 250);
-    testPath2.lineTo(200, 250);
-    testPath2.lineTo(200, 50);
-    testPath2.lineTo(0, 50);
-    testPath2.close();
-    testPath2.moveTo(250, 50);
-    testPath2.lineTo(250, 250);
-    testPath2.lineTo(300, 250);
-    testPath2.lineTo(350, 250);
-    testPath2.lineTo(400, 250);
-    testPath2.lineTo(450, 250);
-    testPath2.lineTo(450, 50);
-    testPath2.lineTo(250, 50);
-    testPath2.close();
+    global.document = {
+        createElementNS: function (namespace, tagName) {
+            return {
+                tagName,
+                getAttribute: function (name) {
+                    return this[name] ? this[name].toString() : undefined;
+                },
+                setAttribute: function (name, value) {
+                    this[name] = value;
+                }
+            };
+        }
+    };
+
+    beforeEach(function() {
+        emptyPath = new Path();
+
+        testPath1 = new Path();
+        testPath1.moveTo(1, 2);
+        testPath1.lineTo(3, 4);
+        testPath1.curveTo(5, 6, 7, 8, 9, 10);
+        testPath1.quadTo(11, 12, 13, 14, 15, 16);
+        testPath1.close();
+
+        testPath2 = new Path(); // two squares
+        testPath2.moveTo(0, 50);
+        testPath2.lineTo(0, 250);
+        testPath2.lineTo(50, 250);
+        testPath2.lineTo(100, 250);
+        testPath2.lineTo(150, 250);
+        testPath2.lineTo(200, 250);
+        testPath2.lineTo(200, 50);
+        testPath2.lineTo(0, 50);
+        testPath2.close();
+        testPath2.moveTo(250, 50);
+        testPath2.lineTo(250, 250);
+        testPath2.lineTo(300, 250);
+        testPath2.lineTo(350, 250);
+        testPath2.lineTo(400, 250);
+        testPath2.lineTo(450, 250);
+        testPath2.lineTo(450, 50);
+        testPath2.lineTo(250, 50);
+        testPath2.close();
+    });
 
     it('should set path commands correctly', function() {
         const expectedCommands =  [
@@ -76,9 +98,10 @@ describe('path.js', function() {
             'M199 97 L 199 97 L 313 97 L 313 97 Q 396 97 444 61 L 444 61 L 444 61 Q 493 25 493 -36 L 493 -36 L 493 -36' +
             'Q 493 -108 428 -151 L 428 -151 L 428 -151 Q 363 -195 255 -195 L 255 -195 L 255 -195 Q 150 -195 90 -156 Z'
         );
-        const expectedResult = '<path d="M199 97L313 97Q396 97 444 61Q493 25 493-36Q493-108 428-151Q363-195 255-195Q150-195 90-156Z"/>';
+        const expectedPath = 'M199 97L313 97Q396 97 444 61Q493 25 493-36Q493-108 428-151Q363-195 255-195Q150-195 90-156Z';
+        const expectedResult = '<path d="' + expectedPath + '"/>';
         assert.equal(path.toSVG({optimize: true}), expectedResult);
-        // we can't test toDOMElement() in node context!
+        assert.equal(path.toDOMElement({optimize: true}).getAttribute('d'), expectedPath);
     });
 
     it('should calculate flipY from bounding box if set to true', function() {
@@ -96,5 +119,42 @@ describe('path.js', function() {
         const expectedPath = 'M1 4.50L6 2L8.50 2L13.50 4.50L13.50 14.50L1 14.50Z';
         const path = Path.fromSVG(inputPath, { x: 1, y: 2, scale: 2.5 });
         assert.equal(path.toPathData(), expectedPath);
+    });
+
+    it('should apply fill and stroke for toSVG()', function() {
+        assert.equal(emptyPath.toSVG(), '<path d=""/>');
+        emptyPath.fill = '#ffaa00';
+        assert.equal(emptyPath.toSVG(), '<path d="" fill="#ffaa00"/>');
+        emptyPath.stroke = '#0000ff';
+        assert.equal(emptyPath.toSVG(), '<path d="" fill="#ffaa00" stroke="#0000ff" stroke-width="1"/>');
+        emptyPath.strokeWidth = 2;
+        assert.equal(emptyPath.toSVG(), '<path d="" fill="#ffaa00" stroke="#0000ff" stroke-width="2"/>');
+        emptyPath.fill = null;
+        assert.equal(emptyPath.toSVG(), '<path d="" fill="none" stroke="#0000ff" stroke-width="2"/>');
+        emptyPath.fill = 'black';
+        assert.equal(emptyPath.toSVG(), '<path d="" stroke="#0000ff" stroke-width="2"/>');
+    });
+
+    it('should apply fill and stroke for toDOMElement()', function() {
+        // in browser context these wouldn't be undefined, but we're only mocking it
+        assert.equal(emptyPath.toDOMElement().getAttribute('fill'), undefined);
+        assert.equal(emptyPath.toDOMElement().getAttribute('stroke'), undefined);
+        assert.equal(emptyPath.toDOMElement().getAttribute('stroke-width'), undefined);
+
+        emptyPath.fill = '#ffaa00';
+        assert.equal(emptyPath.toDOMElement().getAttribute('fill'), '#ffaa00');
+        emptyPath.stroke = '#0000ff';
+        assert.equal(emptyPath.toDOMElement().getAttribute('stroke'), '#0000ff');
+        assert.equal(emptyPath.toDOMElement().getAttribute('stroke-width'), '1');
+        emptyPath.strokeWidth = 2;
+        assert.equal(emptyPath.toDOMElement().getAttribute('stroke-width'), '2');
+        emptyPath.fill = null;
+        assert.equal(emptyPath.toDOMElement().getAttribute('fill'), 'none');
+        emptyPath.fill = 'black';
+        assert.equal(emptyPath.toDOMElement().getAttribute('fill'), undefined);
+    });
+
+    after(() => {
+        delete global.document;
     });
 });
