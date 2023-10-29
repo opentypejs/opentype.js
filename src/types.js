@@ -210,6 +210,7 @@ sizeOf.F2DOT14 = sizeOf.USHORT;
  * @returns {Array}
  */
 encode.LONGDATETIME = function(v) {
+    // FIXME: at some point we need to support dates >2038 using the full 64bit
     return [0, 0, 0, 0, (v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
