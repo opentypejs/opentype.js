@@ -316,15 +316,15 @@ function fontToSfntTable(font) {
     }
 
     if (!names.unicode.preferredSubfamily) {
-        names.unicode.preferredSubfamily = fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily || fontNamesWindows.fontSubFamily;
+        names.unicode.preferredSubfamily = fontNamesUnicode.fontSubfamily || fontNamesMacintosh.fontSubfamily || fontNamesWindows.fontSubfamily;
     }
 
     if (!names.macintosh.preferredSubfamily) {
-        names.macintosh.preferredSubfamily = fontNamesMacintosh.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesWindows.fontSubFamily;
+        names.macintosh.preferredSubfamily = fontNamesMacintosh.fontSubfamily || fontNamesUnicode.fontSubfamily || fontNamesWindows.fontSubfamily;
     }
 
     if (!names.windows.preferredSubfamily) {
-        names.windows.preferredSubfamily = fontNamesWindows.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily;
+        names.windows.preferredSubfamily = fontNamesWindows.fontSubfamily || fontNamesUnicode.fontSubfamily || fontNamesMacintosh.fontSubfamily;
     }
 
     // we have to handle fvar before name, because it may modify name IDs
