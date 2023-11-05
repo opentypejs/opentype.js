@@ -283,4 +283,22 @@ describe('parse.js', function() {
             assert.equal(p.relativeOffset, 28);
         });
     });
+
+    describe('parseLongDateTime', function() {
+        it('should parse LONGDATETIME values', function() {
+            // FIXME: test dates > 2038 once all 64bit are supported
+            const date1 = new Date('1904-01-01T00:00:00.000Z').getTime();
+            const date2 = new Date('1970-01-01T00:00:00.000Z').getTime();
+            const date3 = new Date('2038-12-31T23:59:59.000Z').getTime();
+            const hex1 = '00 00 00 00 00 00 00 00';
+            const hex2 = '00 00 00 00 7C 25 B0 80';
+            const hex3 = '00 00 00 00 FD EE FB 7F';
+            const p1 = new Parser(unhex(hex1), 0);
+            const p2 = new Parser(unhex(hex2), 0);
+            const p3 = new Parser(unhex(hex3), 0);
+            assert.equal(new Date(p1.parseLongDateTime() * 1000).getTime(), date1);
+            assert.equal(new Date(p2.parseLongDateTime() * 1000).getTime(), date2);
+            assert.equal(new Date(p3.parseLongDateTime() * 1000).getTime(), date3);
+        });
+    });
 });

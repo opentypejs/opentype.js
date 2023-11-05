@@ -1,8 +1,14 @@
-  # opentype.js
-
-JavaScript parser and writer for TrueType and OpenType fonts.
+<div align="center">
+  <h1>opentype.js</h1>
+  <a href="https://www.npmjs.com/package/opentype.js"><img alt="Latest version on npm" src="https://img.shields.io/npm/v/opentype.js.svg?style=flat" /></a>
+  <a href="https://www.npmjs.com/package/opentype.js"><img alt="npm downloads, yearly" src="https://img.shields.io/npm/dy/opentype.js.svg?style=flat" /></a>
+  <a href="https://github.com/opentypejs/opentype.js/blob/master/LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/opentypejs/opentype.js" /></a>
+  <a href="https://github.com/opentypejs/opentype.js/actions/workflows/ci.yml?query=branch%3Amaster"><img alt="GitHub Workflow Status (with event)" src="https://img.shields.io/github/actions/workflow/status/opentypejs/opentype.js/ci.yml"></a>
+  <br /><br />
+</div>
 
 It gives you access to the **letterforms** of text from the browser or Node.js.
+
 See [https://opentype.js.org/](https://opentype.js.org/) for a live demo.
 
 ## Features
