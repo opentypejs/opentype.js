@@ -33,6 +33,7 @@ import _name from './tables/name.js';
 import os2 from './tables/os2.js';
 import post from './tables/post.js';
 import meta from './tables/meta.js';
+import gasp from './tables/gasp.js';
 /**
  * The opentype library.
  * @namespace opentype
@@ -214,6 +215,7 @@ function parseBuffer(buffer, opt={}) {
     }
 
     let cffTableEntry;
+    let cff2TableEntry;
     let fvarTableEntry;
     let statTableEntry;
     let gvarTableEntry;
@@ -319,6 +321,9 @@ function parseBuffer(buffer, opt={}) {
             case 'CFF ':
                 cffTableEntry = tableEntry;
                 break;
+            case 'CFF2':
+                cff2TableEntry = tableEntry;
+                break;
             case 'kern':
                 kernTableEntry = tableEntry;
                 break;
@@ -333,6 +338,10 @@ function parseBuffer(buffer, opt={}) {
                 break;
             case 'meta':
                 metaTableEntry = tableEntry;
+                break;
+            case 'gasp':
+                table = uncompressTable(data, tableEntry);
+                font.tables.gasp = gasp.parse(table.data, table.offset);
                 break;
         }
     }
@@ -350,8 +359,11 @@ function parseBuffer(buffer, opt={}) {
     } else if (cffTableEntry) {
         const cffTable = uncompressTable(data, cffTableEntry);
         cff.parse(cffTable.data, cffTable.offset, font, opt);
+    } else if (cff2TableEntry) {
+        const cffTable2 = uncompressTable(data, cff2TableEntry);
+        cff.parse(cffTable2.data, cffTable2.offset, font, opt);
     } else {
-        throw new Error('Font doesn\'t contain TrueType or CFF outlines.');
+        throw new Error('Font doesn\'t contain TrueType, CFF or CFF2 outlines.');
     }
 
     const hmtxTable = uncompressTable(data, hmtxTableEntry);

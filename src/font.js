@@ -124,7 +124,7 @@ function Font(options) {
  * @return {Boolean}
  */
 Font.prototype.hasChar = function(c) {
-    return this.encoding.charToGlyphIndex(c) !== null;
+    return this.encoding.charToGlyphIndex(c) > 0;
 };
 
 /**
@@ -299,7 +299,8 @@ Font.prototype.defaultRenderOptions = {
          * and shouldn't be turned off when rendering arabic text.
          */
         { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
-        { script: 'latn', tags: ['liga', 'rlig'] }
+        { script: 'latn', tags: ['liga', 'rlig'] },
+        { script: 'thai', tags: ['liga', 'rlig', 'ccmp'] },
     ]
 };
 

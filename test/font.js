@@ -92,4 +92,17 @@ describe('font.js', function() {
         });
 
     });
+
+    describe('hasChar', function() {
+        it('returns correct results for non-CMAP fonts', function() {
+            assert.equal(font.hasChar('i'), true);
+            assert.equal(font.hasChar('x'), false);
+        });
+
+        it('returns correct results for CMAP fonts', function() {
+            const cmapFont = loadSync('./test/fonts/TestCMAP14.otf');
+            assert.equal(cmapFont.hasChar('a'), false);
+            assert.equal(cmapFont.hasChar('≩'), true);
+        });
+    });
 });

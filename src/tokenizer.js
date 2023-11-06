@@ -10,6 +10,8 @@ function Token(char) {
     this.char = char;
     this.state = {};
     this.activeState = null;
+
+
 }
 
 /**
@@ -79,29 +81,32 @@ function initializeCoreEvents(events) {
         'replaceToken', 'replaceRange', 'composeRUD', 'updateContextsRanges'
     ];
 
-    coreEvents.forEach(eventId => {
+    for(let i = 0; i < coreEvents.length; i++) {
+        const eventId = coreEvents[i];
         Object.defineProperty(this.events, eventId, {
             value: new Event(eventId)
         });
-    });
+    }
 
     if (events) {
-        coreEvents.forEach(eventId => {
+        for(let i = 0; i < coreEvents.length; i++) {
+            const eventId = coreEvents[i];
             const event = events[eventId];
             if (typeof event === 'function') {
                 this.events[eventId].subscribe(event);
             }
-        });
+        }
     }
     const requiresContextUpdate = [
         'insertToken', 'removeToken', 'removeRange',
         'replaceToken', 'replaceRange', 'composeRUD'
     ];
-    requiresContextUpdate.forEach(eventId => {
+    for(let i = 0; i < requiresContextUpdate.length; i++) {
+        const eventId = requiresContextUpdate[i];
         this.events[eventId].subscribe(
             this.updateContextsRanges
         );
-    });
+    }
 }
 
 /**
@@ -374,9 +379,10 @@ Tokenizer.prototype.on = function(eventName, eventHandler) {
 Tokenizer.prototype.dispatch = function(eventName, args) {
     const event = this.events[eventName];
     if (event instanceof Event) {
-        event.subscribers.forEach(subscriber => {
+        for(let i = 0; i < event.subscribers.length; i++) {
+            const subscriber = event.subscribers[i];
             subscriber.apply(this, args || []);
-        });
+        }
     }
 };
 
@@ -480,7 +486,8 @@ Tokenizer.prototype.setEndOffset = function (offset, contextName) {
  */
 Tokenizer.prototype.runContextCheck = function(contextParams) {
     const index = contextParams.index;
-    this.contextCheckers.forEach(contextChecker => {
+    for(let i = 0; i < this.contextCheckers.length; i++) {
+        const contextChecker = this.contextCheckers[i];
         let contextName = contextChecker.contextName;
         let openRange = this.getContext(contextName).openRange;
         if (!openRange && contextChecker.checkStart(contextParams)) {
@@ -493,7 +500,7 @@ Tokenizer.prototype.runContextCheck = function(contextParams) {
             const range = this.setEndOffset(offset, contextName);
             this.dispatch('contextEnd', [contextName, range]);
         }
-    });
+    }
 };
 
 /**

@@ -141,12 +141,12 @@ function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
  * @param  {string} charstring
  * @return {opentype.Glyph}
  */
-function cffGlyphLoader(font, index, parseCFFCharstring, charstring) {
+function cffGlyphLoader(font, index, parseCFFCharstring, charstring, version) {
     return function() {
         const glyph = new Glyph({index: index, font: font});
 
         glyph.path = function() {
-            const path = parseCFFCharstring(font, glyph, charstring);
+            const path = parseCFFCharstring(font, glyph, charstring, version);
             path.unitsPerEm = font.unitsPerEm;
             return path;
         };

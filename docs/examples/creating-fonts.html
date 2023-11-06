@@ -1,52 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>OpenType writing</title>
-    <script src="/dist/opentype.js"></script>
-    <style>
-        body {
-            font: 13px Helvetica, arial, freesans, sans-serif;
-            line-height: 1.4;
-            color: #333;
-            margin: 0 0 50px 0;
-            padding: 0;
-        }
+<meta charset="UTF-8">
+<title>OpenType writing</title>
+<style>
+    body {
+        font: 13px Helvetica, arial, freesans, sans-serif;
+        line-height: 1.4;
+        color: #333;
+        margin: 0 0 50px 0;
+        padding: 0;
+    }
 
-        .container {
-            width: 940px;
-            margin-left: auto;
-            margin-right: auto;
-        }
+    .container {
+        width: 940px;
+        margin-left: auto;
+        margin-right: auto;
+    }
 
-        #glyphs {
-            clear: both;
-        }
+    #glyphs {
+        clear: both;
+    }
 
-        .wrapper {
-            float: left;
-            margin: 5px;
-            border: 1px solid #ccc;
-        }
+    .wrapper {
+        float: left;
+        margin: 5px;
+        border: 1px solid #ccc;
+    }
 
-        .wrapper span {
-            text-align: center;
-            background: #ddd;
-            display: block;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h1 id="fontFamilyName"></h1>
+    .wrapper span {
+        text-align: center;
+        background: #ddd;
+        display: block;
+    }
+</style>
+
+<form class="container" name="demo">
+    <h1><output name="fontFamilyName"></output></h1>
 
     <p>This font is generated dynamically in the browser.</p>
-    <button onclick="font.download()">Download Font</button>
+    <a id="download-font" download="generated.otf">Download Font</button>
 
     <div id="glyphs"></div>
-</div>
+</form>
 
-<script>
+<script type="module">
+    import * as opentype from "/dist/opentype.module.js";
     function hexDump(bytes) {
         var hexString = bytes.map(function(v) {
             var h = v.toString(16);
@@ -134,8 +132,7 @@
     var buffer = font.toArrayBuffer();
     var font2 = opentype.parse(buffer);
 
-    document.getElementById('fontFamilyName').innerHTML = font2.names.fontFamily.en;
-
+    
     for (var i = 0; i < font2.glyphs.length; i++) {
         var glyph = font2.glyphs.get(i);
         var ctx = createGlyphCanvas(glyph, 150);
@@ -146,7 +143,9 @@
         glyph.drawPoints(ctx, x, y, fontSize);
         glyph.drawMetrics(ctx, x, y, fontSize);
     }
+    const form = document.forms.demo;
+    form.fontFamilyName.innerText = font2.names.windows.fontFamily.en;
+    const a = document.getElementById('download-font');
+    a.href = window.URL.createObjectURL(new Blob([font2.toArrayBuffer()], {type: "font/otf"}))
 
 </script>
-</body>
-</html>

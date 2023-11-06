@@ -75,6 +75,7 @@ describe('glyph.js', function() {
         let glyph = new Glyph({
             name: 'Test Glyph',
             unicode: 65,
+            unicodes: [65, 66],
             path: new Path(),
             advanceWidth: 400,
             leftSideBearing: -100
@@ -85,7 +86,51 @@ describe('glyph.js', function() {
             assert.equal(glyph.unicode, 65);
             assert.equal(glyph.advanceWidth, 400);
             assert.equal(glyph.leftSideBearing, -100);
-            assert.deepEqual(glyph.unicodes, [65]);
+            assert.deepEqual(glyph.unicodes, [65, 66]);
+        });
+    });
+
+    describe('SVG handling', function() {
+        it('should flip the path Y coordinates when generating or parsing SVG paths', function() {
+            const font = loadSync('./test/fonts/FiraSansMedium.woff');
+            const glyph = font.charToGlyph('j');
+            const svgPath = glyph.toPathData();
+            const svgMarkup = glyph.toSVG();
+            const expectedPath = 'M25 772C130 725 185 680 185 528L185 33L93 33L93 534C93 647 60 673-9 705ZM204-150' +
+                'C204-185 177-212 139-212C101-212 75-185 75-150C75-114 101-87 139-87C177-87 204-114 204-150Z';
+            assert.equal(
+                svgPath,
+                expectedPath
+            );
+            assert.equal(
+                svgMarkup,
+                '<path d="' + expectedPath + '"/>'
+            );
+            // we can't test toDOMElement() in node context!
+
+            const trianglePathUp = 'M318 230L182 230L250 93Z';
+            const trianglePathDown = 'M318 320L182 320L250 457Z';
+            const flipOption = {
+                minY: font.ascender,
+                maxY: font.ascender,
+                flipY: true,
+                flipYBase: font.ascender + font.descender
+            };
+            glyph.fromSVG(trianglePathUp, flipOption);
+            assert.equal(glyph.path.toPathData({flipY: false}), trianglePathDown);
+            assert.equal(glyph.toPathData(flipOption), trianglePathUp);
+        });
+
+        it('should not throw an error during optimization for paths with few points', function() {
+            const textToRender = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ffffiThe king said: เป็นคนใจดีสำหรับทุกคน because ความรักคือทุกสิ่งThe king said: ائتوني به أستخلصه لنفسيBe kind, هناش الإ ءيش نم عزن الو ، هناز الإ ءيش يف قفرلا ناك امفลลฤๅ';
+            assert.doesNotThrow(function() {
+                const font = loadSync('./test/fonts/Jomhuria-Regular.ttf');
+                const glyphs = font.stringToGlyphs(textToRender);
+                for (let i = 0; i < glyphs.length; i++) {
+                    const glyph = glyphs[i];
+                    glyph.path.toSVG();
+                }
+            });
         });
     });
 });
