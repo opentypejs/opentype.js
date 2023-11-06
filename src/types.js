@@ -437,7 +437,7 @@ sizeOf.UTF16 = function(v) {
 /**
  * @private
  */
-const eightBitMacEncodings = {
+export const eightBitMacEncodings = {
     'x-mac-croatian':  // Python: 'mac_croatian'
     'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®Š™´¨≠ŽØ∞±≤≥∆µ∂∑∏š∫ªºΩžø' +
     '¿¡¬√ƒ≈Ć«Č… ÀÃÕŒœĐ—“”‘’÷◊©⁄€‹›Æ»–·‚„‰ÂćÁčÈÍÎÏÌÓÔđÒÚÛÙıˆ˜¯πË˚¸Êæˇ',

@@ -138,4 +138,17 @@ describe('tables/cff.js', function () {
             { type: 'L', x: 50, y: 500 }
         ] );
     });
+
+    it('can handle standard encoding accented characters via endchar', function() {
+        const font = loadSync('./test/fonts/AbrilFatface-Regular.otf', { lowMemory: true });
+        const glyph13 = font.glyphs.get(13); // the semicolon is combined of comma and period
+        const commands = glyph13.path.commands;
+        assert.equal(glyph13.isComposite, true);
+        assert.equal(commands.length, 15);
+        assert.deepEqual(commands[0], { type: 'M', x: 86, y: -156 });
+        assert.deepEqual(commands[7], { type: 'C', x: 74, y: -141, x1: 174, y1: -35, x2: 162, y2: -66 });
+        assert.deepEqual(commands[9], { type: 'M', x: 36, y: 407 });
+        assert.deepEqual(commands[13], { type: 'C', x: 36, y: 407, x1: 66, y1: 495, x2: 36, y2: 456 });
+        assert.deepEqual(commands[14], { type: 'Z' });
+    });
 });

@@ -4,6 +4,25 @@
 import check from '../check.js';
 import parse from '../parse.js';
 import table from '../table.js';
+import { eightBitMacEncodings } from '../types.js';
+import { getEncoding } from '../tables/name.js';
+
+function parseCmapTableFormat0(cmap, p, platformID, encodingID) {
+    // Length in bytes of the index map
+    cmap.length = p.parseUShort();
+    // see https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6name.html
+    // section "Macintosh Language Codes"
+    cmap.language = p.parseUShort() - 1;
+
+    const indexMap = p.parseByteList(cmap.length);
+    const glyphIndexMap = Object.assign({}, indexMap);
+    const encoding = getEncoding(platformID, encodingID, cmap.language);
+    const decodingTable = eightBitMacEncodings[encoding];
+    for (let i = 0; i < decodingTable.length; i++) {
+        glyphIndexMap[decodingTable.charCodeAt(i)] = indexMap[0x80 + i];
+    }
+    cmap.glyphIndexMap = glyphIndexMap;
+}
 
 function parseCmapTableFormat12(cmap, p) {
     //Skip reserved.
@@ -150,11 +169,15 @@ function parseCmapTable(data, start) {
     let format14Parser = null;
     let format14offset = -1;
     let offset = -1;
+    let platformId = null;
+    let encodingId = null;
     for (let i = cmap.numTables - 1; i >= 0; i -= 1) {
-        const platformId = parse.getUShort(data, start + 4 + (i * 8));
-        const encodingId = parse.getUShort(data, start + 4 + (i * 8) + 2);
+        platformId = parse.getUShort(data, start + 4 + (i * 8));
+        encodingId = parse.getUShort(data, start + 4 + (i * 8) + 2);
         if ((platformId === 3 && (encodingId === 0 || encodingId === 1 || encodingId === 10)) ||
-            (platformId === 0 && (encodingId === 0 || encodingId === 1 || encodingId === 2 || encodingId === 3 || encodingId === 4))) {
+            (platformId === 0 && (encodingId === 0 || encodingId === 1 || encodingId === 2 || encodingId === 3 || encodingId === 4)) ||
+            (platformId === 1 && encodingId === 0) // MacOS <= 9
+        ) {
             offset = parse.getULong(data, start + 4 + (i * 8) + 4);
             // allow for early break
             if (format14Parser) {
@@ -178,12 +201,17 @@ function parseCmapTable(data, start) {
     const p = new parse.Parser(data, start + offset);
     cmap.format = p.parseUShort();
 
-    if (cmap.format === 12) {
+    if (cmap.format === 0) {
+        parseCmapTableFormat0(cmap, p, platformId, encodingId);
+    } else if (cmap.format === 12) {
         parseCmapTableFormat12(cmap, p);
     } else if (cmap.format === 4) {
         parseCmapTableFormat4(cmap, p, data, start, offset);
     } else {
-        throw new Error('Only format 4, 12 and 14 cmap tables are supported (found format ' + cmap.format + ').');
+        throw new Error(
+            'Only format 0 (platformId 1, encodingId 0), 4, 12 and 14 cmap tables are supported ' +
+            '(found format ' + cmap.format + ', platformId ' + platformId + ', encodingId ' + encodingId + ').'
+        );
     }
 
     // format 14 is the only one that's not exclusive but can be used as a supplement.
@@ -361,4 +389,4 @@ function makeCmapTable(glyphs) {
 
 export default { parse: parseCmapTable, make: makeCmapTable };
 
-export { parseCmapTableFormat14 };
+export { parseCmapTableFormat0, parseCmapTableFormat14 };

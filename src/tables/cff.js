@@ -824,7 +824,52 @@ function parseCFFCharstring(font, glyph, code, version) {
                         break;
                     }
 
-                    if (stack.length > 0 && !haveWidth) {
+                    if (stack.length >= 4) {
+                        // Type 2 Charstring Format Appendix C
+                        // treat like Type 1 seac command (standard encoding accented character)
+                        const acharName = cffStandardEncoding[stack.pop()];
+                        const bcharName = cffStandardEncoding[stack.pop()];
+                        const ady = stack.pop();
+                        const adx = stack.pop();
+                        // const asb = stack.pop(); // ignored for Type 2
+                        if ( acharName && bcharName ) {
+                            glyph.isComposite = true;
+                            glyph.components = [];
+
+                            const acharGlyphIndex = font.cffEncoding.charset.indexOf(acharName);
+                            const bcharGlyphIndex = font.cffEncoding.charset.indexOf(bcharName);
+
+                            glyph.components.push({
+                                glyphIndex: bcharGlyphIndex,
+                                dx: 0,
+                                dy: 0
+                            });
+                            glyph.components.push({
+                                glyphIndex: acharGlyphIndex,
+                                dx: adx,
+                                dy: ady
+                            });
+                            p.extend(font.glyphs.get(bcharGlyphIndex).path);
+                            const acharGlyph = font.glyphs.get(acharGlyphIndex);
+                            const shiftedCommands = JSON.parse(JSON.stringify(acharGlyph.path.commands)); // make a deep clone
+                            for (let i = 0; i < shiftedCommands.length; i += 1) {
+                                const cmd = shiftedCommands[i];
+                                if (cmd.type !== 'Z') {
+                                    cmd.x += adx;
+                                    cmd.y += ady;
+                                }
+                                if ( cmd.type === 'Q' || cmd.type === 'C' ) {
+                                    cmd.x1 += adx;
+                                    cmd.y1 += ady;
+                                }
+                                if ( cmd.type === 'C' ) {
+                                    cmd.x2 += adx;
+                                    cmd.y2 += ady;
+                                }
+                            }
+                            p.extend(shiftedCommands);
+                        }
+                    } else if (stack.length > 0 && !haveWidth) {
                         width = stack.shift() + nominalWidthX;
                         haveWidth = true;
                     }
