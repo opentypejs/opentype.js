@@ -52,7 +52,8 @@ function createDefaultNamesInfo(options) {
  * @property {Number} ascender
  * @property {Number} descender
  * @property {Number} createdTimestamp
- * @property {string=} weightClass
+ * @property {Number} weightClass
+ * @property {Number} italicAngle
  * @property {string=} widthClass
  * @property {string=} fsSelection
  */
@@ -88,7 +89,8 @@ function Font(options) {
         this.descender = options.descender;
         this.createdTimestamp = options.createdTimestamp;
         this.slope = options.slope;
-        this.italicAngle = options.italicAngle;
+        this.italicAngle = options.italicAngle || 0;
+        this.weightClass = options.weightClass;
 
         let selection = 0;
         if (options.fsSelection) {

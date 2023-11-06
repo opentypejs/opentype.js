@@ -207,12 +207,18 @@ function fontToSfntTable(font) {
     globals.ascender = font.ascender;
     globals.descender = font.descender;
 
+    // macStyle bits must agree with the fsSelection bits
     let macStyle = 0;
     if (font.italicAngle < 0) {
-        macStyle |= 2;
+        macStyle |= font.fsSelectionValues.ITALIC;
+    } else if (font.italicAngle > 0) {
+        macStyle |= font.fsSelectionValues.OBLIQUE;
     }
     if (font.weightClass >= 600) {
-        macStyle |= 1;
+        macStyle |= font.fsSelectionValues.BOLD;
+    }
+    if (macStyle == 0) {
+        macStyle = font.fsSelectionValues.REGULAR;
     }
 
     const headTable = head.make({

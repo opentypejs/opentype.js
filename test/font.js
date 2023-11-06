@@ -57,7 +57,7 @@ describe('font.js', function() {
             assert.equal(font.tables.os2.bMidline, 0);
             assert.equal(font.tables.os2.bXHeight, 0);
         });
-        it('fsSelection is calcluated if no value is provided', function () {
+        it('fsSelection and macStyle are calcluated if no fsSelection value is provided', function() {
             let weightClassFont = new Font({
                 familyName: 'MyFont',
                 styleName: 'Medium',
@@ -67,19 +67,20 @@ describe('font.js', function() {
                 weightClass: 600,
                 fsSelection: false,
             });
-            assert.equal(weightClassFont.tables.os2.fsSelection, 64);
-            // assert.equal(weightClassFont.tables.head.macStyle, 64);
+            assert.equal(weightClassFont.tables.os2.fsSelection, 32);
+            assert.equal(weightClassFont.toTables().tables[0].macStyle, 32);
+
             let italicAngleFont = new Font({
                 familyName: 'MyFont',
                 styleName: 'Medium',
                 unitsPerEm: 1000,
                 ascender: 800,
                 descender: 0,
-                italicAngle: 13,
+                italicAngle: -13,
                 fsSelection: false,
             });
-            assert.equal(italicAngleFont.tables.os2.fsSelection, 512);
-            // assert.equal(italicAngleFont.tables.head.macStyle, 512);
+            assert.equal(italicAngleFont.tables.os2.fsSelection, 1);
+            assert.equal(italicAngleFont.toTables().tables[0].macStyle, 1);
         });
         it('tables definition shall be serialized', function() {
             const os2 = font.toTables().tables.find(table => table.tableName === 'OS/2');
