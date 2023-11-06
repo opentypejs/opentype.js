@@ -45,6 +45,42 @@ describe('font.js', function() {
         it('tables definition can override defaults values', function() {
             assert.equal(font.tables.os2.fsSelection, 42);
         });
+        it('panose has default fallback', function() {
+            assert.equal(font.tables.os2.bFamilyType, 0);
+            assert.equal(font.tables.os2.bSerifStyle, 0);
+            assert.equal(font.tables.os2.bWeight, 0);
+            assert.equal(font.tables.os2.bProportion, 0);
+            assert.equal(font.tables.os2.bContrast, 0);
+            assert.equal(font.tables.os2.bStrokeVariation, 0);
+            assert.equal(font.tables.os2.bArmStyle, 0);
+            assert.equal(font.tables.os2.bLetterform, 0);
+            assert.equal(font.tables.os2.bMidline, 0);
+            assert.equal(font.tables.os2.bXHeight, 0);
+        });
+        it('fsSelection is calcluated if no value is provided', function () {
+            let weightClassFont = new Font({
+                familyName: 'MyFont',
+                styleName: 'Medium',
+                unitsPerEm: 1000,
+                ascender: 800,
+                descender: 0,
+                weightClass: 600,
+                fsSelection: false,
+            });
+            assert.equal(weightClassFont.tables.os2.fsSelection, 64);
+            // assert.equal(weightClassFont.tables.head.macStyle, 64);
+            let italicAngleFont = new Font({
+                familyName: 'MyFont',
+                styleName: 'Medium',
+                unitsPerEm: 1000,
+                ascender: 800,
+                descender: 0,
+                italicAngle: 13,
+                fsSelection: false,
+            });
+            assert.equal(italicAngleFont.tables.os2.fsSelection, 512);
+            // assert.equal(italicAngleFont.tables.head.macStyle, 512);
+        });
         it('tables definition shall be serialized', function() {
             const os2 = font.toTables().tables.find(table => table.tableName === 'OS/2');
             assert.equal(os2.achVendID, 'TEST');
