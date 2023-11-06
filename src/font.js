@@ -91,20 +91,22 @@ function Font(options) {
         this.italicAngle = options.italicAngle;
 
         let selection = 0;
-        if (this.italicAngle < 0) {
-            selection |= this.fsSelectionValues.ITALIC;
-        } else if (this.italicAngle > 0) {
-            selection |= this.fsSelectionValues.OBLIQUE;
-        }
-        if (this.weightClass >= 600) {
-            selection |= this.fsSelectionValues.BOLD;
-        }
-        if (selection == 0) {
-            selection = this.fsSelectionValues.REGULAR;
-        }
         if (options.fsSelection) {
             selection = options.fsSelection;
+        } else {
+            if (this.italicAngle < 0) {
+                selection |= this.fsSelectionValues.ITALIC;
+            } else if (this.italicAngle > 0) {
+                selection |= this.fsSelectionValues.OBLIQUE;
+            }
+            if (this.weightClass >= 600) {
+                selection |= this.fsSelectionValues.BOLD;
+            }
+            if (selection == 0) {
+                selection = this.fsSelectionValues.REGULAR;
+            }
         }
+
         if (!options.panose || !Array.isArray(options.panose)) {
             options.panose = [0, 0, 0, 0, 0, 0, 0, 0, 0];
         }
