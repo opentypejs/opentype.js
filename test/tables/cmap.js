@@ -1,7 +1,10 @@
 import assert from 'assert';
 import { unhex } from '../testutil';
 import { Parser } from '../../src/parse';
-import { parseCmapTableFormat14 } from '../../src/tables/cmap';
+import { parseCmapTableFormat14, parseCmapTableFormat0 } from '../../src/tables/cmap';
+import { parse } from '../../src/opentype.js';
+import { readFileSync } from 'fs';
+const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('tables/cmap.js', function() {
 
@@ -55,4 +58,17 @@ describe('tables/cmap.js', function() {
         assert.deepEqual(cmap.varSelectorList, expectedData);
     });
 
+    it('can parse CMAP format 0 legacy Mac encoding', function() {
+        let font;
+        assert.doesNotThrow(function() {
+            font = loadSync('./test/fonts/TestCMAPMacTurkish.ttf');
+        });
+        const testString = '“ABÇĞIİÖŞÜ”abçğıiöşüÄƒ';
+        const glyphIds = [];
+        const expectedGlyphIds = [200,34,35,126,176,42,178,140,181,145,201,66,67,154,177,222,74,168,182,174,123,184];
+        for (let i = 0; i < testString.length; i++) {
+            glyphIds.push(font.charToGlyphIndex(testString.charAt(i)));
+        }
+        assert.deepEqual(glyphIds, expectedGlyphIds);
+    });
 });

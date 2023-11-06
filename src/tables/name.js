@@ -604,7 +604,7 @@ const macLanguageEncodings = {
     146: 'x-mac-gaelic'       // langIrishGaelicScript
 };
 
-function getEncoding(platformID, encodingID, languageID) {
+export function getEncoding(platformID, encodingID, languageID) {
     switch (platformID) {
         case 0:  // Unicode
             return utf16;
