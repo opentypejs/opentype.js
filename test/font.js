@@ -64,7 +64,7 @@ describe('font.js', function() {
                 unitsPerEm: 1000,
                 ascender: 800,
                 descender: 0,
-                panose: [0, 1,2,3,4,5,6,7,8,9],
+                panose: [0,1,2,3,4,5,6,7,8,9],
             });
             assert.equal(panoseFont.tables.os2.bFamilyType, 0);
             assert.equal(panoseFont.tables.os2.bSerifStyle, 1);
@@ -89,7 +89,7 @@ describe('font.js', function() {
             });
             assert.equal(weightClassFont.tables.os2.fsSelection, 32);
             const weightClassHeadTable = weightClassFont.toTables().tables.find(table => table.tableName === 'head');
-            assert.equal(weightClassHeadTable.macStyle, 32);
+            assert.equal(weightClassHeadTable.macStyle, font.macStyleValues.BOLD);
 
             let italicAngleFont = new Font({
                 familyName: 'MyFont',
@@ -102,7 +102,7 @@ describe('font.js', function() {
             });
             assert.equal(italicAngleFont.tables.os2.fsSelection, 1);
             const italicAngleHeadTable = italicAngleFont.toTables().tables.find(table => table.tableName === 'head');
-            assert.equal(italicAngleHeadTable.macStyle, 1);
+            assert.equal(italicAngleHeadTable.macStyle, font.macStyleValues.ITALIC);
         });
         it('tables definition shall be serialized', function() {
             const os2 = font.toTables().tables.find(table => table.tableName === 'OS/2');

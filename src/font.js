@@ -88,9 +88,8 @@ function Font(options) {
         this.ascender = options.ascender;
         this.descender = options.descender;
         this.createdTimestamp = options.createdTimestamp;
-        this.slope = options.slope;
         this.italicAngle = options.italicAngle || 0;
-        this.weightClass = options.weightClass;
+        this.weightClass = options.weightClass || 0;
 
         let selection = 0;
         if (options.fsSelection) {
@@ -598,6 +597,7 @@ Font.prototype.download = function(fileName) {
         fs.writeFileSync(fileName, buffer);
     }
 };
+
 /**
  * @private
  */
@@ -612,6 +612,19 @@ Font.prototype.fsSelectionValues = {
     USER_TYPO_METRICS:   0x080, //128
     WWS:                 0x100, //256
     OBLIQUE:             0x200  //512
+};
+
+/**
+ * @private
+ */
+Font.prototype.macStyleValues = {
+    BOLD:       0x001, //1
+    ITALIC:     0x002, //2
+    UNDERLINE:  0x004, //4
+    OUTLINED:   0x008, //8
+    SHADOW:     0x010, //16
+    CONDENSED:  0x020, //32
+    EXTENDED:   0x040, //64
 };
 
 /**

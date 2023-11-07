@@ -209,17 +209,12 @@ function fontToSfntTable(font) {
 
     // macStyle bits must agree with the fsSelection bits
     let macStyle = 0;
-    if (font.italicAngle < 0) {
-        macStyle |= font.fsSelectionValues.ITALIC;
-    } else if (font.italicAngle > 0) {
-        macStyle |= font.fsSelectionValues.OBLIQUE;
-    }
     if (font.weightClass >= 600) {
-        macStyle |= font.fsSelectionValues.BOLD;
+        macStyle |= font.macStyleValues.BOLD;
     }
-    if (macStyle == 0) {
-        macStyle = font.fsSelectionValues.REGULAR;
-    }
+    if (font.italicAngle < 0) {
+        macStyle |= font.macStyleValues.ITALIC;
+    } 
 
     const headTable = head.make({
         flags: 3, // 00000011 (baseline for font at y=0; left sidebearing point at x=0)
@@ -241,7 +236,6 @@ function fontToSfntTable(font) {
         minRightSideBearing: globals.minRightSideBearing,
         xMaxExtent: globals.maxLeftSideBearing + (globals.xMax - globals.xMin),
         numberOfHMetrics: font.glyphs.length,
-        slope: font.slope
     });
 
     const maxpTable = maxp.make(font.glyphs.length);
