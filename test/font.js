@@ -45,6 +45,65 @@ describe('font.js', function() {
         it('tables definition can override defaults values', function() {
             assert.equal(font.tables.os2.fsSelection, 42);
         });
+        it('panose has default fallback', function() {
+            assert.equal(font.tables.os2.bFamilyType, 0);
+            assert.equal(font.tables.os2.bSerifStyle, 0);
+            assert.equal(font.tables.os2.bWeight, 0);
+            assert.equal(font.tables.os2.bProportion, 0);
+            assert.equal(font.tables.os2.bContrast, 0);
+            assert.equal(font.tables.os2.bStrokeVariation, 0);
+            assert.equal(font.tables.os2.bArmStyle, 0);
+            assert.equal(font.tables.os2.bLetterform, 0);
+            assert.equal(font.tables.os2.bMidline, 0);
+            assert.equal(font.tables.os2.bXHeight, 0);
+        });
+        it('panose values are set correctly', function () {
+            let panoseFont = new Font({
+                familyName: 'MyFont',
+                styleName: 'Medium',
+                unitsPerEm: 1000,
+                ascender: 800,
+                descender: 0,
+                panose: [0,1,2,3,4,5,6,7,8,9],
+            });
+            assert.equal(panoseFont.tables.os2.bFamilyType, 0);
+            assert.equal(panoseFont.tables.os2.bSerifStyle, 1);
+            assert.equal(panoseFont.tables.os2.bWeight, 2);
+            assert.equal(panoseFont.tables.os2.bProportion, 3);
+            assert.equal(panoseFont.tables.os2.bContrast, 4);
+            assert.equal(panoseFont.tables.os2.bStrokeVariation, 5);
+            assert.equal(panoseFont.tables.os2.bArmStyle, 6);
+            assert.equal(panoseFont.tables.os2.bLetterform, 7);
+            assert.equal(panoseFont.tables.os2.bMidline, 8);
+            assert.equal(panoseFont.tables.os2.bXHeight, 9);
+        });
+        it('fsSelection and macStyle are calcluated if no fsSelection value is provided', function() {
+            let weightClassFont = new Font({
+                familyName: 'MyFont',
+                styleName: 'Medium',
+                unitsPerEm: 1000,
+                ascender: 800,
+                descender: 0,
+                weightClass: 600,
+                fsSelection: false,
+            });
+            assert.equal(weightClassFont.tables.os2.fsSelection, 32);
+            const weightClassHeadTable = weightClassFont.toTables().tables.find(table => table.tableName === 'head');
+            assert.equal(weightClassHeadTable.macStyle, font.macStyleValues.BOLD);
+
+            let italicAngleFont = new Font({
+                familyName: 'MyFont',
+                styleName: 'Medium',
+                unitsPerEm: 1000,
+                ascender: 800,
+                descender: 0,
+                italicAngle: -13,
+                fsSelection: false,
+            });
+            assert.equal(italicAngleFont.tables.os2.fsSelection, 1);
+            const italicAngleHeadTable = italicAngleFont.toTables().tables.find(table => table.tableName === 'head');
+            assert.equal(italicAngleHeadTable.macStyle, font.macStyleValues.ITALIC);
+        });
         it('tables definition shall be serialized', function() {
             const os2 = font.toTables().tables.find(table => table.tableName === 'OS/2');
             assert.equal(os2.achVendID, 'TEST');
