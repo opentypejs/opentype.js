@@ -29,15 +29,15 @@ describe('tables/sfnt.js', ()=>{
             font = new Font({...defaultFont});
         });
 
-        it('creates an sfnt table object', ()=>{
+        it('should create an sfnt table object', ()=>{
             const sfnt_table = sfnt.fontToTable(font);
             assert.ok(sfnt_table);
             assert.equal(sfnt_table.tableName, 'sfnt');
-        })
+        });
 
-        it('gives default values when no name values are set', ()=>{
+        it('should set default values when no name values are set', ()=>{
             const sfnt_table = sfnt.fontToTable(font);
-            const name_table = sfnt_table.tables.find((table)=>table.tableName == "name");
+            const name_table = sfnt_table.tables.find((table)=>table.tableName == 'name');
 
             assert.ok(name_table);
             
@@ -81,6 +81,72 @@ describe('tables/sfnt.js', ()=>{
                     preferredSubfamily: { en: defaultFont.styleName } // 'Medium'
                 }
             });
+        });
+
+        it('should set values in the names table with the values of the font object\'s names property', ()=>{
+            const fontFamily = 'Original Name';
+            const fontSubfamily = 'Bold Italic';
+            const fullName = 'Original Name Bold Italic';
+            const version = 'Version 24';
+            const preferredFamily = 'Custom Name';
+            const preferredSubfamily = '700 Italic';
+
+            font.names = {
+                macintosh: {
+                    fontFamily: { en: fontFamily },
+                    fontSubfamily: { en: fontSubfamily},
+                    fullName: { en: fullName },
+                    version: { en: version },
+                    preferredFamily: { en: preferredFamily },
+                    preferredSubfamily: { en: preferredSubfamily}
+                },
+                windows: {
+                    fontFamily: { en: fontFamily },
+                    fontSubfamily: { en: fontSubfamily},
+                    fullName: { en: fullName },
+                    version: { en: version },
+                    preferredFamily: { en: preferredFamily },
+                    preferredSubfamily: { en: preferredSubfamily}
+                }
+            };
+
+            const sfnt_table = sfnt.fontToTable(font);
+            const name_table = sfnt_table.tables.find((table)=>table.tableName == 'name');
+            const parsedNameTable = encodeAndParseTable(name_table, name.parse);
+
+            assert.deepEqual(parsedNameTable, {
+                macintosh: {
+                    fontFamily: { en: fontFamily },
+                    fontSubfamily: { en: fontSubfamily},
+                    fullName: { en: fullName },
+                    version: { en: version },
+                    preferredFamily: { en: preferredFamily },
+                    preferredSubfamily: { en: preferredSubfamily}
+                },
+                windows: {
+                    fontFamily: { en: fontFamily },
+                    fontSubfamily: { en: fontSubfamily},
+                    fullName: { en: fullName },
+                    version: { en: version },
+                    preferredFamily: { en: preferredFamily },
+                    preferredSubfamily: { en: preferredSubfamily}
+                }
+            });
+        });
+
+        it('should set preferredSubfamily as value of fontSubfamily, if not explicitly set', ()=>{
+            const preferredSubfamily = 'Custom Subfamily';
+            font.names = { macintosh: {
+                fontFamily: {en: defaultFont.familyName },
+                fontSubfamily: { en: preferredSubfamily }
+            }};
+
+            const sfnt_table = sfnt.fontToTable(font);
+            const name_table = sfnt_table.tables.find((table)=>table.tableName == 'name');
+            const parsedNameTable = encodeAndParseTable(name_table, name.parse);
+
+            assert.deepEqual(parsedNameTable.macintosh.preferredSubfamily, { en: preferredSubfamily });
+            assert.deepEqual(parsedNameTable.windows.preferredSubfamily, { en: preferredSubfamily });
         });
     });
 });
