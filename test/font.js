@@ -164,4 +164,12 @@ describe('font.js', function() {
             assert.equal(cmapFont.hasChar('≩'), true);
         });
     });
+
+    describe('toTables', function() {
+        it('returns an sfnt font table', function() {
+            const tables = font.toTables();
+            assert.ok(tables);
+            assert.equal(tables.tableName, 'sfnt');
+        });
+    });
 });
