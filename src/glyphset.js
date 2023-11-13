@@ -48,11 +48,11 @@ if(typeof Symbol !== 'undefined' && Symbol.iterator) {
     GlyphSet.prototype[Symbol.iterator] = function() {
         let n = -1;
         return {
-            next: function() {
+            next: (function() {
                 n++;
                 const done = n >= this.length - 1;
                 return {value:this.get(n), done:done};
-            }
+            }).bind(this)
         };
     };
 }

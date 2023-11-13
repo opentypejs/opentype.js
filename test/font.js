@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { Font, Glyph, Path, parse } from '../src/opentype.js';
+import glyphset from '../src/glyphset.js';
 import { readFileSync } from 'fs';
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
@@ -203,13 +204,19 @@ describe('glyphset.js', function() {
 
     describe('GlyphSet iterable', function() {
         it('must be iterable', function() {
-            assert.equal(typeof glyphs[Symbol.iterator], 'function');
+            assert.ok(font.glyphs instanceof glyphset.GlyphSet);
+            assert.equal(typeof font.glyphs[Symbol.iterator], 'function');
+        });
+
+        it('must iterate over glyphs', function() {
+            for (const glyph of font.glyphs) {
+                assert.ok(glyph instanceof Glyph);
+            }
         });
 
         it('must iterate over glyphs in order', function() {
             let i = 0;
             for (const glyph of glyphs) {
-                assert.ok(glyph instanceof Glyph);
                 assert.equal(glyph.name, glyphs[i].name);
                 i++;
             }
