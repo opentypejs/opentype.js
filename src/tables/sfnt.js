@@ -207,6 +207,15 @@ function fontToSfntTable(font) {
     globals.ascender = font.ascender;
     globals.descender = font.descender;
 
+    // macStyle bits must agree with the fsSelection bits
+    let macStyle = 0;
+    if (font.weightClass >= 600) {
+        macStyle |= font.macStyleValues.BOLD;
+    }
+    if (font.italicAngle < 0) {
+        macStyle |= font.macStyleValues.ITALIC;
+    } 
+
     const headTable = head.make({
         flags: 3, // 00000011 (baseline for font at y=0; left sidebearing point at x=0)
         unitsPerEm: font.unitsPerEm,
@@ -215,6 +224,7 @@ function fontToSfntTable(font) {
         xMax: globals.xMax,
         yMax: globals.yMax,
         lowestRecPPEM: 3,
+        macStyle: macStyle,
         createdTimestamp: font.createdTimestamp
     });
 
@@ -225,7 +235,7 @@ function fontToSfntTable(font) {
         minLeftSideBearing: globals.minLeftSideBearing,
         minRightSideBearing: globals.minRightSideBearing,
         xMaxExtent: globals.maxLeftSideBearing + (globals.xMax - globals.xMin),
-        numberOfHMetrics: font.glyphs.length
+        numberOfHMetrics: font.glyphs.length,
     });
 
     const maxpTable = maxp.make(font.glyphs.length);
@@ -306,15 +316,15 @@ function fontToSfntTable(font) {
     }
 
     if (!names.unicode.preferredSubfamily) {
-        names.unicode.preferredSubfamily = fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily || fontNamesWindows.fontSubFamily;
+        names.unicode.preferredSubfamily = fontNamesUnicode.fontSubfamily || fontNamesMacintosh.fontSubfamily || fontNamesWindows.fontSubfamily;
     }
 
     if (!names.macintosh.preferredSubfamily) {
-        names.macintosh.preferredSubfamily = fontNamesMacintosh.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesWindows.fontSubFamily;
+        names.macintosh.preferredSubfamily = fontNamesMacintosh.fontSubfamily || fontNamesUnicode.fontSubfamily || fontNamesWindows.fontSubfamily;
     }
 
     if (!names.windows.preferredSubfamily) {
-        names.windows.preferredSubfamily = fontNamesWindows.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily;
+        names.windows.preferredSubfamily = fontNamesWindows.fontSubfamily || fontNamesUnicode.fontSubfamily || fontNamesMacintosh.fontSubfamily;
     }
 
     // we have to handle fvar before name, because it may modify name IDs
@@ -325,7 +335,7 @@ function fontToSfntTable(font) {
     const nameTable = _name.make(names, languageTags);
     const ltagTable = (languageTags.length > 0 ? ltag.make(languageTags) : undefined);
 
-    const postTable = post.make(font.tables.post);
+    const postTable = post.make(font);
     const cffTable = cff.make(font.glyphs, {
         version: font.getEnglishName('version'),
         fullName: englishFullName,

@@ -34,7 +34,7 @@ function makeHeadTable(options) {
     // Apple Mac timestamp epoch is 01/01/1904 not 01/01/1970
     const timestamp = Math.round(new Date().getTime() / 1000) + 2082844800;
     let createdTimestamp = timestamp;
-
+    let macStyle = options.macStyle || 0;
     if (options.createdTimestamp) {
         createdTimestamp = options.createdTimestamp + 2082844800;
     }
@@ -52,7 +52,7 @@ function makeHeadTable(options) {
         {name: 'yMin', type: 'SHORT', value: 0},
         {name: 'xMax', type: 'SHORT', value: 0},
         {name: 'yMax', type: 'SHORT', value: 0},
-        {name: 'macStyle', type: 'USHORT', value: 0},
+        {name: 'macStyle', type: 'USHORT', value: macStyle},
         {name: 'lowestRecPPEM', type: 'USHORT', value: 0},
         {name: 'fontDirectionHint', type: 'SHORT', value: 2},
         {name: 'indexToLocFormat', type: 'SHORT', value: 0},

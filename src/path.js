@@ -611,7 +611,7 @@ Path.prototype.toSVG = function(options, pathData) {
     let svg = '<path d="';
     svg += pathData;
     svg += '"';
-    if (this.fill && this.fill !== 'black') {
+    if (this.fill !== undefined && this.fill !== 'black') {
         if (this.fill === null) {
             svg += ' fill="none"';
         } else {
@@ -641,6 +641,19 @@ Path.prototype.toDOMElement = function(options, pathData) {
     const newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
     newPath.setAttribute('d', temporaryPath);
+
+    if (this.fill !== undefined && this.fill !== 'black') {
+        if (this.fill === null) {
+            newPath.setAttribute('fill', 'none');
+        } else {
+            newPath.setAttribute('fill', this.fill);
+        }
+    }
+    
+    if (this.stroke) {
+        newPath.setAttribute('stroke', this.stroke);
+        newPath.setAttribute('stroke-width', this.strokeWidth);
+    }
 
     return newPath;
 };
