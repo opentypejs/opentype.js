@@ -203,18 +203,13 @@ describe('glyphset.js', function() {
 
     describe('GlyphSet iterable', function() {
         it('must be iterable', function() {
-            assert.ok(glyphs[Symbol.iterator]);
-        });
-
-        it('must iterate over glyphs', function() {
-            for (const glyph of glyphs) {
-                assert.ok(glyph instanceof Glyph);
-            }
+            assert.equal(typeof glyphs[Symbol.iterator], 'function');
         });
 
         it('must iterate over glyphs in order', function() {
             let i = 0;
             for (const glyph of glyphs) {
+                assert.ok(glyph instanceof Glyph);
                 assert.equal(glyph.name, glyphs[i].name);
                 i++;
             }
