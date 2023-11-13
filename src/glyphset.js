@@ -41,19 +41,21 @@ function GlyphSet(font, glyphs) {
     this.length = (glyphs && glyphs.length) || 0;
 }
 
-/**
- * @return {opentype.GlyphSet[Symbol.iterator]}
- */
-GlyphSet.prototype[Symbol.iterator] = function() {
-    let n = -1;
-    return {
-        next: function() {
-            n++;
-            const done = n >= this.length - 1;
-            return {value:this.get(n), done:done};
-        }
+if(typeof Symbol !== 'undefined' && Symbol.iterator) {
+    /**
+     * @return {opentype.GlyphSet[Symbol.iterator]}
+     */
+    GlyphSet.prototype[Symbol.iterator] = function() {
+        let n = -1;
+        return {
+            next: function() {
+                n++;
+                const done = n >= this.length - 1;
+                return {value:this.get(n), done:done};
+            }
+        };
     };
-};
+}
 
 /**
  * @param  {number} index
