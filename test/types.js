@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { hex, unhex } from './testutil';
-import { decode, encode, sizeOf } from '../src/types';
+import { hex, unhex } from './testutil.js';
+import { decode, encode, sizeOf } from '../src/types.js';
 
 describe('types.js', function() {
     it('can handle BYTE', function() {
@@ -53,6 +53,23 @@ describe('types.js', function() {
         assert.equal(sizeOf.FIXED(0xBEEFCAFE), 4);
     });
 
+    it('can handle FLOAT', function() {
+        assert.equal(hex(encode.FLOAT(123.456)), '00 7B 74 BC');
+        assert.equal(sizeOf.FLOAT(123.456), 4);
+        assert.equal(hex(encode.FLOAT(-123.456)), 'FF 84 8B 44');
+        assert.equal(sizeOf.FLOAT(-123.456), 4);
+    });
+
+    it('handles the range guard for FLOAT (16.16) representation', function() {
+        const MIN_16_16 = -(1 << 15);
+        const MAX_16_16 = (1 << 15) - 1 + (1 / (1 << 16));
+        const error = /outside the range/;
+        assert.doesNotThrow(function() {encode.FLOAT(MIN_16_16);}, error);
+        assert.doesNotThrow(function() {encode.FLOAT(MAX_16_16);}, error);
+        assert.throws(function() {encode.FLOAT(MIN_16_16 - 0.001);}, error);
+        assert.throws(function() {encode.FLOAT(MAX_16_16 + 0.001);}, error);
+    });
+
     it('can handle FWORD', function() {
         assert.equal(hex(encode.FWORD(-8193)), 'DF FF');
         assert.equal(sizeOf.FWORD(-8193), 2);
@@ -63,7 +80,19 @@ describe('types.js', function() {
         assert.equal(sizeOf.UFWORD(0xDEED), 2);
     });
 
-    // FIXME: Test LONGDATETIME when it gets implemented.
+    it('can handle LONGDATETIME', function() {
+        // FIXME: test dates > 2038 once all 64bit are supported
+        const date1 = Math.round(new Date('1904-01-01T00:00:00.000Z').getTime() / 1000) + 2082844800;
+        const date2 = Math.round(new Date('1970-01-01T00:00:00.000Z').getTime() / 1000) + 2082844800;
+        const date3 = Math.round(new Date('2038-12-31T23:59:59.000Z').getTime() / 1000) + 2082844800;
+        const hex1 = '00 00 00 00 00 00 00 00';
+        const hex2 = '00 00 00 00 7C 25 B0 80';
+        const hex3 = '00 00 00 00 FD EE FB 7F';
+        assert.equal(hex(encode.LONGDATETIME(date1)), hex1);
+        assert.equal(hex(encode.LONGDATETIME(date2)), hex2);
+        assert.equal(hex(encode.LONGDATETIME(date3)), hex3);
+        assert.equal(sizeOf.LONGDATETIME(date1), 8);
+    });
 
     it('can handle TAG', function() {
         assert.equal(hex(encode.TAG('Font')), '46 6F 6E 74');

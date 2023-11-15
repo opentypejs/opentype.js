@@ -1,7 +1,7 @@
 // The `loca` table stores the offsets to the locations of the glyphs in the font.
 // https://www.microsoft.com/typography/OTSPEC/loca.htm
 
-import parse from '../parse';
+import parse from '../parse.js';
 
 // Parse the `loca` table. This table stores the offsets to the locations of the glyphs in the font,
 // relative to the beginning of the glyphData table.

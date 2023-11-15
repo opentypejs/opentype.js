@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { unhex } from './testutil';
-import { Parser } from '../src/parse';
+import { unhex } from './testutil.js';
+import { Parser } from '../src/parse.js';
 
 describe('parse.js', function() {
     describe('parseUShortList', function() {
@@ -235,6 +235,70 @@ describe('parse.js', function() {
                 { lookupType: 4, lookupFlag: 0x000c, subtables: [0x9abc], markFilteringSet: undefined },
             ]);
             assert.equal(p.relativeOffset, 2);
+        });
+    });
+
+    describe('parseDeltaSets', function() {
+        it('should parse DeltaSets without the LONG_WORDS flag', function() {
+            const data = '0123 4567 891A BCDE FADE C0FF EEEE';
+            const p = new Parser(unhex(data), 0);
+            assert.deepEqual(p.parseDeltaSets(4, 0x0000), [ 0x01, 0x23, 0x45, 0x67 ]);
+            assert.deepEqual(p.parseDeltaSets(3, 0x0001), [ 0x891A, 0xBC, 0xDE ]);
+            assert.deepEqual(p.parseDeltaSets(3, 0x0002), [ 0xFADE, 0xC0FF, 0xEE]);
+        });
+
+        it('should parse DeltaSets with the LONG_WORDS flag', function() {
+            const data = '0123 4567 891A BCDE FADE C0FF EEEE BA5E';
+            const p = new Parser(unhex(data), 0);
+            assert.deepEqual(p.parseDeltaSets(4, 0x8000), [ 0x0123, 0x4567, 0x891A, 0xBCDE ]);
+            assert.deepEqual(p.parseDeltaSets(3, 0x8001), [ 0xFADEC0FF, 0xEEEE, 0xBA5E ]);
+            p.relativeOffset = 8;
+            assert.deepEqual(p.parseDeltaSets(2, 0x8002), [ 0xFADEC0FF, 0xEEEEBA5E ]);
+        });
+    });
+
+    describe('parseVariationRegionList', function() {
+        it('should parse a VariationRegionList', function() {
+            // https://learn.microsoft.com/en-us/typography/opentype/spec/otvarcommonformats#variation-regions
+            const data = '0002 0002 ' + // axisCount: 2, regionCount: 2
+                'C000 E000 0000 ' + // variationRegions[0], regionAxes[0]
+                'C000 C000 E000 ' + // variationRegions[0], regionAxes[1]
+                'C000 C000 E000 ' + // variationRegions[1], regionAxes[0]
+                'C000 E000 0000 ';  // variationRegions[1], regionAxes[1]
+            const p = new Parser(unhex(data), 0);
+            assert.deepEqual(p.parseVariationRegionList(), [
+                {
+                    regionAxes: [
+                        { startCoord: -1.0, peakCoord: -0.5, endCoord: 0.0 },
+                        { startCoord: -1.0, peakCoord: -1.0, endCoord: -0.5 }
+                    ]
+                },
+                {
+                    regionAxes: [
+                        { startCoord: -1.0, peakCoord: -1.0, endCoord: -0.5 },
+                        { startCoord: -1.0, peakCoord: -0.5, endCoord: 0.0 }
+                    ]
+                }
+            ]);
+            assert.equal(p.relativeOffset, 28);
+        });
+    });
+
+    describe('parseLongDateTime', function() {
+        it('should parse LONGDATETIME values', function() {
+            // FIXME: test dates > 2038 once all 64bit are supported
+            const date1 = new Date('1904-01-01T00:00:00.000Z').getTime();
+            const date2 = new Date('1970-01-01T00:00:00.000Z').getTime();
+            const date3 = new Date('2038-12-31T23:59:59.000Z').getTime();
+            const hex1 = '00 00 00 00 00 00 00 00';
+            const hex2 = '00 00 00 00 7C 25 B0 80';
+            const hex3 = '00 00 00 00 FD EE FB 7F';
+            const p1 = new Parser(unhex(hex1), 0);
+            const p2 = new Parser(unhex(hex2), 0);
+            const p3 = new Parser(unhex(hex3), 0);
+            assert.equal(new Date(p1.parseLongDateTime() * 1000).getTime(), date1);
+            assert.equal(new Date(p2.parseLongDateTime() * 1000).getTime(), date2);
+            assert.equal(new Date(p3.parseLongDateTime() * 1000).getTime(), date3);
         });
     });
 });

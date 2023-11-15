@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { hex, unhex } from '../testutil';
-import cpal from '../../src/tables/cpal';
+import { hex, unhex } from '../testutil.js';
+import cpal from '../../src/tables/cpal.js';
 
 describe('tables/cpal.js', function() {
     const data = '00 00 00 02 00 03 00 04 00 00 00 12 00 00 00 01 00 02 ' +

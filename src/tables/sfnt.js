@@ -4,23 +4,27 @@
 // Recommendations for creating OpenType Fonts:
 // http://www.microsoft.com/typography/otspec140/recom.htm
 
-import check from '../check';
-import table from '../table';
+import check from '../check.js';
+import table from '../table.js';
 
-import cmap from './cmap';
-import cff from './cff';
-import head from './head';
-import hhea from './hhea';
-import hmtx from './hmtx';
-import ltag from './ltag';
-import maxp from './maxp';
-import _name from './name';
-import os2 from './os2';
-import post from './post';
-import gsub from './gsub';
-import meta from './meta';
-import colr from './colr';
-import cpal from './cpal';
+import cmap from './cmap.js';
+import cff from './cff.js';
+import head from './head.js';
+import hhea from './hhea.js';
+import hmtx from './hmtx.js';
+import ltag from './ltag.js';
+import maxp from './maxp.js';
+import _name from './name.js';
+import os2 from './os2.js';
+import post from './post.js';
+import gsub from './gsub.js';
+import meta from './meta.js';
+import colr from './colr.js';
+import cpal from './cpal.js';
+import fvar from './fvar.js';
+import stat from './stat.js';
+import avar from './avar.js';
+import gasp from './gasp.js';
 
 function log2(v) {
     return Math.log(v) / Math.log(2) | 0;
@@ -203,6 +207,15 @@ function fontToSfntTable(font) {
     globals.ascender = font.ascender;
     globals.descender = font.descender;
 
+    // macStyle bits must agree with the fsSelection bits
+    let macStyle = 0;
+    if (font.weightClass >= 600) {
+        macStyle |= font.macStyleValues.BOLD;
+    }
+    if (font.italicAngle < 0) {
+        macStyle |= font.macStyleValues.ITALIC;
+    } 
+
     const headTable = head.make({
         flags: 3, // 00000011 (baseline for font at y=0; left sidebearing point at x=0)
         unitsPerEm: font.unitsPerEm,
@@ -211,6 +224,7 @@ function fontToSfntTable(font) {
         xMax: globals.xMax,
         yMax: globals.yMax,
         lowestRecPPEM: 3,
+        macStyle: macStyle,
         createdTimestamp: font.createdTimestamp
     });
 
@@ -221,7 +235,7 @@ function fontToSfntTable(font) {
         minLeftSideBearing: globals.minLeftSideBearing,
         minRightSideBearing: globals.minRightSideBearing,
         xMaxExtent: globals.maxLeftSideBearing + (globals.xMax - globals.xMin),
-        numberOfHMetrics: font.glyphs.length
+        numberOfHMetrics: font.glyphs.length,
     });
 
     const maxpTable = maxp.make(font.glyphs.length);
@@ -302,22 +316,26 @@ function fontToSfntTable(font) {
     }
 
     if (!names.unicode.preferredSubfamily) {
-        names.unicode.preferredSubfamily = fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily || fontNamesWindows.fontSubFamily;
+        names.unicode.preferredSubfamily = fontNamesUnicode.fontSubfamily || fontNamesMacintosh.fontSubfamily || fontNamesWindows.fontSubfamily;
     }
 
     if (!names.macintosh.preferredSubfamily) {
-        names.macintosh.preferredSubfamily = fontNamesMacintosh.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesWindows.fontSubFamily;
+        names.macintosh.preferredSubfamily = fontNamesMacintosh.fontSubfamily || fontNamesUnicode.fontSubfamily || fontNamesWindows.fontSubfamily;
     }
 
     if (!names.windows.preferredSubfamily) {
-        names.windows.preferredSubfamily = fontNamesWindows.fontSubFamily || fontNamesUnicode.fontSubFamily || fontNamesMacintosh.fontSubFamily;
+        names.windows.preferredSubfamily = fontNamesWindows.fontSubfamily || fontNamesUnicode.fontSubfamily || fontNamesMacintosh.fontSubfamily;
     }
+
+    // we have to handle fvar before name, because it may modify name IDs
+    const fvarTable = font.tables.fvar ? fvar.make(font.tables.fvar, font.names) : undefined;
+    const gaspTable = font.tables.gasp ? gasp.make(font.tables.gasp) : undefined;
 
     const languageTags = [];
     const nameTable = _name.make(names, languageTags);
     const ltagTable = (languageTags.length > 0 ? ltag.make(languageTags) : undefined);
 
-    const postTable = post.make(font.tables.post);
+    const postTable = post.make(font);
     const cffTable = cff.make(font.glyphs, {
         version: font.getEnglishName('version'),
         fullName: englishFullName,
@@ -335,18 +353,38 @@ function fontToSfntTable(font) {
     if (ltagTable) {
         tables.push(ltagTable);
     }
+
     // Optional tables
-    if (font.tables.gsub) {
-        tables.push(gsub.make(font.tables.gsub));
+    const optionalTables = {
+        gsub,
+        cpal,
+        colr,
+        stat,
+        avar
+    };
+
+    const optionalTableArgs = {
+        avar: [font.tables.fvar]
+    };
+
+    // fvar table is already handled above
+    if (fvarTable) {
+        tables.push(fvarTable);
     }
-    if (font.tables.cpal) {
-        tables.push(cpal.make(font.tables.cpal));
+
+    for (let tableName in optionalTables) {
+        const table = font.tables[tableName];
+        if (table) {
+            tables.push(optionalTables[tableName].make.call(font, table, ...(optionalTableArgs[tableName] || [])));
+        }
     }
-    if (font.tables.colr) {
-        tables.push(colr.make(font.tables.colr));
-    }
+
     if (metaTable) {
         tables.push(metaTable);
+    }
+
+    if (gaspTable) {
+        tables.push(gaspTable);
     }
 
     const sfntTable = makeSfntTable(tables);

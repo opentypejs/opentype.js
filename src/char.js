@@ -23,7 +23,16 @@ export function isIsolatedArabicChar(char) {
  * @param {string} c a single char
  */
 export function isTashkeelArabicChar(char) {
+    // eslint-disable-next-line no-misleading-character-class
     return /[\u0600-\u0605\u060C-\u060E\u0610-\u061B\u061E\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/.test(char);
+}
+
+/**
+ * Check if a char is Thai
+ * @param {string} c a single char
+ */
+export function isThaiChar(c) {
+    return /[\u0E00-\u0E7F]/.test(c);
 }
 
 /**

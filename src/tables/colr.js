@@ -1,9 +1,9 @@
 // The `COLR` table adds support for multi-colored glyphs
 // https://www.microsoft.com/typography/OTSPEC/colr.htm
 
-import { Parser } from '../parse';
-import check from '../check';
-import table from '../table';
+import { Parser } from '../parse.js';
+import check from '../check.js';
+import table from '../table.js';
 
 function parseColrTable(data, start) {
     const p = new Parser(data, start);

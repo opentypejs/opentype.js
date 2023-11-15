@@ -27,7 +27,7 @@
 */
 'use strict';
 
-import glyf from './tables/glyf';
+import glyf from './tables/glyf.js';
 
 let instructionTable;
 let exec;
@@ -1516,8 +1516,8 @@ function SHP(a, state) {
             console.log(
                 state.step,
                 (state.loop > 1 ?
-                   'loop ' + (state.loop - loop) + ': ' :
-                   ''
+                    'loop ' + (state.loop - loop) + ': ' :
+                    ''
                 ) +
                 'SHP[' + (a ? 'rp1' : 'rp2') + ']', pi
             );
@@ -1950,7 +1950,7 @@ function ODD(state) {
 
     if (exports.DEBUG) console.log(state.step, 'ODD[]', n);
 
-    stack.push(Math.trunc(n) % 2 ? 1 : 0);
+    stack.push(Math.trunc(n) & 1 ? 1 : 0);
 }
 
 // EVEN[] EVEN
@@ -1961,7 +1961,7 @@ function EVEN(state) {
 
     if (exports.DEBUG) console.log(state.step, 'EVEN[]', n);
 
-    stack.push(Math.trunc(n) % 2 ? 0 : 1);
+    stack.push(Math.trunc(n) & 1 ? 0 : 1);
 }
 
 // IF[] IF test

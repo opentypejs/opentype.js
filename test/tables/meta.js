@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { hex, unhex } from '../testutil';
-import meta from '../../src/tables/meta';
+import { hex, unhex } from '../testutil.js';
+import meta from '../../src/tables/meta.js';
 
 // Based on https://github.com/behdad/fonttools/blob/a5968458015b519bc415f3ca7d882a428f45c347/Lib/fontTools/ttLib/tables/_m_e_t_a_test.py
 describe('tables/meta.js', function() {

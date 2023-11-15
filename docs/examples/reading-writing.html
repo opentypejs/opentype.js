@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<title>OpenType writing</title>
+<style>
+    body {
+        font: 13px Helvetica, arial, freesans, sans-serif;
+        line-height: 1.4;
+        color: #333;
+        margin: 0 0 50px 0;
+        padding: 0;
+    }
+    .container {
+        width: 940px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    #glyphs {
+        clear: both;
+    }
+    .wrapper {
+        float: left;
+        margin: 5px;
+        border: 1px solid #ccc;
+    }
+    .wrapper span {
+        text-align: center;
+        background: #ddd;
+        display: block;
+    }
+    a:not([href]) {
+        display: none;
+    }
+</style>
+
+<form class="container" name="demo">
+    <h1><output name="fontFamilyName"></output></h1>
+    <p>This font is generated dynamically in the browser.</p>
+    <a id="link" download="generated.otf">Download Font</a>
+
+    <div id="glyphs"></div>
+</form>
+
+<script type="module">
+import * as opentype from "/dist/opentype.module.js";
+
+// Create a canvas and adds it to the document.
+// Returns the 2d drawing context.
+function createGlyphCanvas(glyph, size) {
+    const canvasId = 'c' + glyph.index;
+    const html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyph.index + '</span><span>' + glyph.name + '</span><span>U ' + glyph.unicode + '</span></div>';
+    const glyphsDiv = document.getElementById('glyphs');
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    glyphsDiv.appendChild(wrap);
+    const canvas = document.getElementById(canvasId);
+    return canvas.getContext('2d');
+}
+
+const buf = await fetch('../fonts/FiraSansMedium.woff');
+const font1 = opentype.parse(await buf.arrayBuffer()); // 1st gen
+const font2 = opentype.parse(font1.toArrayBuffer()); // 2st gen
+const form = document.forms.demo;
+form.fontFamilyName.innerText = font2.names.windows.fontFamily.en;
+const a = document.getElementById('link')
+a.href = window.URL.createObjectURL(new Blob([font2.toArrayBuffer()], {type: "font/otf"}))
+
+for (let i = 0; i < font2.glyphs.length; i++) {
+    const glyph = font2.glyphs.get(i);
+    const ctx = createGlyphCanvas(glyph, 150);
+    const x = 50;
+    const y = 120;
+    const fontSize = 72;
+    glyph.draw(ctx, x, y, fontSize);
+    glyph.drawPoints(ctx, x, y, fontSize);
+    glyph.drawMetrics(ctx, x, y, fontSize);
+}
+</script>
+</body>
+</html>

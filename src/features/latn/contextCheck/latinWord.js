@@ -2,7 +2,7 @@
  * Latin word context checkers
  */
 
-import { isLatinChar } from '../../../char';
+import { isLatinChar } from '../../../char.js';
 
 function latinWordStartCheck(contextParams) {
     const char = contextParams.current;

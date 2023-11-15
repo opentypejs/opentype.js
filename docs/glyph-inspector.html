@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>opentype.js glyph inspector</title>
+<meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
+<meta charset="utf-8">
+<link rel="stylesheet" href="site.css">
+
+<div class="header">
+    <div class="container">
+        <h1><a href="./">opentype.js</a></h1>
+        <nav>
+            <a href="font-inspector.html">Font Inspector</a>
+            <a href="glyph-inspector.html">Glyph Inspector</a>
+        </nav>
+        <nav class="right">
+            <a class="github" href="https://github.com/opentypejs/opentype.js">Fork me on GitHub</a>
+        </nav>
+    </div>
+</div>
+
+<form class="container" name="demo">
+
+    <div class="explain">
+        <h1>Glyph Inspector</h1>
+        <small>opentype.js is an OpenType and TrueType font parser. Here you can inspect the raw glyph data.</small>
+    </div>
+
+    <input id="file" type="file">
+    <output class="info" name="fontname"></output>
+    <div id="message"></div>
+
+    <hr>
+
+    <div>
+        Glyphs <span id="pagination"></span>
+        <br>
+        <div id="glyph-list-end"></div>
+    </div>
+    <div style="position: relative">
+        <div id="glyph-display">
+            <canvas id="glyph-bg" width="500" height="500"></canvas>
+            <canvas id="glyph" width="500" height="500"></canvas>
+        </div>
+        <div id="glyph-data"></div>
+        <div style="clear: both"></div>
+    </div>
+
+    <hr>
+
+    <div class="explain">
+        <h1>Free Software</h1>
+        <p>opentype.js is available on <a href="https://github.com/opentypejs/opentype.js">GitHub</a> under the <a href="https://raw.github.com/opentypejs/opentype.js/master/LICENSE">MIT License</a>.</p>
+        <p>Copyright &copy; 2020 Frederik De Bleser.</p>
+    </div>
+
+    <hr>
+</form>
+
+
+<script type="module">
+import * as opentype from "/dist/opentype.module.js";
+
+const form = document.forms.demo;
+
+var cellCount = 100,
+    cellWidth = 44,
+    cellHeight = 40,
+    cellMarginTop = 1,
+    cellMarginBottom = 8,
+    cellMarginLeftRight = 1,
+    glyphMargin = 5,
+    pixelRatio = window.devicePixelRatio || 1;
+
+var pageSelected, font, fontScale, fontSize, fontBaseline, glyphScale, glyphSize, glyphBaseline;
+
+function enableHighDPICanvas(canvas) {
+    if (typeof canvas === 'string') {
+        canvas = document.getElementById(canvas);
+    }
+    var pixelRatio = window.devicePixelRatio || 1;
+    if (pixelRatio === 1) return;
+    var oldWidth = canvas.width;
+    var oldHeight = canvas.height;
+    canvas.width = oldWidth * pixelRatio;
+    canvas.height = oldHeight * pixelRatio;
+    canvas.style.width = oldWidth + 'px';
+    canvas.style.height = oldHeight + 'px';
+    canvas.getContext('2d').scale(pixelRatio, pixelRatio);
+}
+
+function showErrorMessage(message) {
+    var el = document.getElementById('message');
+    if (!message || message.trim().length === 0) {
+        el.style.display = 'none';
+    } else {
+        el.style.display = 'block';
+    }
+    el.innerHTML = message;
+}
+
+function pathCommandToString(cmd) {
+    var str = '<strong>' + cmd.type + '</strong> ' +
+        ((cmd.x !== undefined) ? 'x='+cmd.x+' y='+cmd.y+' ' : '') +
+        ((cmd.x1 !== undefined) ? 'x1='+cmd.x1+' y1='+cmd.y1+' ' : '') +
+        ((cmd.x2 !== undefined) ? 'x2='+cmd.x2+' y2='+cmd.y2 : '');
+    return str;
+}
+
+function contourToString(contour) {
+    return '<pre class="contour">' + contour.map(function(point) {
+        return '<span class="' + (point.onCurve ? 'on' : 'off') + 'curve">x=' + point.x + ' y=' + point.y + '</span>';
+    }).join('\n') + '</pre>';
+}
+
+function formatUnicode(unicode) {
+    unicode = unicode.toString(16);
+    if (unicode.length > 4) {
+        return ("000000" + unicode.toUpperCase()).substr(-6)
+    } else {
+        return ("0000" + unicode.toUpperCase()).substr(-4)
+    }
+}
+
+function displayGlyphData(glyphIndex) {
+    const font = window.font;
+    var container = document.getElementById('glyph-data');
+    if (glyphIndex < 0) {
+        container.innerHTML = '';
+        return;
+    }
+    var glyph = font.glyphs.get(glyphIndex),
+        html = '<dl>';
+    html += '<dt>name</dt><dd>'+glyph.name+'</dd>';
+
+    if (glyph.unicodes.length > 0) {
+        html += '<dt>unicode</dt><dd>'+ glyph.unicodes.map(formatUnicode).join(', ') +'</dd>';
+    }
+    html += '<dt>index</dt><dd>'+glyph.index+'</dd>';
+
+    if (glyph.xMin !== 0 || glyph.xMax !== 0 || glyph.yMin !== 0 || glyph.yMax !== 0) {
+        html += '<dt>xMin</dt><dd>'+glyph.xMin+'</dd>' +
+            '<dt>xMax</dt><dd>'+glyph.xMax+'</dd>' +
+            '<dt>yMin</dt><dd>'+glyph.yMin+'</dd>' +
+            '<dt>yMax</dt><dd>'+glyph.yMax+'</dd>';
+    }
+    html += '<dt>advanceWidth</dt><dd>'+glyph.advanceWidth+'</dd>';
+    if(glyph.leftSideBearing !== undefined) {
+        html += '<dt>leftSideBearing</dt><dd>'+glyph.leftSideBearing+'</dd>';
+    }
+    html += '</dl>';
+    if (glyph.numberOfContours > 0) {
+        var contours = glyph.getContours();
+        html += 'contours:<div id="glyph-contours">' + contours.map(contourToString).join('\n') + '</div>';
+    } else if (glyph.isComposite) {
+        html += '<br>This composite glyph is a combination of :<ul><li>' +
+            glyph.components.map(function(component) {
+                if (component.matchedPoints === undefined) {
+                    return 'glyph '+component.glyphIndex+' at dx='+component.dx+', dy='+component.dy;
+                } else {
+                    return 'glyph '+component.glyphIndex+' at matchedPoints=['+component.matchedPoints+']';
+                }
+            }).join('</li><li>') + '</li></ul>';
+    } else if (glyph.path) {
+        html += 'path:<br><pre>  ' + glyph.path.commands.map(pathCommandToString).join('\n  ') + '\n</pre>';
+    }
+    container.innerHTML = html;
+}
+
+var arrowLength = 10,
+    arrowAperture = 4;
+
+function drawArrow(ctx, x1, y1, x2, y2) {
+    var dx = x2 - x1,
+        dy = y2 - y1,
+        segmentLength = Math.sqrt(dx*dx + dy*dy),
+        unitx = dx / segmentLength,
+        unity = dy / segmentLength,
+        basex = x2 - arrowLength * unitx,
+        basey = y2 - arrowLength * unity,
+        normalx = arrowAperture * unity,
+        normaly = -arrowAperture * unitx;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(basex + normalx, basey + normaly);
+    ctx.lineTo(basex - normalx, basey - normaly);
+    ctx.lineTo(x2, y2);
+    ctx.closePath();
+    ctx.fill();
+}
+
+/**
+ * This function is Path.prototype.draw with an arrow
+ * at the end of each contour.
+ */
+function drawPathWithArrows(ctx, path) {
+    var i, cmd, x1, y1, x2, y2;
+    var arrows = [];
+    ctx.beginPath();
+    for (i = 0; i < path.commands.length; i += 1) {
+        cmd = path.commands[i];
+        if (cmd.type === 'M') {
+            if(x1 !== undefined) {
+                arrows.push([ctx, x1, y1, x2, y2]);
+            }
+            ctx.moveTo(cmd.x, cmd.y);
+        } else if (cmd.type === 'L') {
+            ctx.lineTo(cmd.x, cmd.y);
+            x1 = x2;
+            y1 = y2;
+        } else if (cmd.type === 'C') {
+            ctx.bezierCurveTo(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
+            x1 = cmd.x2;
+            y1 = cmd.y2;
+        } else if (cmd.type === 'Q') {
+            ctx.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
+            x1 = cmd.x1;
+            y1 = cmd.y1;
+        } else if (cmd.type === 'Z') {
+            arrows.push([ctx, x1, y1, x2, y2]);
+            ctx.closePath();
+        }
+        x2 = cmd.x;
+        y2 = cmd.y;
+    }
+    if (path.fill) {
+        ctx.fillStyle = path.fill;
+        ctx.fill();
+    }
+    if (path.stroke) {
+        ctx.strokeStyle = path.stroke;
+        ctx.lineWidth = path.strokeWidth;
+        ctx.stroke();
+    }
+    ctx.fillStyle = '#000000';
+    arrows.forEach(function(arrow) {
+        drawArrow.apply(null, arrow);
+    });
+}
+
+function displayGlyph(glyphIndex) {
+    var canvas = document.getElementById('glyph'),
+        ctx = canvas.getContext('2d'),
+        width = canvas.width / pixelRatio,
+        height = canvas.height / pixelRatio;
+    ctx.clearRect(0, 0, width, height);
+    if(glyphIndex < 0) return;
+    var glyph = window.font.glyphs.get(glyphIndex),
+        glyphWidth = glyph.advanceWidth * glyphScale,
+        xmin = (width - glyphWidth)/2,
+        xmax = (width + glyphWidth)/2,
+        x0 = xmin,
+        markSize = 10;
+
+    ctx.fillStyle = '#606060';
+    ctx.fillRect(xmin-markSize+1, glyphBaseline, markSize, 1);
+    ctx.fillRect(xmin, glyphBaseline, 1, markSize);
+    ctx.fillRect(xmax, glyphBaseline, markSize, 1);
+    ctx.fillRect(xmax, glyphBaseline, 1, markSize);
+    ctx.textAlign = 'center';
+    ctx.fillText('0', xmin, glyphBaseline+markSize+10);
+    ctx.fillText(glyph.advanceWidth, xmax, glyphBaseline+markSize+10);
+
+    ctx.fillStyle = '#000000';
+    var path = glyph.getPath(x0, glyphBaseline, glyphSize);
+    path.fill = '#808080';
+    path.stroke = '#000000';
+    path.strokeWidth = 1.5;
+    drawPathWithArrows(ctx, path);
+    glyph.drawPoints(ctx, x0, glyphBaseline, glyphSize);
+}
+
+function renderGlyphItem(canvas, glyphIndex) {
+    var cellMarkSize = 4;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, cellWidth, cellHeight);
+    if (glyphIndex >= window.font.numGlyphs) return;
+
+    ctx.fillStyle = '#606060';
+    ctx.font = '9px sans-serif';
+    ctx.fillText(glyphIndex, 1, cellHeight-1);
+    var glyph = window.font.glyphs.get(glyphIndex),
+        glyphWidth = glyph.advanceWidth * fontScale,
+        xmin = (cellWidth - glyphWidth)/2,
+        xmax = (cellWidth + glyphWidth)/2,
+        x0 = xmin;
+
+    ctx.fillStyle = '#a0a0a0';
+    ctx.fillRect(xmin-cellMarkSize+1, fontBaseline, cellMarkSize, 1);
+    ctx.fillRect(xmin, fontBaseline, 1, cellMarkSize);
+    ctx.fillRect(xmax, fontBaseline, cellMarkSize, 1);
+    ctx.fillRect(xmax, fontBaseline, 1, cellMarkSize);
+
+    ctx.fillStyle = '#000000';
+    glyph.draw(ctx, x0, fontBaseline, fontSize);
+}
+
+function displayGlyphPage(pageNum) {
+    pageSelected = pageNum;
+    document.getElementById('p'+pageNum).className = 'page-selected';
+    var firstGlyph = pageNum * cellCount;
+    for(var i = 0; i < cellCount; i++) {
+        renderGlyphItem(document.getElementById('g'+i), firstGlyph+i);
+    }
+}
+
+function pageSelect(event) {
+    document.getElementsByClassName('page-selected')[0].className = '';
+    displayGlyphPage(+event.target.id.substr(1));
+}
+
+function initGlyphDisplay(font) {
+    var glyphBgCanvas = document.getElementById('glyph-bg'),
+        w = glyphBgCanvas.width / pixelRatio,
+        h = glyphBgCanvas.height / pixelRatio,
+        glyphW = w - glyphMargin*2,
+        glyphH = h - glyphMargin*2,
+        head = font.tables.head,
+        maxHeight = head.yMax - head.yMin,
+        ctx = glyphBgCanvas.getContext('2d');
+
+    glyphScale = Math.min(glyphW/(head.xMax - head.xMin), glyphH/maxHeight);
+    glyphSize = glyphScale * font.unitsPerEm;
+    glyphBaseline = glyphMargin + glyphH * head.yMax / maxHeight;
+
+    function hline(text, yunits) {
+        const ypx = glyphBaseline - yunits * glyphScale;
+        ctx.fillText(text, 2, ypx+3);
+        ctx.fillRect(80, ypx, w, 1);
+    }
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#a0a0a0';
+    hline('Baseline', 0);
+    hline('yMax', font.tables.head.yMax);
+    hline('yMin', font.tables.head.yMin);
+    hline('Ascender', font.tables.hhea.ascender);
+    hline('Descender', font.tables.hhea.descender);
+    hline('Typo Ascender', font.tables.os2.sTypoAscender);
+    hline('Typo Descender', font.tables.os2.sTypoDescender);
+}
+
+function onFontLoaded(font) {
+    window.font = font;
+
+    var w = cellWidth - cellMarginLeftRight * 2,
+        h = cellHeight - cellMarginTop - cellMarginBottom,
+        head = font.tables.head,
+        maxHeight = head.yMax - head.yMin;
+    fontScale = Math.min(w/(head.xMax - head.xMin), h/maxHeight);
+    fontSize = fontScale * font.unitsPerEm;
+    fontBaseline = cellMarginTop + h * head.yMax / maxHeight;
+
+    var pagination = document.getElementById("pagination");
+    pagination.innerHTML = '';
+    var fragment = document.createDocumentFragment();
+    var numPages = Math.ceil(font.numGlyphs / cellCount);
+    for(var i = 0; i < numPages; i++) {
+        var link = document.createElement('span');
+        var lastIndex = Math.min(font.numGlyphs-1, (i+1)*cellCount-1);
+        link.textContent = i*cellCount + '-' + lastIndex;
+        link.id = 'p' + i;
+        link.addEventListener('click', pageSelect, false);
+        fragment.appendChild(link);
+        // A white space allows to break very long lines into multiple lines.
+        // This is needed for fonts with thousands of glyphs.
+        fragment.appendChild(document.createTextNode(' '));
+    }
+    pagination.appendChild(fragment);
+
+    initGlyphDisplay(font);
+    displayGlyphPage(0);
+    displayGlyph(-1);
+    displayGlyphData(-1);
+}
+
+function cellSelect(event) {
+    if (!window.font) return;
+    var firstGlyphIndex = pageSelected*cellCount,
+        cellIndex = +event.target.id.substr(1),
+        glyphIndex = firstGlyphIndex + cellIndex;
+    if (glyphIndex < window.font.numGlyphs) {
+        displayGlyph(glyphIndex);
+        displayGlyphData(glyphIndex);
+    }
+}
+
+function prepareGlyphList() {
+    var marker = document.getElementById('glyph-list-end'),
+        parent = marker.parentElement;
+    for(var i = 0; i < cellCount; i++) {
+        var canvas = document.createElement('canvas');
+        canvas.width = cellWidth;
+        canvas.height = cellHeight;
+        canvas.className = 'item';
+        canvas.id = 'g'+i;
+        canvas.addEventListener('click', cellSelect, false);
+        enableHighDPICanvas(canvas);
+        parent.insertBefore(canvas, marker);
+    }
+}
+
+const loadScript = (src) => new Promise((onload, onerror) => document.head.append(Object.assign(document.createElement('script'), {src, onload, onerror})));
+async function display(file, name) {
+    form.fontname.innerText = name;
+    const isWoff2 = name.endsWith('.woff2');
+    if (isWoff2 && !window.Module) {
+        const wasmReady = new Promise((onRuntimeInitialized) => window.Module = { onRuntimeInitialized });
+        await loadScript('https://unpkg.com/wawoff2@2.0.1/build/decompress_binding.js'); // wawoff2 is globaly loaded as 'Module'
+        await wasmReady; // WASM has called our onRuntimeInitialized() resolver
+    }
+    try {
+        const data = await file.arrayBuffer();
+        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
+        showErrorMessage('');
+    } catch (err) {
+        showErrorMessage(err.toString());
+    }
+}
+
+form.file.onchange = function(e) {
+    display(e.target.files[0], e.target.files[0].name);
+};
+
+enableHighDPICanvas('glyph-bg');
+enableHighDPICanvas('glyph');
+
+prepareGlyphList();
+
+const fontFileName = 'fonts/FiraSansMedium.woff';
+display(await fetch(fontFileName), fontFileName);
+</script>
+</body>
+</html>

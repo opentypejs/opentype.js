@@ -1,0 +1,60 @@
+name: Publish package to npm
+run-name: npm - publish ${{ github.event.inputs.version }} to ${{ github.event.inputs.npmDistTag }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        description: 'SemVer version for npm. (i.e. 1.0.0)'
+      npmDistTag:
+        required: true
+        default: 'latest'
+      dryRun:
+        description: 'Do a dry run (does not publish packages)'
+        type: boolean
+
+jobs:
+  publish:
+    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    permissions:
+      # required for publishing to npm with --provenance
+      # see https://docs.npmjs.com/generating-provenance-statements
+      id-token: write
+    steps:
+    - name: Print input
+      env:
+        THE_INPUT: '${{ toJson(github.event.inputs) }}'
+      run: |
+        echo $THE_INPUT
+        
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 20
+        registry-url: 'https://registry.npmjs.org'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build
+      run: npm run build
+    
+    - name: Make dist files
+      run: npm run dist
+    
+    - name: Run tests
+      run: npm run test
+    
+    - name: Set version in package*.json
+      run: npm pkg set version=${{ github.event.inputs.version }}
+    
+    - name: Publish package to npm
+      run: npm publish --access public --tag ${{ github.event.inputs.npmDistTag }} ${{ env.DRY_RUN }}
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # https://docs.npmjs.com/generating-provenance-statements
+        NPM_CONFIG_PROVENANCE: true
+        DRY_RUN: ${{ github.event.inputs.dryRun == 'true' && '--dry-run' || '' }}

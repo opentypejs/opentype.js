@@ -1,8 +1,8 @@
 // The `hmtx` table contains the horizontal metrics for all glyphs.
 // https://www.microsoft.com/typography/OTSPEC/hmtx.htm
 
-import parse from '../parse';
-import table from '../table';
+import parse from '../parse.js';
+import table from '../table.js';
 
 function parseHmtxTableAll(data, start, numMetrics, numGlyphs, glyphs) {
     let advanceWidth;

@@ -2,7 +2,7 @@
  * Arabic sentence context checkers
  */
 
-import { isArabicChar, isWhiteSpace, isTashkeelArabicChar } from '../../../char';
+import { isArabicChar, isWhiteSpace, isTashkeelArabicChar } from '../../../char.js';
 
 function arabicSentenceStartCheck(contextParams) {
     const char = contextParams.current;
@@ -19,7 +19,7 @@ function arabicSentenceEndCheck(contextParams) {
     switch (true) {
         case nextChar === null:
             return true;
-        case (!isArabicChar(nextChar) && !isTashkeelArabicChar(nextChar)):
+        case (!isArabicChar(nextChar) && !isTashkeelArabicChar(nextChar)): {
             const nextIsWhitespace = isWhiteSpace(nextChar);
             if (!nextIsWhitespace) return true;
             if (nextIsWhitespace) {
@@ -32,6 +32,7 @@ function arabicSentenceEndCheck(contextParams) {
                 if (!arabicCharAhead) return true;
             }
             break;
+        }
         default:
             return false;
     }

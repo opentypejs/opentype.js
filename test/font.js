@@ -1,5 +1,7 @@
 import assert from 'assert';
-import { Font, Glyph, Path, loadSync } from '../src/opentype';
+import { Font, Glyph, Path, parse } from '../src/opentype.js';
+import { readFileSync } from 'fs';
+const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('font.js', function() {
     let font;
@@ -14,6 +16,8 @@ describe('font.js', function() {
         new Glyph({name: '.notdef', unicode: 0, path: new Path(), advanceWidth: 1}),
         fGlyph, iGlyph, ffGlyph, fiGlyph, ffiGlyph
     ];
+
+    glyphs.forEach((glyph, index) => glyph.index = index);
 
     beforeEach(function() {
         font = new Font({
@@ -41,9 +45,82 @@ describe('font.js', function() {
         it('tables definition can override defaults values', function() {
             assert.equal(font.tables.os2.fsSelection, 42);
         });
+        it('panose has default fallback', function() {
+            assert.equal(font.tables.os2.bFamilyType, 0);
+            assert.equal(font.tables.os2.bSerifStyle, 0);
+            assert.equal(font.tables.os2.bWeight, 0);
+            assert.equal(font.tables.os2.bProportion, 0);
+            assert.equal(font.tables.os2.bContrast, 0);
+            assert.equal(font.tables.os2.bStrokeVariation, 0);
+            assert.equal(font.tables.os2.bArmStyle, 0);
+            assert.equal(font.tables.os2.bLetterform, 0);
+            assert.equal(font.tables.os2.bMidline, 0);
+            assert.equal(font.tables.os2.bXHeight, 0);
+        });
+        it('panose values are set correctly', function () {
+            let panoseFont = new Font({
+                familyName: 'MyFont',
+                styleName: 'Medium',
+                unitsPerEm: 1000,
+                ascender: 800,
+                descender: 0,
+                panose: [0,1,2,3,4,5,6,7,8,9],
+            });
+            assert.equal(panoseFont.tables.os2.bFamilyType, 0);
+            assert.equal(panoseFont.tables.os2.bSerifStyle, 1);
+            assert.equal(panoseFont.tables.os2.bWeight, 2);
+            assert.equal(panoseFont.tables.os2.bProportion, 3);
+            assert.equal(panoseFont.tables.os2.bContrast, 4);
+            assert.equal(panoseFont.tables.os2.bStrokeVariation, 5);
+            assert.equal(panoseFont.tables.os2.bArmStyle, 6);
+            assert.equal(panoseFont.tables.os2.bLetterform, 7);
+            assert.equal(panoseFont.tables.os2.bMidline, 8);
+            assert.equal(panoseFont.tables.os2.bXHeight, 9);
+        });
+        it('fsSelection and macStyle are calcluated if no fsSelection value is provided', function() {
+            let weightClassFont = new Font({
+                familyName: 'MyFont',
+                styleName: 'Medium',
+                unitsPerEm: 1000,
+                ascender: 800,
+                descender: 0,
+                weightClass: 600,
+                fsSelection: false,
+            });
+            assert.equal(weightClassFont.tables.os2.fsSelection, 32);
+            const weightClassHeadTable = weightClassFont.toTables().tables.find(table => table.tableName === 'head');
+            assert.equal(weightClassHeadTable.macStyle, font.macStyleValues.BOLD);
+
+            let italicAngleFont = new Font({
+                familyName: 'MyFont',
+                styleName: 'Medium',
+                unitsPerEm: 1000,
+                ascender: 800,
+                descender: 0,
+                italicAngle: -13,
+                fsSelection: false,
+            });
+            assert.equal(italicAngleFont.tables.os2.fsSelection, 1);
+            const italicAngleHeadTable = italicAngleFont.toTables().tables.find(table => table.tableName === 'head');
+            assert.equal(italicAngleHeadTable.macStyle, font.macStyleValues.ITALIC);
+        });
         it('tables definition shall be serialized', function() {
             const os2 = font.toTables().tables.find(table => table.tableName === 'OS/2');
             assert.equal(os2.achVendID, 'TEST');
+        });
+    });
+
+    describe('stringToGlyphIndexes', function() {
+        it('must support standard ligatures', function() {
+            assert.deepEqual(font.stringToGlyphIndexes('fi'), [fGlyph.index, iGlyph.index]);
+            font.substitution.add('liga', { sub: [1, 1, 2], by: 5 });
+            font.substitution.add('liga', { sub: [1, 1], by: 3 });
+            font.substitution.add('liga', { sub: [1, 2], by: 4 });
+            assert.deepEqual(font.stringToGlyphIndexes('ff'), [ffGlyph.index]);
+            assert.deepEqual(font.stringToGlyphIndexes('fi'), [fiGlyph.index]);
+            assert.deepEqual(font.stringToGlyphIndexes('ffi'), [ffiGlyph.index]);
+            assert.deepEqual(font.stringToGlyphIndexes('fffiffif'),
+                [ffGlyph.index, fiGlyph.index, ffiGlyph.index, fGlyph.index]);
         });
     });
 
@@ -60,18 +137,39 @@ describe('font.js', function() {
         });
 
         it('works on fonts with coverage table format 2', function() {
-            const vibur = loadSync('./fonts/Vibur.woff');
+            const vibur = loadSync('./test/fonts/Vibur.woff');
             const glyphs = vibur.stringToGlyphs('er');
             assert.equal(glyphs.length, 1);
             assert.equal(glyphs[0].name, 'er');
         });
 
         it('works on fonts with coverage table format 2 on low memory mode', function() {
-            const vibur = loadSync('./fonts/Vibur.woff', {lowMemory: true});
+            const vibur = loadSync('./test/fonts/Vibur.woff', {lowMemory: true});
             const glyphs = vibur.stringToGlyphs('er');
             assert.equal(glyphs.length, 1);
             assert.equal(glyphs[0].name, 'er');
         });
 
+    });
+
+    describe('hasChar', function() {
+        it('returns correct results for non-CMAP fonts', function() {
+            assert.equal(font.hasChar('i'), true);
+            assert.equal(font.hasChar('x'), false);
+        });
+
+        it('returns correct results for CMAP fonts', function() {
+            const cmapFont = loadSync('./test/fonts/TestCMAP14.otf');
+            assert.equal(cmapFont.hasChar('a'), false);
+            assert.equal(cmapFont.hasChar('≩'), true);
+        });
+    });
+
+    describe('toTables', function() {
+        it('returns an sfnt font table', function() {
+            const tables = font.toTables();
+            assert.ok(tables);
+            assert.equal(tables.tableName, 'sfnt');
+        });
     });
 });

@@ -1,7 +1,7 @@
 // The Position object provides utility methods to manipulate
 // the GPOS position table.
 
-import Layout from './layout';
+import Layout from './layout.js';
 
 /**
  * @exports opentype.Position
@@ -39,7 +39,7 @@ Position.prototype.getKerningValue = function(kerningLookups, leftIndex, rightIn
             const covIndex = this.getCoverageIndex(subtable.coverage, leftIndex);
             if (covIndex < 0) continue;
             switch (subtable.posFormat) {
-                case 1:
+                case 1: {
                     // Search Pair Adjustment Positioning Format 1
                     let pairSet = subtable.pairSets[covIndex];
                     for (let k = 0; k < pairSet.length; k++) {
@@ -49,12 +49,14 @@ Position.prototype.getKerningValue = function(kerningLookups, leftIndex, rightIn
                         }
                     }
                     break;      // left glyph found, not right glyph - try next subtable
-                case 2:
+                }
+                case 2: {
                     // Search Pair Adjustment Positioning Format 2
                     const class1 = this.getGlyphClass(subtable.classDef1, leftIndex);
                     const class2 = this.getGlyphClass(subtable.classDef2, rightIndex);
                     const pair = subtable.classRecords[class1][class2];
                     return pair.value1 && pair.value1.xAdvance || 0;
+                }
             }
         }
     }

@@ -2,7 +2,7 @@
  * Arabic word context checkers
  */
 
-import { isArabicChar } from '../../../char';
+import { isArabicChar } from '../../../char.js';
 
 function arabicWordStartCheck(contextParams) {
     const char = contextParams.current;
