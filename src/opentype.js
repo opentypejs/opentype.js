@@ -4,6 +4,7 @@
 // opentype.js may be freely distributed under the MIT license.
 
 import { tinf_uncompress as inflate } from './tiny-inflate@1.0.3.esm.js'; // from code4fukui/tiny-inflate-es
+import { isNode } from './util.js';
 import Font from './font.js';
 import Glyph from './glyph.js';
 import { CmapEncoding, GlyphNames, addGlyphNames } from './encoding.js';
@@ -84,7 +85,7 @@ function loadFromUrl(url, callback) {
 
         request.send();
 
-    } else {
+    } else if ( isNode() ) {
         // Node environment, we use the http/https libraries (to avoid extra dependencies like axios).
 
         const lib = url.startsWith('https:') ? require('https') : require('http');
