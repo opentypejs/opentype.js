@@ -29,14 +29,14 @@ describe('opentype.js', function() {
     });
 
     it('can load a font from URL in Node context', function(done) {
-        load('https://opentype.js.org/fonts/Roboto-Black.ttf', null, { isUrl: true }).then((font) => {
-            assert.deepEqual(font.names.macintosh.fontFamily, {en: 'Roboto Black'});
-            assert.deepEqual(font.names.windows.fontFamily, {en: 'Roboto Black'});
-            assert.equal(font.unitsPerEm, 2048);
-            assert.equal(font.glyphs.length, 1294);
+        load('https://opentype.js.org/fonts/FiraSansMedium.woff', null, { isUrl: true }).then((font) => {
+            assert.deepEqual(font.names.macintosh.fontFamily, {en: 'Fira Sans OT'});
+            assert.deepEqual(font.names.windows.fontFamily, {en: 'Fira Sans OT'});
+            assert.equal(font.unitsPerEm, 1000);
+            assert.equal(font.glyphs.length, 1147);
             const aGlyph = font.charToGlyph('A');
             assert.equal(aGlyph.unicode, 65);
-            assert.equal(aGlyph.path.commands.length, 15);
+            assert.equal(aGlyph.path.commands.length, 14);
             done();
         }).catch(error => {
             console.log(error);
