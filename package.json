@@ -54,7 +54,9 @@
       "es2021": true,
       "node": true
     },
-    "plugins": ["eslint-plugin-local-rules"],
+    "plugins": [
+      "eslint-plugin-local-rules"
+    ],
     "extends": "eslint:recommended",
     "parserOptions": {
       "ecmaVersion": 2018,
