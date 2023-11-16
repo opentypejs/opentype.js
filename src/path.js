@@ -16,8 +16,25 @@ function Path() {
     this.strokeWidth = 1;
 }
 
+const decimalRoundingCache = {};
+
 function roundDecimal(float, places) {
-    return +(Math.round(float + 'e+' + places) + 'e-' + places);
+    const integerPart = Math.floor(float);
+    const decimalPart = float - integerPart;
+
+    if (!decimalRoundingCache[places]) {
+        decimalRoundingCache[places] = {};
+    }
+
+    if (decimalRoundingCache[places][decimalPart] !== undefined) {
+        const roundedDecimalPart = decimalRoundingCache[places][decimalPart];
+        return integerPart + roundedDecimalPart;
+    }
+    
+    const roundedDecimalPart = +(Math.round(decimalPart + 'e+' + places) + 'e-' + places);
+    decimalRoundingCache[places][decimalPart] = roundedDecimalPart;
+
+    return integerPart + roundedDecimalPart;
 }
 
 function optimizeCommands(commands) {
@@ -525,10 +542,11 @@ Path.prototype.toPathData = function(options) {
     options = createSVGOutputOptions(options);
 
     function floatToString(v) {
-        if (Math.round(v) === roundDecimal(v, options.decimalPlaces)) {
-            return '' + roundDecimal(v, options.decimalPlaces);
+        const rounded = roundDecimal(v, options.decimalPlaces);
+        if (Math.round(v) === rounded) {
+            return '' + rounded;
         } else {
-            return roundDecimal(v, options.decimalPlaces).toFixed(options.decimalPlaces);
+            return rounded.toFixed(options.decimalPlaces);
         }
     }
 
