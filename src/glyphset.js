@@ -37,7 +37,6 @@ function GlyphSet(font, glyphs) {
             this.glyphs[i] = glyph;
         }
     }
-
     this.length = (glyphs && glyphs.length) || 0;
 }
 
@@ -64,13 +63,15 @@ if(typeof Symbol !== 'undefined' && Symbol.iterator) {
 GlyphSet.prototype.get = function(index) {
     // this.glyphs[index] is 'undefined' when low memory mode is on. glyph is pushed on request only.
     if (this.glyphs[index] === undefined) {
+        if (typeof this.font._push !== 'function') return;
+        
         this.font._push(index);
         if (typeof this.glyphs[index] === 'function') {
             this.glyphs[index] = this.glyphs[index]();
         }
 
         let glyph = this.glyphs[index];
-        let unicodeObj = this.font._IndexToUnicodeMap[index];
+        let unicodeObj = this.font._IndexToUnicodeMap && this.font._IndexToUnicodeMap[index];
 
         if (unicodeObj) {
             for (let j = 0; j < unicodeObj.unicodes.length; j++)

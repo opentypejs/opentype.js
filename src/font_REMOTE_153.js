@@ -9,15 +9,15 @@ import Substitution from './substitution.js';
 import { isBrowser, checkArgument } from './util.js';
 import HintingTrueType from './hintingtt.js';
 import Bidi from './bidi.js';
-import { logger, ErrorTypes, MessageLogger } from './logger.js';
+import validation from './validation.js';
 
 function createDefaultNamesInfo(options) {
     return {
         fontFamily: {en: options.familyName || ' '},
         fontSubfamily: {en: options.styleName || ' '},
-        fullName: {en: options.fullName || (options.familyName || '') + ' ' + (options.styleName || '')},
+        fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
         // postScriptName may not contain any whitespace
-        postScriptName: {en: options.postScriptName || ((options.familyName || '') + (options.styleName || '')).replace(/\s/g, '')},
+        postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
         designer: {en: options.designer || ' '},
         designerURL: {en: options.designerURL || ' '},
         manufacturer: {en: options.manufacturer || ' '},
@@ -503,17 +503,15 @@ Font.prototype.getEnglishName = function(name) {
 
 /**
  * Validate
- * @type {MessageLogger}
  */
-Font.prototype.validation = new MessageLogger();
-Font.prototype.ErrorTypes = ErrorTypes;
+Font.prototype.validation = new validation.MessageStack();
 Font.prototype.validate = function() {
     const validationMessages = [];
     const _this = this;
 
     function assert(predicate, message) {
         if (!predicate) {
-            validationMessages.push(_this.validation.add(message, _this.ErrorTypes.WARNING));
+            validationMessages.push(_this.validation.add(message, validation.errorTypes.WARNING));
         }
     }
 
@@ -532,6 +530,8 @@ Font.prototype.validate = function() {
 
     // Dimension information
     assert(this.unitsPerEm > 0, 'No unitsPerEm specified.');
+
+    this.validation.logMessages();
     
     return validationMessages;
 };
@@ -548,7 +548,7 @@ Font.prototype.toTables = function() {
  * @deprecated Font.toBuffer is deprecated. Use Font.toArrayBuffer instead.
  */
 Font.prototype.toBuffer = function() {
-    logger.add('Font.toBuffer is deprecated. Use Font.toArrayBuffer instead.', this.ErrorTypes.DEPRECATED);
+    this.validation.add('Font.toBuffer is deprecated. Use Font.toArrayBuffer instead.', validation.errorTypes.DEPRECATED);
     return this.toArrayBuffer();
 };
 /**
@@ -591,7 +591,7 @@ Font.prototype.download = function(fileName) {
             event.initEvent('click', true, false);
             link.dispatchEvent(event);
         } else {
-            logger.add('Font file could not be downloaded. Try using a different browser.');
+            validation.add('Font file could not be downloaded. Try using a different browser.');
         }
     } else {
         const fs = require('fs');
@@ -664,4 +664,3 @@ Font.prototype.usWeightClasses = {
 };
 
 export default Font;
-export { createDefaultNamesInfo };
