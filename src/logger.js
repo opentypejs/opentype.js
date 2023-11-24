@@ -76,15 +76,18 @@ class MessageLogger {
         let doLog = !!(this.logLevel & type);
 
         if (isBrowser()) {
-            document.dispatchEvent(
-                new CustomEvent('opentypejs:message', {
-                    detail: {
-                        message,
-                        logged: doLog,
-                        logger: this.logLevel
-                    }
-                })
-            );
+            const messageEvent = new CustomEvent('opentypejs:message', {
+                cancelable: true,
+                detail: {
+                    message,
+                    doLog: doLog,
+                    logger: this.logLevel
+                }
+            });
+            const cancelled = document.dispatchEvent(messageEvent);
+            if (cancelled) {
+                doLog = false;
+            }
         }
         
         if (doLog) {
