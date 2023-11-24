@@ -71,4 +71,15 @@ describe('tables/cmap.js', function() {
         }
         assert.deepEqual(glyphIds, expectedGlyphIds);
     });
+
+    it('can parse CMAP table format 13', function() {
+        let font;
+        assert.doesNotThrow(function() {
+            font = loadSync('./test/fonts/TestCMAP13.ttf');
+        });
+        const testString = 'U\u13EF\u{1203C}\u{1FA00}';
+        const glyphIds = font.stringToGlyphIndexes(testString);
+        const expectedGlyphIds = [1,2,3,4];
+        assert.deepEqual(glyphIds, expectedGlyphIds);
+    });
 });
