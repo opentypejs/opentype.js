@@ -1,6 +1,7 @@
 // The GlyphSet object
 
 import Glyph from './glyph.js';
+import { logger } from './logger.js';
 
 // Define a property on the glyph that depends on the path being loaded.
 function defineDependentProperty(glyph, externalName, internalName) {
@@ -63,7 +64,12 @@ if(typeof Symbol !== 'undefined' && Symbol.iterator) {
 GlyphSet.prototype.get = function(index) {
     // this.glyphs[index] is 'undefined' when low memory mode is on. glyph is pushed on request only.
     if (this.glyphs[index] === undefined) {
-        if (typeof this.font._push !== 'function') return;
+        if (typeof this.font._push !== 'function') {
+            if (index !== null) {
+                logger.add(`Trying to access unknown glyph at index ${index}`, logger.ErrorTypes.WARNING);
+            }
+            return;
+        }
         
         this.font._push(index);
         if (typeof this.glyphs[index] === 'function') {
