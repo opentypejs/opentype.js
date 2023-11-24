@@ -144,11 +144,23 @@ function showErrorMessage(message) {
     var el = document.getElementById('message');
     if (!message || message.trim().length === 0) {
         el.style.display = 'none';
+        el.innerHTML = '';
     } else {
         el.style.display = 'block';
+        el.innerHTML = `<p class="message-type-1">${message}</p>`;
     }
-    el.innerHTML = message;
 }
+
+function appendErrorMessage(message, type) {
+    var el = document.getElementById('message');
+    el.style.display = 'block';
+    el.innerHTML += `<p class="message-type-${type}">${message}</p>`;
+}
+
+document.addEventListener('opentypejs:message', function(event) {
+    const message = event.detail.message;
+    appendErrorMessage(message.toString(), message.type);
+});
 
 function sortKeys(dict) {
     var keys = [];
@@ -257,10 +269,11 @@ async function display(file, name) {
     }
     try {
         const data = await file.arrayBuffer();
-        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
         showErrorMessage('');
+        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
     } catch (err) {
         showErrorMessage(err.toString());
+        throw err;
     }
 }
 form.file.onchange = function(e) {

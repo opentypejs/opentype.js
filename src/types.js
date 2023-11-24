@@ -2,6 +2,7 @@
 // All OpenType fonts use Motorola-style byte ordering (Big Endian)
 
 import check from './check.js';
+import { logger } from './logger.js';
 
 const LIMIT16 = 32768; // The limit at which a 16-bit number switches signs == 2^15
 const LIMIT32 = 2147483648; // The limit at which a 32-bit number switches signs == 2 ^ 31
@@ -70,9 +71,9 @@ sizeOf.CHAR = constant(1);
  * @returns {Array}
  */
 encode.CHARARRAY = function(v) {
-    if (typeof v === 'undefined') {
+    if (v == null) { // catches undefined and null
         v = '';
-        console.warn('Undefined CHARARRAY encountered and treated as an empty string. This is probably caused by a missing glyph name.');
+        logger.add('Undefined CHARARRAY encountered and treated as an empty string. This is probably caused by a missing glyph name.', logger.ErrorTypes.WARNING);
     }
     const b = [];
     for (let i = 0; i < v.length; i += 1) {
@@ -183,7 +184,7 @@ sizeOf.LONG = constant(4);
  */
 encode.FLOAT = function(v) {
     if (v > MAX_16_16 || v < MIN_16_16) {
-        throw new Error(`Value ${v} is outside the range of representable values in 16.16 format`);
+        logger.add(`Value ${v} is outside the range of representable values in 16.16 format`, logger.ErrorTypes.ERROR);
     }
     const fixedValue = Math.round(v * (1 << 16)) << 0; // Round to nearest multiple of 1/(1<<16)
     return encode.ULONG(fixedValue);
@@ -856,7 +857,7 @@ encode.OPERAND = function(v, type) {
                 d.push(enc1[j]);
             }
         } else {
-            throw new Error('Unknown operand type ' + type);
+            logger.add('Unknown operand type ' + type, logger.ErrorTypes.ERROR);
             // FIXME Add support for booleans
         }
     }

@@ -107,14 +107,27 @@ canvas.text {
 
 #message {
     position: relative;
-    top: -3px;
-    background: red;
     color: white;
-    padding: 1px 5px;
     font-weight: bold;
-    border-radius: 2px;
     display: none;
 	clear: both;
+    padding-top: 1px;
+}
+
+#message p {
+    margin: 2px 0;
+    padding: 2px 5px;
+    border-radius: 0.25rem;
+    border: solid 1px;
+    background: #fff3cd;
+    color: #856404;
+    border-color: #ffeeba;
+}
+
+#message p.message-type-1 {
+    background: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
 }
 
 .message {
