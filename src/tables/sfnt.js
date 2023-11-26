@@ -343,7 +343,8 @@ function fontToSfntTable(font) {
         weightName: englishStyleName,
         postScriptName: postScriptName,
         unitsPerEm: font.unitsPerEm,
-        fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax]
+        fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax],
+        topDict: font.tables.cff && font.tables.cff.topDict || {}
     });
 
     const metaTable = (font.metas && Object.keys(font.metas).length > 0) ? meta.make(font.metas) : undefined;
