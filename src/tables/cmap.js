@@ -6,7 +6,7 @@ import parse from '../parse.js';
 import table from '../table.js';
 import { eightBitMacEncodings } from '../types.js';
 import { getEncoding } from '../tables/name.js';
-
+   
 function parseCmapTableFormat0(cmap, p, platformID, encodingID) {
     // Length in bytes of the index map
     cmap.length = p.parseUShort();
@@ -199,7 +199,8 @@ function parseCmapTable(data, start) {
 
     if (offset === -1) {
         // There is no cmap table in the font that we support.
-        throw new Error('No valid cmap sub-tables found.');
+        // logging will be handled down the line if return now
+        return;
     }
 
     const p = new parse.Parser(data, start + offset);
