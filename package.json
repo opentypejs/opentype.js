@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "mocha": "^8.4.0",
-    "esbuild": "^0.19.6",
+    "esbuild": "^0.19.8",
     "eslint": "^8.54.0",
     "reify": "^0.20.12"
   },
@@ -87,6 +87,6 @@
     }
   },
   "dependencies": {
-    "eslint-plugin-local-rules": "^2.0.0"
+    "eslint-plugin-local-rules": "^2.0.1"
   }
 }
