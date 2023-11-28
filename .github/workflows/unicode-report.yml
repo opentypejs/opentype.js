@@ -45,7 +45,7 @@ jobs:
         fetch-depth: 0
      
     - name: Get parent commit
-      if: ${{ env.PUSH_TO_MAIN == 'true' }}
+      if: ${{ env.PUSH_TO_MAIN == 'true' || env.MANUAL_DISPATCH == 'true' }}
       run: |
         COMMIT_SHA=$(git rev-parse HEAD^1)
         echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
