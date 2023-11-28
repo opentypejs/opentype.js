@@ -106,6 +106,140 @@ describe('parse.js', function() {
         });
     });
 
+    describe('parseMarkArray', () => {
+        it('should parse a Mark Array table', () => {
+            const data = '0003 ' + // marksCount
+            ' 0000  000E ' + // mark1 class and its anchor offset
+            ' 0001  001A ' + // mark2 class and its anchor offset
+            ' 0000  0014 ' + // mark3 class and its anchor offset
+            ' 0001 00BD 012D ' +
+            ' 0001 00DD 012E ' +
+            ' 0002 00DF FED1 0001';
+
+            const p = new Parser(unhex(data), 0);
+            assert.deepEqual(p.parseMarkArray(), [{
+                class: 0,
+                attachmentPoint: {
+                    format: 1,
+                    xCoordinate: 189,
+                    yCoordinate: 301
+                }
+            }, {
+                class: 1,
+                attachmentPoint: {
+                    format: 2,
+                    xCoordinate: 223,
+                    yCoordinate: -303,
+                    anchorPoint: 1
+                }
+            }, {
+                class: 0,
+                attachmentPoint: {
+                    format: 1,
+                    xCoordinate: 221,
+                    yCoordinate: 302,
+
+                }
+            }]);
+
+            assert.equal(p.relativeOffset, 14);
+        });
+    });
+
+    describe('parseBaseArray', () => {
+        it('should parse a Base Array table', () => {
+            const data = '0002 ' + // baseCount
+            ' 000E 0014 001E' + // baseRecord1 anchor offsets foreach class anchor point
+            ' 0014 000E 001E' + // baseRecord2 anchor offsets foreach class anchor point
+            ' 0001 00BD 012D ' +    //
+            ' 0003 00BD 012D 0000 0000 ' +
+            ' 0002 00DF FED1 0001';
+
+            const p = new Parser(unhex(data), 0);
+            assert.deepEqual(p.parseBaseArray(3), [
+                [
+                    {
+                        format: 1,
+                        xCoordinate: 189,
+                        yCoordinate: 301
+                    },
+                    {
+                        format: 3,
+                        xCoordinate: 189,
+                        yCoordinate: 301,
+                        xDevice: 0,
+                        yDevice: 0
+                    },
+                    {
+                        format: 2,
+                        xCoordinate: 223,
+                        yCoordinate: -303,
+                        anchorPoint: 1
+                    }
+                ],
+                [
+
+                    {
+                        format: 3,
+                        xCoordinate: 189,
+                        yCoordinate: 301,
+                        xDevice: 0,
+                        yDevice: 0
+                    },
+                    {
+                        format: 1,
+                        xCoordinate: 189,
+                        yCoordinate: 301
+                    },
+                    {
+                        format: 2,
+                        xCoordinate: 223,
+                        yCoordinate: -303,
+                        anchorPoint: 1
+                    }
+                ]
+            ]);
+
+            assert.equal(p.relativeOffset, 14);
+
+        });
+    });
+
+    describe('parseAnchorPoint', () => {
+        it('should parse a AnchorTableFormat1 table', () => {
+            const data = ' 0001 00BD 012D';
+            const p = new Parser(unhex(data), 0);
+            assert.deepEqual(p.parseAnchorPoint(), {
+                format: 1,
+                xCoordinate: 189,
+                yCoordinate: 301,
+            });
+        });
+
+        it('should parse a AnchorTableFormat2 table', () => {
+            const data = ' 0002 00DF FED1 0003';
+            const p = new Parser(unhex(data), 0);
+            assert.deepEqual(p.parseAnchorPoint(), {
+                format: 2,
+                xCoordinate: 223,
+                yCoordinate: -303,
+                anchorPoint: 3
+            });
+        });
+
+        it('should parse a AnchorTableFormat3 table', () => {
+            const data = ' 0003 00BD 012D 0000 0000';
+            const p = new Parser(unhex(data), 0);
+            assert.deepEqual(p.parseAnchorPoint(), {
+                format: 3,
+                xCoordinate: 189,
+                yCoordinate: 301,
+                xDevice: 0,
+                yDevice: 0
+            });
+        });
+    });
+
     describe('parseCoverage', function() {
         it('should parse a CoverageFormat1 table', function() {
             // https://www.microsoft.com/typography/OTSPEC/chapter2.htm Example 5

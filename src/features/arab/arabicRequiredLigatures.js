@@ -34,7 +34,7 @@ function arabicRequiredLigatures(range) {
         if (substitutions.length) {
             for(let i = 0; i < substitutions.length; i++) {
                 const action = substitutions[i];
-                applySubstitution(action, tokens, index);
+                applySubstitution.call(this, action, tokens, index);
             }
             contextParams = getContextParams(tokens);
         }
