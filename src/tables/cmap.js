@@ -182,6 +182,8 @@ function parseCmapTable(data, start) {
             (platformId === 0 && platform0Encodings.includes(encodingId)) ||
             (platformId === 1 && encodingId === 0) // MacOS <= 9
         ) {
+            // only use the first supported table
+            if (offset > 0) continue;
             offset = parse.getULong(data, start + 4 + (i * 8) + 4);
             // allow for early break
             if (format14Parser) {
@@ -193,6 +195,9 @@ function parseCmapTable(data, start) {
             if (format14Parser.parseUShort() !== 14) {
                 format14offset = -1;
                 format14Parser = null;
+            } else if (offset > 0) {
+                // we already got the regular table, early break
+                break;
             }
         }
     }
