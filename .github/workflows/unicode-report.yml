@@ -35,10 +35,10 @@ jobs:
     steps:
     
     - name: Checkout code
-      if: ${{ env.PUSH_TO_MAIN == 'false' }}
+      if: ${{ env.PUSH_TO_MAIN == 'false' && env.MANUAL_DISPATCH == 'false' }}
       uses: actions/checkout@v4
     - name: Checkout code (full-depth)
-      if: ${{ env.PUSH_TO_MAIN == 'true' }}
+      if: ${{ env.PUSH_TO_MAIN == 'true' || env.MANUAL_DISPATCH == 'true' }}
       uses: actions/checkout@v4
       with:
         # important in order to make amending not break the history
