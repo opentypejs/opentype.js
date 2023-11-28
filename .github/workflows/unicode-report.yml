@@ -64,9 +64,11 @@ jobs:
     # - name: Setup ninja
     #   uses: seanmiddleditch/gha-setup-ninja@master
 
-    - name: Clone text-rendering-tests repository
+    - name: Clone and install text-rendering-tests repository
       run: |
         git clone https://github.com/unicode-org/text-rendering-tests.git
+        cd text-rendering-tests
+        npm install
 
     - name: Ensure reports directory exists
       run: mkdir -p ${{ env.REPORT_DIR }}
@@ -75,7 +77,7 @@ jobs:
     # - name: Delete HTML files in testcases directory
     #   run: |
     #     find text-rendering-tests/testcases -name '*.html' -not -name 'index.html' -not -name 'GPOS-*.html' -delete
-
+    
     - name: build files and copy to text script
       run: |
         npm run build
