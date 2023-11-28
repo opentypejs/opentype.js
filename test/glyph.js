@@ -133,6 +133,18 @@ describe('glyph.js', function() {
             });
         });
     });
+
+    describe('component transformation', function() {
+        // @TODO test components more thoroughly,
+        // maybe move to a separate glyf test file
+        
+        const changaVarFont = loadSync('./test/fonts/Changa-VariableFont_wght.ttf');
+
+        it('handles 2x2 transform correctly',function() {
+            const glyph = changaVarFont.charToGlyph('+');
+            assert.deepEqual(glyph.toPathData(), 'M91 284L440 284L440 342L91 342ZM236 487L236 138L294 138L294 487Z');
+        });
+    });
 });
 
 describe('glyph.js on low memory mode', function() {
