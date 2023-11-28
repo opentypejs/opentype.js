@@ -81,6 +81,7 @@ jobs:
     - name: build files and copy to text script
       run: |
         npm run build
+        mv bin/test-render text-rendering-tests/node_modules/opentype.js/bin/
         mv dist/* text-rendering-tests/node_modules/opentype.js/dist/
       
     - name: Run check.py script
