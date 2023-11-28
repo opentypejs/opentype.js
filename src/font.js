@@ -9,6 +9,7 @@ import Substitution from './substitution.js';
 import { isBrowser, checkArgument } from './util.js';
 import HintingTrueType from './hintingtt.js';
 import Bidi from './bidi.js';
+import { applyPaintType } from './tables/cff.js';
 
 function createDefaultNamesInfo(options) {
     return {
@@ -397,6 +398,11 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
  */
 Font.prototype.getPath = function(text, x, y, fontSize, options) {
     const fullPath = new Path();
+    applyPaintType(this, fullPath, fontSize);
+    if (fullPath.stroke) {
+        const scale = 1 / (fullPath.unitsPerEm || 1000) * fontSize;
+        fullPath.strokeWidth *= scale;
+    }
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         const glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
         fullPath.extend(glyphPath);

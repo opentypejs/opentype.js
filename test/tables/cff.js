@@ -151,4 +151,28 @@ describe('tables/cff.js', function () {
         assert.deepEqual(commands[13], { type: 'C', x: 36, y: 407, x1: 66, y1: 495, x2: 36, y2: 456 });
         assert.deepEqual(commands[14], { type: 'Z' });
     });
+
+    it('handles PaintType and StrokeWidth', function() {
+        const font = loadSync('./test/fonts/CFF1SingleLinePaintTypeTEST.otf', { lowMemory: true });
+        assert.equal(font.tables.cff.topDict.paintType, 2);
+        assert.equal(font.tables.cff.topDict.strokeWidth, 50);
+        let path;
+        const redraw = () => path = font.getPath('10', 0, 0, 12);
+        redraw();
+        assert.equal(path.commands.filter(c => c.type === 'Z').length, 0);
+        assert.equal(path.fill, null);
+        assert.equal(path.stroke, 'black');
+        assert.equal(path.strokeWidth, 0.6);
+        const svg1 = '<path d="M5.44-9.45C4.61-8.12 2.05-9.23 2.05-9.23M4.01-8.80C3.50-3.57 7.36 2.11 5.24-0.27C3.32-2.43 0.34-3.38 0.34-3.38M7.58-2.39L6.47-6.41L10.21-9.33L14.60-7.54L15.25-2.84L11.98-0.60L7.58-2.39" fill="none" stroke="black" stroke-width="0.6"/>';
+        assert.equal(path.toSVG(),svg1);
+        font.tables.cff.topDict.paintType = 0;
+        // redraw
+        redraw();
+        path = font.getPath('10', 0, 0, 12);
+        assert.equal(path.fill, 'black');
+        assert.equal(path.stroke, null);
+        assert.equal(path.strokeWidth, 1);
+        const svg2 = '<path d="M5.44-9.45C4.61-8.12 2.05-9.23 2.05-9.23M4.01-8.80C3.50-3.57 7.36 2.11 5.24-0.27C3.32-2.43 0.34-3.38 0.34-3.38M7.58-2.39L6.47-6.41L10.21-9.33L14.60-7.54L15.25-2.84L11.98-0.60L7.58-2.39"/>';
+        assert.equal(path.toSVG(), svg2);
+    });
 });
