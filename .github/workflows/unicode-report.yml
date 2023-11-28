@@ -12,6 +12,8 @@ on:
       - main
     types: [ opened, synchronize, reopened ]
   
+  workflow_dispatch:
+  
 permissions: 
    pull-requests: write 
    contents: write
@@ -23,6 +25,7 @@ jobs:
     env:
       PUSH_TO_MAIN: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' ) }}
       COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+      MANUAL_DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
       SHORT_COMMIT_SHA: ''
       ARTIFACT_URL: ''
       REPORT_DIR: 'docs/reports'
@@ -103,13 +106,13 @@ jobs:
         path: ${{ env.REPORT_FILE }}
   
     - name: Get artifact link
-      if: ${{ env.PUSH_TO_MAIN == 'false' }}
+      if: ${{ env.PUSH_TO_MAIN == 'false' && env.MANUAL_DISPATCH == 'false' }}
       run: |
         ARTIFACT_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
         echo "ARTIFACT_URL=$ARTIFACT_URL" >> $GITHUB_ENV
 
     - name: Add or update status report comment
-      if: ${{ env.PUSH_TO_MAIN == 'false' }}
+      if: ${{ env.PUSH_TO_MAIN == 'false' && env.MANUAL_DISPATCH == 'false' }}
       uses: thollander/actions-comment-pull-request@v2.4.3
       with:
         message: |
