@@ -10,7 +10,7 @@ on:
     branches:
       - master
       - main
-    types: [ opened, synchronize ]
+    types: [ opened, synchronize, reopened ]
   
 permissions: 
    pull-requests: write 
