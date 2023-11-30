@@ -3,7 +3,13 @@ AbrilFatface-Regular.otf
     SIL Open Font License, Version 1.1.
     https://www.fontsquirrel.com/license/abril-fatface
     
+CFF1SingleLinePaintTypeTEST.otf
+    Copyright (c) 2023, Constantin Groß, https://www.48design.com
+    SIL Open Font License, Version 1.1
+    https://opensource.org/licenses/OFL-1.1    
+    
 Changa-Regular.ttf
+Changa-VariableFont_wght.ttf
     Copyright 2011 Eduardo Tunni (www.tipo.net.ar)
     SIL Open Font License, Version 1.1.
     https://www.fontsquirrel.com/license/changa
@@ -36,11 +42,15 @@ SourceSansPro-Regular.otf
     SIL Open Font License, Version 1.1
     https://www.fontsquirrel.com/license/source-sans-pro
 
+TestCMAP13.otf
+    Copyright 2023 Unicode Inc. All rights reserved.
+    SIL Open Font License version 1.1 (OFL-1.1)
+    https://opensource.org/licenses/OFL-1.1
+
 TestCMAP14.otf
     Copyright 2016 Unicode Inc. All rights reserved.
-    Apache License, Version 2.0
-    http://www.apache.org/licenses/LICENSE-2.0
-    https://github.com/unicode-org/text-rendering-tests/blob/main/LICENSE.md
+    SIL Open Font License
+    http://scripts.sil.org/OFL
 
 TestCMAPMacTurkish.ttf
     Copyright © 2016 by Unicode Inc.

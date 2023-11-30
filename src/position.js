@@ -11,7 +11,10 @@ import Layout from './layout.js';
  * @constructor
  */
 function Position(font) {
-    Layout.call(this, font, 'gpos');
+    Layout.call(this, font, 'gpos', [
+        { featureName: 'kern',  supportedLookups: [2]  },
+        { featureName: 'mark',  supportedLookups: [4]  }
+    ]);
 }
 
 Position.prototype = Layout.prototype;
@@ -64,6 +67,35 @@ Position.prototype.getKerningValue = function(kerningLookups, leftIndex, rightIn
 };
 
 /**
+ * Find a mark to base attachment pair
+ * @param {integer} baseGlyphIndex - base glyph index
+ * @param {integer} markGlyphIndex - attached mark glyph index
+ * @returns {Object[]}
+ */
+Position.prototype.getMarkToBaseAttachment = function(lookupTables, baseGlyphIndex, markGlyphIndex) {
+    for (let i = 0; i < lookupTables.length; i++) {
+        const subtables = lookupTables[i].subtables;
+        for (let j = 0; j < subtables.length; j++) {
+            const subtable = subtables[j];
+            const markCovIndex = this.getCoverageIndex(subtable.markCoverage, markGlyphIndex);
+            const baseCovIndex = this.getCoverageIndex(subtable.baseCoverage, baseGlyphIndex);
+            if (markCovIndex < 0 || baseCovIndex < 0) continue;
+            let markDefinition, baseDefinition;
+            switch (subtable.posFormat) {
+                case 1:
+                    markDefinition = subtable.markArray[markCovIndex];
+                    baseDefinition = subtable.baseArray[baseCovIndex];
+                    return {
+                        attachmentMarkPoint: markDefinition.attachmentPoint,
+                        baseMarkPoint: baseDefinition[markDefinition.class],
+                    };
+            }
+        }
+    }
+    return undefined;
+};
+
+/**
  * List all kerning lookup tables.
  *
  * @param {string} [script='DFLT'] - use font.position.getDefaultScriptName() for a better default value
@@ -71,9 +103,23 @@ Position.prototype.getKerningValue = function(kerningLookups, leftIndex, rightIn
  * @return {object[]} The list of kerning lookup tables (may be empty), or undefined if there is no GPOS table (and we should use the kern table)
  */
 Position.prototype.getKerningTables = function(script, language) {
-    if (this.font.tables.gpos) {
-        return this.getLookupTables(script, language, 'kern', 2);
-    }
+    return this.getPositionFeatures(['kern'], script, language);
+};
+
+/**
+ * Assembling features into ordered lookup list
+ * Assemble all features (including any required feature) for the glyph run’s language system.
+ * Assemble all lookups in these features, in LookupList order, removing any duplicates.
+ *
+ * https://learn.microsoft.com/en-us/typography/opentype/otspec191alpha/chapter2#lookup-table
+ *
+ * @param {string[]} list of requested features
+ * @param {string} script
+ * @param {string} language
+ * @return {Object[]} ordered lookup processing list
+ */
+Position.prototype.getPositionFeatures = function(features, script, language) {
+    return this.getFeaturesLookups(features, script, language);
 };
 
 export default Position;

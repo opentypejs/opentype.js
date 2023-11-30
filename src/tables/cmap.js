@@ -24,7 +24,7 @@ function parseCmapTableFormat0(cmap, p, platformID, encodingID) {
     cmap.glyphIndexMap = glyphIndexMap;
 }
 
-function parseCmapTableFormat12(cmap, p) {
+function parseCmapTableFormat12or13(cmap, p, format) {
     //Skip reserved.
     p.parseUShort();
 
@@ -43,7 +43,9 @@ function parseCmapTableFormat12(cmap, p) {
 
         for (let c = startCharCode; c <= endCharCode; c += 1) {
             cmap.glyphIndexMap[c] = startGlyphId;
-            startGlyphId++;
+            if (format === 12) {
+                startGlyphId++;
+            }
         }
     }
 }
@@ -171,13 +173,17 @@ function parseCmapTable(data, start) {
     let offset = -1;
     let platformId = null;
     let encodingId = null;
+    const platform0Encodings = [0,1,2,3,4,6];
+    const platform3Encodings = [0,1,10];
     for (let i = cmap.numTables - 1; i >= 0; i -= 1) {
         platformId = parse.getUShort(data, start + 4 + (i * 8));
         encodingId = parse.getUShort(data, start + 4 + (i * 8) + 2);
-        if ((platformId === 3 && (encodingId === 0 || encodingId === 1 || encodingId === 10)) ||
-            (platformId === 0 && (encodingId === 0 || encodingId === 1 || encodingId === 2 || encodingId === 3 || encodingId === 4)) ||
+        if ((platformId === 3 && platform3Encodings.includes(encodingId)) ||
+            (platformId === 0 && platform0Encodings.includes(encodingId)) ||
             (platformId === 1 && encodingId === 0) // MacOS <= 9
         ) {
+            // only use the first supported table
+            if (offset > 0) continue;
             offset = parse.getULong(data, start + 4 + (i * 8) + 4);
             // allow for early break
             if (format14Parser) {
@@ -189,6 +195,9 @@ function parseCmapTable(data, start) {
             if (format14Parser.parseUShort() !== 14) {
                 format14offset = -1;
                 format14Parser = null;
+            } else if (offset > 0) {
+                // we already got the regular table, early break
+                break;
             }
         }
     }
@@ -203,8 +212,8 @@ function parseCmapTable(data, start) {
 
     if (cmap.format === 0) {
         parseCmapTableFormat0(cmap, p, platformId, encodingId);
-    } else if (cmap.format === 12) {
-        parseCmapTableFormat12(cmap, p);
+    } else if (cmap.format === 12 || cmap.format === 13) {
+        parseCmapTableFormat12or13(cmap, p, cmap.format);
     } else if (cmap.format === 4) {
         parseCmapTableFormat4(cmap, p, data, start, offset);
     } else {

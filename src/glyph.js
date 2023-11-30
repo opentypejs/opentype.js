@@ -145,6 +145,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     if (!options) options = { };
     let xScale = options.xScale;
     let yScale = options.yScale;
+    const scale = 1 / (this.path.unitsPerEm || 1000) * fontSize;
 
     if (options.hinting && font && font.hinting) {
         // in case of hinting, the hinting engine takes care
@@ -163,12 +164,14 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
         xScale = yScale = 1;
     } else {
         commands = this.path.commands;
-        const scale = 1 / (this.path.unitsPerEm || 1000) * fontSize;
         if (xScale === undefined) xScale = scale;
         if (yScale === undefined) yScale = scale;
     }
 
     const p = new Path();
+    p.fill = this.path.fill;
+    p.stroke = this.path.stroke;
+    p.strokeWidth = this.path.strokeWidth * scale;
     for (let i = 0; i < commands.length; i += 1) {
         const cmd = commands[i];
         if (cmd.type === 'M') {
