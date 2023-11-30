@@ -362,6 +362,7 @@ FeatureQuery.prototype.getLookupMethod = function(lookupTable, subtable) {
 /**
  * Lookup a feature using a query parameters
  * @param {FQuery} query feature query
+ * @deprecated Use bidi.applySubstitutions(...)
  */
 FeatureQuery.prototype.lookupFeature = function (query) {
     let contextParams = query.contextParams;
@@ -442,6 +443,22 @@ FeatureQuery.prototype.lookupFeature = function (query) {
         }
     }
     return substitutions.length ? substitutions : null;
+};
+
+/**
+ * Assembling features into ordered lookup list (wrapper)
+ * Assemble all features (including any required feature) for the glyph run’s language system.
+ * Assemble all lookups in these features, in LookupList order, removing any duplicates.
+ *
+ * https://learn.microsoft.com/en-us/typography/opentype/otspec191alpha/chapter2#lookup-table
+ *
+ * @param {string[]} list of requested features
+ * @param {string} script
+ * @param {string} language
+ * @return {Object[]} ordered lookup processing list
+ */
+FeatureQuery.prototype.getSubstitutionFeaturesLookups = function(features, script, language) {
+    return this.font.substitution.getFeaturesLookups(features, script, language);
 };
 
 /**

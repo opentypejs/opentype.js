@@ -77,7 +77,7 @@ function arabicPresentationForms(range) {
         for(let j = 0; j < substitutions.length; j++) {
             const action = substitutions[j];
             if (action instanceof SubstitutionAction) {
-                applySubstitution(action, tokens, j);
+                applySubstitution.call(this, action, tokens, j);
                 contextParams.context[j] = action.substitution;
             }
         }

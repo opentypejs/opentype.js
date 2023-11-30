@@ -577,6 +577,22 @@ function parseBlend(operands) {
     }
 }
 
+/**
+ * Applies path styles according to a CFF font's PaintType
+ * @param {Font} font 
+ * @param {Path} path 
+ * @returns {Number} paintType
+ */
+function applyPaintType(font, path) {
+    const paintType = font.tables.cff && font.tables.cff.topDict && font.tables.cff.topDict.paintType || 0;
+    if (paintType === 2) {
+        path.fill = null;
+        path.stroke = 'black';
+        path.strokeWidth = font.tables.cff.topDict.strokeWidth || 0;
+    }
+    return paintType;
+}
+
 // Take in charstring code and return a Glyph object.
 // The encoding is described in the Type 2 Charstring Format
 // https://www.microsoft.com/typography/OTSPEC/charstr2.htm
@@ -618,10 +634,11 @@ function parseCFFCharstring(font, glyph, code, version) {
         subrsBias = cffTable.topDict._subrsBias;
     }
 
+    const paintType = applyPaintType(font, p);
     let width = defaultWidthX;
 
     function newContour(x, y) {
-        if (open) {
+        if (open && paintType !== 2) {
             p.closePath();
         }
 
@@ -874,7 +891,7 @@ function parseCFFCharstring(font, glyph, code, version) {
                         haveWidth = true;
                     }
 
-                    if (open) {
+                    if (open && paintType !== 2) {
                         p.closePath();
                         open = false;
                     }
@@ -1488,7 +1505,7 @@ function makePrivateDict(attrs, strings, version) {
     return t;
 }
 
-function makeCFFTable(glyphs, options,) {
+function makeCFFTable(glyphs, options) {
     // @TODO: make it configurable to use CFF or CFF2 for output
     // right now, CFF2 fonts can be parsed, but will be saved as CFF
     const cffVersion = 1;
@@ -1520,6 +1537,13 @@ function makeCFFTable(glyphs, options,) {
         charStrings: 999,
         private: [0, 999]
     };
+
+    const topDictOptions = options && options.topDict || {};
+
+    if(cffVersion < 2 && topDictOptions.paintType) {
+        attrs.paintType = topDictOptions.paintType;
+        attrs.strokeWidth = topDictOptions.strokeWidth || 0;
+    }
 
     const privateAttrs = {};
 
@@ -1566,3 +1590,4 @@ function makeCFFTable(glyphs, options,) {
 }
 
 export default { parse: parseCFFTable, make: makeCFFTable };
+export { applyPaintType };

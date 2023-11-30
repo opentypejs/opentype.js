@@ -1,0 +1,149 @@
+name: Run Unicode Test Suite
+
+on:
+  # push:
+  #   branches:
+  #     - master
+  #     - main
+
+  pull_request:
+    branches:
+      - master
+      - main
+    types: [ opened, synchronize, reopened ]
+  
+  workflow_dispatch:
+  
+permissions: 
+   pull-requests: write 
+   contents: write
+   
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      PUSH_TO_MAIN: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' ) }}
+      COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+      MANUAL_DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
+      SHORT_COMMIT_SHA: ''
+      ARTIFACT_URL: ''
+      REPORT_DIR: 'docs/reports'
+      REPORT_FILE: ''
+      REPORT_SUMMARY: ''
+
+    steps:
+    
+    - name: Checkout code
+      if: ${{ env.PUSH_TO_MAIN == 'false' && env.MANUAL_DISPATCH == 'false' }}
+      uses: actions/checkout@v4
+    - name: Checkout code (full-depth)
+      if: ${{ env.PUSH_TO_MAIN == 'true' || env.MANUAL_DISPATCH == 'true' }}
+      uses: actions/checkout@v4
+      with:
+        # important in order to make amending not break the history
+        fetch-depth: 0
+        
+    - name: Get current commit
+      if: ${{ env.MANUAL_DISPATCH == 'true' }}
+      run: |
+        COMMIT_SHA=$(git rev-parse HEAD)
+        echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
+     
+    - name: Get parent commit
+      if: ${{ env.PUSH_TO_MAIN == 'true' }}
+      run: |
+        COMMIT_SHA=$(git rev-parse HEAD^1)
+        echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
+        
+    - name: Set environment variables
+      run: |
+        SHORT_COMMIT_SHA=$(echo "${{ env.COMMIT_SHA }}" | cut -c 1-7)
+        echo "SHORT_COMMIT_SHA=$SHORT_COMMIT_SHA" >> $GITHUB_ENV
+        echo "REPORT_FILE=${{ env.REPORT_DIR }}/${{ env.COMMIT_SHA }}.html" >> $GITHUB_ENV
+
+    - name: Setup node
+      uses: actions/setup-node@v4
+
+    - run: npm install -D jsdom
+
+    # - name: Setup ninja
+    #   uses: seanmiddleditch/gha-setup-ninja@master
+
+    - name: Clone and install text-rendering-tests repository
+      run: |
+        git clone https://github.com/unicode-org/text-rendering-tests.git
+        cd text-rendering-tests
+        npm install
+
+    - name: Ensure reports directory exists
+      run: mkdir -p ${{ env.REPORT_DIR }}
+
+    # for speeding up the workflow when debugging this action
+    # - name: Delete HTML files in testcases directory
+    #   run: |
+    #     find text-rendering-tests/testcases -name '*.html' -not -name 'index.html' -not -name 'GPOS-*.html' -delete
+    
+    - name: build files and copy to text script
+      run: |
+        npm run build
+        mv bin/test-render text-rendering-tests/node_modules/opentype.js/bin/
+        mv dist/* text-rendering-tests/node_modules/opentype.js/dist/
+      
+    - name: Run check.py script
+      run: |
+        cd text-rendering-tests
+        python check.py --engine=OpenType.js --output="../${{ env.REPORT_FILE }}"
+        
+    - name: Replace version with commit hash and link to PR commit, fix font links
+      run: |
+        if [[ "${{ github.event_name }}" == 'pull_request' ]]; then
+          COMMIT_URL="https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}/commits/${{ env.COMMIT_SHA }}"
+        else
+          COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ env.COMMIT_SHA }}"
+        fi
+        
+        sed -i -E "s@OpenType\.js(\xC2\xA0| )[0-9.]+@<a href=\"$COMMIT_URL\">${{ github.repository }}#${{ env.SHORT_COMMIT_SHA }}</a>@" ${{ env.REPORT_FILE }}
+        sed -i -E "s@href=\"\.\./fonts/@href=\"https://rawgit.com/unicode-org/text-rendering-tests/master/fonts/@" ${{ env.REPORT_FILE }}
+
+    - name: parse passing/failing tests
+      run:  |
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          REPORT_SUMMARY=$(node .github/workflows/scripts/report-counter.js)
+          echo "REPORT_SUMMARY<<$EOF" >> $GITHUB_ENV
+          echo "$REPORT_SUMMARY" >> $GITHUB_ENV
+          echo "$EOF" >> $GITHUB_ENV
+
+    - name: Upload build artifact
+      if: ${{ env.PUSH_TO_MAIN == 'false' }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: unicode-text-rendering-report_${{ env.SHORT_COMMIT_SHA }}
+        path: ${{ env.REPORT_FILE }}
+  
+    - name: Get artifact link
+      if: ${{ env.PUSH_TO_MAIN == 'false' && env.MANUAL_DISPATCH == 'false' }}
+      run: |
+        ARTIFACT_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
+        echo "ARTIFACT_URL=$ARTIFACT_URL" >> $GITHUB_ENV
+
+    - name: Add or update status report comment
+      if: ${{ env.PUSH_TO_MAIN == 'false' && env.MANUAL_DISPATCH == 'false' }}
+      uses: thollander/actions-comment-pull-request@v2.4.3
+      with:
+        message: |
+          ℹ Automatic [Unicode test suite](https://github.comunicode-org/text-rendering-tests) report for commit ${{ env.SHORT_COMMIT_SHA}}:
+          
+          ${{ env.REPORT_SUMMARY }}
+          
+          [download report](${{ env.ARTIFACT_URL }})
+        comment_tag: unicode_test_report
+
+    - name: Amend report file to commit
+      if: ${{ env.PUSH_TO_MAIN == 'true' }}
+      run: |
+          git config --global user.email "github-actions@users.noreply.github.com"
+          git config --global user.name "github-actions"
+          git add "${{ env.REPORT_FILE }}"
+          git commit --amend --no-edit
+          git push --force-with-lease
