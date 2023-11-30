@@ -97,7 +97,13 @@ jobs:
         
     - name: Replace version with commit hash and link to PR commit, fix font links
       run: |
-        sed -i -E "s@OpenType\.js(\xC2\xA0| )[0-9.]+@<a href=\"https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}/commits/${{ env.COMMIT_SHA }}\">OpenType.js ${{ env.SHORT_COMMIT_SHA }}</a>@" ${{ env.REPORT_FILE }}
+        if [[ "${{ github.event_name }}" == 'pull_request' ]]; then
+          COMMIT_URL="https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}/commits/${{ env.COMMIT_SHA }}"
+        else
+          COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ env.COMMIT_SHA }}"
+        fi
+        
+        sed -i -E "s@OpenType\.js(\xC2\xA0| )[0-9.]+@<a href=\"$COMMIT_URL\">OpenType.js ${{ env.SHORT_COMMIT_SHA }}</a>@" ${{ env.REPORT_FILE }}
         sed -i -E "s@href=\"\.\./fonts/@href=\"https://rawgit.com/unicode-org/text-rendering-tests/master/fonts/@" ${{ env.REPORT_FILE }}
 
     - name: parse passing/failing tests
