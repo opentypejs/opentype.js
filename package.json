@@ -39,6 +39,7 @@
     "mocha": "^8.4.0",
     "esbuild": "^0.19.8",
     "eslint": "^8.54.0",
+    "eslint-plugin-import": "^2.29.0",
     "reify": "^0.20.12"
   },
   "bin": {
@@ -55,7 +56,8 @@
       "node": true
     },
     "plugins": [
-      "eslint-plugin-local-rules"
+      "eslint-plugin-local-rules",
+      "eslint-plugin-import"
     ],
     "extends": "eslint:recommended",
     "parserOptions": {
@@ -63,6 +65,9 @@
       "sourceType": "module"
     },
     "rules": {
+      "import/no-cycle": [
+        "error"
+      ],
       "indent": [
         "error",
         4,
