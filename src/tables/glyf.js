@@ -183,8 +183,8 @@ function transformPoints(points, transform) {
     for (let i = 0; i < points.length; i += 1) {
         const pt = points[i];
         const newPt = {
-            x: transform.xScale * pt.x + transform.scale01 * pt.y + transform.dx,
-            y: transform.scale10 * pt.x + transform.yScale * pt.y + transform.dy,
+            x: transform.xScale * pt.x + transform.scale10 * pt.y + transform.dx,
+            y: transform.scale01 * pt.x + transform.yScale * pt.y + transform.dy,
             onCurve: pt.onCurve,
             lastPointOfContour: pt.lastPointOfContour
         };
