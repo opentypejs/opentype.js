@@ -37,15 +37,29 @@ function getFixed(dataView, offset) {
     return decimal + fraction / 65535;
 }
 
+// Retrieve a string with a specific byte length from the DataView.
+function getString(dataView, offset, length) {
+    let string = '';
+    
+    if (!offset) {
+        offset = 0;
+    }
+
+    if (length === undefined) {
+        length = dataView.byteLength - offset;
+    }
+
+    for (let i = offset; i < offset + length; i += 1) {
+        string += String.fromCharCode(dataView.getInt8(i));
+    }
+
+    return string;
+}
+
 // Retrieve a 4-character tag from the DataView.
 // Tags are used to identify tables.
 function getTag(dataView, offset) {
-    let tag = '';
-    for (let i = offset; i < offset + 4; i += 1) {
-        tag += String.fromCharCode(dataView.getInt8(i));
-    }
-
-    return tag;
+    return getString(dataView, offset, 4);
 }
 
 // Retrieve an offset from the DataView.
@@ -721,6 +735,7 @@ export default {
     getUInt24,
     getULong,
     getFixed,
+    getString,
     getTag,
     getOffset,
     getBytes,

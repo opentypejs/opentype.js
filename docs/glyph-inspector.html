@@ -92,11 +92,23 @@ function showErrorMessage(message) {
     var el = document.getElementById('message');
     if (!message || message.trim().length === 0) {
         el.style.display = 'none';
+        el.innerHTML = '';
     } else {
         el.style.display = 'block';
+        el.innerHTML = `<p class="message-type-1">${message}</p>`;
     }
-    el.innerHTML = message;
 }
+
+function appendErrorMessage(message, type) {
+    var el = document.getElementById('message');
+    el.style.display = 'block';
+    el.innerHTML += `<p class="message-type-${type}">${message}</p>`;
+}
+
+document.addEventListener('opentypejs:message', function(event) {
+    const message = event.detail.message;
+    appendErrorMessage(message.toString(), message.type);
+});
 
 function pathCommandToString(cmd) {
     var str = '<strong>' + cmd.type + '</strong> ' +
@@ -273,13 +285,19 @@ function renderGlyphItem(canvas, glyphIndex) {
     var cellMarkSize = 4;
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, cellWidth, cellHeight);
-    if (glyphIndex >= window.font.numGlyphs) return;
+    const nGlyphs = window.font.numGlyphs || window.font.nGlyphs;
+    if (glyphIndex >= nGlyphs) return;
 
     ctx.fillStyle = '#606060';
     ctx.font = '9px sans-serif';
     ctx.fillText(glyphIndex, 1, cellHeight-1);
-    var glyph = window.font.glyphs.get(glyphIndex),
-        glyphWidth = glyph.advanceWidth * fontScale,
+    const glyph = window.font.glyphs.get(glyphIndex);
+    if (!glyph.advanceWidth) {
+        // force calculation of path data
+        glyph.getPath();
+    }
+    const advanceWidth = glyph.advanceWidth;
+    let glyphWidth = glyph.advanceWidth * fontScale,
         xmin = (cellWidth - glyphWidth)/2,
         xmax = (cellWidth + glyphWidth)/2,
         x0 = xmin;
@@ -314,7 +332,7 @@ function initGlyphDisplay(font) {
         h = glyphBgCanvas.height / pixelRatio,
         glyphW = w - glyphMargin*2,
         glyphH = h - glyphMargin*2,
-        head = font.tables.head,
+        head = getFontDimensions(font),
         maxHeight = head.yMax - head.yMin,
         ctx = glyphBgCanvas.getContext('2d');
 
@@ -331,12 +349,23 @@ function initGlyphDisplay(font) {
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#a0a0a0';
     hline('Baseline', 0);
-    hline('yMax', font.tables.head.yMax);
-    hline('yMin', font.tables.head.yMin);
-    hline('Ascender', font.tables.hhea.ascender);
-    hline('Descender', font.tables.hhea.descender);
-    hline('Typo Ascender', font.tables.os2.sTypoAscender);
-    hline('Typo Descender', font.tables.os2.sTypoDescender);
+    hline('yMax', head.yMax);
+    hline('yMin', head.yMin);
+    hline('Ascender', font.tables.hhea ? font.tables.hhea.ascender : font.ascender || head.yMax);
+    hline('Descender', font.tables.hhea ? font.tables.hhea.descender : font.descender || head.yMin);
+    if (font.tables.os2) {
+        hline('Typo Ascender', font.tables.os2.sTypoAscender);
+        hline('Typo Descender', font.tables.os2.sTypoDescender);
+    }
+}
+
+function getFontDimensions(font) {
+    return font.isCFFFont ? {
+        xMin: font.tables.cff.topDict.fontBBox[0],
+        xMax: font.tables.cff.topDict.fontBBox[3] || 1000,
+        yMin: font.tables.cff.topDict.fontBBox[1] || -200,
+        yMax: font.tables.cff.topDict.fontBBox[2] || 1000
+    } :font.tables.head;
 }
 
 function onFontLoaded(font) {
@@ -344,7 +373,7 @@ function onFontLoaded(font) {
 
     var w = cellWidth - cellMarginLeftRight * 2,
         h = cellHeight - cellMarginTop - cellMarginBottom,
-        head = font.tables.head,
+        head = getFontDimensions(font),
         maxHeight = head.yMax - head.yMin;
     fontScale = Math.min(w/(head.xMax - head.xMin), h/maxHeight);
     fontSize = fontScale * font.unitsPerEm;
@@ -353,10 +382,11 @@ function onFontLoaded(font) {
     var pagination = document.getElementById("pagination");
     pagination.innerHTML = '';
     var fragment = document.createDocumentFragment();
-    var numPages = Math.ceil(font.numGlyphs / cellCount);
+    const nGlyphs = font.numGlyphs || font.nGlyphs;
+    var numPages = Math.ceil(nGlyphs / cellCount);
     for(var i = 0; i < numPages; i++) {
         var link = document.createElement('span');
-        var lastIndex = Math.min(font.numGlyphs-1, (i+1)*cellCount-1);
+        var lastIndex = Math.min(nGlyphs-1, (i+1)*cellCount-1);
         link.textContent = i*cellCount + '-' + lastIndex;
         link.id = 'p' + i;
         link.addEventListener('click', pageSelect, false);
@@ -378,7 +408,8 @@ function cellSelect(event) {
     var firstGlyphIndex = pageSelected*cellCount,
         cellIndex = +event.target.id.substr(1),
         glyphIndex = firstGlyphIndex + cellIndex;
-    if (glyphIndex < window.font.numGlyphs) {
+    const nGlyphs = window.font.numGlyphs || window.font.nGlyphs;
+    if (glyphIndex < nGlyphs) {
         displayGlyph(glyphIndex);
         displayGlyphData(glyphIndex);
     }
@@ -410,10 +441,11 @@ async function display(file, name) {
     }
     try {
         const data = await file.arrayBuffer();
-        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
         showErrorMessage('');
+        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
     } catch (err) {
         showErrorMessage(err.toString());
+        throw err;
     }
 }
 
