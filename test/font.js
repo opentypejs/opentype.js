@@ -152,6 +152,22 @@ describe('font.js', function() {
         });
 
     });
+    
+    describe('style handling', function() {
+        let font;
+
+        before(function() {
+            font = loadSync('./test/fonts/Roboto-Black.ttf');
+        });
+        
+        it('should apply style options to the path', function() {
+            const options = {
+                style: { fill: '#ffaa00' }
+            };
+            const path = font.getPath('X', 0, 0, 72, options);
+            assert.equal(path.fill, '#ffaa00');
+        });
+    });
 
     describe('hasChar', function() {
         it('returns correct results for non-CMAP fonts', function() {

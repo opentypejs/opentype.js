@@ -194,10 +194,11 @@ Create a Path that represents the given text.
 * `fontSize`: Size of the text in pixels (default: `72`).
 
 Options is an optional object containing:
-* `kerning`: if true takes kerning information into account (default: `true`)
+* `kerning`: if `true`, takes kerning information into account (default: `true`)
 * `features`: an object with [OpenType feature tags](https://docs.microsoft.com/en-us/typography/opentype/spec/featuretags) as keys, and a boolean value to enable each feature.
 Currently only ligature features `"liga"` and `"rlig"` are supported (default: `true`).
 * `hinting`: if true uses TrueType font hinting if available (default: `false`).
+* `style`: An object of possible styling properties (fill, stroke, strokeWidth) applied to the resulting Path
 
 _**Note:** there is also `Font.getPaths()` with the same arguments, which returns a list of Paths._
 
@@ -213,6 +214,7 @@ Options is an optional object containing:
 * `features`: an object with [OpenType feature tags](https://docs.microsoft.com/en-us/typography/opentype/spec/featuretags) as keys, and a boolean value to enable each feature.
 Currently only ligature features `"liga"` and `"rlig"` are supported (default: `true`).
 * `hinting`: if true uses TrueType font hinting if available (default: `false`).
+* `style`: An object of possible styling properties (fill, stroke, strokeWidth) applied to the resulting Path
 
 #### `Font.drawPoints(ctx, text, x, y, fontSize, options)`
 Draw the points of all glyphs in the text. On-curve points will be drawn in blue, off-curve points will be drawn in red. The arguments are the same as `Font.draw()`.

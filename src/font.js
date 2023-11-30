@@ -401,6 +401,10 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
         const glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
         fullPath.extend(glyphPath);
     });
+
+    if ( options.style !== undefined ) {
+        fullPath.applyStyles(options.style);
+    }
     return fullPath;
 };
 

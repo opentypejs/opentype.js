@@ -153,6 +153,20 @@ describe('path.js', function() {
         emptyPath.fill = 'black';
         assert.equal(emptyPath.toDOMElement().getAttribute('fill'), undefined);
     });
+    
+    it('should apply styles via applyStyles()', function() {
+        const styles = {
+            fill: '#ffaa00',
+            stroke: '#6600aa',
+            strokeWidth: 5
+        };
+        emptyPath.applyStyles(styles);
+        assert.deepEqual({
+            fill: emptyPath.fill,
+            stroke: emptyPath.stroke,
+            strokeWidth: emptyPath.strokeWidth
+        }, styles);
+    });
 
     after(() => {
         delete global.document;
