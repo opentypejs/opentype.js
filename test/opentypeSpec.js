@@ -28,6 +28,21 @@ describe('opentype.js', function() {
         });
     });
 
+    it('can load a font from URL in Node context', function(done) {
+        load('https://opentype.js.org/fonts/FiraSansMedium.woff', null, { isUrl: true }).then((font) => {
+            assert.deepEqual(font.names.macintosh.fontFamily, {en: 'Fira Sans OT'});
+            assert.deepEqual(font.names.windows.fontFamily, {en: 'Fira Sans OT'});
+            assert.equal(font.unitsPerEm, 1000);
+            assert.equal(font.glyphs.length, 1147);
+            const aGlyph = font.charToGlyph('A');
+            assert.equal(aGlyph.unicode, 65);
+            assert.equal(aGlyph.path.commands.length, 14);
+            done();
+        }).catch(error => {
+            console.log(error);
+        });
+    });
+
     it('can load a OpenType/CFF font', function() {
         const font = loadSync('./test/fonts/FiraSansOT-Medium.otf');
         assert.deepEqual(font.names.macintosh.fontFamily, {en: 'Fira Sans OT Medium'});
@@ -54,6 +69,7 @@ describe('opentype.js', function() {
         assert.equal(aGlyph.name, 'cid00002');
         assert.equal(aGlyph.unicode, 1);
         assert.equal(aGlyph.path.commands.length, 24);
+        assert.deepEqual(font.stringToGlyphIndexes('🌺'), [59]);
     });
 
     it('can load a WOFF/CFF font', function() {
@@ -143,6 +159,7 @@ describe('opentype.js on low memory mode', function() {
         assert.equal(aGlyph.name, 'cid00002');
         assert.equal(aGlyph.unicode, 1);
         assert.equal(aGlyph.path.commands.length, 24);
+        assert.deepEqual(font.stringToGlyphIndexes('🌺'), [59]);
     });
 
     it('can load a WOFF/CFF font', function() {
