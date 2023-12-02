@@ -210,6 +210,7 @@ sizeOf.F2DOT14 = sizeOf.USHORT;
  * @returns {Array}
  */
 encode.LONGDATETIME = function(v) {
+    // FIXME: at some point we need to support dates >2038 using the full 64bit
     return [0, 0, 0, 0, (v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF];
 };
 
@@ -436,7 +437,7 @@ sizeOf.UTF16 = function(v) {
 /**
  * @private
  */
-const eightBitMacEncodings = {
+export const eightBitMacEncodings = {
     'x-mac-croatian':  // Python: 'mac_croatian'
     'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®Š™´¨≠ŽØ∞±≤≥∆µ∂∑∏š∫ªºΩžø' +
     '¿¡¬√ƒ≈Ć«Č… ÀÃÕŒœĐ—“”‘’÷◊©⁄€‹›Æ»–·‚„‰ÂćÁčÈÍÎÏÌÓÔđÒÚÛÙıˆ˜¯πË˚¸Êæˇ',
