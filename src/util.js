@@ -1,9 +1,16 @@
 function isBrowser() {
-    return typeof window !== 'undefined';
+    return (
+        typeof window !== 'undefined' ||
+        typeof WorkerGlobalScope !== 'undefined'
+    );
 }
 
 function isNode() {
-    return typeof window === 'undefined';
+    return (
+        typeof window === 'undefined' &&
+        typeof global === 'object' &&
+        typeof process === 'object'
+    );
 }
 
 function checkArgument(expression, message) {

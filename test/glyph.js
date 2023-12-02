@@ -75,6 +75,7 @@ describe('glyph.js', function() {
         let glyph = new Glyph({
             name: 'Test Glyph',
             unicode: 65,
+            unicodes: [65, 66],
             path: new Path(),
             advanceWidth: 400,
             leftSideBearing: -100
@@ -85,7 +86,7 @@ describe('glyph.js', function() {
             assert.equal(glyph.unicode, 65);
             assert.equal(glyph.advanceWidth, 400);
             assert.equal(glyph.leftSideBearing, -100);
-            assert.deepEqual(glyph.unicodes, [65]);
+            assert.deepEqual(glyph.unicodes, [65, 66]);
         });
     });
 
@@ -130,6 +131,18 @@ describe('glyph.js', function() {
                     glyph.path.toSVG();
                 }
             });
+        });
+    });
+
+    describe('component transformation', function() {
+        // @TODO test components more thoroughly,
+        // maybe move to a separate glyf test file
+        
+        const changaVarFont = loadSync('./test/fonts/Changa-VariableFont_wght.ttf');
+
+        it('handles 2x2 transform correctly',function() {
+            const glyph = changaVarFont.charToGlyph('+');
+            assert.deepEqual(glyph.toPathData(), 'M91 284L440 284L440 342L91 342ZM236 487L236 138L294 138L294 487Z');
         });
     });
 });

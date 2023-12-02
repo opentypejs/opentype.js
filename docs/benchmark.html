@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>opentype.js – JavaScript parser/writer for OpenType and TrueType fonts.</title>
+    <meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="site.css">
+</head>
+
+<body>
+<div class="header">
+    <div class="container">
+        <h1>opentype.js</h1>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="font-inspector.html">Font Inspector</a>
+            <a href="glyph-inspector.html">Glyph Inspector</a>
+        </nav>
+        <nav class="right">
+            <a class="github" href="https://github.com/opentypejs/opentype.js">Fork me on GitHub</a>
+        </nav>
+    </div>
+</div>
+
+<form class="container" name="demo">
+    <label>base: <select name="base"></select></label>
+    <label>diff: <select name="diff"></select></label>
+    <label>burst count: <input name="burst_count" type="number" min="0" max="100" value="10"></label>
+    <label>burst size: <input name="burst_size" type="number" min="0" max="5000" value="100"></label>
+    <label>custom font: <input name="file" type="file"></label>
+    <button name="submit">compare</button>
+    <output name="message" style="font-family: monospace;display: block;"></output>
+</form>
+
+
+<script type="module">
+    const el = (tag, props = {}, ch = []) => ch.reduce((e, c) => (e.appendChild(c), e), Object.assign(document.createElement(tag), props));
+    const form = document.forms.demo;
+    const fontFileName = 'fonts/FiraSansMedium.woff';
+    const npm = await fetch('https://api.cdnjs.com/libraries/opentype.js').then(r => r.json());
+    const git_option = el('option', { innerText: 'local', value: '/dist/opentype.js' });
+    const local_option = el('option', { innerText: 'master', value: 'https://opentype.js.org/dist/opentype.js' });
+    const cdn_options = npm.versions.map(v => el('option', { innerText: v, value: `https://unpkg.com/opentype.js@${v}/dist/opentype.js` })).reverse();
+    form.base.replaceChildren(git_option, ...cdn_options);
+    form.diff.replaceChildren(local_option, ...cdn_options.map(node => node.cloneNode(true)));
+    form.diff.onchange = form.base.onchange = async function ({ target }) {
+        target.disabled = true;
+        await importScript(target.value, { as: target.name });
+        target.disabled = false;
+    }
+    async function importScript(url, { as }) {
+        const injectScript = (src) => new Promise((onload, onerror) => document.head.appendChild(el('script', { src, onload, onerror })))
+        if (!document.head.querySelector(`script[src="${url}"]`)) {
+            console.log('injecting...', as, url, window[as]);
+            await injectScript(url);
+            window[url] = window.opentype;
+        }
+        window[as] = window[url];
+        console.log(`opentype ${url} set as ${as}`, window[url]);
+    }
+
+    // bootstrap default choice
+    form.base.dispatchEvent(new Event('change'));
+    form.diff.dispatchEvent(new Event('change'));
+
+    form.onsubmit = async function (event) {
+        event.preventDefault();
+        const buf = await (form.file.files.length ? form.file.files[0].arrayBuffer() : fetch(fontFileName).then(res => res.arrayBuffer()));
+        form.message.innerText = `Comparing ${form.base.value} against ${form.diff.value} on ${form.file.value || fontFileName}...\n`;
+        try {
+            for (let type of ['base', 'diff']) {
+                const textToRender = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ffffiThe king said: เป็นคนใจดีสำหรับทุกคน because ความรักคือทุกสิ่ง ลลฤๅ'.repeat(10);
+                const burst_count = +form.burst_count.value;
+                const results = [];
+                for (let burst = 0; burst < burst_count; burst++) {
+                    const iter_total = +form.burst_size.value;
+                    const start = performance.now();
+                    for (let iter = 0; iter < iter_total; iter++) {
+                        const font = window[type].parse(buf);
+                        const glyphs = font.stringToGlyphs(textToRender);
+                        for (let i = 0; i < glyphs.length; i++) {
+                            glyphs[i].path.toSVG({optimize:false});
+                        }
+                    }
+                    const end = performance.now();
+                    results.push(end - start);
+                    form.message.innerText += `[${burst}/${burst_count}] ${type} took ${end - start}ms\n`;
+                    await new Promise(r => setTimeout(r, 100)); // give HMI some rest
+                }
+                const average = results.reduce((a, b) => a + b, 0) / results.length;
+                form.message.innerText += `[AVG] ${type} took ${average}ms\n`;
+            }
+        } catch (err) {
+            form.message.innerText = err.toString();
+        }
+    }
+</script>
+</body>
+
+</html>

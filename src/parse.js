@@ -181,6 +181,7 @@ Parser.prototype.parseTag = function() {
 // JavaScript and unix timestamps traditionally use 32 bits, so we
 // only take the last 32 bits.
 // + Since until 2038 those bits will be filled by zeros we can ignore them.
+// FIXME: at some point we need to support dates >2038 using the full 64bit
 Parser.prototype.parseLongDateTime = function() {
     let v = getULong(this.data, this.offset + this.relativeOffset + 4);
     // Subtract seconds between 01/01/1904 and 01/01/1970
