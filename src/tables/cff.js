@@ -40,7 +40,7 @@ function equals(a, b) {
 }
 
 // Subroutines are encoded using the negative half of the number space.
-// See type 2 chapter 4.7 'Subroutine operators'.
+// See type 2 chapter 4.7 "Subroutine operators".
 function calcCFFSubroutineBias(subrs) {
     let bias;
     if (subrs.length < 1240) {
@@ -460,7 +460,7 @@ function gatherCFF2FontDicts(data, start, fdArray) {
     return fontDictArray;
 }
 
-// Returns a list of 'Top DICT's found using an INDEX list.
+// Returns a list of "Top DICT"s found using an INDEX list.
 // Used to read both the usual high-level Top DICTs and also the FDArray
 // discovered inside CID-keyed fonts.  When a Top DICT has a reference to
 // a Private DICT that is read and saved into the Top DICT.
@@ -505,7 +505,7 @@ function gatherCFFTopDicts(data, start, cffIndex, strings, version) {
 
 // Parse the CFF charset table, which contains internal names for all the glyphs.
 // This function will return a list of glyph names.
-// See Adobe TN #5176 chapter 13, 'Charsets'.
+// See Adobe TN #5176 chapter 13, "Charsets".
 function parseCFFCharset(data, start, nGlyphs, strings, isCIDFont) {
     let sid;
     let count;
@@ -558,12 +558,10 @@ function parseCFFCharset(data, start, nGlyphs, strings, isCIDFont) {
     }
 
     return charset;
-
-    
 }
 
 // Parse the CFF encoding data. Only one encoding can be specified per font.
-// See Adobe TN #5176 chapter 12, 'Encodings'.
+// See Adobe TN #5176 chapter 12, "Encodings".
 function parseCFFEncoding(data, start) {
     let code;
     const encoding = {};

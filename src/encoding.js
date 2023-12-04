@@ -182,7 +182,7 @@ const standardNames = [
     'ogonek', 'caron', 'Lslash', 'lslash', 'Scaron', 'scaron', 'Zcaron', 'zcaron', 'brokenbar', 'Eth', 'eth',
     'Yacute', 'yacute', 'Thorn', 'thorn', 'minus', 'multiply', 'onesuperior', 'twosuperior', 'threesuperior',
     'onehalf', 'onequarter', 'threequarters', 'franc', 'Gbreve', 'gbreve', 'Idotaccent', 'Scedilla', 'scedilla',
-    'Cacute', 'cacute', 'Ccaron', 'ccaron', 'dcroat'];    
+    'Cacute', 'cacute', 'Ccaron', 'ccaron', 'dcroat'];
 
 /**
  * This is the encoding used for fonts created from scratch.
