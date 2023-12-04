@@ -78,11 +78,7 @@ GlyphSet.prototype.get = function(index) {
         }
 
         if (this.font.cffEncoding) {
-            if (this.font.isCIDFont) {
-                glyph.name = 'gid' + index;
-            } else {
-                glyph.name = this.font.cffEncoding.charset[index];
-            }
+            glyph.name = this.font.cffEncoding.charset[index];
         } else if (this.font.glyphNames.names) {
             glyph.name = this.font.glyphNames.glyphIndexToName(index);
         }

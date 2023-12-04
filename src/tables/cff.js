@@ -5,7 +5,14 @@
 
 // @TODO: refactor parsing using stateful parser?
 
-import { CffEncoding, cffStandardEncoding, cffExpertEncoding, cffStandardStrings } from '../encoding.js';
+import { 
+    CffEncoding, 
+    cffStandardEncoding, 
+    cffExpertEncoding, 
+    cffStandardStrings, 
+    cffISOAdobeStrings,
+    cffIExpertStrings,
+    cffExpertSubsetStrings } from '../encoding.js';
 import glyphset from '../glyphset.js';
 import parse from '../parse.js';
 import Path from '../path.js';
@@ -499,7 +506,7 @@ function gatherCFFTopDicts(data, start, cffIndex, strings, version) {
 // Parse the CFF charset table, which contains internal names for all the glyphs.
 // This function will return a list of glyph names.
 // See Adobe TN #5176 chapter 13, "Charsets".
-function parseCFFCharset(data, start, nGlyphs, strings) {
+function parseCFFCharset(data, start, nGlyphs, strings, isCIDFont) {
     let sid;
     let count;
     const parser = new parse.Parser(data, start);
@@ -512,14 +519,24 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
     if (format === 0) {
         for (let i = 0; i < nGlyphs; i += 1) {
             sid = parser.parseSID();
-            charset.push(getCFFString(strings, sid) || sid);
+
+            if(isCIDFont) {
+                charset.push(sid);
+            } else {
+                charset.push(getCFFString(strings, sid) || sid);
+            }
+            
         }
     } else if (format === 1) {
         while (charset.length <= nGlyphs) {
             sid = parser.parseSID();
             count = parser.parseCard8();
             for (let i = 0; i <= count; i += 1) {
-                charset.push(getCFFString(strings, sid) || sid);
+                if(isCIDFont) {
+                    charset.push('cid' + ('00000' + sid).slice(-5));
+                } else {
+                    charset.push(getCFFString(strings, sid) || sid);    
+                }
                 sid += 1;
             }
         }
@@ -528,7 +545,11 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
             sid = parser.parseSID();
             count = parser.parseCard16();
             for (let i = 0; i <= count; i += 1) {
-                charset.push(getCFFString(strings, sid) || sid);
+                if(isCIDFont) {
+                    charset.push('cid' + ('00000' + sid).slice(-5));
+                } else {
+                    charset.push(getCFFString(strings, sid) || sid);    
+                }
                 sid += 1;
             }
         }
@@ -541,16 +562,16 @@ function parseCFFCharset(data, start, nGlyphs, strings) {
 
 // Parse the CFF encoding data. Only one encoding can be specified per font.
 // See Adobe TN #5176 chapter 12, "Encodings".
-function parseCFFEncoding(data, start, charset) {
+function parseCFFEncoding(data, start) {
     let code;
-    const enc = {};
+    const encoding = {};
     const parser = new parse.Parser(data, start);
     const format = parser.parseCard8();
     if (format === 0) {
         const nCodes = parser.parseCard8();
         for (let i = 0; i < nCodes; i += 1) {
             code = parser.parseCard8();
-            enc[code] = i;
+            encoding[code] = i;
         }
     } else if (format === 1) {
         const nRanges = parser.parseCard8();
@@ -559,7 +580,7 @@ function parseCFFEncoding(data, start, charset) {
             const first = parser.parseCard8();
             const nLeft = parser.parseCard8();
             for (let j = first; j <= first + nLeft; j += 1) {
-                enc[j] = code;
+                encoding[j] = code;
                 code += 1;
             }
         }
@@ -567,7 +588,7 @@ function parseCFFEncoding(data, start, charset) {
         throw new Error('Unknown encoding format ' + format);
     }
 
-    return new CffEncoding(enc, charset);
+    return encoding;
 }
 
 function parseBlend(operands) {
@@ -1265,17 +1286,31 @@ function parseCFFTable(data, start, font, opt) {
     }
 
     if (header.formatMajor < 2) {
-        const charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects);
+        let charset = [];
+        let encoding = [];
+
+        if(topDict.charset === 0) {
+            charset = cffISOAdobeStrings;
+        } else if(topDict.charset === 1) {
+            charset = cffIExpertStrings;
+        } else if (topDict.charset === 2) {
+            charset = cffExpertSubsetStrings;
+        } else {
+            charset = parseCFFCharset(data, start + topDict.charset, font.nGlyphs, stringIndex.objects, font.isCIDFont);
+        }
+
         if (topDict.encoding === 0) {
             // Standard encoding
-            font.cffEncoding = new CffEncoding(cffStandardEncoding, charset);
+            encoding = cffStandardEncoding;
         } else if (topDict.encoding === 1) {
             // Expert encoding
-            font.cffEncoding = new CffEncoding(cffExpertEncoding, charset);
+            encoding = cffExpertEncoding;
         } else {
-            font.cffEncoding = parseCFFEncoding(data, start + topDict.encoding, charset);
+            encoding = parseCFFEncoding(data, start + topDict.encoding);
         }
         
+        font.cffEncoding = new CffEncoding(encoding, charset);
+
         // Prefer the CMAP encoding to the CFF encoding.
         font.encoding = font.encoding || font.cffEncoding;
     }
