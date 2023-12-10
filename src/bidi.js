@@ -152,15 +152,16 @@ function getContextParams(tokens, index) {
  * 
  * @param {string} script script name
  * @param {array} features list of required features to process 
+ * @param {string} tokenizer context name
  */
-function applySubstitutions(script, features) {
+function applySubstitutions(script, features, contextName) {
     const supportedFeatures = features.filter(feature => this.hasFeatureEnabled(script, feature));
     const featuresLookups = this.query.getSubstitutionFeaturesLookups(supportedFeatures, script);
     for (let idx = 0; idx < featuresLookups.length; idx++) {
         const lookupTable = featuresLookups[idx];
         const subtables = this.query.getLookupSubtables(lookupTable);
         // Extract all thai words to apply the lookup feature per feature lookup table order
-        const ranges = this.tokenizer.getContextRanges(`${script}Word`); // use a context range name convention: latinWord, arabWord, thaiWord, etc.
+        const ranges = this.tokenizer.getContextRanges(contextName); // use a context range name convention: latinWord, arabWord, thaiWord, etc.
         for (let k = 0; k < ranges.length; k++) {
             const range = ranges[k];
             let tokens = this.tokenizer.getRangeTokens(range);
@@ -306,7 +307,7 @@ function applyUnicodeVariationSequences() {
  */
 function applyThaiFeatures() {
     checkGlyphIndexStatus.call(this);
-    applySubstitutions.call(this, 'thai', ['liga', 'rlig', 'ccmp']);
+    applySubstitutions.call(this, 'thai', ['liga', 'rlig', 'ccmp'], 'thaiWord');
 }
 
 /**
