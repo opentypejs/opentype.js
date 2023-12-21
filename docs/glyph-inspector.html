@@ -4,7 +4,8 @@
 <meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
 <meta charset="utf-8">
 <link rel="stylesheet" href="site.css">
-
+<!-- This style tag used for dynamically loading uploaded fonts. -->
+<style id="OpentypeCustomFontTag"></style>
 <div class="header">
     <div class="container">
         <h1><a href="./">opentype.js</a></h1>
@@ -130,8 +131,12 @@ function displayGlyphData(glyphIndex) {
     }
     var glyph = font.glyphs.get(glyphIndex),
         html = '<dl>';
-    html += '<dt>name</dt><dd>'+glyph.name+'</dd>';
-
+    html += '<dt>glyphName</dt><dd>'+glyph.name+'</dd>';
+    const char = String.fromCodePoint.apply(null, glyph.unicodes);
+    html += '<dt>glyph</dt><dd style="font-family:\'OpentypeCustomFont\'">'+char+'</dd>';
+    const hex = char.codePointAt(0).toString(16);
+    html += '<dt>htmlCode</dt><dd>&amp;#x'+hex+';</dd>';
+    html += '<dt>cssCode</dt><dd>content: \'\\'+hex+'\';</dd>';
     if (glyph.unicodes.length > 0) {
         html += '<dt>unicode</dt><dd>'+ glyph.unicodes.map(formatUnicode).join(', ') +'</dd>';
     }
@@ -412,6 +417,15 @@ async function display(file, name) {
         const data = await file.arrayBuffer();
         onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
         showErrorMessage('');
+        const styleTag = document.getElementById("OpentypeCustomFontTag");
+        const blob = new Blob([data], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        styleTag.innerHTML = `
+          @font-face {
+            font-family: 'OpentypeCustomFont';
+            src: url(${url});
+          }
+        `.trim();
     } catch (err) {
         showErrorMessage(err.toString());
     }
