@@ -39,7 +39,7 @@
     "mocha": "^8.4.0",
     "esbuild": "^0.19.10",
     "eslint": "^8.55.0",
-    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-import": "^2.29.1",
     "reify": "^0.20.12"
   },
   "bin": {
