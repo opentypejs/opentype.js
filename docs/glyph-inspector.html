@@ -132,12 +132,12 @@ function displayGlyphData(glyphIndex) {
     var glyph = font.glyphs.get(glyphIndex),
         html = '<dl>';
     html += '<dt>glyphName</dt><dd>'+glyph.name+'</dd>';
-    const char = String.fromCodePoint.apply(null, glyph.unicodes);
-    html += '<dt>glyph</dt><dd style="font-family:\'OpentypeCustomFont\'">'+char+'</dd>';
-    const hex = char.codePointAt(0).toString(16);
-    html += '<dt>htmlCode</dt><dd>&amp;#x'+hex+';</dd>';
-    html += '<dt>cssCode</dt><dd>content: \'\\'+hex+'\';</dd>';
     if (glyph.unicodes.length > 0) {
+        const char = String.fromCodePoint.apply(null, glyph.unicodes);
+        html += '<dt>glyph</dt><dd style="font-family:\'OpentypeCustomFont\'">'+char+'</dd>';
+        const hex = char.codePointAt(0).toString(16);
+        html += '<dt>htmlCode</dt><dd>&amp;#x'+hex+';</dd>';
+        html += '<dt>cssCode</dt><dd>content: \'\\'+hex+'\';</dd>';
         html += '<dt>unicode</dt><dd>'+ glyph.unicodes.map(formatUnicode).join(', ') +'</dd>';
     }
     html += '<dt>index</dt><dd>'+glyph.index+'</dd>';
