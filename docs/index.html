@@ -116,15 +116,7 @@ function renderText() {
     if (!font) return;
     const textToRender = form.textField.value;
     var previewCtx = document.getElementById('preview').getContext('2d');
-    var options = {
-        kerning: form.kerning.checked,
-        hinting: form.hinting.checked,
-        features: {
-            liga: form.ligatures.checked,
-            rlig: form.ligatures.checked
-        }
-    };
-    options = Object.assign({}, font.defaultRenderOptions, options);
+    var options = Object.assign({}, font.defaultRenderOptions, getDrawOptions());
     previewCtx.clearRect(0, 0, 940, 300);
     const fontSize = +form.fontsize.value;
     font.draw(previewCtx, textToRender, 0, 200, fontSize, options);
@@ -140,6 +132,17 @@ function renderText() {
     var snapCtx = document.getElementById('snap').getContext('2d');
     snapCtx.clearRect(0, 0, 940, 300);
     snapPath.draw(snapCtx);
+}
+
+function getDrawOptions() {
+    return {
+        kerning: form.kerning.checked,
+        hinting: form.hinting.checked,
+        features: {
+            liga: form.ligatures.checked,
+            rlig: form.ligatures.checked
+        }
+    };
 }
 
 function enableHighDPICanvas(canvas) {
@@ -184,6 +187,9 @@ function showErrorMessage(message) {
 }
 
 function onFontLoaded(font) {
+    if (window.font) {
+        window.font.onGlyphUpdated = null
+    }
     window.font = font;
 
     // Show the first 100 glyphs.
@@ -194,9 +200,11 @@ function onFontLoaded(font) {
     const x = 50;
     const y = 120;
     const fontSize = 72;
+    const ctxs = new Array(amount);
     for (let i = 0; i < amount; i++) {
         const glyph = font.glyphs.get(i);
         const ctx = createGlyphCanvas(glyph, 150);
+        ctxs[i] = ctx;
         glyph.draw(ctx, x, y, fontSize, {}, font);
         glyph.drawPoints(ctx, x, y, fontSize);
         glyph.drawMetrics(ctx, x, y, fontSize);
@@ -214,6 +222,23 @@ function onFontLoaded(font) {
     }
 
     renderText();
+
+    font.onGlyphUpdated = (glyphId) => {
+        if (0 <= glyphId && glyphId < amount) {
+            const glyph = font.glyphs.get(glyphId);
+            const ctx = ctxs[glyphId];
+            glyph.draw(ctx, x, y, fontSize, {}, font);
+            glyph.drawPoints(ctx, x, y, fontSize);
+            glyph.drawMetrics(ctx, x, y, fontSize);
+        }
+
+        const textToRender = form.textField.value;
+        const options = Object.assign({}, font.defaultRenderOptions, getDrawOptions());
+        const glyphIds = font.stringToGlyphIndexes(textToRender, options);
+        if (glyphIds.includes(glyphId)) {
+            renderText();
+        }
+    };
 }
 const loadScript = (src) => new Promise((onload) => document.head.append(Object.assign(document.createElement('script'), {src, onload})));
 async function display(file, name) {

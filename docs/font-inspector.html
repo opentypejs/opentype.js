@@ -103,6 +103,17 @@ import * as opentype from "/dist/opentype.module.js";
 var font = null;
 const fontSize = 32;
 const textToRender = 'Grumpy wizards make toxic brew for the evil Queen and Jack.';
+const drawOptions = {
+    kerning: true,
+    features: [
+    /**
+     * these 4 features are required to render Arabic text properly
+     * and shouldn't be turned off when rendering arabic text.
+     */
+        { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
+        { script: 'latn', tags: ['liga', 'rlig'] }
+    ]
+};
 
 function escapeHtml(unsafe) {
     return unsafe
@@ -134,18 +145,7 @@ function renderText(font) {
     var previewCanvas = document.getElementById('preview');
     var previewCtx = previewCanvas.getContext("2d");
     previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-    var options = {
-        kerning: true,
-        features: [
-        /**
-         * these 4 features are required to render Arabic text properly
-         * and shouldn't be turned off when rendering arabic text.
-         */
-            { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
-            { script: 'latn', tags: ['liga', 'rlig'] }
-        ]
-    };
-    options = Object.assign({}, font.defaultRenderOptions, options);
+    var options = Object.assign({}, font.defaultRenderOptions, drawOptions);
     font.draw(previewCtx, textToRender, 0, 32, fontSize, options);
 }
 
@@ -261,9 +261,19 @@ function displayFontData(font) {
 }
 
 function onFontLoaded(font) {
+    if (window.font) {
+        window.font.onGlyphUpdated = null;
+    }
     window.font = font;
     renderText(font);
     displayFontData(font);
+    font.onGlyphUpdated = (glyphId) => {
+        const options = Object.assign({}, font.defaultRenderOptions, drawOptions);
+        const glyphIds = font.stringToGlyphIndexes(textToRender, options);
+        if (glyphIds.includes(glyphId)) {
+            renderText(font);
+        }
+    };
 }
 
 document.getElementById('update').addEventListener('click', () => displayFontData(window.font));

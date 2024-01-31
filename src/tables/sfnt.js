@@ -27,6 +27,7 @@ import avar from './avar.js';
 import cvar from './cvar.js';
 import gvar from './gvar.js';
 import gasp from './gasp.js';
+import svg from './svg.js';
 
 function log2(v) {
     return Math.log(v) / Math.log(2) | 0;
@@ -364,6 +365,7 @@ function fontToSfntTable(font) {
         fvar, 
         gvar,
         gasp,
+        svg,
     };
 
     const optionalTableArgs = {

@@ -148,6 +148,21 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     let yScale = options.yScale;
     const scale = 1 / (this.path.unitsPerEm || 1000) * fontSize;
 
+    if (options.drawSVG) {
+        const svgImage = this.getSvgImage(font);
+        if (svgImage) {
+            const path = new Path();
+            path.drawImage(
+                svgImage.image,
+                x + svgImage.leftSideBearing * scale,
+                y - svgImage.baseline * scale,
+                svgImage.image.width * scale,
+                svgImage.image.height * scale,
+            );
+            return path;
+        }
+    }
+
     if (options.hinting && font && font.hinting) {
         // in case of hinting, the hinting engine takes care
         // of scaling the points (not the path) before hinting.
@@ -224,6 +239,17 @@ Glyph.prototype.getLayers = function(font) {
         throw Error('The font object is required to read the colr/cpal tables in order to get the layers.');
     }
     return font.layers.get(this.index);
+};
+
+/**
+ * @param {opentype.Font} font
+ * @returns {import('./svgimages.js').SVGImage | undefined}
+ */
+Glyph.prototype.getSvgImage = function(font) {
+    if(!font) {
+        throw Error('The font object is required to read the svg table in order to get the image.');
+    }
+    return font.svgImages.get(this.index);
 };
 
 /**
