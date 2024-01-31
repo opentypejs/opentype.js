@@ -1,6 +1,7 @@
 // The GlyphSet object
 
 import Glyph from './glyph.js';
+import svg from './tables/svg.js';
 
 // Define a property on the glyph that depends on the path being loaded.
 function defineDependentProperty(glyph, externalName, internalName) {
@@ -103,6 +104,39 @@ GlyphSet.prototype.push = function(index, loader) {
     this.length++;
 };
 
+function defineSvgImageLoader(glyph, font) {
+    glyph._svgImage = function () {
+        return font.tables.svg
+            ? svg.imageLoader(font.tables.svg, glyph.index)
+            : Promise.resolve();
+    };
+
+    Object.defineProperty(glyph, 'svgImage', {
+        get: function() {
+            if ( typeof glyph._svgImage === 'function' ) {
+                glyph._svgImage = glyph._svgImage()
+                    .then(svgImage => {
+                        glyph._svgImage = svgImage;
+                        if (svgImage && font.onGlyphUpdated) {
+                            font.onGlyphUpdated(glyph.index);
+                        }
+                        return svgImage;
+                    })
+                    .catch(error => {
+                        glyph._svgImage = error;
+                        throw error;
+                    });
+            }
+            return glyph._svgImage;
+        },
+        set: function(newValue) {
+            glyph._svgImage = newValue;
+        },
+        enumerable: true,
+        configurable: true
+    });
+}
+
 /**
  * @alias opentype.glyphLoader
  * @param  {opentype.Font} font
@@ -142,6 +176,8 @@ function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
         defineDependentProperty(glyph, 'yMin', '_yMin');
         defineDependentProperty(glyph, 'yMax', '_yMax');
 
+        defineSvgImageLoader(glyph, font);
+
         return glyph;
     };
 }
@@ -162,6 +198,8 @@ function cffGlyphLoader(font, index, parseCFFCharstring, charstring, version) {
             path.unitsPerEm = font.unitsPerEm;
             return path;
         };
+
+        defineSvgImageLoader(glyph, font);
 
         return glyph;
     };
