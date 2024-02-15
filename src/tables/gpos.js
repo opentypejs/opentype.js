@@ -82,7 +82,10 @@ subtableParsers[5] = function parseLookup5() { return { error: 'GPOS Lookup 5 no
 subtableParsers[6] = function parseLookup6() { return { error: 'GPOS Lookup 6 not supported' }; };
 subtableParsers[7] = function parseLookup7() { return { error: 'GPOS Lookup 7 not supported' }; };
 subtableParsers[8] = function parseLookup8() { return { error: 'GPOS Lookup 8 not supported' }; };
-subtableParsers[9] = function parseLookup9() { return { error: 'GPOS Lookup 9 not supported' }; };
+subtableParsers[9] = function parseLookup9() {
+    check.argument(this.parseUShort() === 1, 'GPOS lookup type 9 format must be 1.');
+    return this.parsePointer32(subtableParsers[this.parseUShort()]);
+};
 
 // https://docs.microsoft.com/en-us/typography/opentype/spec/gpos
 function parseGposTable(data, start) {

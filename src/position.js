@@ -36,6 +36,8 @@ Position.prototype.getKerningValue = function(kerningLookups, leftIndex, rightIn
         const subtables = kerningLookups[i].subtables;
         for (let j = 0; j < subtables.length; j++) {
             const subtable = subtables[j];
+            // Subtables not supported come with an error
+            if (subtable.error) continue;
             const covIndex = this.getCoverageIndex(subtable.coverage, leftIndex);
             if (covIndex < 0) continue;
             switch (subtable.posFormat) {
@@ -72,7 +74,13 @@ Position.prototype.getKerningValue = function(kerningLookups, leftIndex, rightIn
  */
 Position.prototype.getKerningTables = function(script, language) {
     if (this.font.tables.gpos) {
-        return this.getLookupTables(script, language, 'kern', 2);
+        const featureTable = this.getFeatureTable(script, language, 'kern');
+        return this.getLookupTables(
+            script,
+            language,
+            'kern',
+            featureTable && featureTable.lookupListIndexes.length ? this.font.tables.gpos.lookups[featureTable.lookupListIndexes[0]].lookupType : 2
+        );
     }
 };
 
