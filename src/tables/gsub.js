@@ -402,6 +402,21 @@ subtableMakers[6] = function makeLookup6(subtable) {
     check.assert(false, 'lookup type 6 format must be 1, 2 or 3.');
 };
 
+subtableMakers[7] = function makeLookup7(extensionSubstitutionTable) {
+    if (extensionSubstitutionTable.substFormat === 1) {
+        const extensionTable = subtableMakers[extensionSubstitutionTable.lookupType](extensionSubstitutionTable.extension);
+        const returnTable = new table.Table('extensionSubstitutionTable', [
+            {name: 'substFormat', type: 'USHORT', value: extensionSubstitutionTable.substFormat},
+            {name: 'extensionLookupType', type: 'USHORT', value: extensionSubstitutionTable.lookupType},
+            {name: 'extensionOffset', type: 'ULONG', value: undefined}
+        ]);
+        returnTable.extensionTable = extensionTable;
+        return returnTable;
+    }
+
+    check.assert(false, 'lookup type 7 format must be 1.');
+};
+
 function makeGsubTable(gsub) {
     return new table.Table('GSUB', [
         {name: 'version', type: 'ULONG', value: 0x10000},
