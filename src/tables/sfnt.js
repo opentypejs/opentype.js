@@ -206,6 +206,7 @@ function fontToSfntTable(font) {
     };
     globals.ascender = font.ascender;
     globals.descender = font.descender;
+    globals.lineGap = font.lineGap;
 
     // macStyle bits must agree with the fsSelection bits
     let macStyle = 0;
@@ -214,7 +215,7 @@ function fontToSfntTable(font) {
     }
     if (font.italicAngle < 0) {
         macStyle |= font.macStyleValues.ITALIC;
-    } 
+    }
 
     const headTable = head.make({
         flags: 3, // 00000011 (baseline for font at y=0; left sidebearing point at x=0)
@@ -229,6 +230,7 @@ function fontToSfntTable(font) {
     });
 
     const hheaTable = hhea.make({
+        lineGap: globals.lineGap,
         ascender: globals.ascender,
         descender: globals.descender,
         advanceWidthMax: globals.advanceWidthMax,
@@ -254,7 +256,7 @@ function fontToSfntTable(font) {
         // ordering was chosen experimentally.
         sTypoAscender: globals.ascender,
         sTypoDescender: globals.descender,
-        sTypoLineGap: 0,
+        sTypoLineGap: globals.lineGap || 0,
         usWinAscent: globals.yMax,
         usWinDescent: Math.abs(globals.yMin),
         ulCodePageRange1: 1, // FIXME: hard-code Latin 1 support for now

@@ -320,6 +320,7 @@ function parseBuffer(buffer, opt={}) {
                 font.tables.hhea = hhea.parse(table.data, table.offset);
                 font.ascender = font.tables.hhea.ascender;
                 font.descender = font.tables.hhea.descender;
+                font.lineGap = font.tables.hhea.lineGap;
                 font.numberOfHMetrics = font.tables.hhea.numberOfHMetrics;
                 break;
             case 'hmtx':
