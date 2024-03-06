@@ -1,6 +1,9 @@
 import assert from 'assert';
 import { unhex } from './testutil.js';
 import { Parser } from '../src/parse.js';
+import { Font, Path, Glyph, parse, load} from '../src/opentype.js';
+import { readFileSync } from 'fs';
+const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('parse.js', function() {
     describe('parseUShortList', function() {
@@ -208,12 +211,32 @@ describe('parse.js', function() {
                 '0000 0001 0000   0000 0002 0000 0001   0000 0003 0000 0001 0002';
             const p = new Parser(unhex(data), 0);
             assert.deepEqual(p.parseFeatureList(), [
-                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0] } },
-                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0, 1] } },
-                { tag: 'liga', feature: { featureParams: 0, lookupListIndexes: [0, 1, 2] } }
+                { tag: 'liga', feature: { featureParams: null, lookupListIndexes: [0] } },
+                { tag: 'liga', feature: { featureParams: null, lookupListIndexes: [0, 1] } },
+                { tag: 'liga', feature: { featureParams: null, lookupListIndexes: [0, 1, 2] } }
             ]);
             assert.equal(p.relativeOffset, 2);
         });
+    });
+
+
+    describe('parsefeatureParams', function() {
+        const font = loadSync('./test/fonts/SourceSansPro-Regular.otf');
+        const ss01 = font.tables.gsub.features[73]
+        const aalt = font.tables.gsub.features[0]
+        assert.equal(ss01.tag, 'ss01'); // this one should have featureParams
+        assert.equal(aalt.tag, 'aalt'); // this one should not have featureParams
+
+        it('featureParams nameID of stylistic set ss01 should be 257', function() {
+            assert.equal(ss01.feature.featureParams.nameID, 257);
+        });
+        it('featureParams version of stylistic set ss01 should be 0', function() {
+            assert.equal(ss01.feature.featureParams.version, 0);
+        });
+        it('featureParams of aalt should be null', function() {
+            assert.equal(aalt.feature.featureParams, null);
+        });
+
     });
 
     describe('parseLookupList', function() {
