@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "mocha": "^8.4.0",
-    "esbuild": "^0.20.0",
+    "esbuild": "^0.20.2",
     "eslint": "^8.56.0",
     "eslint-plugin-import": "^2.29.1",
     "reify": "^0.20.12"
