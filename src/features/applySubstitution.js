@@ -1,3 +1,11 @@
+/*
+ * @Author: TonyJR show_3@163.com
+ * @Date: 2024-03-18 18:01:38
+ * @LastEditors: TonyJR show_3@163.com
+ * @LastEditTime: 2024-03-22 14:40:59
+ * @FilePath: /opentype.js/src/features/applySubstitution.js
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 import { SubstitutionAction } from './featureQuery.js';
 
 /**
@@ -50,6 +58,15 @@ function ligatureSubstitutionFormat1(action, tokens, index) {
     }
 }
 
+function ligatureSubstitutionFormat3(action, tokens, index) {
+    tokens[index].setState(action.tag, action.substitution);
+    const compsCount = action.substitution.length;
+    for (let i = 0; i < compsCount; i++) {
+      let token = tokens[index + i + 1];
+      token.setState("deleted", true);
+    }
+}
+
 /**
  * Supported substitutions
  */
@@ -57,7 +74,8 @@ const SUBSTITUTIONS = {
     11: singleSubstitutionFormat1,
     12: singleSubstitutionFormat2,
     63: chainingSubstitutionFormat3,
-    41: ligatureSubstitutionFormat1
+    41: ligatureSubstitutionFormat1,
+    53: ligatureSubstitutionFormat3
 };
 
 /**
