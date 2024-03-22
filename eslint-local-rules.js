@@ -1,6 +1,30 @@
 'use strict';
 
 module.exports = {
+  'ban-concat': {
+    meta: {
+      type: 'suggestion',
+      schema: [],
+    },
+    create(context) {
+      return {
+        CallExpression(node) {
+          if (
+            (
+              node.callee.property &&
+              node.callee.property.name === 'concat' &&
+              node.callee?.object?.name !== 'Buffer'
+            ) || (
+              node.callee?.object?.property?.name === 'concat' &&
+              node.callee?.object?.object?.type === 'ArrayExpression'
+            )
+          ) {
+            context.report({node, message: 'Use obj.push(...data) instead of obj = obj.concat(data)'})
+          }
+        },
+      }
+    },
+  },
   'ban-foreach': {
     meta: {
       type: 'suggestion',
