@@ -277,14 +277,14 @@ function makeCmapTable(glyphs) {
     ];
 
     if (!isPlan0Only)
-        cmapTable = cmapTable.concat([
+        cmapTable.push(...[
             // CMAP 12 header
             {name: 'cmap12PlatformID', type: 'USHORT', value: 3}, // We encode only for PlatformID = 3 (Windows) because it is supported everywhere
             {name: 'cmap12EncodingID', type: 'USHORT', value: 10},
             {name: 'cmap12Offset', type: 'ULONG', value: 0}
         ]);
 
-    cmapTable = cmapTable.concat([
+    cmapTable.push(...[
         // CMAP 4 Subtable
         {name: 'format', type: 'USHORT', value: 4},
         {name: 'cmap4Length', type: 'USHORT', value: 0},
@@ -303,11 +303,10 @@ function makeCmapTable(glyphs) {
         for (let j = 0; j < glyph.unicodes.length; j += 1) {
             addSegment(t, glyph.unicodes[j], i);
         }
-
-        t.segments = t.segments.sort(function (a, b) {
-            return a.start - b.start;
-        });
     }
+    t.segments.sort(function (a, b) {
+        return a.start - b.start;
+    });
 
     addTerminatorSegment(t);
 
@@ -334,12 +333,12 @@ function makeCmapTable(glyphs) {
 
         // CMAP 4
         if (segment.end <= 65535 && segment.start <= 65535) {
-            endCounts = endCounts.concat({name: 'end_' + i, type: 'USHORT', value: segment.end});
-            startCounts = startCounts.concat({name: 'start_' + i, type: 'USHORT', value: segment.start});
-            idDeltas = idDeltas.concat({name: 'idDelta_' + i, type: 'SHORT', value: segment.delta});
-            idRangeOffsets = idRangeOffsets.concat({name: 'idRangeOffset_' + i, type: 'USHORT', value: segment.offset});
+            endCounts.push({name: 'end_' + i, type: 'USHORT', value: segment.end});
+            startCounts.push({name: 'start_' + i, type: 'USHORT', value: segment.start});
+            idDeltas.push({name: 'idDelta_' + i, type: 'SHORT', value: segment.delta});
+            idRangeOffsets.push({name: 'idRangeOffset_' + i, type: 'USHORT', value: segment.offset});
             if (segment.glyphId !== undefined) {
-                glyphIds = glyphIds.concat({name: 'glyph_' + i, type: 'USHORT', value: segment.glyphId});
+                glyphIds.push({name: 'glyph_' + i, type: 'USHORT', value: segment.glyphId});
             }
         } else {
             // Skip Unicode > 65535 (16bit unsigned max) for CMAP 4, will be added in CMAP 12
@@ -349,9 +348,9 @@ function makeCmapTable(glyphs) {
         // CMAP 12
         // Skip Terminator Segment
         if (!isPlan0Only && segment.glyphIndex !== undefined) {
-            cmap12Groups = cmap12Groups.concat({name: 'cmap12Start_' + i, type: 'ULONG', value: segment.start});
-            cmap12Groups = cmap12Groups.concat({name: 'cmap12End_' + i, type: 'ULONG', value: segment.end});
-            cmap12Groups = cmap12Groups.concat({name: 'cmap12Glyph_' + i, type: 'ULONG', value: segment.glyphIndex});
+            cmap12Groups.push({name: 'cmap12Start_' + i, type: 'ULONG', value: segment.start});
+            cmap12Groups.push({name: 'cmap12End_' + i, type: 'ULONG', value: segment.end});
+            cmap12Groups.push({name: 'cmap12Glyph_' + i, type: 'ULONG', value: segment.glyphIndex});
         }
     }
 
@@ -361,12 +360,22 @@ function makeCmapTable(glyphs) {
     t.entrySelector = Math.log(t.searchRange / 2) / Math.log(2);
     t.rangeShift = t.segCountX2 - t.searchRange;
 
-    t.fields = t.fields.concat(endCounts);
+    for (let i = 0; i < endCounts.length; i++) {
+        t.fields.push(endCounts[i]);
+    }
     t.fields.push({name: 'reservedPad', type: 'USHORT', value: 0});
-    t.fields = t.fields.concat(startCounts);
-    t.fields = t.fields.concat(idDeltas);
-    t.fields = t.fields.concat(idRangeOffsets);
-    t.fields = t.fields.concat(glyphIds);
+    for (let i = 0; i < startCounts.length; i++) {
+        t.fields.push(startCounts[i]);
+    }
+    for (let i = 0; i < idDeltas.length; i++) {
+        t.fields.push(idDeltas[i]);
+    }
+    for (let i = 0; i < idRangeOffsets.length; i++) {
+        t.fields.push(idRangeOffsets[i]);
+    }
+    for (let i = 0; i < glyphIds.length; i++) {
+        t.fields.push(glyphIds[i]);
+    }
 
     t.cmap4Length = 14 + // Subtable header
         endCounts.length * 2 +
@@ -382,7 +391,7 @@ function makeCmapTable(glyphs) {
             cmap12Groups.length * 4;
 
         t.cmap12Offset = 12 + (2 * 2) + 4 + t.cmap4Length;
-        t.fields = t.fields.concat([
+        t.fields.push(...[
             {name: 'cmap12Format', type: 'USHORT', value: 12},
             {name: 'cmap12Reserved', type: 'USHORT', value: 0},
             {name: 'cmap12Length', type: 'ULONG', value: cmap12Length},
@@ -390,7 +399,10 @@ function makeCmapTable(glyphs) {
             {name: 'cmap12nGroups', type: 'ULONG', value: cmap12Groups.length / 3}
         ]);
 
-        t.fields = t.fields.concat(cmap12Groups);
+        for (let i = 0; i < cmap12Groups.length; i++) {
+            t.fields.push(cmap12Groups[i]);
+        }
+        
     }
 
     return t;
