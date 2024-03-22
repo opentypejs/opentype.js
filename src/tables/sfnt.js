@@ -104,8 +104,7 @@ function makeSfntTable(tables) {
         }
     });
 
-    sfnt.fields = sfnt.fields.concat(recordFields);
-    sfnt.fields = sfnt.fields.concat(tableFields);
+    sfnt.fields.push(...recordFields, ...tableFields);
     return sfnt;
 }
 

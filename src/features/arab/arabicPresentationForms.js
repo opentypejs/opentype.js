@@ -12,7 +12,8 @@ import applySubstitution from '../applySubstitution.js';
  * @param {ContextParams} charContextParams context params of a char
  */
 function willConnectPrev(charContextParams) {
-    let backtrack = [].concat(charContextParams.backtrack);
+    let backtrack = [...charContextParams.backtrack];
+
     for (let i = backtrack.length - 1; i >= 0; i--) {
         const prevChar = backtrack[i];
         const isolated = isIsolatedArabicChar(prevChar);

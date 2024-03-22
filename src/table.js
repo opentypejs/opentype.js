@@ -85,7 +85,7 @@ function recordList(itemName, records, itemCallback) {
     let fields = [];
     fields[0] = {name: itemName + 'Count', type: 'USHORT', value: count};
     for (let i = 0; i < count; i++) {
-        fields = fields.concat(itemCallback(records[i], i));
+        fields.push(...itemCallback(records[i], i));
     }
     return fields;
 }
@@ -101,21 +101,19 @@ function recordList(itemName, records, itemCallback) {
  */
 function Coverage(coverageTable) {
     if (coverageTable.format === 1) {
-        Table.call(this, 'coverageTable',
-            [{name: 'coverageFormat', type: 'USHORT', value: 1}]
-                .concat(ushortList('glyph', coverageTable.glyphs))
-        );
+        Table.call(this, 'coverageTable', [
+            {name: 'coverageFormat', type: 'USHORT', value: 1},
+            ...ushortList('glyph', coverageTable.glyphs)
+        ]);        
     } else if (coverageTable.format === 2) {
-        Table.call(this, 'coverageTable',
-            [{name: 'coverageFormat', type: 'USHORT', value: 2}]
-                .concat(recordList('rangeRecord', coverageTable.ranges, function(RangeRecord, i) {
-                    return [
-                        {name: 'startGlyphID' + i, type: 'USHORT', value: RangeRecord.start},
-                        {name: 'endGlyphID' + i, type: 'USHORT', value: RangeRecord.end},
-                        {name: 'startCoverageIndex' + i, type: 'USHORT', value: RangeRecord.index},
-                    ];
-                }))
-        );
+        Table.call(this, 'coverageTable', [
+            {name: 'coverageFormat', type: 'USHORT', value: 2},
+            ...recordList('rangeRecord', coverageTable.ranges, (RangeRecord, i) => [
+                {name: 'startGlyphID' + i, type: 'USHORT', value: RangeRecord.start},
+                {name: 'endGlyphID' + i, type: 'USHORT', value: RangeRecord.end},
+                {name: 'startCoverageIndex' + i, type: 'USHORT', value: RangeRecord.index},
+            ])
+        ]);        
     } else {
         check.assert(false, 'Coverage format must be 1 or 2.');
     }
@@ -134,19 +132,22 @@ function ScriptList(scriptListTable) {
                 {name: 'script' + i, type: 'TABLE', value: new Table('scriptTable', [
                     {name: 'defaultLangSys', type: 'TABLE', value: new Table('defaultLangSys', [
                         {name: 'lookupOrder', type: 'USHORT', value: 0},
-                        {name: 'reqFeatureIndex', type: 'USHORT', value: defaultLangSys.reqFeatureIndex}]
-                        .concat(ushortList('featureIndex', defaultLangSys.featureIndexes)))}
-                ].concat(recordList('langSys', script.langSysRecords, function(langSysRecord, i) {
-                    const langSys = langSysRecord.langSys;
-                    return [
-                        {name: 'langSysTag' + i, type: 'TAG', value: langSysRecord.tag},
-                        {name: 'langSys' + i, type: 'TABLE', value: new Table('langSys', [
-                            {name: 'lookupOrder', type: 'USHORT', value: 0},
-                            {name: 'reqFeatureIndex', type: 'USHORT', value: langSys.reqFeatureIndex}
-                        ].concat(ushortList('featureIndex', langSys.featureIndexes)))}
-                    ];
-                })))}
-            ];
+                        {name: 'reqFeatureIndex', type: 'USHORT', value: defaultLangSys.reqFeatureIndex},
+                        ...ushortList('featureIndex', defaultLangSys.featureIndexes)
+                    ])},
+                    ...recordList('langSys', script.langSysRecords, (langSysRecord, i) => {
+                        const langSys = langSysRecord.langSys;
+                        return [
+                            {name: 'langSysTag' + i, type: 'TAG', value: langSysRecord.tag},
+                            {name: 'langSys' + i, type: 'TABLE', value: new Table('langSys', [
+                                {name: 'lookupOrder', type: 'USHORT', value: 0},
+                                {name: 'reqFeatureIndex', type: 'USHORT', value: langSys.reqFeatureIndex},
+                                ...ushortList('featureIndex', langSys.featureIndexes)
+                            ])}
+                        ];
+                    })
+                ])}
+            ];                      
         })
     );
 }
@@ -168,8 +169,9 @@ function FeatureList(featureListTable) {
                 {name: 'featureTag' + i, type: 'TAG', value: featureRecord.tag},
                 {name: 'feature' + i, type: 'TABLE', value: new Table('featureTable', [
                     {name: 'featureParams', type: 'USHORT', value: feature.featureParams},
-                ].concat(ushortList('lookupListIndex', feature.lookupListIndexes)))}
-            ];
+                    ...ushortList('lookupListIndex', feature.lookupListIndexes)
+                ])}
+            ];            
         })
     );
 }
@@ -190,8 +192,9 @@ function LookupList(lookupListTable, subtableMakers) {
         check.assert(!!subtableCallback, 'Unable to write GSUB lookup type ' + lookupTable.lookupType + ' tables.');
         return new Table('lookupTable', [
             {name: 'lookupType', type: 'USHORT', value: lookupTable.lookupType},
-            {name: 'lookupFlag', type: 'USHORT', value: lookupTable.lookupFlag}
-        ].concat(tableList('subtable', lookupTable.subtables, subtableCallback)));
+            {name: 'lookupFlag', type: 'USHORT', value: lookupTable.lookupFlag},
+            ...tableList('subtable', lookupTable.subtables, subtableCallback)
+        ]);        
     }));
 }
 LookupList.prototype = Object.create(Table.prototype);
@@ -209,24 +212,21 @@ LookupList.prototype.constructor = LookupList;
  */
 function ClassDef(classDefTable) {
     if (classDefTable.format === 1) {
-        Table.call(this, 'classDefTable',
-            [
-                {name: 'classFormat', type: 'USHORT', value: 1},
-                {name: 'startGlyphID', type: 'USHORT', value: classDefTable.startGlyph}
-            ]
-                .concat(ushortList('glyph', classDefTable.classes))
-        );
+        Table.call(this, 'classDefTable', [
+            {name: 'classFormat', type: 'USHORT', value: 1},
+            {name: 'startGlyphID', type: 'USHORT', value: classDefTable.startGlyph},
+            ...ushortList('glyph', classDefTable.classes)
+        ]);        
     } else if (classDefTable.format === 2) {
-        Table.call(this, 'classDefTable',
-            [{name: 'classFormat', type: 'USHORT', value: 2}]
-                .concat(recordList('rangeRecord', classDefTable.ranges, function(RangeRecord, i) {
-                    return [
-                        {name: 'startGlyphID' + i, type: 'USHORT', value: RangeRecord.start},
-                        {name: 'endGlyphID' + i, type: 'USHORT', value: RangeRecord.end},
-                        {name: 'class' + i, type: 'USHORT', value: RangeRecord.classId},
-                    ];
-                }))
-        );
+        Table.call(this, 'classDefTable', [
+            {name: 'classFormat', type: 'USHORT', value: 2},
+            ...recordList('rangeRecord', classDefTable.ranges, (RangeRecord, i) => [
+                {name: 'startGlyphID' + i, type: 'USHORT', value: RangeRecord.start},
+                {name: 'endGlyphID' + i, type: 'USHORT', value: RangeRecord.end},
+                {name: 'class' + i, type: 'USHORT', value: RangeRecord.classId},
+            ])
+        ]);
+        
     } else {
         check.assert(false, 'Class format must be 1 or 2.');
     }

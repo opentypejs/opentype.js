@@ -87,6 +87,7 @@
         "error",
         "always"
       ],
+      "local-rules/ban-concat": 2,
       "local-rules/ban-foreach": 2,
       "local-rules/import-extensions": 2
     }

@@ -154,7 +154,7 @@ Tokenizer.prototype.inboundIndex = function(index) {
 Tokenizer.prototype.composeRUD = function (RUDs) {
     const silent = true;
     const state = RUDs.map(RUD => (
-        this[RUD[0]].apply(this, RUD.slice(1).concat(silent))
+        this[RUD[0]].apply(this, [...RUD.slice(1), silent])
     ));
     const hasFAILObject = obj => (
         typeof obj === 'object' &&
@@ -181,7 +181,7 @@ Tokenizer.prototype.replaceRange = function (startIndex, offset, tokens, silent)
     const isTokenType = tokens.every(token => token instanceof Token);
     if (!isNaN(startIndex) && this.inboundIndex(startIndex) && isTokenType) {
         const replaced = this.tokens.splice.apply(
-            this.tokens, [startIndex, offset].concat(tokens)
+            this.tokens, [startIndex, offset, ...tokens]
         );
         if (!silent) this.dispatch('replaceToken', [startIndex, offset, tokens]);
         return [replaced, tokens];
@@ -246,8 +246,8 @@ Tokenizer.prototype.insertToken = function (tokens, index, silent) {
     );
     if (tokenType) {
         this.tokens.splice.apply(
-            this.tokens, [index, 0].concat(tokens)
-        );
+            this.tokens, [index, 0, ...tokens]
+        );        
         if (!silent) this.dispatch('insertToken', [tokens, index]);
         return tokens;
     } else {
@@ -420,10 +420,10 @@ Tokenizer.prototype.registerContextChecker = function(contextName, contextStartC
  */
 Tokenizer.prototype.getRangeTokens = function(range) {
     const endIndex = range.startIndex + range.endOffset;
-    return [].concat(
-        this.tokens
-            .slice(range.startIndex, endIndex)
-    );
+    return [
+        ...this.tokens.slice(range.startIndex, endIndex)
+    ];
+      
 };
 
 /**

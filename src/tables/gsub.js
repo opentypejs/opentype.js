@@ -224,8 +224,9 @@ subtableMakers[1] = function makeLookup1(subtable) {
     } else if (subtable.substFormat === 2) {
         return new table.Table('substitutionTable', [
             {name: 'substFormat', type: 'USHORT', value: 2},
-            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
-        ].concat(table.ushortList('substitute', subtable.substitute)));
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+            ...table.ushortList('substitute', subtable.substitute)
+        ]);        
     }
     check.fail('Lookup type 1 substFormat must be 1 or 2.');
 };
@@ -234,84 +235,95 @@ subtableMakers[2] = function makeLookup2(subtable) {
     check.assert(subtable.substFormat === 1, 'Lookup type 2 substFormat must be 1.');
     return new table.Table('substitutionTable', [
         {name: 'substFormat', type: 'USHORT', value: 1},
-        {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
-    ].concat(table.tableList('seqSet', subtable.sequences, function(sequenceSet) {
-        return new table.Table('sequenceSetTable', table.ushortList('sequence', sequenceSet));
-    })));
+        {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+        ...table.tableList('seqSet', subtable.sequences, sequenceSet => 
+            new table.Table('sequenceSetTable', table.ushortList('sequence', sequenceSet))
+        )
+    ]);    
 };
 
 subtableMakers[3] = function makeLookup3(subtable) {
     check.assert(subtable.substFormat === 1, 'Lookup type 3 substFormat must be 1.');
     return new table.Table('substitutionTable', [
         {name: 'substFormat', type: 'USHORT', value: 1},
-        {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
-    ].concat(table.tableList('altSet', subtable.alternateSets, function(alternateSet) {
-        return new table.Table('alternateSetTable', table.ushortList('alternate', alternateSet));
-    })));
+        {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+        ...table.tableList('altSet', subtable.alternateSets, alternateSet => 
+            new table.Table('alternateSetTable', table.ushortList('alternate', alternateSet))
+        )
+    ]);    
 };
 
 subtableMakers[4] = function makeLookup4(subtable) {
     check.assert(subtable.substFormat === 1, 'Lookup type 4 substFormat must be 1.');
     return new table.Table('substitutionTable', [
         {name: 'substFormat', type: 'USHORT', value: 1},
-        {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
-    ].concat(table.tableList('ligSet', subtable.ligatureSets, function(ligatureSet) {
-        return new table.Table('ligatureSetTable', table.tableList('ligature', ligatureSet, function(ligature) {
-            return new table.Table('ligatureTable',
-                [{name: 'ligGlyph', type: 'USHORT', value: ligature.ligGlyph}]
-                    .concat(table.ushortList('component', ligature.components, ligature.components.length + 1))
-            );
-        }));
-    })));
+        {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+        ...table.tableList('ligSet', subtable.ligatureSets, ligatureSet => 
+            new table.Table('ligatureSetTable', table.tableList('ligature', ligatureSet, ligature => 
+                new table.Table('ligatureTable', [
+                    {name: 'ligGlyph', type: 'USHORT', value: ligature.ligGlyph},
+                    ...table.ushortList('component', ligature.components, ligature.components.length + 1)
+                ])
+            ))
+        )
+    ]);    
 };
 
 subtableMakers[5] = function makeLookup5(subtable) {
     if (subtable.substFormat === 1) {
         return new table.Table('contextualSubstitutionTable', [
             {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
-            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
-        ].concat(table.tableList('sequenceRuleSet', subtable.ruleSets, function(sequenceRuleSet) {
-            if (!sequenceRuleSet) {
-                return new table.Table('NULL', null);
-            }
-            return new table.Table('sequenceRuleSetTable', table.tableList('sequenceRule', sequenceRuleSet, function(sequenceRule) {
-                let tableData = table.ushortList('seqLookup', [], sequenceRule.lookupRecords.length)
-                    .concat(table.ushortList('inputSequence', sequenceRule.input, sequenceRule.input.length + 1));
-
-                // swap the first two elements, because inputSequenceCount
-                // ("glyphCount" in the spec) comes before seqLookupCount
-                [tableData[0], tableData[1]] = [tableData[1], tableData[0]];
-
-                for(let i = 0; i < sequenceRule.lookupRecords.length; i++) {
-                    const record = sequenceRule.lookupRecords[i];
-                    tableData = tableData
-                        .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
-                        .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+            ...table.tableList('sequenceRuleSet', subtable.ruleSets, sequenceRuleSet => {
+                if (!sequenceRuleSet) {
+                    return new table.Table('NULL', null);
                 }
-                return new table.Table('sequenceRuleTable', tableData);
-            }));
-        })));
+                return new table.Table('sequenceRuleSetTable', table.tableList('sequenceRule', sequenceRuleSet, sequenceRule => {
+                    let tableData = [
+                        ...table.ushortList('seqLookup', [], sequenceRule.lookupRecords.length),
+                        ...table.ushortList('inputSequence', sequenceRule.input, sequenceRule.input.length + 1)
+                    ];                    
+        
+                    // swap the first two elements, because inputSequenceCount
+                    // ("glyphCount" in the spec) comes before seqLookupCount
+                    [tableData[0], tableData[1]] = [tableData[1], tableData[0]];
+        
+                    for (let i = 0; i < sequenceRule.lookupRecords.length; i++) {
+                        const record = sequenceRule.lookupRecords[i];
+                        tableData.push(
+                            {name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex},
+                            {name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex}
+                        );                        
+                    }
+                    return new table.Table('sequenceRuleTable', tableData);
+                }));
+            })
+        ]);        
     } else if (subtable.substFormat === 2) {
         return new table.Table('contextualSubstitutionTable', [
             {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
             {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
-            {name: 'classDef', type: 'TABLE', value: new table.ClassDef(subtable.classDef)}
-        ].concat(table.tableList('classSeqRuleSet', subtable.classSets, function(classSeqRuleSet) {
-            if (!classSeqRuleSet) {
-                return new table.Table('NULL', null);
-            }
-            return new table.Table('classSeqRuleSetTable', table.tableList('classSeqRule', classSeqRuleSet, function(classSeqRule) {
-                let tableData = table.ushortList('classes', classSeqRule.classes, classSeqRule.classes.length + 1)
-                    .concat(table.ushortList('seqLookupCount', [], classSeqRule.lookupRecords.length));
-                for(let i = 0; i < classSeqRule.lookupRecords.length; i++) {
-                    const record = classSeqRule.lookupRecords[i];
-                    tableData = tableData
-                        .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
-                        .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+            {name: 'classDef', type: 'TABLE', value: new table.ClassDef(subtable.classDef)},
+            ...table.tableList('classSeqRuleSet', subtable.classSets, classSeqRuleSet => {
+                if (!classSeqRuleSet) {
+                    return new table.Table('NULL', null);
                 }
-                return new table.Table('classSeqRuleTable', tableData);
-            }));
-        })));
+                return new table.Table('classSeqRuleSetTable', table.tableList('classSeqRule', classSeqRuleSet, classSeqRule => {
+                    let tableData = [
+                        ...table.ushortList('classes', classSeqRule.classes, classSeqRule.classes.length + 1),
+                        ...table.ushortList('seqLookupCount', [], classSeqRule.lookupRecords.length)
+                    ];
+                    for (let i = 0; i < classSeqRule.lookupRecords.length; i++) {
+                        const record = classSeqRule.lookupRecords[i];
+                        tableData.push(
+                            {name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex},
+                            {name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex}
+                        );
+                    }                    
+                    return new table.Table('classSeqRuleTable', tableData);
+                }));
+            })
+        ]);        
     } else if (subtable.substFormat === 3) {
         let tableData = [
             {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
@@ -326,9 +338,10 @@ subtableMakers[5] = function makeLookup5(subtable) {
 
         for(let i = 0; i < subtable.lookupRecords.length; i++) {
             const record = subtable.lookupRecords[i];
-            tableData = tableData
-                .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
-                .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+            tableData.push(
+                {name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex},
+                {name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex}
+            );            
         }
 
         let returnTable = new table.Table('contextualSubstitutionTable', tableData);
@@ -344,22 +357,26 @@ subtableMakers[6] = function makeLookup6(subtable) {
         let returnTable = new table.Table('chainContextTable', [
             {name: 'substFormat', type: 'USHORT', value: subtable.substFormat},
             {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
-        ].concat(table.tableList('chainRuleSet', subtable.chainRuleSets, function(chainRuleSet) {
-            return new table.Table('chainRuleSetTable', table.tableList('chainRule', chainRuleSet, function(chainRule) {
-                let tableData = table.ushortList('backtrackGlyph', chainRule.backtrack, chainRule.backtrack.length)
-                    .concat(table.ushortList('inputGlyph', chainRule.input, chainRule.input.length + 1))
-                    .concat(table.ushortList('lookaheadGlyph', chainRule.lookahead, chainRule.lookahead.length))
-                    .concat(table.ushortList('substitution', [], chainRule.lookupRecords.length));
-
-                for(let i = 0; i < chainRule.lookupRecords.length; i++) {
+        ]);
+        returnTable.fields.push(...table.tableList('chainRuleSet', subtable.chainRuleSets, chainRuleSet => 
+            new table.Table('chainRuleSetTable', table.tableList('chainRule', chainRuleSet, chainRule => {
+                let tableData = [
+                    ...table.ushortList('backtrackGlyph', chainRule.backtrack, chainRule.backtrack.length),
+                    ...table.ushortList('inputGlyph', chainRule.input, chainRule.input.length + 1),
+                    ...table.ushortList('lookaheadGlyph', chainRule.lookahead, chainRule.lookahead.length),
+                    ...table.ushortList('substitution', [], chainRule.lookupRecords.length)
+                ];                
+        
+                for (let i = 0; i < chainRule.lookupRecords.length; i++) {
                     const record = chainRule.lookupRecords[i];
-                    tableData = tableData
-                        .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
-                        .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+                    tableData.push(
+                        {name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex},
+                        {name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex}
+                    );
                 }
                 return new table.Table('chainRuleTable', tableData);
-            }));
-        })));
+            }))
+        ));        
         return returnTable;
     } else if (subtable.substFormat === 2) {
         check.assert(false, 'lookup type 6 format 2 is not yet supported.');
@@ -389,9 +406,10 @@ subtableMakers[6] = function makeLookup6(subtable) {
         tableData.push({name: 'substitutionCount', type: 'USHORT', value: subtable.lookupRecords.length});
         for(let i = 0; i < subtable.lookupRecords.length; i++) {
             const record = subtable.lookupRecords[i];
-            tableData = tableData
-                .concat({name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex})
-                .concat({name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex});
+            tableData.push(
+                {name: 'sequenceIndex' + i, type: 'USHORT', value: record.sequenceIndex},
+                {name: 'lookupListIndex' + i, type: 'USHORT', value: record.lookupListIndex}
+            );            
         }
 
         let returnTable = new table.Table('chainContextTable', tableData);

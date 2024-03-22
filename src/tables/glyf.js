@@ -290,7 +290,7 @@ function buildPath(glyphs, glyph) {
                     transform.dy = firstPt.y - secondPt.y;
                     transformedPoints = transformPoints(componentGlyph.points, transform);
                 }
-                glyph.points = glyph.points.concat(transformedPoints);
+                glyph.points.push(...transformedPoints);
             }
         }
     }

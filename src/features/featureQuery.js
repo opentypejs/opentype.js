@@ -128,7 +128,7 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
         subtable.lookaheadCoverage, lookaheadParams
     );
     // BACKTRACK LOOKUP //
-    let backtrackContext = [].concat(contextParams.backtrack);
+    let backtrackContext = [...contextParams.backtrack];
     backtrackContext.reverse();
     while (backtrackContext.length && isTashkeelArabicChar(backtrackContext[0].char)) {
         backtrackContext.shift();
@@ -375,7 +375,7 @@ FeatureQuery.prototype.lookupFeature = function (query) {
         `for script '${query.script}'.`
     );
     const lookups = this.getFeatureLookups(feature);
-    const substitutions = [].concat(contextParams.context);
+    const substitutions = [...contextParams.context];
     for (let l = 0; l < lookups.length; l++) {
         const lookupTable = lookups[l];
         const subtables = this.getLookupSubtables(lookupTable);

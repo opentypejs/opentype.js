@@ -161,7 +161,7 @@ Substitution.prototype.getLigatures = function(feature, script, language) {
                 for (let k = 0; k < ligSet.length; k++) {
                     const lig = ligSet[k];
                     ligatures.push({
-                        sub: [startGlyph].concat(lig.components),
+                        sub: [startGlyph, ...lig.components],
                         by: lig.ligGlyph
                     });
                 }
@@ -309,15 +309,19 @@ Substitution.prototype.getFeature = function(feature, script, language) {
     switch (feature) {
         case 'aalt':
         case 'salt':
-            return this.getSingle(feature, script, language)
-                .concat(this.getAlternates(feature, script, language));
+            return [
+                ...this.getSingle(feature, script, language),
+                ...this.getAlternates(feature, script, language)
+            ];
         case 'dlig':
         case 'liga':
         case 'rlig':
             return this.getLigatures(feature, script, language);
         case 'ccmp':
-            return this.getMultiple(feature, script, language)
-                .concat(this.getLigatures(feature, script, language));
+            return [
+                ...this.getMultiple(feature, script, language),
+                ...this.getLigatures(feature, script, language)
+            ];              
         case 'stch':
             return this.getMultiple(feature, script, language);
     }
