@@ -10,6 +10,7 @@ describe('util.js', function() {
 
         it('should return false for unequal objects', function() {
             assert.equal(objectsEqual({}, { foo: 23 }), false);
+            assert.equal(objectsEqual({ foo: 23 }, { bar: 23 }), false);
             assert.equal(objectsEqual({ foo: 23 }, { bar: 42 }), false);
             assert.equal(objectsEqual({ foo: 23, bar: 42 }, { foo: 23 }), false);
         });
