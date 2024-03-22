@@ -33,8 +33,8 @@ function arraysEqual(ar1, ar2) {
 function objectsEqual(obj1, obj2) {
     const val1 = Object.values(obj1);
     const val2 = Object.values(obj2);
-    const keys1 = Object.values(obj1);
-    const keys2 = Object.values(obj2);
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
 
     return arraysEqual(val1, val2) && arraysEqual(keys1, keys2);
 }
