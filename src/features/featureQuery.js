@@ -169,7 +169,7 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
                         const substitution = lookup(glyphIndex);
                         if (substitution) substitutions.push(substitution);
                     }
-                } else if (substitutionType === "21") {
+                } else if (substitutionType === '21') {
                     for (let n = 0; n < inputLookups.length; n++) {
                       const glyphIndex = contextParams.get(n);
                       const substitution = lookup(glyphIndex);
