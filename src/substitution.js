@@ -13,8 +13,14 @@ import { arraysEqual } from './util.js';
  * @constructor
  */
 function Substitution(font) {
-    Layout.call(this, font, 'gsub');
+    Layout.call(this, font, 'gsub', [
+        { featureName: 'rlig',  supportedLookups: [4] },
+        { featureName: 'liga',  supportedLookups: [4] }, 
+        { featureName: 'ccmp',  supportedLookups: [2, 4, 6] }
+    ]);
 }
+
+Substitution.prototype = Layout.prototype;
 
 // Find the first subtable of a lookup table in a particular format.
 function getSubstFormat(lookupTable, format, defaultSubtable) {
