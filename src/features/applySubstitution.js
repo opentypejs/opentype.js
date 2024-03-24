@@ -54,8 +54,8 @@ function ligatureSubstitutionFormat3(action, tokens, index) {
     tokens[index].setState(action.tag, action.substitution);
     const compsCount = action.substitution.length;
     for (let i = 0; i < compsCount; i++) {
-      let token = tokens[index + i + 1];
-      token.setState("deleted", true);
+        let token = tokens[index + i + 1];
+        token.setState('deleted', true);
     }
 }
 

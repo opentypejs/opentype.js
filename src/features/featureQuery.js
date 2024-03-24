@@ -171,10 +171,10 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
                     }
                 } else if (substitutionType === '21') {
                     for (let n = 0; n < inputLookups.length; n++) {
-                      const glyphIndex = contextParams.get(n);
-                      const substitution = lookup(glyphIndex);
-                      if (substitution)
-                        substitutions.concat(substitution);
+                        const glyphIndex = contextParams.get(n);
+                        const substitution = lookup(glyphIndex);
+                        if (substitution)
+                            substitutions.concat(substitution);
                     }
                 } else {
                     throw new Error(`Substitution type ${substitutionType} is not supported in chaining substitution`);
@@ -218,38 +218,38 @@ function ligatureSubstitutionFormat3(contextParams, subtable) {
     let substitutions = [];
 
     for (let i = 0; i < subtable.coverages.length; i++){
-      const lookupRecord = subtable.lookupRecords[i];
-      const coverage = subtable.coverages[i];
+        const lookupRecord = subtable.lookupRecords[i];
+        const coverage = subtable.coverages[i];
 
-      let glyphIndex = contextParams.context[contextParams.index + lookupRecord.sequenceIndex];
-      let ligSetIndex = lookupCoverage(glyphIndex, coverage);
-      if (ligSetIndex === -1){
-        return null;
-      }
-      let lookUp = this.font.tables.gsub.lookups[lookupRecord.lookupListIndex];
-      for (let i = 0; i < lookUp.subtables.length; i++){
-        let subtable = lookUp.subtables[i];
-        let ligSetIndex = lookupCoverage(glyphIndex, subtable.coverage);
-        if (ligSetIndex === -1)
-          return null;
-        switch (lookUp.lookupType) {
-          case 1:{
-            let ligature = subtable.substitute[ligSetIndex];
-            substitutions.push(ligature);
-            break;
-          }
-          case 2:{
-            let ligatureSet = subtable.sequences[ligSetIndex];
-            substitutions.concat(ligatureSet);
-            break;
-          } 
-          default:
-            break;
+        let glyphIndex = contextParams.context[contextParams.index + lookupRecord.sequenceIndex];
+        let ligSetIndex = lookupCoverage(glyphIndex, coverage);
+        if (ligSetIndex === -1){
+            return null;
         }
-      }
+        let lookUp = this.font.tables.gsub.lookups[lookupRecord.lookupListIndex];
+        for (let i = 0; i < lookUp.subtables.length; i++){
+            let subtable = lookUp.subtables[i];
+            let ligSetIndex = lookupCoverage(glyphIndex, subtable.coverage);
+            if (ligSetIndex === -1)
+                return null;
+            switch (lookUp.lookupType) {
+                case 1:{
+                    let ligature = subtable.substitute[ligSetIndex];
+                    substitutions.push(ligature);
+                    break;
+                }
+                case 2:{
+                    let ligatureSet = subtable.sequences[ligSetIndex];
+                    substitutions.concat(ligatureSet);
+                    break;
+                } 
+                default:
+                    break;
+            }
+        }
     }
     return substitutions;
-  }
+}
 
 /**
  * Handle decomposition substitution - format 1
@@ -488,7 +488,7 @@ FeatureQuery.prototype.lookupFeature = function (query) {
                         }));
                     }
                     break;
-                case "53":
+                case '53':
                     substitution = lookup(contextParams);
                     if (Array.isArray(substitution) && substitution.length) {
                         substitutions.splice(currentIndex, 1, new SubstitutionAction({
