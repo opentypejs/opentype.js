@@ -38,6 +38,7 @@ import meta from './tables/meta.mjs';
 import gasp from './tables/gasp.mjs';
 import svg from './tables/svg.mjs';
 import { PaletteManager } from './palettes.mjs';
+import { woff_to_otf } from './woff-to-otf.mjs';
 /**
  * The opentype library.
  * @namespace opentype
@@ -436,7 +437,7 @@ function parseBuffer(buffer, opt={}) {
         font.tables.meta = meta.parse(metaTable.data, metaTable.offset);
         font.metas = font.tables.meta;
     }
-    
+
     font.palettes = new PaletteManager(font);
 
     return font;
@@ -473,5 +474,8 @@ export {
     parse as _parse,
     parseBuffer as parse,
     load,
-    loadSync
+    loadSync,
+    parseWOFFTableEntries,
+    uncompressTable,
+    woff_to_otf
 };
