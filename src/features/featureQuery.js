@@ -173,8 +173,11 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
                     for (let n = 0; n < inputLookups.length; n++) {
                         const glyphIndex = contextParams.get(n);
                         const substitution = lookup(glyphIndex);
-                        if (substitution)
-                            substitutions.concat(substitution);
+                        if (substitution) {
+                            for (const sub of substitution) {
+                                substitutions.push(sub);
+                            }
+                        }
                     }
                 } else {
                     throw new Error(`Substitution type ${substitutionType} is not supported in chaining substitution`);
