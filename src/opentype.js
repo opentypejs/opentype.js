@@ -35,6 +35,7 @@ import os2 from './tables/os2.js';
 import post from './tables/post.js';
 import meta from './tables/meta.js';
 import gasp from './tables/gasp.js';
+import { woff_to_otf } from './woff-to-otf.js';
 /**
  * The opentype library.
  * @namespace opentype
@@ -540,5 +541,8 @@ export {
     parse as _parse,
     parseBuffer as parse,
     load,
-    loadSync
+    loadSync,
+    parseWOFFTableEntries,
+    uncompressTable,
+    woff_to_otf
 };
