@@ -540,7 +540,7 @@ function loadSync(url, opt) {
  * @param  {ArrayBuffer}
  * @return {ArrayBuffer}
  */
-function woff_to_otf(buffer) {
+function woffToOTF(buffer) {
     if (buffer.constructor !== ArrayBuffer)
         buffer = new Uint8Array(buffer).buffer;
     const data = new DataView(buffer, 0)
@@ -624,5 +624,5 @@ export {
     parseBuffer as parse,
     load,
     loadSync,
-    woff_to_otf
+    woffToOTF
 };
