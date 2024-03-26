@@ -4,7 +4,7 @@
 const process = require('process')
   , fs = require('fs')
   , path = require('path')
-  , { load, woff_to_otf } = require('../dist/opentype.js')
+  , { load, woffToOTF } = require('../dist/opentype.js')
   ;
 
 // Print out information about the font on the console.
@@ -97,7 +97,7 @@ if (process.argv.length < 3) {
                 ? process.argv[4]
                 : `${path.join(path.dirname(fontpath), path.basename(fontpath, path.extname(fontpath)))}.otf`
           , buffer = fs.readFileSync(fontpath)
-          , result = woff_to_otf(buffer)
+          , result = woffToOTF(buffer)
           ;
         fs.writeFileSync(targetPath, new DataView(result));
     } else {
