@@ -25,7 +25,6 @@ function woff_to_otf(buffer) {
     if (signature !== 'wOFF')
         throw new Error(`TYPE ERROR signature must be wOFF but is: "${signature}"`);
 
-    // need flavour??? -> opentype header syff!
     const flavor = parse.getTag(data, 4)
         , numTables = parse.getUShort(data, 12)
         , tableEntries = parseWOFFTableEntries(data, numTables)
@@ -48,28 +47,7 @@ function woff_to_otf(buffer) {
         , ...encode.USHORT(entrySelector)
         , ...encode.USHORT(rangeShift)
     );
-    let offset = out.length;
-    for (let i=0; i<numTables; i++) {
-        // This is done in parseWOFFTableEntries already, minus the checksum:
-        // tableEntries.push({tag: tag, offset: offset, compression: compression,
-        //   compressedLength: compLength, length: origLength});
-        // Hence, we just amend the checksum.
-        // Maybe, checksum could be added in parseWOFFTableEntries
-
-        // let p = 44; // offset to the first table directory entry.
-        const pointerBase = 44 + i * 20;
-        // tableDirectoryEntries.push({
-        //     tag: parse.getTag(data, pointerBase)
-        //   , offset: parse.getULong(data, pointerBase + 4)
-        //   , compLength: parse.getULong(data, pointerBase + 8)
-        //   , origLength: parse.getULong(data, pointerBase + 12)
-        //   , origChecksum: parse.getULong(data, pointerBase + 16)
-        // });
-        // p += 20;
-        tableEntries[i].checksum = parse.getULong(data, pointerBase + 16);
-        offset += 4 * 4;
-    }
-    // offset += numTables * 16;
+    let offset = out.length + numTables * 16;
 
     for (let i=0; i<numTables; i++) {
         const tableEntry = tableEntries[i];
