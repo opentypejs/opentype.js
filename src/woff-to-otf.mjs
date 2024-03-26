@@ -32,7 +32,7 @@ function woff_to_otf(buffer) {
     for (let n = 0; n < 64; n++) {
         if (Math.pow(2, n) > numTables)
             break;
-        max.splice(0, Infinity, n, Math.pow(2, n));
+        max.splice(0, Infinity, n, 2 ** n);
     }
     const searchRange = max[1] * 16
         , entrySelector = max[0]
@@ -65,9 +65,9 @@ function woff_to_otf(buffer) {
         // });
         // p += 20;
         tableEntries[i].checksum = parse.getULong(data, pointerBase + 16);
-        // offset += 4 * 4;
+        offset += 4 * 4;
     }
-    offset += numTables * 16;
+    // offset += numTables * 16;
 
     for (let i=0; i<numTables; i++) {
         const tableEntry = tableEntries[i];
@@ -82,20 +82,18 @@ function woff_to_otf(buffer) {
         if ((offset % 4) !== 0)
             offset += 4 - (offset % 4);
     }
-    const buffers = []
-        , initialData = new Uint8Array(out.length)
-        ;
-    for (let i=0,l=out.length; i<l; i++)
-        initialData[i] = out[i];
-    buffers.push(initialData);
-
+    // const initialData = new Uint8Array(out.length)
+    //   , buffers = [initialData]
+    //   ;
+    // for (let i=0,l=out.length; i<l; i++)
+    //     initialData[i] = out[i];
 
     for (let i=0; i<numTables; i++) {
         const tableEntry = tableEntries[i]
             , table = uncompressTable(data, tableEntry) // => {data: view, offset: 0};
             // FIXME: we should rather just append the bytes to a new buffer
             // no need to parse into an array ...
-            //  , p = new parse.Parser(table.data, table.offset)
+            , p = new parse.Parser(table.data, table.offset)
             ;
 
 
@@ -104,26 +102,26 @@ function woff_to_otf(buffer) {
             ? 4 - (offset % 4)
             : 0
             ;
-        // out.push(
-        //     ...p.parseByteList(tableEntry.length)
-        //   , ...Array(padding).fill(0) //  new ArrayBuffer(padding)
-        // );
-        buffers.push(
-            new DataView(table.data.buffer, table.offset, tableEntry.length)
-            , new ArrayBuffer(padding)
+            // buffers.push(
+            //     new DataView(table.data.buffer, table.offset, tableEntry.length)
+            //   , new ArrayBuffer(padding)
+            // );
+        out.push(
+            ...p.parseByteList(tableEntry.length)
+            , ...Array(padding).fill(0) //  new ArrayBuffer(padding)
         );
     }
 
-    const result = new Uint8Array(buffers.reduce((accum, buffer)=>accum+buffer.byteLength, 0));
-    buffers.reduce((offset, buffer)=>{
-        result.set(buffer, offset);
-        return offset + buffer.byteLength;
-    }, 0);
-    return result.buffer;
-    //const outArray = new Uint8Array(out.length);
-    //for (let i=0,l=out.length; i<l; i++)
-    //    outArray[i] = out[i];
-    //return outArray.buffer;
+    // const result = new Uint8Array(buffers.reduce((accum, buffer)=>accum+buffer.byteLength, 0));
+    // buffers.reduce((offset, buffer)=>{
+    //     result.set(buffer, offset)
+    //     return offset + buffer.byteLength
+    // }, 0)
+    // return result.buffer;
+    const outArray = new Uint8Array(out.length);
+    for (let i=0,l=out.length; i<l; i++)
+        outArray[i] = out[i];
+    return outArray.buffer;
 }
 
 export {
