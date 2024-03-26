@@ -165,6 +165,7 @@ function parseWOFFTableEntries(data, numTables) {
         const offset = parse.getULong(data, p + 4);
         const compLength = parse.getULong(data, p + 8);
         const origLength = parse.getULong(data, p + 12);
+        const checksum = parse.getULong(data, p + 16);
         let compression;
         if (compLength < origLength) {
             compression = 'WOFF';
@@ -173,7 +174,7 @@ function parseWOFFTableEntries(data, numTables) {
         }
 
         tableEntries.push({tag: tag, offset: offset, compression: compression,
-            compressedLength: compLength, length: origLength});
+            compressedLength: compLength, length: origLength, checksum: checksum});
         p += 20;
     }
 
