@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /* eslint no-console: off */
 
-import fs from 'fs';
-import path from 'path';
-import { load } from '../src/opentype';
+const process = require('process')
+  , fs = require('fs')
+  , path = require('path')
+  , { load, woff_to_otf } = require('../dist/opentype.js')
+  ;
 
 // Print out information about the font on the console.
 function printFontInfo(font) {
@@ -30,11 +32,13 @@ function walk(dir, fn) {
 
 // Print out usage information.
 function printUsage() {
-    console.log('Usage: ot command [dir|file]');
+    console.log('Usage: ot <command> [...args]');
     console.log();
     console.log('Commands:');
     console.log();
-    console.log('  info    Get information of specified font or fonts in the specified directory.');
+    console.log('  info [dir|file]    Get information of specified font or fonts in the specified directory.');
+    console.log();
+    console.log('  woff_2_otf <woff_font_file> [otf_font_file]    Uncompress woff file into otf.');
     console.log();
 }
 
@@ -65,7 +69,7 @@ if (process.argv.length < 3) {
 } else {
     var command = process.argv[2];
     if (command === 'info') {
-        var fontpath = process.argv.length === 3 ? '.' : process.argv[3];
+        var fontpath = process.argv.length === 4 ? '.' : process.argv[3];
         if (fs.existsSync(fontpath)) {
             var ext = path.extname(fontpath).toLowerCase();
             if (fs.statSync(fontpath).isDirectory()) {
@@ -78,6 +82,24 @@ if (process.argv.length < 3) {
         } else {
             console.log('Path not found');
         }
+    }
+    else if (command === 'woff_2_otf') {
+        if(process.argv.length < 4 ){
+            printUsage();
+            process.exit(1);
+        }
+        const fontpath = process.argv[3];
+        if (!fs.existsSync(fontpath)) {
+            console.log(`Font file at path not found.`);
+            process.exit(1);
+        }
+        const targetPath = process.argv.length >= 5
+                ? process.argv[4]
+                : `${path.join(path.dirname(fontpath), path.basename(fontpath, path.extname(fontpath)))}.otf`
+          , buffer = fs.readFileSync(fontpath)
+          , result = woff_to_otf(buffer)
+          ;
+        fs.writeFileSync(targetPath, new DataView(result));
     } else {
         printUsage();
     }
