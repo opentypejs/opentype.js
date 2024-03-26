@@ -107,10 +107,11 @@ function woff_to_otf(buffer) {
             //   , new ArrayBuffer(padding)
             // );
         out.push(
-            ...p.parseByteList(tableEntry.length)
-            , ...Array(padding).fill(0) //  new ArrayBuffer(padding)
+            p.parseByteList(tableEntry.length)
+            , Array(padding).fill(0) //  new ArrayBuffer(padding)
         );
     }
+    const outFlat = out.flat();
 
     // const result = new Uint8Array(buffers.reduce((accum, buffer)=>accum+buffer.byteLength, 0));
     // buffers.reduce((offset, buffer)=>{
@@ -118,9 +119,9 @@ function woff_to_otf(buffer) {
     //     return offset + buffer.byteLength
     // }, 0)
     // return result.buffer;
-    const outArray = new Uint8Array(out.length);
-    for (let i=0,l=out.length; i<l; i++)
-        outArray[i] = out[i];
+    const outArray = new Uint8Array(outFlat.length);
+    for (let i=0,l=outFlat.length; i<l; i++)
+        outArray[i] = outFlat[i];
     return outArray.buffer;
 }
 
