@@ -30,6 +30,15 @@ function chainingSubstitutionFormat3(action, tokens, index) {
     for(let i = 0; i < action.substitution.length; i++) {
         const subst = action.substitution[i];
         const token = tokens[index + i];
+        if (Array.isArray(subst)) {
+            if (subst.length){
+                // TODO: replace one glyph with multiple glyphs
+                token.setState(action.tag, subst[0]);
+            } else {
+                token.setState('deleted', true);
+            }
+            continue;
+        }
         token.setState(action.tag, subst);
     }
 }
@@ -50,14 +59,6 @@ function ligatureSubstitutionFormat1(action, tokens, index) {
     }
 }
 
-function ligatureSubstitutionFormat3(action, tokens, index) {
-    tokens[index].setState(action.tag, action.substitution);
-    const compsCount = action.substitution.length;
-    for (let i = 0; i < compsCount; i++) {
-        let token = tokens[index + i + 1];
-        token.setState('deleted', true);
-    }
-}
 
 /**
  * Supported substitutions
@@ -67,7 +68,7 @@ const SUBSTITUTIONS = {
     12: singleSubstitutionFormat2,
     63: chainingSubstitutionFormat3,
     41: ligatureSubstitutionFormat1,
-    53: ligatureSubstitutionFormat3
+    53: chainingSubstitutionFormat3
 };
 
 /**

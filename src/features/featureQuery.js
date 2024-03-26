@@ -173,11 +173,8 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
                     for (let n = 0; n < inputLookups.length; n++) {
                         const glyphIndex = contextParams.get(n);
                         const substitution = lookup(glyphIndex);
-                        if (substitution) {
-                            for (const sub of substitution) {
-                                substitutions.push(sub);
-                            }
-                        }
+                        if (substitution)
+                            substitutions.concat(substitution);
                     }
                 } else {
                     throw new Error(`Substitution type ${substitutionType} is not supported in chaining substitution`);
@@ -243,7 +240,7 @@ function ligatureSubstitutionFormat3(contextParams, subtable) {
                 }
                 case 2:{
                     let ligatureSet = subtable.sequences[ligSetIndex];
-                    substitutions.concat(ligatureSet);
+                    substitutions.push(ligatureSet);
                     break;
                 } 
                 default:
@@ -497,7 +494,7 @@ FeatureQuery.prototype.lookupFeature = function (query) {
                         substitutions.splice(currentIndex, 1, new SubstitutionAction({
                             id: 53,
                             tag: query.tag,
-                            substitution
+                            substitution: substitution,
                         }));
                     }
                     break;
