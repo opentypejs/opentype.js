@@ -10,8 +10,10 @@ import {  // eslint-disable-line
 import parse from './parse.mjs';
 import { encode } from './types.mjs';
 
-// I looked at https://github.com/mondeja/woff2otf/blob/master/src/woff2otf.js
-// but I'm using opentype.js infrastructure.
+// I looked at
+//   https://github.com/hanikesn/woff2otf
+//   and https://github.com/mondeja/woff2otf
+// but I'm doing it using opentype.js infrastructure.
 function woff_to_otf(buffer) {
     if (buffer.constructor !== ArrayBuffer)
         buffer = new Uint8Array(buffer).buffer;
@@ -82,47 +84,31 @@ function woff_to_otf(buffer) {
         if ((offset % 4) !== 0)
             offset += 4 - (offset % 4);
     }
-    // const initialData = new Uint8Array(out.length)
-    //   , buffers = [initialData]
-    //   ;
-    // for (let i=0,l=out.length; i<l; i++)
-    //     initialData[i] = out[i];
+    const initialData = new Uint8Array(out.length)
+        , buffers = [initialData]
+        ;
+    for (let i=0,l=out.length; i<l; i++)
+        initialData[i] = out[i];
 
     for (let i=0; i<numTables; i++) {
         const tableEntry = tableEntries[i]
             , table = uncompressTable(data, tableEntry) // => {data: view, offset: 0};
-            // FIXME: we should rather just append the bytes to a new buffer
-            // no need to parse into an array ...
-            , p = new parse.Parser(table.data, table.offset)
+            , offset = tableEntry.outOffset + tableEntry.length
+            , padding = (offset % 4) !== 0
+                ? 4 - (offset % 4)
+                : 0
             ;
-
-
-        offset = tableEntry.outOffset + tableEntry.length;
-        const padding = (offset % 4) !== 0
-            ? 4 - (offset % 4)
-            : 0
-            ;
-            // buffers.push(
-            //     new DataView(table.data.buffer, table.offset, tableEntry.length)
-            //   , new ArrayBuffer(padding)
-            // );
-        out.push(
-            p.parseByteList(tableEntry.length)
-            , Array(padding).fill(0) //  new ArrayBuffer(padding)
+        buffers.push(
+            new Uint8Array(table.data.buffer, table.offset, tableEntry.length)
+            , new Uint8Array(padding)
         );
     }
-    const outFlat = out.flat();
-
-    // const result = new Uint8Array(buffers.reduce((accum, buffer)=>accum+buffer.byteLength, 0));
-    // buffers.reduce((offset, buffer)=>{
-    //     result.set(buffer, offset)
-    //     return offset + buffer.byteLength
-    // }, 0)
-    // return result.buffer;
-    const outArray = new Uint8Array(outFlat.length);
-    for (let i=0,l=outFlat.length; i<l; i++)
-        outArray[i] = outFlat[i];
-    return outArray.buffer;
+    const result = new Uint8Array(buffers.reduce((accum, buffer)=>accum+buffer.byteLength, 0));
+    buffers.reduce((offset, buffer)=>{
+        result.set(buffer, offset);
+        return offset + buffer.byteLength;
+    }, 0);
+    return result.buffer;
 }
 
 export {
