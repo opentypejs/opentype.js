@@ -169,13 +169,6 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
                         const substitution = lookup(glyphIndex);
                         if (substitution) substitutions.push(substitution);
                     }
-                } else if (substitutionType === '21') {
-                    for (let n = 0; n < inputLookups.length; n++) {
-                        const glyphIndex = contextParams.get(n);
-                        const substitution = lookup(glyphIndex);
-                        if (substitution)
-                            substitutions.concat(substitution);
-                    }
                 } else {
                     throw new Error(`Substitution type ${substitutionType} is not supported in chaining substitution`);
                 }
