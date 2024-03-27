@@ -319,7 +319,7 @@ Glyph.prototype.draw = function(ctx, x, y, fontSize, options, font) {
  * @param  {opentype.Font} font - used to get the default render options, may be needed for variable fonts in the future
  */
 Glyph.prototype.drawPoints = function(ctx, x, y, fontSize, options, font) {
-    options = Object.assign({}, font.defaultRenderOptions, options);
+    options = Object.assign({}, font && font.defaultRenderOptions, options);
     if ( options.drawLayers ) {
         const layers = this.path.layers;
         if ( layers && layers.length ) {
