@@ -76,6 +76,9 @@
 
         <h3 class="collapsed">Kerning <a href="https://www.microsoft.com/typography/otspec/kern.htm" target="_blank">kern</a></h3>
         <dl id="kern-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">CPAL color palettes</h3>
+        <dl id="cpal-table"><dt>Undefined</dt></dl>
     </div>
 
     <hr>
@@ -229,6 +232,26 @@ function displayFontData(font) {
         var element = document.getElementById("kern-table");
         if (element) {
             element.innerHTML = '<dt>' + Object.keys(font.kerningPairs).length + ' Pairs</dt><dd>' + JSON.stringify(font.kerningPairs) + '</dd>';
+        }
+    }
+
+    if(font.tables.cpal) {
+        let markup = ' ';
+        const cpal = document.getElementById("cpal-table");
+        const dt = cpal.querySelector('dt');
+        if ( dt ) {
+            const palettes = font.palettes.getAll('hexa');
+            if ( palettes.length ) {
+                palettes.forEach((palette, idx) => {
+                    markup += `<dt><strong>↪ Palette ${idx}</strong></dt><dd><div class="color-swatches">`;
+                        palette.forEach(color => {
+                            markup += `<span class="color-swatch" style="background:${color}" title="${color}"></span>`;
+                        });
+                    markup += `</div></dd>`;
+                });
+                cpal.innerHTML += markup;
+
+            }
         }
     }
 }
