@@ -3,6 +3,7 @@
 import check from './check.js';
 import draw from './draw.js';
 import Path from './path.js';
+import { getPaletteColor, formatColor } from './tables/cpal.js';
 // import glyf from './tables/glyf' Can't be imported here, because it's a circular dependency
 
 function getPathDefinition(glyph, path) {
@@ -133,7 +134,7 @@ Glyph.prototype.getBoundingBox = function() {
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
  * @param  {Object=} options - xScale, yScale to stretch the glyph.
- * @param  {opentype.Font} if hinting is to be used, the font
+ * @param  {opentype.Font} font if hinting is to be used, or CPAL/COLR needs to be rendered, the font
  * @return {opentype.Path}
  */
 Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
@@ -169,7 +170,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     }
 
     const p = new Path();
-    p.fill = this.path.fill;
+    p.fill = options.fill || this.path.fill;
     p.stroke = this.path.stroke;
     p.strokeWidth = this.path.strokeWidth * scale;
     for (let i = 0; i < commands.length; i += 1) {
@@ -187,6 +188,22 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
                 x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'Z') {
             p.closePath();
+        }
+    }
+
+    const layers = this.path.layers;
+    if ( layers && layers.length ) {
+        for ( let i = 0; i < layers.length; i += 1 ) {
+            const layer = layers[i];
+            let color = getPaletteColor(font, layer.paletteIndex, options.usePalette);
+            
+            if ( color === 'currentColor' ) {
+                color = options.fill || 'black'; 
+            } else {
+                color = formatColor(color, options.colorFormat || 'rgba');
+            }
+            options = Object.assign({}, options, {fill: color});
+            p.layers.push(this.getPath.call(layer.glyph, x, y, fontSize, options, font));
         }
     }
 
@@ -280,9 +297,14 @@ Glyph.prototype.getMetrics = function() {
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
  * @param  {Object=} options - xScale, yScale to stretch the glyph.
+ * @param  {opentype.Font} font - xScale, yScale to stretch the glyph.
  */
-Glyph.prototype.draw = function(ctx, x, y, fontSize, options) {
-    this.getPath(x, y, fontSize, options).draw(ctx);
+Glyph.prototype.draw = function(ctx, x, y, fontSize, options, font) {
+    if ( this.font ) {
+        throw new Error('this.font is defined');
+    }
+    const path = this.getPath(x, y, fontSize, options, font || this.font);
+    path.draw(ctx);
 };
 
 /**
@@ -332,6 +354,13 @@ Glyph.prototype.drawPoints = function(ctx, x, y, fontSize) {
     drawCircles(blueCircles, x, y, scale);
     ctx.fillStyle = 'red';
     drawCircles(redCircles, x, y, scale);
+
+    const layers = this.path.layers;
+    if ( layers && layers.length ) {
+        for ( let l = 0; l < layers.length; l += 1 ) {
+            this.drawPoints.call(layers[l].glyph, ctx, x, y, fontSize);
+        }
+    }
 };
 
 /**

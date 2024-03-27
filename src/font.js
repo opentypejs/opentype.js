@@ -6,6 +6,7 @@ import { DefaultEncoding } from './encoding.js';
 import glyphset from './glyphset.js';
 import Position from './position.js';
 import Substitution from './substitution.js';
+import { PaletteManager } from './palettes.js';
 import { isBrowser, checkArgument } from './util.js';
 import HintingTrueType from './hintingtt.js';
 import Bidi from './bidi.js';
@@ -138,6 +139,7 @@ function Font(options) {
     this.position = new Position(this);
     this.substitution = new Substitution(this);
     this.tables = this.tables || {};
+    this.palettes = new PaletteManager(this);
 
     // needed for low memory mode only.
     this._push = null;
@@ -326,6 +328,8 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
  * @property {boolean} [kerning=true] - whether to include kerning values
  * @property {object} [features] - OpenType Layout feature tags. Used to enable or disable the features of the given script/language system.
  *                                 See https://www.microsoft.com/typography/otspec/featuretags.htm
+ * @property {boolean} [hinting=false] - whether to apply font hinting to the outlines
+ * @property {integer} [usePalette=0] For COLR/CPAL fonts, the zero-based index of the color palette to use. (Use `Font.palettes.get()` to get the available palettes)
  */
 Font.prototype.defaultRenderOptions = {
     kerning: true,
@@ -406,6 +410,13 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         const glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
         fullPath.extend(glyphPath);
+        const layers = glyphPath.layers;
+        if ( layers && layers.length ) {
+            for(let l = 0; l < layers.length; l++) {
+                const layer = layers[l];
+                fullPath.layers.push(layer);
+            }
+        }
     });
     return fullPath;
 };
@@ -458,7 +469,8 @@ Font.prototype.getAdvanceWidth = function(text, fontSize, options) {
  * @param  {GlyphRenderOptions=} options
  */
 Font.prototype.draw = function(ctx, text, x, y, fontSize, options) {
-    this.getPath(text, x, y, fontSize, options).draw(ctx);
+    const path = this.getPath(text, x, y, fontSize, options);
+    path.draw(ctx);
 };
 
 /**

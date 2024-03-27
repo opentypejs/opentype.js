@@ -1,9 +1,12 @@
 import assert  from 'assert';
 import { parse, Glyph, Path } from '../src/opentype.js';
 import { readFileSync } from 'fs';
+import util from './testutil.js';
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('glyph.js', function() {
+    const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0.ttf');
+
     describe('lazy loading', function() {
         let font;
         let glyph;
@@ -31,6 +34,12 @@ describe('glyph.js', function() {
 
         it('lazily loads numberOfContours', function() {
             assert.equal(glyph.numberOfContours, 2);
+        });
+
+        it('lazily loads COLR layers on paths', function() {
+            const layers = emojiFont.glyphs.get(138).path.layers;
+            assert.equal(Array.isArray(layers), true);
+            assert.equal(layers.length, 4);
         });
     });
 
@@ -145,6 +154,30 @@ describe('glyph.js', function() {
             assert.deepEqual(glyph.toPathData(), 'M91 284L440 284L440 342L91 342ZM236 487L236 138L294 138L294 487Z');
         });
     });
+
+    describe('drawing', function() {
+        it('draws layers', function() {
+            let contextLogs = [];
+            const ctx = util.createMockObject(contextLogs, undefined, { consoleLog: 'ctx' });
+            emojiFont.glyphs.get(138).draw(ctx, 0, 0, 12, {}, emojiFont);
+            const expectedProps = [
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
+                'beginPath', 'moveTo', 'lineTo', 'quadraticCurveTo', 'lineTo', 'lineTo', 'quadraticCurveTo',
+                'lineTo', 'lineTo', 'quadraticCurveTo', 'lineTo', 'lineTo', 'quadraticCurveTo', 'lineTo',
+                'closePath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
+
+            ];
+            assert.deepEqual(contextLogs.map(log => log.property), expectedProps);
+            assert.deepEqual(contextLogs[5], { property: 'fillStyle', value: 'black' });
+            assert.deepEqual(contextLogs[14], { property: 'fillStyle', value: 'rgba(241, 179, 28, 1)' });
+            assert.deepEqual(contextLogs[23], { property: 'fillStyle', value: 'rgba(210, 47, 39, 1)' });
+            assert.deepEqual(contextLogs[32], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
+            assert.deepEqual(contextLogs[55], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
+        });
+    });
 });
 
 describe('glyph.js on low memory mode', function() {
@@ -177,6 +210,13 @@ describe('glyph.js on low memory mode', function() {
 
         it('lazily loads numberOfContours', function() {
             assert.equal(glyph.numberOfContours, 2);
+        });
+
+        it('lazily loads COLR layers on paths', function() {
+            const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0.ttf', opt);
+            const layers = emojiFont.glyphs.get(138).path.layers;
+            assert.equal(Array.isArray(layers), true);
+            assert.equal(layers.length, 4);
         });
     });
 

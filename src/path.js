@@ -14,6 +14,7 @@ function Path() {
     this.fill = 'black';
     this.stroke = null;
     this.strokeWidth = 1;
+    this.layers = [];
 }
 
 const decimalRoundingCache = {};
@@ -528,6 +529,13 @@ Path.prototype.draw = function(ctx) {
         ctx.strokeStyle = this.stroke;
         ctx.lineWidth = this.strokeWidth;
         ctx.stroke();
+    }
+
+    const layers = this.layers;
+    if ( layers && layers.length ) {
+        for ( let l = 0; l < layers.length; l++ ) {
+            this.draw.call(layers[l], ctx);
+        }
     }
 };
 

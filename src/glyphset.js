@@ -103,6 +103,56 @@ GlyphSet.prototype.push = function(index, loader) {
     this.length++;
 };
 
+function layerLoader(font, index) {
+    const layers = [];
+    const colr = font.tables.colr;
+    if ( ! colr ) {
+        return layers;
+    }
+
+    const baseGlyph = colr.baseGlyphRecords.find((record) => {
+        return record.glyphID === index;
+    });
+
+    
+    if ( ! baseGlyph ) {
+        return layers;
+    }
+    
+    const firstIndex = baseGlyph.firstLayerIndex;
+    const numLayers = baseGlyph.numLayers;
+
+    for( let l = 0; l < numLayers; l++ ) {
+        const layer = colr.layerRecords[firstIndex + l];
+        layers.push({
+            glyph: font.glyphs.get(layer.glyphID),
+            paletteIndex: layer.paletteIndex,
+        });
+    }
+
+    return layers;
+}
+
+function defineLayerLoader(path, font, index) {
+    path._layers = function () {
+        return layerLoader(font, index);
+    };
+
+    Object.defineProperty(path, 'layers', {
+        get: function() {
+            if ( typeof path._layers === 'function' ) {
+                path._layers = path._layers();
+            }
+            return path._layers;
+        },
+        set: function(newValue) {
+            path._layers = newValue;
+        },
+        enumerable: true,
+        configurable: true
+    });
+}
+
 /**
  * @alias opentype.glyphLoader
  * @param  {opentype.Font} font
@@ -141,6 +191,8 @@ function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
         defineDependentProperty(glyph, 'xMax', '_xMax');
         defineDependentProperty(glyph, 'yMin', '_yMin');
         defineDependentProperty(glyph, 'yMax', '_yMax');
+        
+        defineLayerLoader(glyph.path, font, index);
 
         return glyph;
     };
@@ -162,6 +214,8 @@ function cffGlyphLoader(font, index, parseCFFCharstring, charstring, version) {
             path.unitsPerEm = font.unitsPerEm;
             return path;
         };
+
+        defineLayerLoader(glyph.path, font, index);
 
         return glyph;
     };
