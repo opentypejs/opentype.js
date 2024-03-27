@@ -200,6 +200,9 @@ function displayNames(names) {
 function displayFontData(font) {
     var html, tablename, table, property, value;
 
+    // reset all lists first
+    document.querySelectorAll('#font-data dl').forEach( dl => dl.innerHTML = '<dt>Undefined</dt>' );
+
     for (tablename in font.tables) {
         table = font.tables[tablename];
         if (tablename == 'name') {
