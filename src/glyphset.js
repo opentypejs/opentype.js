@@ -106,7 +106,11 @@ GlyphSet.prototype.push = function(index, loader) {
 function layerLoader(font, index) {
     const layers = [];
     const colr = font.tables.colr;
-    if ( ! colr ) {
+    const cpal = font.tables.cpal;
+    /** ignore colr table if no cpal table is present
+     * @see https://learn.microsoft.com/en-us/typography/opentype/spec/colr#:~:text=If%20the%20COLR%20table%20is%20present%20in%20a%20font%20but%20no%20CPAL%20table%20exists,%20then%20the%20COLR%20table%20is%20ignored.
+     */
+    if ( ! colr || ! cpal ) {
         return layers;
     }
 
