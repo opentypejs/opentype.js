@@ -9,6 +9,8 @@ import arabicWordCheck from './features/arab/contextCheck/arabicWord.js';
 import arabicSentenceCheck from './features/arab/contextCheck/arabicSentence.js';
 import arabicPresentationForms from './features/arab/arabicPresentationForms.js';
 import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures.js';
+import ccmpReplacementCheck from './features/ccmp/contextCheck/ccmpReplacement.js';
+import ccmpReplacement from './features/ccmp/ccmpReplacementLigatures.js';
 import latinWordCheck from './features/latn/contextCheck/latinWord.js';
 import latinLigature from './features/latn/latinLigatures.js';
 import thaiWordCheck from './features/thai/contextCheck/thaiWord.js';
@@ -42,6 +44,7 @@ Bidi.prototype.setText = function (text) {
  * arabic sentence check for adjusting arabic layout
  */
 Bidi.prototype.contextChecks = ({
+    ccmpReplacementCheck,
     latinWordCheck,
     arabicWordCheck,
     arabicSentenceCheck,
@@ -64,6 +67,7 @@ function registerContextChecker(checkId) {
  * tokenize text input
  */
 function tokenizeText() {
+    registerContextChecker.call(this, 'ccmpReplacement');
     registerContextChecker.call(this, 'latinWord');
     registerContextChecker.call(this, 'arabicWord');
     registerContextChecker.call(this, 'arabicSentence');
@@ -161,6 +165,18 @@ function applyArabicPresentationForms() {
 }
 
 /**
+ * Apply ccmp replacement
+ */
+function applyCcmpReplacement() {
+    checkGlyphIndexStatus.call(this);
+    const ranges = this.tokenizer.getContextRanges('ccmpReplacement');
+    for(let i = 0; i < ranges.length; i++) {
+        const range = ranges[i];
+        ccmpReplacement.call(this, range);
+    }
+}
+
+/**
  * Apply required arabic ligatures
  */
 function applyArabicRequireLigatures() {
@@ -223,6 +239,9 @@ Bidi.prototype.checkContextReady = function (contextId) {
  * https://learn.microsoft.com/en-us/typography/opentype/spec/features_ae#tag-ccmp
  */
 Bidi.prototype.applyFeaturesToContexts = function () {
+    if (this.checkContextReady('ccmpReplacement')) {
+        applyCcmpReplacement.call(this);
+    }
     if (this.checkContextReady('arabicWord')) {
         applyArabicPresentationForms.call(this);
         applyArabicRequireLigatures.call(this);

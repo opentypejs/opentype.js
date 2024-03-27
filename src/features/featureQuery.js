@@ -204,6 +204,47 @@ function ligatureSubstitutionFormat1(contextParams, subtable) {
 }
 
 /**
+ * Handle ligature substitution - format 3
+ * @param {ContextParams} contextParams context params to lookup
+ */
+function ligatureSubstitutionFormat3(contextParams, subtable) {
+    let substitutions = [];
+
+    for (let i = 0; i < subtable.coverages.length; i++){
+        const lookupRecord = subtable.lookupRecords[i];
+        const coverage = subtable.coverages[i];
+
+        let glyphIndex = contextParams.context[contextParams.index + lookupRecord.sequenceIndex];
+        let ligSetIndex = lookupCoverage(glyphIndex, coverage);
+        if (ligSetIndex === -1){
+            return null;
+        }
+        let lookUp = this.font.tables.gsub.lookups[lookupRecord.lookupListIndex];
+        for (let i = 0; i < lookUp.subtables.length; i++){
+            let subtable = lookUp.subtables[i];
+            let ligSetIndex = lookupCoverage(glyphIndex, subtable.coverage);
+            if (ligSetIndex === -1)
+                return null;
+            switch (lookUp.lookupType) {
+                case 1:{
+                    let ligature = subtable.substitute[ligSetIndex];
+                    substitutions.push(ligature);
+                    break;
+                }
+                case 2:{
+                    let ligatureSet = subtable.sequences[ligSetIndex];
+                    substitutions.push(ligatureSet);
+                    break;
+                } 
+                default:
+                    break;
+            }
+        }
+    }
+    return substitutions;
+}
+
+/**
  * Handle decomposition substitution - format 1
  * @param {number} glyphIndex glyph index
  * @param {any} subtable subtable
@@ -327,8 +368,13 @@ FeatureQuery.prototype.getLookupMethod = function(lookupTable, subtable) {
             return glyphIndex => decompositionSubstitutionFormat1.apply(
                 this, [glyphIndex, subtable]
             );
+        case '53':
+            return contextParams => ligatureSubstitutionFormat3.apply(
+                this, [contextParams, subtable]
+            );
         default:
             throw new Error(
+                `substitutionType : ${substitutionType} ` +
                 `lookupType: ${lookupTable.lookupType} - ` +
                 `substFormat: ${subtable.substFormat} ` +
                 'is not yet supported'
@@ -432,6 +478,16 @@ FeatureQuery.prototype.lookupFeature = function (query) {
                     if (substitution) {
                         substitutions.splice(currentIndex, 1, new SubstitutionAction({
                             id: 21, tag: query.tag, substitution
+                        }));
+                    }
+                    break;
+                case '53':
+                    substitution = lookup(contextParams);
+                    if (Array.isArray(substitution) && substitution.length) {
+                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
+                            id: 53,
+                            tag: query.tag,
+                            substitution: substitution,
                         }));
                     }
                     break;
