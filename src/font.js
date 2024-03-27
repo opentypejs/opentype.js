@@ -409,14 +409,15 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
     }
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         const glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
-        fullPath.extend(glyphPath);
         const layers = glyphPath.layers;
         if ( layers && layers.length ) {
             for(let l = 0; l < layers.length; l++) {
                 const layer = layers[l];
                 fullPath.layers.push(layer);
             }
+            return;
         }
+        fullPath.extend(glyphPath);
     });
     return fullPath;
 };

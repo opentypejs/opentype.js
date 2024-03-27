@@ -233,7 +233,6 @@ describe('glyphset.js', function() {
             const ctx = util.createMockObject(contextLogs);
             emojiFont.getPath('🌈🔳', 0, 0, 12).draw(ctx);
             const expectedColors = [
-                'black',
                 'rgba(234, 90, 71, 1)',
                 'rgba(244, 170, 65, 1)',
                 'rgba(252, 234, 43, 1)',

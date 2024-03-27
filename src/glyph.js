@@ -170,6 +170,23 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     }
 
     const p = new Path();
+    const layers = this.path.layers;
+    if ( layers && layers.length ) {
+        for ( let i = 0; i < layers.length; i += 1 ) {
+            const layer = layers[i];
+            let color = getPaletteColor(font, layer.paletteIndex, options.usePalette);
+            
+            if ( color === 'currentColor' ) {
+                color = options.fill || 'black'; 
+            } else {
+                color = formatColor(color, options.colorFormat || 'rgba');
+            }
+            options = Object.assign({}, options, {fill: color});
+            p.layers.push(this.getPath.call(layer.glyph, x, y, fontSize, options, font));
+        }
+        return p;
+    }
+
     p.fill = options.fill || this.path.fill;
     p.stroke = this.path.stroke;
     p.strokeWidth = this.path.strokeWidth * scale;
@@ -188,22 +205,6 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
                 x + (cmd.x * xScale), y + (-cmd.y * yScale));
         } else if (cmd.type === 'Z') {
             p.closePath();
-        }
-    }
-
-    const layers = this.path.layers;
-    if ( layers && layers.length ) {
-        for ( let i = 0; i < layers.length; i += 1 ) {
-            const layer = layers[i];
-            let color = getPaletteColor(font, layer.paletteIndex, options.usePalette);
-            
-            if ( color === 'currentColor' ) {
-                color = options.fill || 'black'; 
-            } else {
-                color = formatColor(color, options.colorFormat || 'rgba');
-            }
-            options = Object.assign({}, options, {fill: color});
-            p.layers.push(this.getPath.call(layer.glyph, x, y, fontSize, options, font));
         }
     }
 
@@ -316,6 +317,14 @@ Glyph.prototype.draw = function(ctx, x, y, fontSize, options, font) {
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
  */
 Glyph.prototype.drawPoints = function(ctx, x, y, fontSize) {
+    const layers = this.path.layers;
+    if ( layers && layers.length ) {
+        for ( let l = 0; l < layers.length; l += 1 ) {
+            this.drawPoints.call(layers[l].glyph, ctx, x, y, fontSize);
+        }
+        return;
+    }
+
     function drawCircles(l, x, y, scale) {
         ctx.beginPath();
         for (let j = 0; j < l.length; j += 1) {
@@ -354,13 +363,6 @@ Glyph.prototype.drawPoints = function(ctx, x, y, fontSize) {
     drawCircles(blueCircles, x, y, scale);
     ctx.fillStyle = 'red';
     drawCircles(redCircles, x, y, scale);
-
-    const layers = this.path.layers;
-    if ( layers && layers.length ) {
-        for ( let l = 0; l < layers.length; l += 1 ) {
-            this.drawPoints.call(layers[l].glyph, ctx, x, y, fontSize);
-        }
-    }
 };
 
 /**

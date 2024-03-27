@@ -504,6 +504,14 @@ Path.prototype.getBoundingBox = function() {
  * @param {CanvasRenderingContext2D} ctx - A 2D drawing context.
  */
 Path.prototype.draw = function(ctx) {
+    const layers = this.layers;
+    if ( layers && layers.length ) {
+        for ( let l = 0; l < layers.length; l++ ) {
+            this.draw.call(layers[l], ctx);
+        }
+        return;
+    }
+    
     ctx.beginPath();
     for (let i = 0; i < this.commands.length; i += 1) {
         const cmd = this.commands[i];
@@ -529,13 +537,6 @@ Path.prototype.draw = function(ctx) {
         ctx.strokeStyle = this.stroke;
         ctx.lineWidth = this.strokeWidth;
         ctx.stroke();
-    }
-
-    const layers = this.layers;
-    if ( layers && layers.length ) {
-        for ( let l = 0; l < layers.length; l++ ) {
-            this.draw.call(layers[l], ctx);
-        }
     }
 };
 

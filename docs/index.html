@@ -81,6 +81,13 @@ let font = null;
 
 
 function doSnap(path) {
+    const layers = path.layers;
+    if ( layers && layers.length ) {
+        for( let l = 0; l < layers.length; l++ ) {
+            doSnap(layers[l]);
+        }
+        return;
+    }
     // Round a value to the nearest "step".
     const snap = (v, distance, strength) => (v * (1.0 - strength)) + (strength * Math.round(v / distance) * distance);
     const strength = +form.snapStrength.value / 100.0;
@@ -100,12 +107,6 @@ function doSnap(path) {
         if (cmd.type === 'C') {
             cmd.x2 = snap(cmd.x2 + snapX, snapDistance, strength) - snapX;
             cmd.y2 = snap(cmd.y2 + snapY, snapDistance, strength) - snapY;
-        }
-    }
-    const layers = path.layers;
-    if ( layers && layers.length ) {
-        for( let l = 0; l < layers.length; l++ ) {
-            doSnap(layers[l]);
         }
     }
 }

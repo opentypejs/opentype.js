@@ -232,10 +232,16 @@ a {
 
 /* Glyph Inspector */
 
+#pagination {
+    display: flex;
+    flex-wrap: wrap;
+}
+
 #pagination span {
     margin: 0 0.3em;
     color: #505050;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 #pagination span.page-selected {

@@ -161,7 +161,6 @@ describe('glyph.js', function() {
             const ctx = util.createMockObject(contextLogs, undefined/*, { consoleLog: 'ctx' }*/);
             emojiFont.glyphs.get(138).draw(ctx, 0, 0, 12, {}, emojiFont);
             const expectedProps = [
-                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
                 'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
                 'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
                 'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
@@ -171,11 +170,10 @@ describe('glyph.js', function() {
 
             ];
             assert.deepEqual(contextLogs.map(log => log.property), expectedProps);
-            assert.deepEqual(contextLogs[5], { property: 'fillStyle', value: 'black' });
-            assert.deepEqual(contextLogs[14], { property: 'fillStyle', value: 'rgba(241, 179, 28, 1)' });
-            assert.deepEqual(contextLogs[23], { property: 'fillStyle', value: 'rgba(210, 47, 39, 1)' });
-            assert.deepEqual(contextLogs[32], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
-            assert.deepEqual(contextLogs[55], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
+            assert.deepEqual(contextLogs[7], { property: 'fillStyle', value: 'rgba(241, 179, 28, 1)' });
+            assert.deepEqual(contextLogs[16], { property: 'fillStyle', value: 'rgba(210, 47, 39, 1)' });
+            assert.deepEqual(contextLogs[25], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
+            assert.deepEqual(contextLogs[48], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
         });
     });
 });

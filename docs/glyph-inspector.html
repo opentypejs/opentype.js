@@ -193,15 +193,21 @@ function drawArrow(ctx, x1, y1, x2, y2) {
  * at the end of each contour.
  */
 function drawPathWithArrows(ctx, path) {
+    const layers = path.layers;
+    if ( layers && layers.length ) {
+        for ( let l = 0; l < layers.length; l++ ) {
+            drawPathWithArrows(ctx, layers[l]);
+        }
+        return;
+    }
     var i, cmd, x1, y1, x2, y2;
     var arrows = [];
-    const layers = path.layers;
     ctx.beginPath();
     for (i = 0; i < path.commands.length; i += 1) {
         cmd = path.commands[i];
         if (cmd.type === 'M') {
             if(x1 !== undefined) {
-                if(!layers) arrows.push([ctx, x1, y1, x2, y2]);
+                arrows.push([ctx, x1, y1, x2, y2]);
             }
             ctx.moveTo(cmd.x, cmd.y);
         } else if (cmd.type === 'L') {
@@ -217,7 +223,7 @@ function drawPathWithArrows(ctx, path) {
             x1 = cmd.x1;
             y1 = cmd.y1;
         } else if (cmd.type === 'Z') {
-            if(!layers) arrows.push([ctx, x1, y1, x2, y2]);
+            arrows.push([ctx, x1, y1, x2, y2]);
             ctx.closePath();
         }
         x2 = cmd.x;
@@ -236,12 +242,6 @@ function drawPathWithArrows(ctx, path) {
     arrows.forEach(function(arrow) {
         drawArrow.apply(null, arrow);
     });
-
-    if ( layers && layers.length ) {
-        for ( let l = 0; l < layers.length; l++ ) {
-            drawPathWithArrows(ctx, layers[l]);
-        }
-    }
 }
 
 function displayGlyph(glyphIndex) {
