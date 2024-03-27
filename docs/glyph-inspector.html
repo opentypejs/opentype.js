@@ -32,6 +32,11 @@
     <hr>
 
     <div>
+        <div id="colr-cpal-options" style="display:none">
+            <label><input type="checkbox" name="drawLayers" oninput="window.fontOptions.drawLayers = this.checked; window.redraw();"> options.drawLayers</label><br>
+            <div id="palettes"></div>
+            <hr>
+        </div>
         Glyphs <span id="pagination"></span>
         <br>
         <div id="glyph-list-end"></div>
@@ -44,6 +49,10 @@
         <div id="glyph-data"></div>
         <div style="clear: both"></div>
     </div>
+
+    <hr>
+
+    <button type="button" onclick="window.redraw()">update</button> after modifying window.font
 
     <hr>
 
@@ -250,6 +259,7 @@ function displayGlyph(glyphIndex) {
         ctx = canvas.getContext('2d'),
         width = canvas.width / pixelRatio,
         height = canvas.height / pixelRatio;
+    canvas.dataset.glyphIndex = glyphIndex;
     ctx.clearRect(0, 0, width, height);
     if(glyphIndex < 0) return;
     var glyph = window.font.glyphs.get(glyphIndex),
@@ -274,7 +284,7 @@ function displayGlyph(glyphIndex) {
     path.stroke = '#000000';
     path.strokeWidth = 1.5;
     drawPathWithArrows(ctx, path);
-    glyph.drawPoints(ctx, x0, glyphBaseline, glyphSize, options);
+    glyph.drawPoints(ctx, x0, glyphBaseline, glyphSize, options, window.font);
 }
 
 function renderGlyphItem(canvas, glyphIndex) {
@@ -347,10 +357,58 @@ function initGlyphDisplay(font) {
     hline('Typo Descender', font.tables.os2.sTypoDescender);
 }
 
+function arrayBufferToBase64(buffer) {
+    const CHUNK_SIZE = 8192;
+    let result = '';
+    const uintArray = new Uint8Array(buffer);
+
+    for (let i = 0; i < uintArray.length; i += CHUNK_SIZE) {
+        const chunk = uintArray.subarray(i, i + CHUNK_SIZE);
+        result += String.fromCharCode.apply(null, chunk);
+    }
+
+    return btoa(result);
+}
+
+function base64ToArrayBuffer(base64) {
+    return Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
+}
+
+window.redraw = function() {
+    updateColrOptions();
+    const selectedPage = document.querySelector('.page-selected');
+    const pageIndex = Array.from(selectedPage.parentElement.children).indexOf(selectedPage);    
+    displayGlyphPage(pageIndex);
+    const glyphIndex = document.querySelector('[data-glyph-index]').dataset.glyphIndex;
+    displayGlyph(glyphIndex);
+}
+
+function updateColrOptions() {
+    const palettes = window.font.palettes.getAll('hexa');
+    const palettesDiv = document.getElementById('palettes');
+    form.drawLayers.checked = window.fontOptions.drawLayers;
+    palettesDiv.innerHTML = '';
+    if ( palettes.length ) {
+        let markup = '';
+        palettes.forEach((palette, idx) => {
+            markup += `<dt><label><input type="radio" name="usePalette[]" oninput="window.fontOptions.usePalette = parseInt(this.value); window.redraw();" value="${idx}" ${idx === window.fontOptions.usePalette ? ' checked' : ''}><strong>↪ Palette ${idx}</strong></label></dt><dd><div class="color-swatches">`;
+                palette.forEach(color => {
+                    markup += `<span class="color-swatch" style="background:${color}" title="${color}"></span>`;
+                });
+            markup += `</div></dd>`;
+        });
+        palettesDiv.innerHTML += markup;
+    }
+
+    document.getElementById('colr-cpal-options').style.display = window.font.tables.cpal && window.font.tables.colr ? 'block' : 'none';
+}
+
 function onFontLoaded(font) {
     window.font = font;
     options = Object.assign({}, window.font.defaultRenderOptions);
     window.fontOptions = options;
+
+    updateColrOptions();
 
     var w = cellWidth - cellMarginLeftRight * 2,
         h = cellHeight - cellMarginTop - cellMarginBottom,
@@ -420,8 +478,19 @@ async function display(file, name) {
     }
     try {
         const data = await file.arrayBuffer();
-        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
-        showErrorMessage('');
+        let error;
+        try {
+            const base64String = arrayBufferToBase64(data);
+            sessionStorage.setItem('fontData', base64String);
+        } catch (err) {
+            if ( err.message === 'Maximum call stack size exceeded' ) {
+                error = err;
+                showErrorMessage('This font is too big to be stored in localStorage');
+            } else throw err;
+        }     
+
+        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data, { lowMemory: true }));
+        if ( !error ) showErrorMessage('');
     } catch (err) {
         showErrorMessage(err.toString());
     }
@@ -436,8 +505,15 @@ enableHighDPICanvas('glyph');
 
 prepareGlyphList();
 
-const fontFileName = 'fonts/FiraSansMedium.woff';
-display(await fetch(fontFileName), fontFileName);
+const fontData = sessionStorage.getItem('fontData');
+if ( fontData ) {
+    const arrayBuffer = base64ToArrayBuffer(fontData);
+    onFontLoaded(opentype.parse(arrayBuffer));
+} else {
+    const fontFileName = 'fonts/FiraSansMedium.woff';
+    display(await fetch(fontFileName), fontFileName);
+}
+
 </script>
 </body>
 </html>

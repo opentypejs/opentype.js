@@ -317,3 +317,7 @@ span.offcurve { color: red; }
     height: 1em;
     border: 1px solid #000;
 }
+
+#palettes dd {
+    margin-inline-start: 0.5em;
+}
