@@ -36,6 +36,7 @@ function getPathDefinition(glyph, path) {
  * @property {number} [yMax]
  * @property {number} [advanceWidth]
  * @property {number} [leftSideBearing]
+ * @property {import('./tables/svg.js').SVGImage | Promise<import('./tables/svg.js').SVGImage> | Error} [svgImage]
  */
 
 // A Glyph is an individual mark that often corresponds to a character.
@@ -146,6 +147,19 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     let xScale = options.xScale;
     let yScale = options.yScale;
     const scale = 1 / (this.path.unitsPerEm || 1000) * fontSize;
+
+    const svgImage = this.svgImage;
+    if (svgImage && svgImage.image) {
+        const path = new Path();
+        path.drawImage(
+            svgImage.image,
+            x + svgImage.leftSideBearing * scale,
+            y - svgImage.baseline * scale,
+            svgImage.image.width * scale,
+            svgImage.image.height * scale,
+        );
+        return path;
+    }
 
     if (options.hinting && font && font.hinting) {
         // in case of hinting, the hinting engine takes care

@@ -340,6 +340,9 @@ function initGlyphDisplay(font) {
 }
 
 function onFontLoaded(font) {
+    if (window.font) {
+        window.font.onGlyphUpdated = null
+    }
     window.font = font;
 
     var w = cellWidth - cellMarginLeftRight * 2,
@@ -371,6 +374,13 @@ function onFontLoaded(font) {
     displayGlyphPage(0);
     displayGlyph(-1);
     displayGlyphData(-1);
+
+    font.onGlyphUpdated = (glyphId) => {
+        const firstGlyph = pageSelected * cellCount;
+        if (firstGlyph <= glyphId && glyphId < firstGlyph + cellCount) {
+            renderGlyphItem(document.getElementById('g'+(glyphId - firstGlyph)), glyphId);
+        }
+    };
 }
 
 function cellSelect(event) {

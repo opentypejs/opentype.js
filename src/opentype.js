@@ -35,6 +35,7 @@ import os2 from './tables/os2.js';
 import post from './tables/post.js';
 import meta from './tables/meta.js';
 import gasp from './tables/gasp.js';
+import svg from './tables/svg.js';
 /**
  * The opentype library.
  * @namespace opentype
@@ -389,6 +390,10 @@ function parseBuffer(buffer, opt={}) {
             case 'gasp':
                 table = uncompressTable(data, tableEntry);
                 font.tables.gasp = gasp.parse(table.data, table.offset);
+                break;
+            case 'SVG ':
+                table = uncompressTable(data, tableEntry);
+                font.tables.svg = svg.parse(table.data, table.offset);
                 break;
         }
     }

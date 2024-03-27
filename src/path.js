@@ -414,6 +414,21 @@ Path.prototype.quadTo = Path.prototype.quadraticCurveTo = function(x1, y1, x, y)
 };
 
 /**
+ * @function drawImage
+ * @memberof opentype.Path.prototype
+ */
+Path.prototype.drawImage = function(image, x, y, width, height) {
+    this.commands.push({
+        type: 'I',
+        image,
+        x,
+        y,
+        width,
+        height
+    });
+};
+
+/**
  * Closes the path
  * @function closePath
  * @memberof opentype.Path.prototype
@@ -488,6 +503,14 @@ Path.prototype.getBoundingBox = function() {
                 prevX = startX;
                 prevY = startY;
                 break;
+            case 'I':
+                box.addPoint(cmd.x, cmd.y);
+                box.addPoint(cmd.x + cmd.width, cmd.y);
+                box.addPoint(cmd.x + cmd.width, cmd.y + cmd.height);
+                box.addPoint(cmd.x, cmd.y + cmd.height);
+                startX = prevX = cmd.x;
+                startY = prevY = cmd.y;
+                break;
             default:
                 throw new Error('Unexpected path command ' + cmd.type);
         }
@@ -516,6 +539,8 @@ Path.prototype.draw = function(ctx) {
             ctx.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
         } else if (cmd.type === 'Z') {
             ctx.closePath();
+        } else if (cmd.type === 'I') {
+            ctx.drawImage(cmd.image, cmd.x, cmd.y, cmd.width, cmd.height);
         }
     }
 
