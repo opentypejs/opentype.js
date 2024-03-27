@@ -122,6 +122,42 @@ function rgbToHSL(bgra) {
     };
 }
 
+function hslToRGB(hsla) {
+    let { h, s, l, a } = hsla;
+    h = h % 360;
+    s /= 100;
+    l /= 100;
+
+    
+
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    const m = l - c / 2;
+
+    let r = 0, g = 0, b = 0;
+
+    if (0 <= h && h < 60) {
+        r = c; g = x; b = 0;
+    } else if (60 <= h && h < 120) {
+        r = x; g = c; b = 0;
+    } else if (120 <= h && h < 180) {
+        r = 0; g = c; b = x;
+    } else if (180 <= h && h < 240) {
+        r = 0; g = x; b = c;
+    } else if (240 <= h && h < 300) {
+        r = x; g = 0; b = c;
+    } else if (300 <= h && h <= 360) {
+        r = c; g = 0; b = x;
+    }
+  
+    return {
+        r: Math.round((r + m) * 255),
+        g: Math.round((g + m) * 255),
+        b: Math.round((b + m) * 255),
+        a
+    };
+}
+
 function bgraToRaw(color) {
     return parseInt(`0x${toHex(color.b)}${toHex(color.g)}${toHex(color.r)}${toHex(color.a * 255)}`, 16);
 }
@@ -143,7 +179,7 @@ function parseColor(color, targetFormat = 'bgra') {
             return bgraToRaw(color);
         }
     } else if(/^#([a-f0-9]{3}|[a-f0-9]{4}|[a-f0-9]{6}|[a-f0-9]{8})$/.test(color.trim())) {
-        color = color.substring(1);
+        color = color.trim().substring(1);
         switch(color.length) {
             case 3:
                 color = {
@@ -163,7 +199,7 @@ function parseColor(color, targetFormat = 'bgra') {
                 break;
             case 6:
                 color = {
-                    r: parseInt(color[0] + color[1] , 16),
+                    r: parseInt(color[0] + color[1], 16),
                     g: parseInt(color[2] + color[3], 16),
                     b: parseInt(color[4] + color[5], 16),
                     a: 1
@@ -171,7 +207,7 @@ function parseColor(color, targetFormat = 'bgra') {
                 break;
             case 8:
                 color = {
-                    r: parseInt(color[0] + color[1] , 16),
+                    r: parseInt(color[0] + color[1], 16),
                     g: parseInt(color[2] + color[3], 16),
                     b: parseInt(color[4] + color[5], 16),
                     a: parseInt(color[6] + color[7], 16) / 255,
@@ -183,7 +219,30 @@ function parseColor(color, targetFormat = 'bgra') {
             return color;
         }
     } else {
-        throw new Error(`Invalid color format: ${color}`);
+        color = color.trim();
+        const rgbaRegex = /^rgba?\(\s*(?:(\d*\.\d+)(%?)|(\d+)(%?))\s*(?:,|\s*)\s*(?:(\d*\.\d+)(%?)|(\d+)(%?))\s*(?:,|\s*)\s*(?:(\d*\.\d+)(%?)|(\d+)(%?))\s*(?:(?:,|\s|\/)\s*(?:(0*(?:\.\d+)?()|0*1(?:\.0+)?())|(?:\.\d+)|(\d+)(%)|(\d*\.\d+)(%)))?\s*\)/;
+        if (rgbaRegex.test(color)) {
+            const matches = color.match(rgbaRegex).filter((i) => typeof i !== 'undefined');
+            color = {
+                r: Math.round(parseFloat(matches[1]) / (matches[2] ? 100/255 : 1)),
+                g: Math.round(parseFloat(matches[3]) / (matches[4] ? 100/255 : 1)),
+                b: Math.round(parseFloat(matches[5]) / (matches[6] ? 100/255 : 1)),
+                a: !matches[7] ? 1 : (parseFloat(matches[7]) / (matches[8] ? 100 : 1))
+            };
+        } else {
+            const hslaRegex = /^hsla?\(\s*(?:(\d*\.\d+|\d+)(deg|turn|))\s*(?:,|\s*)\s*(?:(\d*\.\d+)%?|(\d+)%?)\s*(?:,|\s*)\s*(?:(\d*\.\d+)%?|(\d+)%?)\s*(?:(?:,|\s|\/)\s*(?:(0*(?:\.\d+)?()|0*1(?:\.0+)?())|(?:\.\d+)|(\d+)(%)|(\d*\.\d+)(%)))?\s*\)/;
+            if (hslaRegex.test(color)) {
+                const matches = color.match(hslaRegex).filter((i) => typeof i !== 'undefined');
+                color = hslToRGB({
+                    h: parseFloat(matches[1]) * (matches[2] === 'turn' ? 360 : 1),
+                    s: parseFloat(matches[3]),
+                    l: parseFloat(matches[4]),
+                    a: !matches[5] ? 1 : parseFloat(matches[5]) / (matches[6] ? 100 : 1)
+                });
+            } else {
+                throw new Error(`Invalid color format: ${color}`);
+            }
+        }
     }
 
     return formatColor(color, targetFormat);

@@ -158,7 +158,7 @@ describe('glyph.js', function() {
     describe('drawing', function() {
         it('draws layers', function() {
             let contextLogs = [];
-            const ctx = util.createMockObject(contextLogs, undefined, { consoleLog: 'ctx' });
+            const ctx = util.createMockObject(contextLogs, undefined/*, { consoleLog: 'ctx' }*/);
             emojiFont.glyphs.get(138).draw(ctx, 0, 0, 12, {}, emojiFont);
             const expectedProps = [
                 'beginPath', 'moveTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
