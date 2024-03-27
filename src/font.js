@@ -330,6 +330,7 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
  *                                 See https://www.microsoft.com/typography/otspec/featuretags.htm
  * @property {boolean} [hinting=false] - whether to apply font hinting to the outlines
  * @property {integer} [usePalette=0] For COLR/CPAL fonts, the zero-based index of the color palette to use. (Use `Font.palettes.get()` to get the available palettes)
+ * @property {integer} [drawLayers=true] For COLR/CPAL fonts, this can be turned to false in order to draw the fallback glyphs instead
  */
 Font.prototype.defaultRenderOptions = {
     kerning: true,
@@ -341,7 +342,10 @@ Font.prototype.defaultRenderOptions = {
         { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
         { script: 'latn', tags: ['liga', 'rlig'] },
         { script: 'thai', tags: ['liga', 'rlig', 'ccmp'] },
-    ]
+    ],
+    hinting: false,
+    usePalette: 0,
+    drawLayers: true,
 };
 
 /**
@@ -401,6 +405,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
  * @return {opentype.Path}
  */
 Font.prototype.getPath = function(text, x, y, fontSize, options) {
+    options = Object.assign({}, this.defaultRenderOptions, options);
     const fullPath = new Path();
     applyPaintType(this, fullPath, fontSize);
     if (fullPath.stroke) {
@@ -409,13 +414,15 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
     }
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         const glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
-        const layers = glyphPath.layers;
-        if ( layers && layers.length ) {
-            for(let l = 0; l < layers.length; l++) {
-                const layer = layers[l];
-                fullPath.layers.push(layer);
+        if ( options.drawLayers ) {
+            const layers = glyphPath.layers;
+            if ( layers && layers.length ) {
+                for(let l = 0; l < layers.length; l++) {
+                    const layer = layers[l];
+                    fullPath.layers.push(layer);
+                }
+                return;
             }
-            return;
         }
         fullPath.extend(glyphPath);
     });
@@ -432,6 +439,7 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
  * @return {opentype.Path[]}
  */
 Font.prototype.getPaths = function(text, x, y, fontSize, options) {
+    options = Object.assign({}, this.defaultRenderOptions, options);
     const glyphPaths = [];
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         const glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
@@ -457,6 +465,7 @@ Font.prototype.getPaths = function(text, x, y, fontSize, options) {
  * @return advance width
  */
 Font.prototype.getAdvanceWidth = function(text, fontSize, options) {
+    options = Object.assign({}, this.defaultRenderOptions, options);
     return this.forEachGlyph(text, 0, 0, fontSize, options, function() {});
 };
 
@@ -485,8 +494,9 @@ Font.prototype.draw = function(ctx, text, x, y, fontSize, options) {
  * @param {GlyphRenderOptions=} options
  */
 Font.prototype.drawPoints = function(ctx, text, x, y, fontSize, options) {
+    options = Object.assign({}, this.defaultRenderOptions, options);
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
-        glyph.drawPoints(ctx, gX, gY, gFontSize);
+        glyph.drawPoints(ctx, gX, gY, gFontSize, options);
     });
 };
 
@@ -503,6 +513,7 @@ Font.prototype.drawPoints = function(ctx, text, x, y, fontSize, options) {
  * @param {GlyphRenderOptions=} options
  */
 Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
+    options = Object.assign({}, this.defaultRenderOptions, options);
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         glyph.drawMetrics(ctx, gX, gY, gFontSize);
     });

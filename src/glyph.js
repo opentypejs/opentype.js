@@ -133,7 +133,7 @@ Glyph.prototype.getBoundingBox = function() {
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {Object=} options - xScale, yScale to stretch the glyph.
+ * @param  {GlyphRenderOptions=} options - xScale, yScale to stretch the glyph.
  * @param  {opentype.Font} font if hinting is to be used, or CPAL/COLR needs to be rendered, the font
  * @return {opentype.Path}
  */
@@ -141,9 +141,9 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
+    options = Object.assign({}, font.defaultRenderOptions, options);
     let commands;
     let hPoints;
-    if (!options) options = { };
     let xScale = options.xScale;
     let yScale = options.yScale;
     const scale = 1 / (this.path.unitsPerEm || 1000) * fontSize;
@@ -170,21 +170,23 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     }
 
     const p = new Path();
-    const layers = this.path.layers;
-    if ( layers && layers.length ) {
-        for ( let i = 0; i < layers.length; i += 1 ) {
-            const layer = layers[i];
-            let color = getPaletteColor(font, layer.paletteIndex, options.usePalette);
-            
-            if ( color === 'currentColor' ) {
-                color = options.fill || 'black'; 
-            } else {
-                color = formatColor(color, options.colorFormat || 'rgba');
+    if ( options.drawLayers ) {
+        const layers = this.path.layers;
+        if ( layers && layers.length ) {
+            for ( let i = 0; i < layers.length; i += 1 ) {
+                const layer = layers[i];
+                let color = getPaletteColor(font, layer.paletteIndex, options.usePalette);
+                
+                if ( color === 'currentColor' ) {
+                    color = options.fill || 'black'; 
+                } else {
+                    color = formatColor(color, options.colorFormat || 'rgba');
+                }
+                options = Object.assign({}, options, {fill: color});
+                p.layers.push(this.getPath.call(layer.glyph, x, y, fontSize, options, font));
             }
-            options = Object.assign({}, options, {fill: color});
-            p.layers.push(this.getPath.call(layer.glyph, x, y, fontSize, options, font));
+            return p;
         }
-        return p;
     }
 
     p.fill = options.fill || this.path.fill;
@@ -301,10 +303,8 @@ Glyph.prototype.getMetrics = function() {
  * @param  {opentype.Font} font - xScale, yScale to stretch the glyph.
  */
 Glyph.prototype.draw = function(ctx, x, y, fontSize, options, font) {
-    if ( this.font ) {
-        throw new Error('this.font is defined');
-    }
-    const path = this.getPath(x, y, fontSize, options, font || this.font);
+    options = Object.assign({}, font.defaultRenderOptions, options);
+    const path = this.getPath(x, y, fontSize, options, font);
     path.draw(ctx);
 };
 
@@ -315,14 +315,19 @@ Glyph.prototype.draw = function(ctx, x, y, fontSize, options, font) {
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+ * @param  {GlyphRenderOptions=} options
+ * @param  {opentype.Font} font - used to get the default render options, may be needed for variable fonts in the future
  */
-Glyph.prototype.drawPoints = function(ctx, x, y, fontSize) {
-    const layers = this.path.layers;
-    if ( layers && layers.length ) {
-        for ( let l = 0; l < layers.length; l += 1 ) {
-            this.drawPoints.call(layers[l].glyph, ctx, x, y, fontSize);
+Glyph.prototype.drawPoints = function(ctx, x, y, fontSize, options, font) {
+    options = Object.assign({}, font.defaultRenderOptions, options);
+    if ( options.drawLayers ) {
+        const layers = this.path.layers;
+        if ( layers && layers.length ) {
+            for ( let l = 0; l < layers.length; l += 1 ) {
+                this.drawPoints.call(layers[l].glyph, ctx, x, y, fontSize);
+            }
+            return;
         }
-        return;
     }
 
     function drawCircles(l, x, y, scale) {

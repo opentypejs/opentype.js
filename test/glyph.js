@@ -175,6 +175,16 @@ describe('glyph.js', function() {
             assert.deepEqual(contextLogs[25], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
             assert.deepEqual(contextLogs[48], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
         });
+        
+        it('does not draw layers when options.drawLayers = false', function() {
+            let contextLogs = [];
+            const ctx = util.createMockObject(contextLogs, undefined/*, { consoleLog: 'ctx' }*/);
+            emojiFont.glyphs.get(138).draw(ctx, 0, 0, 12, { drawLayers: false }, emojiFont);
+            const expectedProps = [
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
+            ];
+            assert.deepEqual(contextLogs.map(log => log.property), expectedProps);
+        });
     });
 });
 

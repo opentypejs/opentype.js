@@ -167,7 +167,8 @@ function displayGlyphData(glyphIndex) {
 }
 
 var arrowLength = 10,
-    arrowAperture = 4;
+    arrowAperture = 4,
+    options = {};
 
 function drawArrow(ctx, x1, y1, x2, y2) {
     var dx = x2 - x1,
@@ -268,12 +269,12 @@ function displayGlyph(glyphIndex) {
     ctx.fillText(glyph.advanceWidth, xmax, glyphBaseline+markSize+10);
 
     ctx.fillStyle = '#000000';
-    var path = glyph.getPath(x0, glyphBaseline, glyphSize, {}, window.font);
+    var path = glyph.getPath(x0, glyphBaseline, glyphSize, options, window.font);
     path.fill = '#808080';
     path.stroke = '#000000';
     path.strokeWidth = 1.5;
     drawPathWithArrows(ctx, path);
-    glyph.drawPoints(ctx, x0, glyphBaseline, glyphSize);
+    glyph.drawPoints(ctx, x0, glyphBaseline, glyphSize, options);
 }
 
 function renderGlyphItem(canvas, glyphIndex) {
@@ -298,7 +299,7 @@ function renderGlyphItem(canvas, glyphIndex) {
     ctx.fillRect(xmax, fontBaseline, 1, cellMarkSize);
 
     ctx.fillStyle = '#000000';
-    glyph.draw(ctx, x0, fontBaseline, fontSize, {}, window.font);
+    glyph.draw(ctx, x0, fontBaseline, fontSize, options, window.font);
 }
 
 function displayGlyphPage(pageNum) {
@@ -348,6 +349,8 @@ function initGlyphDisplay(font) {
 
 function onFontLoaded(font) {
     window.font = font;
+    options = Object.assign({}, window.font.defaultRenderOptions);
+    window.fontOptions = options;
 
     var w = cellWidth - cellMarginLeftRight * 2,
         h = cellHeight - cellMarginTop - cellMarginBottom,

@@ -288,7 +288,7 @@ Draw the glyph on the given context.
 * `options`: _{GlyphRenderOptions}_, see `Glyph.getPath()`
 * `font`: a font object, needed for rendering COLR/CPAL fonts to get correct colors
 
-##### `Glyph.drawPoints(ctx, x, y, fontSize)`
+##### `Glyph.drawPoints(ctx, x, y, fontSize, options, font)`
 Draw the points of the glyph on the given context.
 On-curve points will be drawn in blue, off-curve points will be drawn in red.
 The arguments are the same as `Glyph.draw()`.

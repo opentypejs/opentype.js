@@ -134,7 +134,7 @@ function renderText(font) {
     var previewCanvas = document.getElementById('preview');
     var previewCtx = previewCanvas.getContext("2d");
     previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-    font.draw(previewCtx, textToRender, 0, 32, fontSize, {
+    var options = {
         kerning: true,
         features: [
         /**
@@ -144,7 +144,9 @@ function renderText(font) {
             { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
             { script: 'latn', tags: ['liga', 'rlig'] }
         ]
-    });
+    };
+    options = Object.assign({}, font.defaultRenderOptions, options);
+    font.draw(previewCtx, textToRender, 0, 32, fontSize, options);
 }
 
 function showErrorMessage(message) {
