@@ -102,6 +102,12 @@ function doSnap(path) {
             cmd.y2 = snap(cmd.y2 + snapY, snapDistance, strength) - snapY;
         }
     }
+    const layers = path.layers;
+    if ( layers && layers.length ) {
+        for( let l = 0; l < layers.length; l++ ) {
+            doSnap(layers[l]);
+        }
+    }
 }
 
 function renderText() {
@@ -189,7 +195,7 @@ function onFontLoaded(font) {
     for (let i = 0; i < amount; i++) {
         const glyph = font.glyphs.get(i);
         const ctx = createGlyphCanvas(glyph, 150);
-        glyph.draw(ctx, x, y, fontSize);
+        glyph.draw(ctx, x, y, fontSize, {}, font);
         glyph.drawPoints(ctx, x, y, fontSize);
         glyph.drawMetrics(ctx, x, y, fontSize);
     }
