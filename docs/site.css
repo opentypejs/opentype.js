@@ -203,11 +203,13 @@ a {
 
 #font-data dt {
     float: left;
+    clear: both;
 }
 
 #font-data dd {
     margin-left: 12em;
     word-break: break-all;
+    min-height: 1.4em;
     max-height: 100px;
     overflow-y: auto;
 }
@@ -296,4 +298,16 @@ span.offcurve { color: red; }
 
 .disabled {
 	color: gray;
+}
+
+.color-swatches {
+    display: flex;
+    gap: 0.2em;
+}
+
+.color-swatch {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    border: 1px solid #000;
 }
