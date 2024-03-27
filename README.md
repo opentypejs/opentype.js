@@ -192,12 +192,17 @@ Create a Path that represents the given text.
 * `x`: Horizontal position of the beginning of the text. (default: `0`)
 * `y`: Vertical position of the *baseline* of the text. (default: `0`)
 * `fontSize`: Size of the text in pixels (default: `72`).
+* `options`: _{GlyphRenderOptions}_ passed to each glyph, see below
 
-Options is an optional object containing:
+Options is an optional _{GlyphRenderOptions}_ object containing:
+* `script`: script used to determine which features to apply (default: `"DFLT"` or `"latn"`)
+* `language`: language system used to determine which features to apply (default: `"dflt"`)
 * `kerning`: if true takes kerning information into account (default: `true`)
 * `features`: an object with [OpenType feature tags](https://docs.microsoft.com/en-us/typography/opentype/spec/featuretags) as keys, and a boolean value to enable each feature.
 Currently only ligature features `"liga"` and `"rlig"` are supported (default: `true`).
 * `hinting`: if true uses TrueType font hinting if available (default: `false`).
+* `colorFormat`: the format colors are converted to for rendering (default: `"rgba"`). Can be `"rgb"`/`"rgba"` for `rgb()`/`rgba()` output, `"hex"`/`"hexa"` for 6/8 digit hex colors, or `"hsl"`/`"hsla"` for `hsl()`/`hsla()` output. `"bgra"` outputs an object with r, g, b, a keys (r/g/b from 0-255, a from 0-1). `"raw"` outputs an integer as used in the CPAL table.
+* `fill`: font color, the color used to render each glyph (default: `"black"`)
 
 _**Note:** there is also `Font.getPaths()` with the same arguments, which returns a list of Paths._
 
@@ -207,6 +212,7 @@ Create a Path that represents the given text.
 * `x`: Horizontal position of the beginning of the text. (default: `0`)
 * `y`: Vertical position of the *baseline* of the text. (default: `0`)
 * `fontSize`: Size of the text in pixels (default: `72`).
+* `options`: _{GlyphRenderOptions}_ passed to each glyph, see `Font.getPath()`
 
 Options is an optional object containing:
 * `kerning`: if `true`, takes kerning information into account (default: `true`)
@@ -244,7 +250,11 @@ bounding box than its advance width.
 
 This corresponds to `canvas2dContext.measureText(text).width`
 * `fontSize`: Size of the text in pixels (default: `72`).
-* `options`: See `Font.getPath()`
+* `options`: _{GlyphRenderOptions}_, see `Font.getPath()`
+
+#### `Font.palettes.get(colorFormat)`
+Returns an array of arrays corresponding to the colors for each available color palette (for COLR/CPAL fonts).
+* `colorFormat`: See _{GlyphRenderOptions}_ at `Glyph.getPath()`, (default: `"bgra"`)
 
 #### The Glyph object
 A Glyph is an individual mark that often corresponds to a character. Some glyphs, such as ligatures, are a combination of many characters. Glyphs are the basic building blocks of a font.
@@ -269,12 +279,14 @@ Get a scaled glyph Path object for use on a drawing context.
 Calculate the minimum bounding box for the unscaled path of the given glyph. Returns an `opentype.BoundingBox` object that contains `x1`/`y1`/`x2`/`y2`.
 If the glyph has no points (e.g. a space character), all coordinates will be zero.
 
-##### `Glyph.draw(ctx, x, y, fontSize)`
+##### `Glyph.draw(ctx, x, y, fontSize, options, font)`
 Draw the glyph on the given context.
 * `ctx`: The drawing context.
 * `x`: Horizontal position of the glyph. (default: `0`)
 * `y`: Vertical position of the *baseline* of the glyph. (default: `0`)
 * `fontSize`: Font size, in pixels (default: `72`).
+* `options`: _{GlyphRenderOptions}_, see `Glyph.getPath()`
+* `font`: a font object, needed for rendering COLR/CPAL fonts to get correct colors
 
 ##### `Glyph.drawPoints(ctx, x, y, fontSize)`
 Draw the points of the glyph on the given context.
@@ -298,6 +310,11 @@ Once you have a path through `Font.getPath()` or `Glyph.getPath()`, you can use 
 * `fill`: The fill color of the Path. Color is a string representing a [CSS color](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value). (default: `'black'`)
 * `stroke`: The stroke color of the `Path`. Color is a string representing a [CSS color](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value). (default: `null`; the path will not be stroked)
 * `strokeWidth`: The line thickness of the `Path`. (default: `1`, but if `stroke` is `null` no stroke will be drawn)
+* `layers`: For COLR/CPAL fonts, this array contains information on the layers to be drawn, see below
+
+Layer data:
+* `glyph`: The referenced glyph to get the path from
+* `paletteIndex`: The index of the color in the used color palette
 
 ##### `Path.draw(ctx)`
 Draw the path on the given 2D context. This uses the `fill`, `stroke`, and `strokeWidth` properties of the Path object.
