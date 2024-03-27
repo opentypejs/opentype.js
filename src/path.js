@@ -632,6 +632,13 @@ Path.prototype.toPathData = function(options) {
  * @return {string}
  */
 Path.prototype.toSVG = function(options, pathData) {
+    if (this.layers && this.layers.length) {
+        /** @TODO: implement SVG output for colr fonts
+         * Is there a standardized way?
+         * @see https://github.com/unicode-org/text-rendering-tests/issues/95
+        */
+        console.warn('toSVG() does not support colr font layers yet');
+    }
     if (!pathData) {
         pathData = this.toPathData(options);
     }
@@ -661,6 +668,13 @@ Path.prototype.toSVG = function(options, pathData) {
  * @return {SVGPathElement}
  */
 Path.prototype.toDOMElement = function(options, pathData) {
+    if(this.layers && this.layers.length) {
+        /** @TODO: implement SVG output for colr fonts
+         * Is there a standardized way?
+         * @see https://github.com/unicode-org/text-rendering-tests/issues/95
+        */
+        console.warn('toDOMElement() does not support colr font layers yet');
+    }
     if (!pathData) {
         pathData = this.toPathData(options);
     }
