@@ -84,6 +84,7 @@ describe('tables/cpal.js', function() {
 
             parseColor('hsl( 260.82, 42.61%, 77.45%)', 'hexa'),
             parseColor('hsla(260.82, 42.61%, 77.45%, 0.9373)', 'raw'),
+            parseColor('background: hsl(0.3turn 48% 48%);', 'rgb'),
         ];
 
         const expectedConvertedColors = [
@@ -120,6 +121,7 @@ describe('tables/cpal.js', function() {
             '#11223344',
             '#beaddeff',
             obj.colorRecords[3],
+            'rgb(87, 181, 64)'
         ];
 
         assert.deepEqual(convertedColors, expectedConvertedColors);
