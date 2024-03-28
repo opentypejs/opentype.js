@@ -45,7 +45,7 @@ export class PaletteManager {
             const startIndex = this.cpal().colorRecordIndices[i];
             const paletteColors = [];
             for(let j = startIndex; j < startIndex + this.cpal().numPaletteEntries; j++) {
-                paletteColors.push(formatColor(this.cpal().colorRecords[j], colorFormat || 'bgra'));
+                paletteColors.push(formatColor(this.cpal().colorRecords[j], colorFormat || 'hexa'));
             }
             palettes.push(paletteColors);
         }
@@ -78,7 +78,7 @@ export class PaletteManager {
 
         const newCount = this.cpal().numPaletteEntries+ num;
 
-        const palettes = this.getAll('bgra')
+        const palettes = this.getAll()
             .map(palette => this.fillPalette(palette, newCount));
         
         this.cpal().numPaletteEntries = newCount;
@@ -88,21 +88,21 @@ export class PaletteManager {
     /**
      * Get a specific palette by its zero-based index
      * @param {integer} paletteIndex 
-     * @param {string} [colorFormat='bgra']
+     * @param {string} [colorFormat='hexa']
      * @returns {Array}
      */
-    get(paletteIndex, colorFormat = 'bgra') {
+    get(paletteIndex, colorFormat = 'hexa') {
         return this.getAll(colorFormat)[paletteIndex] || null;
     }
 
     /**
-     * 
+     * Get a color from a specific palette by its zero-based index
      * @param {integer} index 
      * @param {integer} paletteIndex
-     * @param {string} [colorFormat ='bgra']
+     * @param {string} [colorFormat ='hexa']
      * @returns 
      */
-    getColor(index, paletteIndex, colorFormat = 'bgra') {
+    getColor(index, paletteIndex, colorFormat = 'hexa') {
         return getPaletteColor(this.font, index, paletteIndex, colorFormat);
     }
     

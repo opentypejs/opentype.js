@@ -63,7 +63,7 @@ function parseCPALColor(bgra) {
     return { b, g, r, a };
 }
 
-function getPaletteColor(font, index, palette = 0, colorFormat = 'bgra') {
+function getPaletteColor(font, index, palette = 0, colorFormat = 'hexa') {
     if (index == 0xFFFF) {
         return 'currentColor';
     }
@@ -162,7 +162,7 @@ function bgraToRaw(color) {
     return parseInt(`0x${toHex(color.b)}${toHex(color.g)}${toHex(color.r)}${toHex(color.a * 255)}`, 16);
 }
 
-function parseColor(color, targetFormat = 'bgra') {
+function parseColor(color, targetFormat = 'hexa') {
     const returnRaw = (targetFormat == 'raw' || targetFormat == 'cpal');
     if (
         (
@@ -248,7 +248,7 @@ function parseColor(color, targetFormat = 'bgra') {
     return formatColor(color, targetFormat);
 }
 
-function formatColor(bgra, format = 'rgba') {
+function formatColor(bgra, format = 'hexa') {
     if (bgra === 'currentColor') return bgra;  
 
     if (Number.isInteger(bgra)) {
@@ -257,7 +257,7 @@ function formatColor(bgra, format = 'rgba') {
         }
         bgra = parseCPALColor(bgra);
     } else if(typeof bgra !== 'object') {
-        bgra = parseColor(bgra);  
+        bgra = parseColor(bgra, 'bgra');  
     }
     
     let hsl = ['hsl', 'hsla'].includes(format) ? rgbToHSL(bgra) : null;

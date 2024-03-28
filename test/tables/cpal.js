@@ -42,10 +42,10 @@ describe('tables/cpal.js', function() {
 
     it('correctly parses color values', function() {
         const expectedColors = [
-            { a: 0.6666666666666666, b: 136, g: 102, r: 187 },
-            { a: 0.2, b: 0, g: 17, r: 34 },
-            { a: 0.47058823529411764, b: 18, g: 52, r: 86 },
-            { a: 0.9372549019607843, b: 222, g: 173, r: 190 },
+            '#bb6688aa',
+            '#22110033',
+            '#56341278',
+            '#beaddeef',
         ];
         assert.deepStrictEqual(colors, expectedColors);
 
@@ -54,13 +54,13 @@ describe('tables/cpal.js', function() {
             parseColor(0x12345678, 'cpal'),
             parseColor('currentColor'),
             parseColor('#ffaa00', 'raw'),
-            parseColor('#ffaa00'),
+            parseColor('#ffaa00', 'bgra'),
             parseColor('#ffaa0033', 'raw'),
-            parseColor('#ffaa0033'),
+            parseColor('#ffaa0033', 'bgra'),
             parseColor('#123', 'raw'),
-            parseColor('#123'),
+            parseColor('#123', 'bgra'),
             parseColor('#123', 'hexa'),
-            parseColor('#1234'),
+            parseColor('#1234', 'bgra'),
             parseColor('#1234', 'hexa'),
             parseColor('rgb(17, 34 ,51)', 'hexa'),
             parseColor('rgb(17,34,51,0.267 )', 'hexa'),
@@ -140,7 +140,7 @@ describe('tables/cpal.js', function() {
             cpal.formatColor(colors[3], 'hsla'),
         ];
         const expectedColors = [
-            'rgba(187, 102, 136, 0.667)',
+            '#bb6688aa',
             'rgba(187, 102, 136, 0.667)',
             {b: 136, g: 102, r: 187, a: 0.6666666666666666},
             '#221100',

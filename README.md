@@ -201,7 +201,7 @@ Options is an optional _{GlyphRenderOptions}_ object containing:
 * `features`: an object with [OpenType feature tags](https://docs.microsoft.com/en-us/typography/opentype/spec/featuretags) as keys, and a boolean value to enable each feature.
 Currently only ligature features `"liga"` and `"rlig"` are supported (default: `true`).
 * `hinting`: if true uses TrueType font hinting if available (default: `false`).
-* `colorFormat`: the format colors are converted to for rendering (default: `"rgba"`). Can be `"rgb"`/`"rgba"` for `rgb()`/`rgba()` output, `"hex"`/`"hexa"` for 6/8 digit hex colors, or `"hsl"`/`"hsla"` for `hsl()`/`hsla()` output. `"bgra"` outputs an object with r, g, b, a keys (r/g/b from 0-255, a from 0-1). `"raw"` outputs an integer as used in the CPAL table.
+* `colorFormat`: the format colors are converted to for rendering (default: `"hexa"`). Can be `"rgb"`/`"rgba"` for `rgb()`/`rgba()` output, `"hex"`/`"hexa"` for 6/8 digit hex colors, or `"hsl"`/`"hsla"` for `hsl()`/`hsla()` output. `"bgra"` outputs an object with r, g, b, a keys (r/g/b from 0-255, a from 0-1). `"raw"` outputs an integer as used in the CPAL table.
 * `fill`: font color, the color used to render each glyph (default: `"black"`)
 
 _**Note:** there is also `Font.getPaths()` with the same arguments, which returns a list of Paths._
@@ -254,7 +254,7 @@ This corresponds to `canvas2dContext.measureText(text).width`
 
 #### `Font.palettes.get(colorFormat)`
 Returns an array of arrays corresponding to the colors for each available color palette (for COLR/CPAL fonts).
-* `colorFormat`: See _{GlyphRenderOptions}_ at `Glyph.getPath()`, (default: `"bgra"`)
+* `colorFormat`: See _{GlyphRenderOptions}_ at `Glyph.getPath()`, (default: `"hexa"`)
 
 #### The Glyph object
 A Glyph is an individual mark that often corresponds to a character. Some glyphs, such as ligatures, are a combination of many characters. Glyphs are the basic building blocks of a font.
