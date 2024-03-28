@@ -48,6 +48,13 @@ describe('palettes.js', function() {
         assert.equal(emojiFont.palettes.getColor(3, 2, 'raw'), emojiFont.palettes.defaultValue);
     });
 
+    it('sets a color', function() {
+        emojiFont.palettes.setColor(9, '#987654');
+        emojiFont.palettes.setColor(7, '#87654321', 1);
+        assert.equal(emojiFont.palettes.getColor(9, 0, 'hexa'), '#987654ff');
+        assert.equal(emojiFont.palettes.getColor(7, 1, 'hexa'), '#87654321');
+    });
+
     it('ensures that the CPAL table exists', function() {
         const mockFont = {tables:{}};
         const pm = new PaletteManager(mockFont);

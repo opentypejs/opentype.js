@@ -105,6 +105,19 @@ export class PaletteManager {
     getColor(index, paletteIndex, colorFormat = 'hexa') {
         return getPaletteColor(this.font, index, paletteIndex, colorFormat);
     }
+
+    /**
+     * Set a color on a specific palette by its zero-based index
+     * @param {integer} index 
+     * @param {string|integer} color
+     * @param {integer} paletteIndex
+     * @returns 
+     */
+    setColor(index, color, paletteIndex = 0) {
+        const palettes = this.getAll('raw');
+        palettes[paletteIndex][index] = this.toCPALcolor(color);
+        this.cpal().colorRecords = palettes.flat();
+    }
     
     /**
      * Add a new palette. 
