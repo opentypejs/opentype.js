@@ -7,14 +7,14 @@ const loadSync = (url, opt) => parse(readFileSync(url), opt);
 describe('palettes.js', function() {
     const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0.ttf');
     const palettes = emojiFont.palettes.getAll();
-    const palettesRGBA = emojiFont.palettes.getAll('hexa');
+    const palettesBGRA = emojiFont.palettes.getAll('bgra');
     
     it('returns all palettes', function() {
         assert.equal(Array.isArray(palettes), true);
         assert.equal(palettes.length, 1);
         assert.equal(palettes[0].length, 35);
-        assert.deepEqual(palettes[0][0], {r: 0, g:0, b: 0, a: 0.25098039215686274});
-        assert.deepEqual(palettesRGBA[0][7], '#3f3f3f80');
+        assert.deepEqual(palettes[0][7], '#3f3f3f80');
+        assert.deepEqual(palettesBGRA[0][0], {r: 0, g:0, b: 0, a: 0.25098039215686274});
     });
 
     // color parsing and conversion is tested in tables/cpal.js
