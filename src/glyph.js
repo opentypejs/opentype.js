@@ -141,7 +141,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     x = x !== undefined ? x : 0;
     y = y !== undefined ? y : 0;
     fontSize = fontSize !== undefined ? fontSize : 72;
-    options = Object.assign({}, font.defaultRenderOptions, options);
+    options = Object.assign({}, font && font.defaultRenderOptions, options);
     let commands;
     let hPoints;
     let xScale = options.xScale;

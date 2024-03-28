@@ -88,12 +88,20 @@ export class PaletteManager {
     /**
      * Get a specific palette by its zero-based index
      * @param {integer} paletteIndex 
+     * @param {string} [colorFormat='bgra']
      * @returns {Array}
      */
-    get(paletteIndex) {
-        return this.getAll()[paletteIndex] || null;
+    get(paletteIndex, colorFormat = 'bgra') {
+        return this.getAll(colorFormat)[paletteIndex] || null;
     }
 
+    /**
+     * 
+     * @param {integer} index 
+     * @param {integer} paletteIndex
+     * @param {string} [colorFormat ='bgra']
+     * @returns 
+     */
     getColor(index, paletteIndex, colorFormat = 'bgra') {
         return getPaletteColor(this.font, index, paletteIndex, colorFormat);
     }
@@ -132,7 +140,7 @@ export class PaletteManager {
      */
     // ensureCPAL(colors) {
     ensureCPAL(colors) {
-        if (this.cpal() === null) {
+        if (!this.cpal()) {
             if (!colors || !colors.length) {
                 colors = [this.defaultValue];
             } else {
