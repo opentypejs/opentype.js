@@ -47,6 +47,12 @@ describe('palettes.js', function() {
         assert.equal(emojiFont.palettes.getColor(1, 2, 'hexa'), '#99cc0048');
         assert.equal(emojiFont.palettes.getColor(3, 2, 'raw'), emojiFont.palettes.defaultValue);
     });
+    
+    it('deletes palettes', function() {
+        const paletteCount = emojiFont.palettes.getAll().length;
+        emojiFont.palettes.delete(1);
+        assert.equal(emojiFont.palettes.getAll().length, paletteCount - 1);
+    });
 
     it('sets a color', function() {
         emojiFont.palettes.setColor(9, '#987654');

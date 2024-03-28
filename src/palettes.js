@@ -147,6 +147,17 @@ export class PaletteManager {
     }
 
     /**
+     * deletes a palette by its zero-based index
+     * @param {integer} paletteIndex 
+     */
+    delete(paletteIndex) {
+        const palettes = this.getAll('raw');
+        delete palettes[paletteIndex];
+        this.cpal().colorRecordIndices.pop();
+        this.cpal().colorRecords = palettes.flat();
+    }
+
+    /**
      * Makes sure that the CPAL table exists and is populated with default values.
      * @param {Array} colors (optional) colors to populate on creation
      * @returns {Boolean} true if it was created, false if it already existed.
