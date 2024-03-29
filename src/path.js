@@ -14,7 +14,8 @@ function Path() {
     this.fill = 'black';
     this.stroke = null;
     this.strokeWidth = 1;
-    this.layers = [];
+    // the layer property is only set on computed paths during glyph rendering
+    // this.layers = [];
 }
 
 const decimalRoundingCache = {};

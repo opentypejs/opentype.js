@@ -3,6 +3,7 @@
 import check from './check.js';
 import draw from './draw.js';
 import Path from './path.js';
+import { layerLoader } from './layers.js';
 import { getPaletteColor, formatColor } from './tables/cpal.js';
 // import glyf from './tables/glyf' Can't be imported here, because it's a circular dependency
 
@@ -168,10 +169,11 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
         if (xScale === undefined) xScale = scale;
         if (yScale === undefined) yScale = scale;
     }
-
+    
     const p = new Path();
     if ( options.drawLayers ) {
-        const layers = this.path.layers;
+        p.layers = [];
+        const layers = this.getLayers(font);
         if ( layers && layers.length ) {
             for ( let i = 0; i < layers.length; i += 1 ) {
                 const layer = layers[i];
@@ -211,6 +213,10 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     }
 
     return p;
+};
+
+Glyph.prototype.getLayers = function(font) {
+    return layerLoader(font, this);
 };
 
 /**
@@ -321,7 +327,7 @@ Glyph.prototype.draw = function(ctx, x, y, fontSize, options, font) {
 Glyph.prototype.drawPoints = function(ctx, x, y, fontSize, options, font) {
     options = Object.assign({}, font && font.defaultRenderOptions, options);
     if ( options.drawLayers ) {
-        const layers = this.path.layers;
+        const layers = this.getLayers(font);
         if ( layers && layers.length ) {
             for ( let l = 0; l < layers.length; l += 1 ) {
                 this.drawPoints.call(layers[l].glyph, ctx, x, y, fontSize);

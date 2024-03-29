@@ -37,7 +37,7 @@ describe('glyph.js', function() {
         });
 
         it('lazily loads COLR layers on paths', function() {
-            const layers = emojiFont.glyphs.get(138).path.layers;
+            const layers = emojiFont.glyphs.get(138).layers;
             assert.equal(Array.isArray(layers), true);
             assert.equal(layers.length, 4);
         });
@@ -175,7 +175,7 @@ describe('glyph.js', function() {
             assert.deepEqual(contextLogs[25], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
             assert.deepEqual(contextLogs[48], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
         });
-        
+
         it('does not draw layers when options.drawLayers = false', function() {
             let contextLogs = [];
             const ctx = util.createMockObject(contextLogs, undefined/*, { consoleLog: 'ctx' }*/);
@@ -222,7 +222,7 @@ describe('glyph.js on low memory mode', function() {
 
         it('lazily loads COLR layers on paths', function() {
             const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0.ttf', opt);
-            const layers = emojiFont.glyphs.get(138).path.layers;
+            const layers = emojiFont.glyphs.get(138).layers;
             assert.equal(Array.isArray(layers), true);
             assert.equal(layers.length, 4);
         });
