@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { hex, unhex } from '../testutil.js';
+import { hex, unhex, enableMockCanvas } from '../testutil.js';
 import cpal, { parseColor } from '../../src/tables/cpal.js';
 import Font from '../../src/font.js';
 
@@ -49,6 +49,8 @@ describe('tables/cpal.js', function() {
         ];
         assert.deepStrictEqual(colors, expectedColors);
 
+        enableMockCanvas();
+
         const convertedColors = [
             parseColor(0x12345678, 'raw'),
             parseColor(0x12345678, 'cpal'),
@@ -85,6 +87,8 @@ describe('tables/cpal.js', function() {
             parseColor('hsl( 260.82, 42.61%, 77.45%)', 'hexa'),
             parseColor('hsla(260.82, 42.61%, 77.45%, 0.9373)', 'raw'),
             parseColor('background: hsl(0.3turn 48% 48%);', 'rgb'),
+            
+            parseColor('rebeccapurple', 'hex'),
         ];
 
         const expectedConvertedColors = [
@@ -119,9 +123,12 @@ describe('tables/cpal.js', function() {
             '#11223344',
             '#11223344',
             '#11223344',
+
             '#beaddeff',
             obj.colorRecords[3],
-            'rgb(87, 181, 64)'
+            'rgb(87, 181, 64)',
+
+            '#663399',
         ];
 
         assert.deepEqual(convertedColors, expectedConvertedColors);
