@@ -128,8 +128,6 @@ function hslToRGB(hsla) {
     s /= 100;
     l /= 100;
 
-    
-
     const c = (1 - Math.abs(2 * l - 1)) * s;
     const x = c * (1 - Math.abs((h / 60) % 2 - 1));
     const m = l - c / 2;
@@ -164,6 +162,7 @@ function bgraToRaw(color) {
 
 function parseColor(color, targetFormat = 'hexa') {
     const returnRaw = (targetFormat == 'raw' || targetFormat == 'cpal');
+    let validFormat = true;
     if (
         (
             Number.isInteger(color) && returnRaw
@@ -218,6 +217,18 @@ function parseColor(color, targetFormat = 'hexa') {
         if(targetFormat == 'bgra') {
             return color;
         }
+    } else if(window && window.HTMLCanvasElement && /^[a-z]+$/i.test(color)) {
+        // assume CSS color name (only works in browser context!)
+        const ctx = document.createElement('canvas').getContext('2d');
+        ctx.fillStyle = color;
+        // may sometimes return rgba() notation, so we need to use formatColor()
+        const detectedColor = formatColor(ctx.fillStyle, 'hexa');
+        // invalid values will return black, so if that wasn't the input, it's an invalid color name
+        if (detectedColor === '#000000ff' && color.toLowerCase() !== 'black') {
+            validFormat = false;
+        } else {
+            color = detectedColor;
+        }
     } else {
         color = color.trim();
         const rgbaRegex = /rgba?\(\s*(?:(\d*\.\d+)(%?)|(\d+)(%?))\s*(?:,|\s*)\s*(?:(\d*\.\d+)(%?)|(\d+)(%?))\s*(?:,|\s*)\s*(?:(\d*\.\d+)(%?)|(\d+)(%?))\s*(?:(?:,|\s|\/)\s*(?:(0*(?:\.\d+)?()|0*1(?:\.0+)?())|(?:\.\d+)|(\d+)(%)|(\d*\.\d+)(%)))?\s*\)/;
@@ -240,9 +251,13 @@ function parseColor(color, targetFormat = 'hexa') {
                     a: !matches[5] ? 1 : parseFloat(matches[5]) / (matches[6] ? 100 : 1)
                 });
             } else {
-                throw new Error(`Invalid color format: ${color}`);
+                validFormat = false;
             }
         }
+    }
+
+    if (!validFormat) {
+        throw new Error(`Invalid color format: ${color}`);
     }
 
     return formatColor(color, targetFormat);
