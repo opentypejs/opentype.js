@@ -22,18 +22,18 @@
   },
   "main": "./dist/opentype.js",
   "browser": "./dist/opentype.js",
-  "module": "./dist/opentype.module.js",
+  "module": "./dist/opentype.module.mjs",
   "scripts": {
     "build": "npm run b:umd && npm run b:esm",
     "dist": " npm run d:umd && npm run d:esm",
     "test": "npm run build && npm run dist && mocha --require reify --recursive && npm run lint",
     "lint": "eslint src",
     "lint-fix": "eslint src --fix",
-    "start": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --external:http --external:https --target=es2018 --format=esm  --out-extension:.js=.module.js --global-name=opentype --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\" --watch --servedir=. --footer:js=\"new EventSource('/esbuild').addEventListener('change', () => location.reload())\"",
-    "b:umd": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --external:http --external:https --target=es2018 --format=iife --out-extension:.js=.js        --global-name=opentype --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\"",
-    "d:umd": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --external:http --external:https --target=es2018 --format=iife --out-extension:.js=.min.js    --global-name=opentype --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\" --minify --sourcemap",
-    "b:esm": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --external:http --external:https --target=es2018 --format=esm  --out-extension:.js=.module.js",
-    "d:esm": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --external:http --external:https --target=es2018 --format=esm  --out-extension:.js=.module.min.js --minify --sourcemap"
+    "start": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --external:http --external:https --target=es2018 --format=esm  --out-extension:.js=.module.mjs --global-name=opentype --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\" --watch --servedir=. --footer:js=\"new EventSource('/esbuild').addEventListener('change', () => location.reload())\"",
+    "b:umd": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --external:http --external:https --target=es2018 --format=iife --out-extension:.js=.js         --global-name=opentype --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\"",
+    "d:umd": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --external:http --external:https --target=es2018 --format=iife --out-extension:.js=.min.js     --global-name=opentype --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\" --minify --sourcemap",
+    "b:esm": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --external:http --external:https --target=es2018 --format=esm  --out-extension:.js=.module.mjs",
+    "d:esm": "esbuild --bundle src/opentype.js --outdir=dist --external:fs --external:http --external:https --target=es2018 --format=esm  --out-extension:.js=.module.min.mjs --minify --sourcemap"
   },
   "devDependencies": {
     "mocha": "^8.4.0",
