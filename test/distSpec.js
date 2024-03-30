@@ -1,16 +1,16 @@
 import assert from 'assert';
 import { parse as parseBuffer } from '../dist/opentype.js';
 import { parse as parseBufferMin } from '../dist/opentype.min.js';
-import { parse as parseBufferMod } from '../dist/opentype.module.js';
-import { parse as parseBufferModMin } from '../dist/opentype.module.min.js';
+import { parse as parseBufferMod } from '../dist/opentype.module.mjs';
+import { parse as parseBufferModMin } from '../dist/opentype.module.min.mjs';
 import { readFileSync } from 'fs';
 
 describe('opentype.js dist', function () {
     const dist_matrix = [
         [parseBuffer, '.js'],
         [parseBufferMin, '.min.js'],
-        [parseBufferMod, '.module.js'],
-        [parseBufferModMin, '.module.min.js'],
+        [parseBufferMod, '.module.mjs'],
+        [parseBufferModMin, '.module.min.mjs'],
     ]
 
     for (const [parse, ext] of dist_matrix) {
