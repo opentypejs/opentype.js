@@ -28,7 +28,7 @@ describe('featureQuery.js', function() {
         /**
          * default
          */
-        sub5Font = loadSync('./test/fonts/liga-sub5.ttf');
+        sub5Font = loadSync('./test/fonts/sub5.ttf');
         query.sub5 = new FeatureQuery(sub5Font);
     });
     describe('getScriptFeature', function () {
@@ -151,16 +151,27 @@ describe('featureQuery.js', function() {
             const substitutions = lookup(contextParams);
             assert.deepEqual(substitutions, { ligGlyph: 1145, components: [76]});
         });
-        it('should parse multiple glyphs -ligature substitution format 3 (53)', function () {
-            const feature = query.sub5.getFeature({tag: 'liga', script: 'latn'});
+        it('should parse multiple glyphs -ligature substitution format 1 (51)', function () {
+            const feature = query.sub5.getFeature({tag: 'ccmp', script: 'DFLT'});
             const featureLookups = query.sub5.getFeatureLookups(feature);
             const lookupSubtables = query.sub5.getLookupSubtables(featureLookups[0]);
             const substitutionType = query.sub5.getSubstitutionType(featureLookups[0], lookupSubtables[0]);
+            assert.equal(substitutionType, 51);
+            const lookup = query.sub5.getLookupMethod(featureLookups[0], lookupSubtables[0]);
+            let contextParams = new ContextParams([1, 88, 1], 0);
+            const substitutions = lookup(contextParams);
+            assert.deepEqual(substitutions, [85, 88, 85]);
+        });
+        it('should parse multiple glyphs -ligature substitution format 3 (53)', function () {
+            const feature = query.sub5.getFeature({tag: 'ccmp', script: 'DFLT'});
+            const featureLookups = query.sub5.getFeatureLookups(feature);
+            const lookupSubtables = query.sub5.getLookupSubtables(featureLookups[1]);
+            const substitutionType = query.sub5.getSubstitutionType(featureLookups[1], lookupSubtables[0]);
             assert.equal(substitutionType, 53);
-            const lookup1 = query.sub5.getLookupMethod(featureLookups[0], lookupSubtables[0]);
-            let contextParams1 = new ContextParams([2, 3], 0);
-            const substitutions1 = lookup1(contextParams1);
-            assert.deepEqual(substitutions1, [54, 54]);
+            const lookup = query.sub5.getLookupMethod(featureLookups[0], lookupSubtables[0]);
+            let contextParams = new ContextParams([2, 3], 0);
+            const substitutions = lookup(contextParams);
+            assert.deepEqual(substitutions, [54, 54]);
         });
         it('should decompose a glyph - multiple substitution format 1 (21)', function () {
             const feature = query.arabic.getFeature({tag: 'ccmp', script: 'arab'});

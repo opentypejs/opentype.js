@@ -68,6 +68,7 @@ const SUBSTITUTIONS = {
     12: singleSubstitutionFormat2,
     63: chainingSubstitutionFormat3,
     41: ligatureSubstitutionFormat1,
+    51: chainingSubstitutionFormat3,
     53: chainingSubstitutionFormat3
 };
 

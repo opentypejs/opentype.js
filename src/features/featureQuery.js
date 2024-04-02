@@ -204,10 +204,57 @@ function ligatureSubstitutionFormat1(contextParams, subtable) {
 }
 
 /**
- * Handle ligature substitution - format 3
+ * Handle context substitution - format 1
  * @param {ContextParams} contextParams context params to lookup
  */
-function ligatureSubstitutionFormat3(contextParams, subtable) {
+function contextSubstitutionFormat1(contextParams, subtable) {
+    let glyphId = contextParams.current;
+    let ligSetIndex = lookupCoverage(glyphId, subtable.coverage);
+    if (ligSetIndex === -1)
+        return null;
+    for (const ruleSet of subtable.ruleSets) {
+        for (const rule of ruleSet) {
+            let matched = true;
+            for (let i = 0; i < rule.input.length; i++) {
+                if (contextParams.lookahead[i] !== rule.input[i]){
+                    matched = false;
+                    break;
+                }
+            }
+            if (matched) {
+                let substitutions = [];
+                substitutions.push(glyphId);
+                for (let i = 0; i < rule.input.length; i++) {
+                    substitutions.push(rule.input[i]);
+                }
+                const parser = (substitutions, lookupRecord)=>{
+                    const {lookupListIndex,sequenceIndex} = lookupRecord;
+                    const {subtables} = this.getLookupByIndex(lookupListIndex);
+                    for (const subtable of subtables){
+                        let ligSetIndex = lookupCoverage(substitutions[sequenceIndex], subtable.coverage);
+                        if (ligSetIndex !== -1){
+                            substitutions[sequenceIndex] = subtable.deltaGlyphId;
+                        }
+                    }
+                };
+
+                for (let i = 0; i < rule.lookupRecords.length; i++) {
+                    const lookupRecord = rule.lookupRecords[i];
+                    parser(substitutions, lookupRecord);
+                }
+
+                return substitutions;
+            }
+        }
+    }
+    return null;
+}
+
+/**
+ * Handle context substitution - format 3
+ * @param {ContextParams} contextParams context params to lookup
+ */
+function contextSubstitutionFormat3(contextParams, subtable) {
     let substitutions = [];
 
     for (let i = 0; i < subtable.coverages.length; i++){
@@ -368,8 +415,12 @@ FeatureQuery.prototype.getLookupMethod = function(lookupTable, subtable) {
             return glyphIndex => decompositionSubstitutionFormat1.apply(
                 this, [glyphIndex, subtable]
             );
+        case '51':
+            return contextParams => contextSubstitutionFormat1.apply(
+                this, [contextParams, subtable]
+            );
         case '53':
-            return contextParams => ligatureSubstitutionFormat3.apply(
+            return contextParams => contextSubstitutionFormat3.apply(
                 this, [contextParams, subtable]
             );
         default:
@@ -478,6 +529,16 @@ FeatureQuery.prototype.lookupFeature = function (query) {
                     if (substitution) {
                         substitutions.splice(currentIndex, 1, new SubstitutionAction({
                             id: 21, tag: query.tag, substitution
+                        }));
+                    }
+                    break;
+                case '51':
+                    substitution = lookup(contextParams);
+                    if (Array.isArray(substitution) && substitution.length) {
+                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
+                            id: 51,
+                            tag: query.tag,
+                            substitution
                         }));
                     }
                     break;
