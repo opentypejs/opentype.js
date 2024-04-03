@@ -327,10 +327,6 @@ function fontToSfntTable(font) {
         names.windows.preferredSubfamily = fontNamesWindows.fontSubfamily || fontNamesUnicode.fontSubfamily || fontNamesMacintosh.fontSubfamily;
     }
 
-    // we have to handle fvar before name, because it may modify name IDs
-    const fvarTable = font.tables.fvar ? fvar.make(font.tables.fvar, font.names) : undefined;
-    const gaspTable = font.tables.gasp ? gasp.make(font.tables.gasp) : undefined;
-
     const languageTags = [];
     const nameTable = _name.make(names, languageTags);
     const ltagTable = (languageTags.length > 0 ? ltag.make(languageTags) : undefined);
@@ -361,17 +357,15 @@ function fontToSfntTable(font) {
         cpal,
         colr,
         stat,
-        avar
+        avar,
+        fvar,
+        gasp
     };
 
     const optionalTableArgs = {
-        avar: [font.tables.fvar]
+        avar: [font.tables.fvar],
+        fvar: [font.names],
     };
-
-    // fvar table is already handled above
-    if (fvarTable) {
-        tables.push(fvarTable);
-    }
 
     for (let tableName in optionalTables) {
         const table = font.tables[tableName];
@@ -382,10 +376,6 @@ function fontToSfntTable(font) {
 
     if (metaTable) {
         tables.push(metaTable);
-    }
-
-    if (gaspTable) {
-        tables.push(gaspTable);
     }
 
     const sfntTable = makeSfntTable(tables);
