@@ -88,29 +88,4 @@ function binarySearchInsert(array, key, value) {
     array.splice(low, 0, value);
 }
 
-function deepClone(obj, hash = new WeakMap()) {
-    if (Object(obj) !== obj || obj instanceof Function) return obj; // Return if primitive or function
-    if (hash.has(obj)) return hash.get(obj); // Circular reference handling
-    if (obj instanceof Date) return new Date(obj); // Clone Date
-    if (obj instanceof RegExp) return new RegExp(obj.source, obj.flags); // Clone RegExp
-    if (obj instanceof Map) {
-        return new Map(Array.from(obj.entries(), ([key, val]) => [key, deepClone(val, hash)])); // Clone Map
-    }
-    if (obj instanceof Set) {
-        return new Set(Array.from(obj, val => deepClone(val, hash))); // Clone Set
-    }
-
-    const clone = new obj.constructor();
-    hash.set(obj, clone);
-
-    // Use a for loop for objects
-    const keys = Object.keys(obj);
-    for (let i = 0; i < keys.length; i++) {
-        const key = keys[i];
-        clone[key] = deepClone(obj[key], hash);
-    }
-
-    return clone;
-}
-
-export { isBrowser, isNode, checkArgument, arraysEqual, objectsEqual, binarySearch, binarySearchIndex, binarySearchInsert, deepClone };
+export { isBrowser, isNode, checkArgument, arraysEqual, objectsEqual, binarySearch, binarySearchIndex, binarySearchInsert };

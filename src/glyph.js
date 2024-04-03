@@ -207,7 +207,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
             p.curveTo(x + (cmd.x1 * xScale), y + (-cmd.y1 * yScale),
                 x + (cmd.x2 * xScale), y + (-cmd.y2 * yScale),
                 x + (cmd.x * xScale), y + (-cmd.y * yScale));
-        } else if (cmd.type === 'Z') {
+        } else if (cmd.type === 'Z' && p.stroke && p.strokeWidth) {
             p.closePath();
         }
     }
@@ -342,8 +342,6 @@ Glyph.prototype.drawPoints = function(ctx, x, y, fontSize, options, font) {
             ctx.moveTo(x + (l[j].x * scale), y + (l[j].y * scale));
             ctx.arc(x + (l[j].x * scale), y + (l[j].y * scale), 2, 0, Math.PI * 2, false);
         }
-
-        ctx.closePath();
         ctx.fill();
     }
 

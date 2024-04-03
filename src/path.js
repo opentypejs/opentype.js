@@ -524,7 +524,7 @@ Path.prototype.draw = function(ctx) {
             ctx.bezierCurveTo(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
         } else if (cmd.type === 'Q') {
             ctx.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
-        } else if (cmd.type === 'Z') {
+        } else if (cmd.type === 'Z' && this.stroke && this.strokeWidth) {
             ctx.closePath();
         }
     }

@@ -37,7 +37,7 @@ describe('glyph.js', function() {
         });
 
         it('lazily loads COLR layers on paths', function() {
-            const layers = emojiFont.glyphs.get(138).layers;
+            const layers = emojiFont.glyphs.get(138).getLayers(emojiFont);
             assert.equal(Array.isArray(layers), true);
             assert.equal(layers.length, 4);
         });
@@ -161,19 +161,19 @@ describe('glyph.js', function() {
             const ctx = util.createMockObject(contextLogs, undefined/*, { consoleLog: 'ctx' }*/);
             emojiFont.glyphs.get(138).draw(ctx, 0, 0, 12, {}, emojiFont);
             const expectedProps = [
-                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
-                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
-                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
                 'beginPath', 'moveTo', 'lineTo', 'quadraticCurveTo', 'lineTo', 'lineTo', 'quadraticCurveTo',
                 'lineTo', 'lineTo', 'quadraticCurveTo', 'lineTo', 'lineTo', 'quadraticCurveTo', 'lineTo',
-                'closePath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
+                'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
 
             ];
             assert.deepEqual(contextLogs.map(log => log.property), expectedProps);
-            assert.deepEqual(contextLogs[7], { property: 'fillStyle', value: 'rgba(241, 179, 28, 1)' });
-            assert.deepEqual(contextLogs[16], { property: 'fillStyle', value: 'rgba(210, 47, 39, 1)' });
-            assert.deepEqual(contextLogs[25], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
-            assert.deepEqual(contextLogs[48], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
+            assert.deepEqual(contextLogs[6], { property: 'fillStyle', value: 'rgba(241, 179, 28, 1)' });
+            assert.deepEqual(contextLogs[14], { property: 'fillStyle', value: 'rgba(210, 47, 39, 1)' });
+            assert.deepEqual(contextLogs[22], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
+            assert.deepEqual(contextLogs[43], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
         });
 
         it('does not draw layers when options.drawLayers = false', function() {
@@ -181,7 +181,7 @@ describe('glyph.js', function() {
             const ctx = util.createMockObject(contextLogs, undefined/*, { consoleLog: 'ctx' }*/);
             emojiFont.glyphs.get(138).draw(ctx, 0, 0, 12, { drawLayers: false }, emojiFont);
             const expectedProps = [
-                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'closePath', 'fillStyle', 'fill',
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
             ];
             assert.deepEqual(contextLogs.map(log => log.property), expectedProps);
         });
@@ -222,7 +222,7 @@ describe('glyph.js on low memory mode', function() {
 
         it('lazily loads COLR layers on paths', function() {
             const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0.ttf', opt);
-            const layers = emojiFont.glyphs.get(138).layers;
+            const layers = emojiFont.glyphs.get(138).getLayers(emojiFont);
             assert.equal(Array.isArray(layers), true);
             assert.equal(layers.length, 4);
         });
