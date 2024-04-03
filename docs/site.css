@@ -286,6 +286,8 @@ canvas.item:hover {
     display: flex;
     flex-flow: column nowrap;
     height: 500px;
+    width: 400px;
+    overflow-y: auto;
 }
 #glyph-data dl { margin: 0; }
 #glyph-data dt { float: left; }
@@ -320,4 +322,9 @@ span.offcurve { color: red; }
 
 #palettes dd {
     margin-inline-start: 0.5em;
+}
+
+#layers canvas.item:hover {
+    cursor: default;
+    background-color: transparent;
 }

@@ -310,11 +310,6 @@ Once you have a path through `Font.getPath()` or `Glyph.getPath()`, you can use 
 * `fill`: The fill color of the Path. Color is a string representing a [CSS color](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value). (default: `'black'`)
 * `stroke`: The stroke color of the `Path`. Color is a string representing a [CSS color](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value). (default: `null`; the path will not be stroked)
 * `strokeWidth`: The line thickness of the `Path`. (default: `1`, but if `stroke` is `null` no stroke will be drawn)
-* `layers`: For COLR/CPAL fonts, this array contains information on the layers to be drawn, see below
-
-Layer data:
-* `glyph`: The referenced glyph to get the path from
-* `paletteIndex`: The index of the color in the used color palette
 
 ##### `Path.draw(ctx)`
 Draw the path on the given 2D context. This uses the `fill`, `stroke`, and `strokeWidth` properties of the Path object.

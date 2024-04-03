@@ -16,6 +16,10 @@ export class PaletteManager {
      */
     // defaultValue = 0x000000FF;
 
+    /**
+     * 
+     * @param {opentype.Font} font 
+     */
     constructor(font) {
         /**
         * @type {integer} CPAL color used to (pre)fill unset colors in a palette.
@@ -25,6 +29,10 @@ export class PaletteManager {
         this.font = font;
     }
 
+    /**
+     * Returns the font's cpal table object if present
+     * @returns {Object}
+     */
     cpal() {
         if (this.font.tables && this.font.tables.cpal) {
             return this.font.tables.cpal;
@@ -33,7 +41,7 @@ export class PaletteManager {
     }
 
     /**
-     * 
+     * Returns an array of arrays of color values for each palette, optionally in a specified color format
      * @param {string} colorFormat 
      * @returns {Array<Array>}
      */
@@ -53,7 +61,11 @@ export class PaletteManager {
         return palettes;
     }
 
-    // toCPALcolor(color) {
+    /**
+     * Converts a color value string to a CPAL integer color value
+     * @param {string} color 
+     * @returns {integer}
+     */
     toCPALcolor(color) {
         if (Array.isArray(color)) {
             return color.map((color) => parseColor(color, 'raw'));
@@ -62,9 +74,15 @@ export class PaletteManager {
         return parseColor(color, 'raw');
     }
 
-    // fillPalette(colors, colorCount = this.cpal().numPaletteEntries) {
-    fillPalette(colors, colorCount = this.cpal().numPaletteEntries) {
-        return Object.assign(Array(colorCount).fill(this.defaultValue), this.toCPALcolor(colors));
+    /**
+     * Fills a palette (by ID, or a provided array of CPAL color values) with a set of colors, falling back to the default color value, until a given count
+     * @param {Array<string>|integer} palette Array of colors to fill the palette with, the rest will be filled with the default color
+     * @param {integer} colorCount Number of colors to fill the palette with, defaults to the value of the numPaletteEntries field
+     * @returns 
+     */
+    fillPalette(palette, colorCount = this.cpal().numPaletteEntries) {
+        palette = Number.isInteger(palette) ? this.get(palette, 'raw') : palette;
+        return Object.assign(Array(colorCount).fill(this.defaultValue), this.toCPALcolor(palette));
     }
 
     /**
@@ -76,7 +94,7 @@ export class PaletteManager {
             return;
         }
 
-        const newCount = this.cpal().numPaletteEntries+ num;
+        const newCount = this.cpal().numPaletteEntries + num;
 
         const palettes = this.getAll()
             .map(palette => this.fillPalette(palette, newCount));
@@ -162,7 +180,6 @@ export class PaletteManager {
      * @param {Array} colors (optional) colors to populate on creation
      * @returns {Boolean} true if it was created, false if it already existed.
      */
-    // ensureCPAL(colors) {
     ensureCPAL(colors) {
         if (!this.cpal()) {
             if (!colors || !colors.length) {

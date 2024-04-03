@@ -69,6 +69,8 @@
 <script type="module">
 import * as opentype from "/dist/opentype.module.js";
 
+window.opentype = opentype;
+
 const form = document.forms.demo;
 
 var cellCount = 100,
@@ -172,7 +174,23 @@ function displayGlyphData(glyphIndex) {
     } else if (glyph.path) {
         html += 'path:<br><pre>  ' + glyph.path.commands.map(pathCommandToString).join('\n  ') + '\n</pre>';
     }
+
+    const layers = glyph.getLayers(font);
+    if(layers.length) {
+        html += 'layers:<div id="layers">';
+        for(let l = 0; l < layers.length; l++) {
+            html += `<canvas id="layer-${l}" class="item" width="${cellWidth}" height="${cellHeight}"></canvas></li>`;
+        }
+        html += '</div>';
+    }
+
     container.innerHTML = html;
+
+    for(let l = 0; l < layers.length; l++) {
+        const canvas = document.getElementById(`layer-${l}`);
+        enableHighDPICanvas(canvas);
+        renderGlyphItem(canvas, layers[l].glyph.index, `${l}: `, layers[l].paletteIndex);
+    }
 }
 
 var arrowLength = 10,
@@ -194,7 +212,6 @@ function drawArrow(ctx, x1, y1, x2, y2) {
     ctx.lineTo(basex + normalx, basey + normaly);
     ctx.lineTo(basex - normalx, basey - normaly);
     ctx.lineTo(x2, y2);
-    ctx.closePath();
     ctx.fill();
 }
 
@@ -234,7 +251,9 @@ function drawPathWithArrows(ctx, path) {
             y1 = cmd.y1;
         } else if (cmd.type === 'Z') {
             arrows.push([ctx, x1, y1, x2, y2]);
-            ctx.closePath();
+            if(path.stroke) {
+                ctx.closePath();
+            }
         }
         x2 = cmd.x;
         y2 = cmd.y;
@@ -287,7 +306,7 @@ function displayGlyph(glyphIndex) {
     glyph.drawPoints(ctx, x0, glyphBaseline, glyphSize, options, window.font);
 }
 
-function renderGlyphItem(canvas, glyphIndex) {
+function renderGlyphItem(canvas, glyphIndex, prefix = '', paletteIndex) {
     var cellMarkSize = 4;
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, cellWidth, cellHeight);
@@ -295,9 +314,9 @@ function renderGlyphItem(canvas, glyphIndex) {
 
     ctx.fillStyle = '#606060';
     ctx.font = '9px sans-serif';
-    ctx.fillText(glyphIndex, 1, cellHeight-1);
+    ctx.fillText(prefix + glyphIndex, 1, cellHeight-1);
     var glyph = window.font.glyphs.get(glyphIndex),
-        glyphWidth = glyph.advanceWidth * fontScale,
+        glyphWidth = (glyph.advanceWidth || 0) * fontScale,
         xmin = (cellWidth - glyphWidth)/2,
         xmax = (cellWidth + glyphWidth)/2,
         x0 = xmin;
@@ -308,8 +327,16 @@ function renderGlyphItem(canvas, glyphIndex) {
     ctx.fillRect(xmax, fontBaseline, cellMarkSize, 1);
     ctx.fillRect(xmax, fontBaseline, 1, cellMarkSize);
 
-    ctx.fillStyle = '#000000';
-    glyph.draw(ctx, x0, fontBaseline, fontSize, options, window.font);
+    const overwriteOptions = Object.assign({},
+        options,
+        { fill: typeof paletteIndex !== 'undefined' ? window.font.palettes.getColor(paletteIndex, window.fontOptions.usePalette) : '#000000' }
+    );
+    
+    if (/(^#ffffff)|(00$)/.test(overwriteOptions.fill)) {
+        overwriteOptions.fill = '#000000';
+    }
+
+    glyph.draw(ctx, x0, fontBaseline, fontSize, overwriteOptions, window.font);
 }
 
 function displayGlyphPage(pageNum) {
@@ -381,6 +408,7 @@ window.redraw = function() {
     displayGlyphPage(pageIndex);
     const glyphIndex = document.querySelector('[data-glyph-index]').dataset.glyphIndex;
     displayGlyph(glyphIndex);
+    displayGlyphData(glyphIndex);
 }
 
 function updateColrOptions() {

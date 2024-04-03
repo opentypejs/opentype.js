@@ -3,7 +3,6 @@
 import check from './check.js';
 import draw from './draw.js';
 import Path from './path.js';
-import { layerLoader } from './layers.js';
 import { getPaletteColor, formatColor } from './tables/cpal.js';
 // import glyf from './tables/glyf' Can't be imported here, because it's a circular dependency
 
@@ -215,8 +214,13 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     return p;
 };
 
+/**
+ * 
+ * @param {opentype.Font} font 
+ * @returns {Array}
+ */
 Glyph.prototype.getLayers = function(font) {
-    return layerLoader(font, this);
+    return font.layers.get(this.index);
 };
 
 /**
@@ -330,7 +334,10 @@ Glyph.prototype.drawPoints = function(ctx, x, y, fontSize, options, font) {
         const layers = this.getLayers(font);
         if ( layers && layers.length ) {
             for ( let l = 0; l < layers.length; l += 1 ) {
-                this.drawPoints.call(layers[l].glyph, ctx, x, y, fontSize);
+                // prevent endless loop: ignore layers with own glyph id
+                if(layers[l].glyph.index !== this.index) {
+                    this.drawPoints.call(layers[l].glyph, ctx, x, y, fontSize);
+                }
             }
             return;
         }

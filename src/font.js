@@ -7,6 +7,7 @@ import glyphset from './glyphset.js';
 import Position from './position.js';
 import Substitution from './substitution.js';
 import { PaletteManager } from './palettes.js';
+import { LayerManager } from './layers.js';
 import { isBrowser, checkArgument } from './util.js';
 import HintingTrueType from './hintingtt.js';
 import Bidi from './bidi.js';
@@ -140,6 +141,7 @@ function Font(options) {
     this.substitution = new Substitution(this);
     this.tables = this.tables || {};
     this.palettes = new PaletteManager(this);
+    this.layers = new LayerManager(this);
 
     // needed for low memory mode only.
     this._push = null;
