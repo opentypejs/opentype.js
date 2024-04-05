@@ -458,7 +458,7 @@ function parseBuffer(buffer, opt={}) {
             console.warn('This font provides a gvar table, but no glyf table. Glyph variation only works with TrueType outlines.');
         }
         const gvarTable = uncompressTable(data, gvarTableEntry);
-        font.tables.gvar = gvar.parse(gvarTable.data, gvarTable.offset, font.names);
+        font.tables.gvar = gvar.parse(gvarTable.data, gvarTable.offset, font.tables.fvar);
     }
 
     if (avarTableEntry) {

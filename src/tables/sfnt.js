@@ -24,6 +24,7 @@ import cpal from './cpal.js';
 import fvar from './fvar.js';
 import stat from './stat.js';
 import avar from './avar.js';
+import gvar from './gvar.js';
 import gasp from './gasp.js';
 
 function log2(v) {
@@ -361,7 +362,8 @@ function fontToSfntTable(font) {
         cpal,
         colr,
         stat,
-        avar
+        avar,
+        gvar,
     };
 
     const optionalTableArgs = {

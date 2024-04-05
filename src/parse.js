@@ -93,7 +93,15 @@ const typeOffsets = {
 
 const masks = {
     LONG_WORDS: 0x8000,
-    WORD_DELTA_COUNT_MASK: 0x7FFF
+    WORD_DELTA_COUNT_MASK: 0x7FFF,
+    SHARED_POINT_NUMBERS: 0x8000,
+    COUNT_MASK: 0x0FFF,
+    EMBEDDED_PEAK_TUPLE: 0x8000,
+    INTERMEDIATE_REGION: 0x4000,
+    PRIVATE_POINT_NUMBERS: 0x2000,
+    TUPLE_INDEX_MASK: 0x0FFF,
+    POINTS_ARE_WORDS: 0x80,
+    POINT_RUN_COUNT_MASK: 0x7F
 };
 
 // A stateful parser that changes the offset whenever a value is retrieved.
@@ -344,6 +352,18 @@ Parser.prototype.parseRecordList32 = function(count, recordDescription) {
         records[i] = rec;
     }
     return records;
+};
+
+Parser.prototype.parseTupleRecords = function(tupleCount, axisCount) {
+    let tuples = [];
+    for (let i = 0; i < tupleCount; i++) {
+        let tuple = [];
+        for (let axisIndex = 0; axisIndex < axisCount; axisIndex++) {
+            tuple.push(this.parseF2Dot14());
+        }
+        tuples.push(tuple);
+    }
+    return tuples;
 };
 
 // Parse a data structure into an object
@@ -710,6 +730,180 @@ Parser.prototype.parseDeltaSets = function(itemCount, wordDeltaCount) {
     }
 
     return deltas;
+};
+
+Parser.prototype.parseTupleVariationStoreList = function(axisCount) {
+    const glyphCount = this.parseUShort();
+    const flags = this.parseUShort();
+    const offsetSizeIs32Bit = flags & 0x01;
+
+    const glyphVariationDataArrayOffset = this.parseOffset32();
+    const parseOffset = (offsetSizeIs32Bit ? this.parseULong : this.parseUShort).bind(this);
+
+    const glyphVariations = {};
+
+    let currentOffset = parseOffset();
+    if (!offsetSizeIs32Bit) currentOffset *= 2;
+    let nextOffset;
+
+    for (let i = 0; i < glyphCount; i++) {
+        nextOffset = parseOffset();
+        if (!offsetSizeIs32Bit) nextOffset *= 2;
+        
+        const length = nextOffset - currentOffset;
+
+        glyphVariations[i] = length
+            ? this.parseTupleVariationStore(
+                glyphVariationDataArrayOffset + currentOffset,
+                length,
+                axisCount
+            )
+            : undefined;
+        
+        currentOffset = nextOffset;
+    }
+
+    return glyphVariations;
+};
+
+Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCount) {
+    const relativeOffset = this.relativeOffset;
+
+    this.relativeOffset = tableOffset;
+
+    // header
+    const tupleVariationCount = this.parseUShort();
+    const hasSharedPoints = !!(tupleVariationCount & masks.SHARED_POINT_NUMBERS);
+    // const reserved = tupleVariationCount & 0x7000;
+    const count = tupleVariationCount & masks.COUNT_MASK;
+    const dataOffset = this.parseOffset16();
+    const headers = [];
+    let sharedPoints = [];
+    
+    for(let h = 0; h < count; h++) {
+        const headerData = this.parseTupleVariationHeaders(axisCount);
+        headers.push(headerData);
+    }
+    
+    if (this.relativeOffset !== tableOffset + dataOffset) {
+        console.warn(`Unexpected offset after parsing tuple variation headers! Expected ${tableOffset + dataOffset}, actually ${this.relativeOffset}`);
+        this.relativeOffset = tableOffset + dataOffset;
+    }    
+
+    if (hasSharedPoints) {
+        sharedPoints = this.parsePackedPointNumbers();
+    }
+
+    const perTupleDataOffset = this.relativeOffset;
+
+    for(let h = 0; h < count; h++) {
+        const header = headers[h];
+        if(header.flags.privatePointNumbers) {
+            header.privatePoints = this.parsePackedPointNumbers();
+            console.log(header.privatePoints );
+        }
+        this.relativeOffset = perTupleDataOffset + header.variationDataSize;
+
+    }
+
+    this.relativeOffset = relativeOffset;
+
+    return {
+        length,
+        sharedPoints,
+        count,
+        dataOffset,
+        headers,
+    };
+};
+
+Parser.prototype.parseTupleVariationHeaders = function(axisCount) {
+    const variationDataSize = this.parseUShort();
+    const tupleIndex = this.parseUShort();
+
+    const embeddedPeakTuple = !!(tupleIndex & masks.EMBEDDED_PEAK_TUPLE);
+    if (embeddedPeakTuple) throw new Error('boom');
+    const intermediateRegion = !!(tupleIndex & masks.INTERMEDIATE_REGION);
+    const privatePointNumbers = !!(tupleIndex & masks.PRIVATE_POINT_NUMBERS);
+    // const reserved = tupleIndex & 0x1000;
+    const sharedTupleRecordsIndex = embeddedPeakTuple ? undefined : tupleIndex & masks.TUPLE_INDEX_MASK;
+
+    const peakTuple = embeddedPeakTuple ? this.parseTupleRecords(1, axisCount)[0] : undefined;
+    const intermediateStartTuple = intermediateRegion ? this.parseTupleRecords(1, axisCount)[0] : undefined;
+    const intermediateEndTuple = intermediateRegion ? this.parseTupleRecords(1, axisCount)[0] : undefined;
+
+    return {
+        variationDataSize,
+        peakTuple,
+        intermediateStartTuple,
+        intermediateEndTuple,
+        privatePointNumbers,
+        sharedTupleRecordsIndex,
+        flags: {
+            embeddedPeakTuple,
+            intermediateRegion,
+            privatePointNumbers,
+        }
+    };
+};
+
+function hex(bytes) {
+    const values = [];
+    for (let i = 0; i < bytes.length; i++) {
+        const b = bytes[i];
+        if (b < 16) {
+            values.push('0' + b.toString(16));
+        } else {
+            values.push(b.toString(16));
+        }
+    }
+
+    return values.join(' ').toUpperCase();
+}
+
+Parser.prototype.parsePackedPointNumbers = function() {
+    const countByte1 = this.parseByte();
+    const points = [];
+    let totalPointCount;
+
+    if (countByte1 === 0) {
+        // all glyph points are considered, no second byte.
+        totalPointCount = 0;
+        return points;
+    } else if (countByte1 >= 1 && countByte1 <= 127) {
+        // The point count is the value of the first byte, no second byte.
+        totalPointCount = countByte1;
+    } else if (countByte1 >= 128) {
+        // High bit is set, need to read a second byte and combine.
+        const countByte2 = this.parseByte();
+        // Combine as big-endian uint16, with high bit of the first byte cleared.
+        // This is done by masking the first byte with 0x7F (to clear the high bit)
+        // and then shifting it left by 8 bits before adding the second byte.
+        totalPointCount = (((countByte1 & 0x7F) << 8) | countByte2);
+    }
+    
+    let lastPoint = -1; // Starting before the first point
+    while (points.length < totalPointCount) {
+        const controlByte = this.parseByte();
+        const numbersAre16Bit = (controlByte & 0x80) !== 0; // Check if high bit is set
+        let runCount = (controlByte & 0x7F) + 1; // Number of points in this run
+
+        for (let i = 0; i < runCount && points.length < totalPointCount; i++) {
+            let pointDelta;
+            if (numbersAre16Bit) {
+                pointDelta = this.parseUShort(); // Parse delta as uint16
+            } else {
+                pointDelta = this.parseByte(); // Parse delta as uint8
+            }
+            // For the first point of the first run, use the value directly. Otherwise, accumulate.
+            lastPoint = (lastPoint === -1) ? pointDelta : lastPoint + pointDelta;
+            points.push(lastPoint);
+        }
+    }
+
+    // console.log(points);
+
+    return points;
 };
 
 export default {
