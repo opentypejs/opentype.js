@@ -176,6 +176,71 @@ export class PaletteManager {
     }
 
     /**
+     * Deletes a specific color index in all palettes and updates all layers using that color with the replacement index
+     * @param {integer} colorIndex index of the color that should be deleted
+     * @param {integer} replacementIndex index (according to the palette before deletion) of the color to replace in layers using the color to be to deleted
+     */
+    deleteColor(colorIndex, replacementIndex) {
+        if(colorIndex === replacementIndex) {
+            throw Error('replacementIndex cannot be the same as colorIndex');
+        }
+        const cpal = this.cpal();
+        const palettes = this.getAll('raw');
+        const updatedPalettes = [];
+        if (replacementIndex > cpal.numPaletteEntries - 1) {
+            throw Error(`Replacement index out of range: numPaletteEntries after deletion: ${cpal.numPaletteEntries - 1}, replacementIndex: ${replacementIndex})`);
+        }
+    
+        // Remove color from all palettes
+        for (let i = 0; i < palettes.length; i++) {
+            const palette = palettes[i];
+            const updatedPalette = palette.filter((color, index) => index !== colorIndex);
+            updatedPalettes.push(updatedPalette);
+        }
+    
+        // Update paletteIndex in layerRecords of the COLR table
+        const colrTable = this.font.tables.colr;
+        if (colrTable) {
+            const layerRecords = colrTable.layerRecords;
+    
+            // Adjust paletteIndex in layerRecords
+            for (let i = 0; i < layerRecords.length; i++) {
+                const currentIndex = layerRecords[i].paletteIndex;
+                if (currentIndex > colorIndex) {
+                    // If the current index is after the deleted color, adjust it accordingly
+                    const shiftAmount = 1; // We're removing one color from each palette
+                    layerRecords[i].paletteIndex -= shiftAmount;
+                } else if (currentIndex === colorIndex) {
+                    // Calculate replacement index shift
+                    let replacementShift = 0;
+                    for (let j = 0; j < palettes.length; j++) {
+                        if (replacementIndex > colorIndex && replacementIndex <= colorIndex + palettes[j].length) {
+                            replacementShift++;
+                            break;
+                        }
+                    }
+                    // Replace deleted color index with adjusted replacement
+                    layerRecords[i].paletteIndex = replacementIndex - replacementShift;
+                }
+            }
+    
+            // Reconstruct the COLR table
+            this.font.tables.colr = {
+                ...colrTable,
+                layerRecords: layerRecords,
+            };
+        }
+    
+        // Update CPAL table with the modified palettes
+        const flattenedPalettes = updatedPalettes.flat();
+        for (let i = 0; i < palettes.length; i++) {
+            cpal.colorRecordIndices[i] -= i;
+        }
+        cpal.numPaletteEntries = Math.max(0, cpal.numPaletteEntries - 1);
+        cpal.colorRecords = this.toCPALcolor(flattenedPalettes);
+    }        
+
+    /**
      * Makes sure that the CPAL table exists and is populated with default values.
      * @param {Array} colors (optional) colors to populate on creation
      * @returns {Boolean} true if it was created, false if it already existed.
