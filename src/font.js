@@ -409,7 +409,7 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
 Font.prototype.getPath = function(text, x, y, fontSize, options) {
     options = Object.assign({}, this.defaultRenderOptions, options);
     const fullPath = new Path();
-    fullPath.layers = [];
+    fullPath._layers = [];
     applyPaintType(this, fullPath, fontSize);
     if (fullPath.stroke) {
         const scale = 1 / (fullPath.unitsPerEm || 1000) * fontSize;
@@ -418,11 +418,11 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         const glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
         if ( options.drawLayers ) {
-            const layers = glyphPath.layers;
+            const layers = glyphPath._layers;
             if ( layers && layers.length ) {
                 for(let l = 0; l < layers.length; l++) {
                     const layer = layers[l];
-                    fullPath.layers.push(layer);
+                    fullPath._layers.push(layer);
                 }
                 return;
             }

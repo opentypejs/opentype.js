@@ -14,8 +14,8 @@ function Path() {
     this.fill = 'black';
     this.stroke = null;
     this.strokeWidth = 1;
-    // the layer property is only set on computed paths during glyph rendering
-    // this.layers = [];
+    // the _layer property is only set on computed paths during glyph rendering
+    // this._layers = [];
 }
 
 const decimalRoundingCache = {};
@@ -505,7 +505,7 @@ Path.prototype.getBoundingBox = function() {
  * @param {CanvasRenderingContext2D} ctx - A 2D drawing context.
  */
 Path.prototype.draw = function(ctx) {
-    const layers = this.layers;
+    const layers = this._layers;
     if ( layers && layers.length ) {
         for ( let l = 0; l < layers.length; l++ ) {
             this.draw.call(layers[l], ctx);
@@ -633,7 +633,7 @@ Path.prototype.toPathData = function(options) {
  * @return {string}
  */
 Path.prototype.toSVG = function(options, pathData) {
-    if (this.layers && this.layers.length) {
+    if (this._layers && this._layers.length) {
         /** @TODO: implement SVG output for colr fonts
          * Is there a standardized way?
          * @see https://github.com/unicode-org/text-rendering-tests/issues/95
@@ -669,7 +669,7 @@ Path.prototype.toSVG = function(options, pathData) {
  * @return {SVGPathElement}
  */
 Path.prototype.toDOMElement = function(options, pathData) {
-    if(this.layers && this.layers.length) {
+    if(this._layers && this._layers.length) {
         /** @TODO: implement SVG output for colr fonts
          * Is there a standardized way?
          * @see https://github.com/unicode-org/text-rendering-tests/issues/95

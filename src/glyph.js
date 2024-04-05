@@ -171,9 +171,9 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     
     const p = new Path();
     if ( options.drawLayers ) {
-        p.layers = [];
         const layers = this.getLayers(font);
         if ( layers && layers.length ) {
+            p._layers = [];
             for ( let i = 0; i < layers.length; i += 1 ) {
                 const layer = layers[i];
                 let color = getPaletteColor(font, layer.paletteIndex, options.usePalette);
@@ -184,7 +184,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
                     color = formatColor(color, options.colorFormat || 'rgba');
                 }
                 options = Object.assign({}, options, {fill: color});
-                p.layers.push(this.getPath.call(layer.glyph, x, y, fontSize, options, font));
+                p._layers.push(this.getPath.call(layer.glyph, x, y, fontSize, options, font));
             }
             return p;
         }

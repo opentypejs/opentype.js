@@ -81,7 +81,7 @@ let font = null;
 
 
 function doSnap(path) {
-    const layers = path.layers;
+    const layers = path._layers;
     if ( layers && layers.length ) {
         for( let l = 0; l < layers.length; l++ ) {
             doSnap(layers[l]);
