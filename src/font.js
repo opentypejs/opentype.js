@@ -542,6 +542,7 @@ Font.prototype.validate = function() {
 
     function assert(predicate, message) {
         if (!predicate) {
+            console.warn(`[opentype.js] ${message}`);
             warnings.push(message);
         }
     }
@@ -574,6 +575,8 @@ Font.prototype.validate = function() {
             previousID = currentGlyphID;
         }
     }
+
+    return warnings;
 };
 
 /**
