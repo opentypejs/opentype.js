@@ -561,6 +561,19 @@ Font.prototype.validate = function() {
 
     // Dimension information
     assert(this.unitsPerEm > 0, 'No unitsPerEm specified.');
+
+    if (font.tables.colr) {
+        const baseGlyphs = font.tables.colr.baseGlyphRecords;
+        let previousID = -1;
+        for(let b = 0; b < baseGlyphs.length; b++) {
+            const currentGlyphID = baseGlyphs[b].glyphID;
+            assert(previousID < baseGlyphs[b].glyphID, `baseGlyphs must be sorted by GlyphID in ascending order, but glyphID ${currentGlyphID} comes after ${previousID}`);
+            if (previousID > baseGlyphs[b].glyphID) {
+                break;
+            }
+            previousID = currentGlyphID;
+        }
+    }
 };
 
 /**
