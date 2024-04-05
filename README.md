@@ -252,9 +252,69 @@ This corresponds to `canvas2dContext.measureText(text).width`
 * `fontSize`: Size of the text in pixels (default: `72`).
 * `options`: _{GlyphRenderOptions}_, see `Font.getPath()`
 
-#### `Font.palettes.get(colorFormat)`
-Returns an array of arrays corresponding to the colors for each available color palette (for COLR/CPAL fonts).
-* `colorFormat`: See _{GlyphRenderOptions}_ at `Glyph.getPath()`, (default: `"hexa"`)
+#### The `Font.palettes` object (`PaletteManager`)
+
+This allows to manage the palettes and colors in the CPAL table, without having to modify the table manually.
+
+##### The `Font.layers` object (`LayerManager`)
+
+This allows to manage the color glyph layers in the COLR table, without having to modify the table manually.
+
+###### `Font.palettes.add(colors)`
+Add a new palette.
+* `colors`: (optional) colors to add to the palette, differences to existing palettes will be filled with the defaultValue.
+
+###### `Font.palettes.delete(paletteIndex)`
+Deletes a palette by its zero-based index
+* `paletteIndex`: zero-based palette index
+
+###### `Font.palettes.deleteColor(colorIndex, replacementIndex)`
+Deletes a specific color index in all palettes and updates all layers using that color with the color currently held in the replacement index
+* `colorIndex`: index of the color that should be deleted
+* `replacementIndex`: index (according to the palette before deletion) of the color to replace in layers using the color to be to deleted
+
+###### `Font.layers.cpal()`
+Returns the font's cpal table, or false if it does not exist. Used internally.
+
+###### `Font.palettes.ensureCPAL(colors)`
+Mainly used internally. Makes sure that the CPAL table exists or is populated with default values.
+* `colors`: (optional) colors to populate on creation
+returns `true` if it was created, `false` if it already existed.
+
+###### `Font.palettes.extend(num)`
+Extend all existing palettes and the numPaletteEntries value by a number of color slots
+* `num`: number of additional color slots to add to all palettes
+
+###### `Font.palettes.fillPalette(palette, colors, colorCount)`
+Fills a set of palette colors (from a palette index, or a provided array of CPAL color values) with a set of colors, falling back to the default color value, until a given count. *It does not modify the existing palette, returning a new array instead!* Use `Font.palettes.setColor()` instead if needed.
+* `palette`: palette index or an Array of CPAL color values to fill the palette with, the rest will be filled with the default color
+* `colors`: array of color values to fill the palette with, in a format supported as an output of `colorFormat` in _{GlyphRenderOptions}_, see `Glyph.getPath()`. CSS color names are also supported in browser context.
+* `colorCount`: Number of colors to fill the palette with, defaults to the value of the numPaletteEntries field
+
+###### `Font.layers.getAll(colorFormat)`
+Returns an array of arrays of color values for each palette, optionally in a specified color format
+* `colorFormat`: (optional) See _{GlyphRenderOptions}_ at `Glyph.getPath()`, (default: `"hexa"`)
+
+###### `Font.palettes.getColor(index, paletteIndex, colorFormat)`
+Get a specific palette by its zero-based index
+* `index`: zero-based index of the color in the palette
+* `paletteIndex`: zero-based palette index (default: 0)
+* `colorFormat`: (optional) See _{GlyphRenderOptions}_ at `Glyph.getPath()`, (default: `"hexa"`)
+
+###### `Font.palettes.get(paletteIndex, colorFormat)`
+Get a specific palette by its zero-based index
+* `paletteIndex`: zero-based palette index
+* `colorFormat`: (optional) See _{GlyphRenderOptions}_ at `Glyph.getPath()`, (default: `"hexa"`)
+
+###### `Font.palettes.setColor(index, colors, paletteIndex)`
+Set one or more colors on a specific palette by its zero-based index
+* `index`: zero-based color index to start filling from
+* `color`: color value or array of color values in a color notation supported as an output of `colorFormat` in _{GlyphRenderOptions}_, see `Glyph.getPath()`. CSS color names are also supported in browser context.
+* `paletteIndex`: zero-based palette index (default: 0)
+
+###### `Font.layers.toCPALcolor(color)`
+Converts a color value string to a CPAL integer color value
+* `color`: string in a color notation supported as an output of `colorFormat` in _{GlyphRenderOptions}_, see `Glyph.getPath()`. CSS color names are also supported in browser context.
 
 #### The Glyph object
 A Glyph is an individual mark that often corresponds to a character. Some glyphs, such as ligatures, are a combination of many characters. Glyphs are the basic building blocks of a font.
@@ -302,6 +362,9 @@ The arguments are the same as `Glyph.draw()`.
 
 ##### `Glyph.toPathData(options)`, `Glyph.toDOMElement(options)`, `Glyph.toSVG(options)`, `Glyph.fromSVG(pathData, options)`,
 These are currently only wrapper functions for their counterparts on Path objects (see documentation there), but may be extended in the future to pass on Glyph data for automatic calculation.
+
+##### `Glyph.getLayers(font)`
+Gets the color glyph layers for this glyph from the specified font's COLR/CPAL tables
 
 ### The Path object
 Once you have a path through `Font.getPath()` or `Glyph.getPath()`, you can use it.

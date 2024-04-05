@@ -305,6 +305,7 @@ span.offcurve { color: red; }
 
 .color-swatches {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.2em;
 }
 

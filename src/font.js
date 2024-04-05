@@ -563,8 +563,8 @@ Font.prototype.validate = function() {
     // Dimension information
     assert(this.unitsPerEm > 0, 'No unitsPerEm specified.');
 
-    if (font.tables.colr) {
-        const baseGlyphs = font.tables.colr.baseGlyphRecords;
+    if (this.tables.colr) {
+        const baseGlyphs = this.tables.colr.baseGlyphRecords;
         let previousID = -1;
         for(let b = 0; b < baseGlyphs.length; b++) {
             const currentGlyphID = baseGlyphs[b].glyphID;
