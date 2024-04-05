@@ -11,7 +11,9 @@ import table from '../table.js';
 function parseCpalTable(data, start) {
     const p = new Parser(data, start);
     const version = p.parseShort();
-    check.argument(version === 0x0000, 'Only CPALv0 supported.');
+    if(version !== 0x0000) {
+        console.warn('Only CPALv0 is currently fully supported.');
+    }
     const numPaletteEntries = p.parseShort();
     const numPalettes = p.parseShort();
     const numColorRecords = p.parseShort();
