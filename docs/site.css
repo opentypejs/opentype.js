@@ -293,11 +293,6 @@ canvas.item:hover {
 #glyph-data dt { float: left; }
 #glyph-data dd { margin-left: 12em; }
 
-#glyph-contours {
-    flex: 1 1 0;
-    overflow: auto;
-}
-
 #glyph-data pre { font-size: 11px; }
 pre:not(.contour) { margin: 0; }
 pre.contour { margin: 0 0 1em 2em; border-bottom: solid 1px #a0a0a0; }

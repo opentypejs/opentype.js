@@ -179,7 +179,7 @@ function displayGlyphData(glyphIndex) {
     if(layers.length) {
         html += 'layers:<div id="layers">';
         for(let l = 0; l < layers.length; l++) {
-            html += `<canvas id="layer-${l}" class="item" width="${cellWidth}" height="${cellHeight}"></canvas></li>`;
+            html += `<canvas id="layer-${l}" class="item" width="${cellWidth}" height="${cellHeight}" title="paletteIndex: ${layers[l].paletteIndex}"></canvas></li>`;
         }
         html += '</div>';
     }
@@ -420,8 +420,8 @@ function updateColrOptions() {
         let markup = '';
         palettes.forEach((palette, idx) => {
             markup += `<dt><label><input type="radio" name="usePalette[]" oninput="window.fontOptions.usePalette = parseInt(this.value); window.redraw();" value="${idx}" ${idx === window.fontOptions.usePalette ? ' checked' : ''}><strong>↪ Palette ${idx}</strong></label></dt><dd><div class="color-swatches">`;
-                palette.forEach(color => {
-                    markup += `<span class="color-swatch" style="background:${color}" title="${color}"></span>`;
+                palette.forEach((color, colorIndex) => {
+                    markup += `<span class="color-swatch" style="background:${color}" title="${colorIndex}: ${color}"></span>`;
                 });
             markup += `</div></dd>`;
         });
