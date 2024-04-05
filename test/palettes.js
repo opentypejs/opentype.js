@@ -32,6 +32,7 @@ describe('palettes.js', function() {
         assert.equal(firstPalette.length, 35);
         assert.equal(secondPalette.length, 35);
         assert.equal(secondPalette[0], emojiFont.palettes.defaultValue);
+        assert.deepEqual(emojiFont.tables.cpal.colorRecordIndices, [0,35]);
 
         emojiFont.palettes.add(['#ffaa00', '#99cc0048']);
         newPalettes = emojiFont.palettes.getAll();
@@ -39,12 +40,14 @@ describe('palettes.js', function() {
         assert.equal(emojiFont.palettes.getColor(0, 2, 'raw'), 0x00aaffff);
         assert.equal(emojiFont.palettes.getColor(1, 2, 'hexa'), '#99cc0048');
         assert.equal(emojiFont.palettes.getColor(3, 2, 'raw'), emojiFont.palettes.defaultValue);
+        assert.deepEqual(emojiFont.tables.cpal.colorRecordIndices, [0,35,70]);
     });
     
     it('deletes palettes', function() {
         const paletteCount = emojiFont.palettes.getAll().length;
         emojiFont.palettes.delete(2);
         assert.equal(emojiFont.palettes.getAll().length, paletteCount - 1);
+        assert.deepEqual(emojiFont.tables.cpal.colorRecordIndices, [0,35]);
     });
 
     it('extends palettes', function() {
@@ -85,11 +88,22 @@ describe('palettes.js', function() {
             expectedSecondPalette
         ];
         assert.deepEqual(emojiFont.palettes.getAll(), expectedPaletteColors);
-        console.log(emojiFont.tables.cpal.numPaletteEntries);
         emojiFont.palettes.setColor(36, ['blue','green','purple', 'indigo'], 1);
-        assert(emojiFont.tables.cpal.numPaletteEntries, 40);
-        // // expectedPaletteColors.concat(Array());
-        assert.equal(emojiFont.palettes.getAll(), expectedPaletteColors);
+        assert.equal(emojiFont.tables.cpal.numPaletteEntries, 40);
+        assert.deepEqual(emojiFont.tables.cpal.colorRecordIndices, [0, 40]);
+        expectedPaletteColors[0] = expectedPaletteColors[0].concat(Array(3).fill('#000000ff'));
+        expectedPaletteColors[1] = expectedPaletteColors[1].slice(0,-1).concat('#0000ffff','#008000ff', '#800080ff', '#4b0082ff');
+        assert.deepEqual(emojiFont.palettes.getAll(), expectedPaletteColors);
+    });
+    
+    it('deletes a color and sets the replacement value correctly', function() {
+        const glyph = emojiFont.glyphs.get(48);
+        let layers = glyph.getLayers(emojiFont);
+        assert.equal(layers[0].paletteIndex, 22);
+        emojiFont.palettes.deleteColor(22, 27);
+        assert.equal(emojiFont.tables.cpal.numPaletteEntries, 39);
+        layers = glyph.getLayers(emojiFont);
+        assert.equal(layers[0].paletteIndex, 26);
     });
 
     it('ensures that the CPAL table exists', function() {

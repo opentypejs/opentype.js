@@ -220,6 +220,9 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
  * @returns {Array}
  */
 Glyph.prototype.getLayers = function(font) {
+    if(!font) {
+        throw Error('The font object is required to read the colr/cpal tables in order to get the layers.');
+    }
     return font.layers.get(this.index);
 };
 
