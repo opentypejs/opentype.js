@@ -101,7 +101,10 @@ const masks = {
     PRIVATE_POINT_NUMBERS: 0x2000,
     TUPLE_INDEX_MASK: 0x0FFF,
     POINTS_ARE_WORDS: 0x80,
-    POINT_RUN_COUNT_MASK: 0x7F
+    POINT_RUN_COUNT_MASK: 0x7F,
+    DELTAS_ARE_ZERO: 0x80,
+    DELTAS_ARE_WORDS: 0x40,
+    DELTA_RUN_COUNT_MASK: 0x3F,
 };
 
 // A stateful parser that changes the offset whenever a value is retrieved.
@@ -798,12 +801,17 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
 
     for(let h = 0; h < count; h++) {
         const header = headers[h];
+        header.privatePoints = [];
+        header.deltas = [];
+        header.deltasY = [];
         if(header.flags.privatePointNumbers) {
-            header.privatePoints = this.parsePackedPointNumbers();
-            console.log(header.privatePoints );
+            header.privatePoints = this.parsePackedPointNumbers();;
+            console.log({privatePoints: header.privatePoints} );
         }
-        this.relativeOffset = perTupleDataOffset + header.variationDataSize;
 
+        header.deltas = this.parsePackedDeltas(sharedPoints.length + header.privatePoints.length);
+
+        this.relativeOffset = perTupleDataOffset + header.variationDataSize;
     }
 
     this.relativeOffset = relativeOffset;
@@ -822,7 +830,6 @@ Parser.prototype.parseTupleVariationHeaders = function(axisCount) {
     const tupleIndex = this.parseUShort();
 
     const embeddedPeakTuple = !!(tupleIndex & masks.EMBEDDED_PEAK_TUPLE);
-    if (embeddedPeakTuple) throw new Error('boom');
     const intermediateRegion = !!(tupleIndex & masks.INTERMEDIATE_REGION);
     const privatePointNumbers = !!(tupleIndex & masks.PRIVATE_POINT_NUMBERS);
     // const reserved = tupleIndex & 0x1000;
@@ -885,8 +892,8 @@ Parser.prototype.parsePackedPointNumbers = function() {
     let lastPoint = -1; // Starting before the first point
     while (points.length < totalPointCount) {
         const controlByte = this.parseByte();
-        const numbersAre16Bit = (controlByte & 0x80) !== 0; // Check if high bit is set
-        let runCount = (controlByte & 0x7F) + 1; // Number of points in this run
+        const numbersAre16Bit = (controlByte & masks.POINTS_ARE_WORDS) !== 0; // Check if high bit is set
+        let runCount = (controlByte & masks.POINT_RUN_COUNT_MASK) + 1; // Number of points in this run
 
         for (let i = 0; i < runCount && points.length < totalPointCount; i++) {
             let pointDelta;
@@ -904,6 +911,32 @@ Parser.prototype.parsePackedPointNumbers = function() {
     // console.log(points);
 
     return points;
+};
+
+Parser.prototype.parsePackedDeltas = function(expectedCount) {
+    console.log({expectedCount});
+    const deltas = [];
+    
+    while (deltas.length < expectedCount) {
+        const controlByte = this.parseByte();
+        const zeroData = !!(controlByte & masks.DELTAS_ARE_ZERO);
+        const deltaWords = !!(controlByte & masks.DELTAS_ARE_WORDS);
+        const runCount = controlByte & masks.DELTA_RUN_COUNT_MASK;
+        
+        for (let i = 0; i < runCount && deltas.length < expectedCount; i++) {
+            if(zeroData) {
+                deltas.push(0);
+            } else if (deltaWords) {
+                deltas.push(this.parseShort());
+            } else {
+                deltas.push(this.parseChar());
+            }
+        }
+    }
+
+    console.log(deltas);
+
+    return deltas;
 };
 
 export default {
