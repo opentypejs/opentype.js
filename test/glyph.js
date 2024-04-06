@@ -116,7 +116,9 @@ describe('glyph.js', function() {
                 svgMarkup,
                 '<path d="' + expectedPath + '"/>'
             );
+
             // we can't test toDOMElement() in node context!
+            // @TODO: we'll be able to by leveraging the new mock functionality in testutil.js
 
             const trianglePathUp = 'M318 230L182 230L250 93Z';
             const trianglePathDown = 'M318 320L182 320L250 457Z';
