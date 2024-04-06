@@ -284,33 +284,33 @@ Extend all existing palettes and the numPaletteEntries value by a number of colo
 ###### `Font.palettes.fillPalette(palette, colors, colorCount)`
 Fills a set of palette colors (from a palette index, or a provided array of CPAL color values) with a set of colors, falling back to the default color value, until a given count. *It does not modify the existing palette, returning a new array instead!* Use `Font.palettes.setColor()` instead if needed.
 * `palette`: palette index or an Array of CPAL color values to fill the palette with, the rest will be filled with the default color
-* `colors`: array of color values to fill the palette with, in a format supported as an output of `colorFormat` in _{GlyphRenderOptions}_, see `Glyph.getPath()`. CSS color names are also supported in browser context.
+* `colors`: array of color values to fill the palette with, in a format supported as an output of `colorFormat` in _{GlyphRenderOptions}_, see `Font.getPath()`. CSS color names are also supported in browser context.
 * `colorCount`: Number of colors to fill the palette with, defaults to the value of the numPaletteEntries field
 
 ###### `Font.palettes.getAll(colorFormat)`
 Returns an array of arrays of color values for each palette, optionally in a specified color format
-* `colorFormat`: (optional) See _{GlyphRenderOptions}_ at `Glyph.getPath()`, (default: `"hexa"`)
+* `colorFormat`: (optional) See _{GlyphRenderOptions}_ at `Font.getPath()`, (default: `"hexa"`)
 
 ###### `Font.palettes.getColor(index, paletteIndex, colorFormat)`
 Get a specific palette by its zero-based index
 * `index`: zero-based index of the color in the palette
 * `paletteIndex`: zero-based palette index (default: 0)
-* `colorFormat`: (optional) See _{GlyphRenderOptions}_ at `Glyph.getPath()`, (default: `"hexa"`)
+* `colorFormat`: (optional) See _{GlyphRenderOptions}_ at `Font.getPath()`, (default: `"hexa"`)
 
 ###### `Font.palettes.get(paletteIndex, colorFormat)`
 Get a specific palette by its zero-based index
 * `paletteIndex`: zero-based palette index
-* `colorFormat`: (optional) See _{GlyphRenderOptions}_ at `Glyph.getPath()`, (default: `"hexa"`)
+* `colorFormat`: (optional) See _{GlyphRenderOptions}_ at `Font.getPath()`, (default: `"hexa"`)
 
 ###### `Font.palettes.setColor(index, colors, paletteIndex)`
 Set one or more colors on a specific palette by its zero-based index
 * `index`: zero-based color index to start filling from
-* `color`: color value or array of color values in a color notation supported as an output of `colorFormat` in _{GlyphRenderOptions}_, see `Glyph.getPath()`. CSS color names are also supported in browser context.
+* `color`: color value or array of color values in a color notation supported as an output of `colorFormat` in _{GlyphRenderOptions}_, see `Font.getPath()`. CSS color names are also supported in browser context.
 * `paletteIndex`: zero-based palette index (default: 0)
 
 ###### `Font.palettes.toCPALcolor(color)`
 Converts a color value string to a CPAL integer color value
-* `color`: string in a color notation supported as an output of `colorFormat` in _{GlyphRenderOptions}_, see `Glyph.getPath()`. CSS color names are also supported in browser context.
+* `color`: string in a color notation supported as an output of `colorFormat` in _{GlyphRenderOptions}_, see `Font.getPath()`. CSS color names are also supported in browser context.
 
 
 ##### The `Font.layers` object (`LayerManager`)
@@ -359,11 +359,13 @@ A Glyph is an individual mark that often corresponds to a character. Some glyphs
 * `xMin`, `yMin`, `xMax`, `yMax`: The bounding box of the glyph.
 * `path`: The raw, unscaled path of the glyph.
 
-##### `Glyph.getPath(x, y, fontSize)`
+##### `Glyph.getPath(x, y, fontSize, options, font)`
 Get a scaled glyph Path object for use on a drawing context.
 * `x`: Horizontal position of the glyph. (default: `0`)
 * `y`: Vertical position of the *baseline* of the glyph. (default: `0`)
 * `fontSize`: Font size in pixels (default: `72`).
+* `options`: _{GlyphRenderOptions}_, see `Font.getPath()`
+* `font`: a font object, needed for rendering COLR/CPAL fonts to get the layers and colors
 
 ##### `Glyph.getBoundingBox()`
 Calculate the minimum bounding box for the unscaled path of the given glyph. Returns an `opentype.BoundingBox` object that contains `x1`/`y1`/`x2`/`y2`.
@@ -375,8 +377,8 @@ Draw the glyph on the given context.
 * `x`: Horizontal position of the glyph. (default: `0`)
 * `y`: Vertical position of the *baseline* of the glyph. (default: `0`)
 * `fontSize`: Font size, in pixels (default: `72`).
-* `options`: _{GlyphRenderOptions}_, see `Glyph.getPath()`
-* `font`: a font object, needed for rendering COLR/CPAL fonts to get correct colors
+* `options`: _{GlyphRenderOptions}_, see `Font.getPath()`
+* `font`: a font object, needed for rendering COLR/CPAL fonts to get the layers and colors
 
 ##### `Glyph.drawPoints(ctx, x, y, fontSize, options, font)`
 Draw the points of the glyph on the given context.
