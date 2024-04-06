@@ -314,10 +314,59 @@ span.offcurve { color: red; }
     width: 1em;
     height: 1em;
     border: 1px solid #000;
+    padding: 0;
+    text-align: center;
+    line-height: 105%;
+    cursor: pointer;
+}
+
+button.color-swatch {
+    border: 0;
+}
+
+.color-swatch dialog {
+    position: absolute;
+    overflow: visible;
+    padding: 0;
+}
+
+.color-swatch dialog > :first-child {
+    padding: 1em;
+    cursor: auto;
+}
+
+.color-swatch dialog::backdrop {
+    background: transparent;
+}
+
+.color-swatch dialog input[type="color"] {
+    padding: 0;
+    margin: -2px 5px 0 0;
+    border: 0;
+    block-size: 2em;
+    vertical-align: middle;
+}
+
+.color-swatches button.color-swatch {
+    
+}
+
+.color-swatch dialog::before {
+    content: '';
+    position: absolute;
+    top: -8px; /* Adjust as necessary to place the arrow outside the dialog. */
+    left: -2px; /* Adjust based on where you want the arrow in relation to the left side. */
+    border-left: 7px solid transparent; /* Adjust size to match the desired arrow size. */
+    border-right: 7px solid transparent; /* Adjust size to match the desired arrow size. */
+    border-bottom: 7px solid black; /* Arrow color and size. Adjust the size as necessary. */
 }
 
 #palettes dd {
     margin-inline-start: 0.5em;
+}
+
+#palettes label {
+    margin-right: 0;
 }
 
 #layers canvas.item:hover {

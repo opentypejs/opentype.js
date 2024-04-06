@@ -136,11 +136,14 @@ export class PaletteManager {
      * @returns 
      */
     setColor(index, colors, paletteIndex = 0) {
+        index = parseInt(index);
+        paletteIndex = parseInt(paletteIndex);
         let palettes = this.getAll('raw');
         let palette = palettes[paletteIndex];
         if (!palette) {
-            throw Error(`paletteIndex out ${paletteIndex} of range`);
+            throw Error(`paletteIndex ${paletteIndex} out of range`);
         }
+        
         const cpal = this.cpal();
         const colorCount = cpal.numPaletteEntries;
 
