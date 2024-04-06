@@ -251,15 +251,10 @@ function displayFontData(font) {
         if ( dt ) {
             const palettes = font.palettes.getAll('hexa');
             if ( palettes.length ) {
-                palettes.forEach((palette, idx) => {
-                    markup += `<dt><strong>↪ Palette ${idx}</strong></dt><dd><div class="color-swatches">`;
-                        palette.forEach(color => {
-                            markup += `<span class="color-swatch" style="background:${color}" title="${color}"></span>`;
-                        });
-                    markup += `</div></dd>`;
-                });
-                cpal.innerHTML += markup;
-
+                cpal.innerHTML += palettes.map((palette, idx) =>
+                    `<dt><strong>↪ Palette ${idx}</strong></dt><dd><div class="color-swatches">`+
+                    palette.map(color => `<span class="color-swatch" style="background:${color}" title="${color}"></span>`).join('')+
+                    `</div></dd>`).join('');
             }
         }
     }
