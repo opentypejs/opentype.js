@@ -26,7 +26,7 @@ export class LayerManager {
     }
 
     /**
-     * 
+     * Gets the layers for a specific glyph
      * @param {integer} glyphIndex
      * @returns {Array<Object>} array of layer objects {glyph, paletteIndex}
      */
@@ -78,8 +78,11 @@ export class LayerManager {
         // Determine the insertion position. If not specified, append to the end.
         if (position === undefined || position === Infinity || position > currentLayers.length) {
             position = currentLayers.length;
-        } else if (position < currentLayers.length) {
-            position = 0;
+        } else if (position < 0) {
+            position = (currentLayers.length + 1) + (position % (currentLayers.length + 1));
+            if (position >= currentLayers.length + 1) {
+                position -= (currentLayers.length + 1);
+            }
         }
 
         // Build a new layers array with the additional layer(s) inserted.
@@ -110,6 +113,12 @@ export class LayerManager {
         this.updateColrTable(glyphIndex, newLayers);
     }
 
+    /**
+     * Sets a color glyph layer's paletteIndex property to a new index
+     * @param {integer} glyphIndex glyph in the font by zero-based glyph index
+     * @param {integer} layerIndex layer in the glyph by zero-based layer index
+     * @param {integer} paletteIndex new color to set for the layer by zero-based index in any palette
+     */
     setPaletteIndex(glyphIndex, layerIndex, paletteIndex) {
         let layers = this.get(glyphIndex);
         if (layers[layerIndex]) {
@@ -128,9 +137,9 @@ export class LayerManager {
      * Removes one or more layers from a glyph.
      * @param {integer} glyphIndex glyph index to remove the layer(s) from
      * @param {integer} start index to remove the layer at
-     * @param {integer?} end (optional) if provided, removes all layers from start to end
+     * @param {integer?} end (optional) if provided, removes all layers from start index to (and including) end index
      */
-    remove(glyphIndex, start, end = start + 1) {
+    remove(glyphIndex, start, end = start) {
         // Get the current layers for the glyph.
         let currentLayers = this.get(glyphIndex);
     
@@ -142,7 +151,7 @@ export class LayerManager {
     
         // Directly remove the specified range from the currentLayers array.
         // Splice modifies the array in place and removes elements between start and end indices.
-        currentLayers.splice(start, end - start);
+        currentLayers.splice(start, end - start + 1);
     
         // Update the COLR table with the modified layers array.
         this.updateColrTable(glyphIndex, currentLayers);
@@ -157,15 +166,14 @@ export class LayerManager {
     
         // Use binarySearchIndex to find the index of the baseGlyphRecord
         let index = binarySearchIndex(colr.baseGlyphRecords, 'glyphID', glyphIndex);
+        const addBaseGlyph = index === -1;
     
         // If baseGlyphRecord doesn't exist, create and insert one at the correct position
-        if (index === -1) {
+        if (addBaseGlyph) {
             const newBaseGlyphRecord = { glyphID: glyphIndex, firstLayerIndex: colr.layerRecords.length, numLayers: 0 };
-            binarySearchInsert(colr.baseGlyphRecords, 'glyphID', newBaseGlyphRecord);
-            // Update the index after insertion
-            index = binarySearchIndex(colr.baseGlyphRecords, 'glyphID', glyphIndex);
+            index = binarySearchInsert(colr.baseGlyphRecords, 'glyphID', newBaseGlyphRecord);
         }
-    
+
         const baseGlyphRecord = colr.baseGlyphRecords[index];
     
         const originalNumLayers = baseGlyphRecord.numLayers;
@@ -195,10 +203,12 @@ export class LayerManager {
     
         // Update the numLayers for the baseGlyphRecord
         baseGlyphRecord.numLayers = newNumLayers;
-    
-        // Adjust firstLayerIndex for subsequent baseGlyphRecords only if there's an actual change
+
+        // Adjust firstLayerIndex for baseGlyphRecords
         if (layerDiff !== 0) {
-            for (let i = index + 1; i < colr.baseGlyphRecords.length; i++) {
+            for (let i = 0; i < colr.baseGlyphRecords.length; i++) {
+                const sibling = colr.baseGlyphRecords[i];
+                if (i === index || sibling.firstLayerIndex < baseGlyphRecord.firstLayerIndex) continue;
                 colr.baseGlyphRecords[i].firstLayerIndex += layerDiff;
             }
         }

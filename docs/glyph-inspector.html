@@ -428,7 +428,7 @@ function updateColrOptions() {
         palettesDiv.innerHTML += markup;
     }
 
-    document.getElementById('colr-cpal-options').style.display = window.font.tables.cpal && window.font.tables.colr ? 'block' : 'none';
+    document.getElementById('colr-cpal-options').style.display = window.font.tables.cpal ? 'block' : 'none';
 }
 
 function onFontLoaded(font) {

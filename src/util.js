@@ -86,6 +86,8 @@ function binarySearchInsert(array, key, value) {
         else high = mid;
     }
     array.splice(low, 0, value);
+
+    return low;
 }
 
 export { isBrowser, isNode, checkArgument, arraysEqual, objectsEqual, binarySearch, binarySearchIndex, binarySearchInsert };
