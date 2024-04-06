@@ -569,10 +569,8 @@ async function display(file, name) {
             const base64String = arrayBufferToBase64(data);
             sessionStorage.setItem('fontData', base64String);
         } catch (err) {
-            if ( err.message === 'Maximum call stack size exceeded' ) {
-                error = err;
-                showErrorMessage('This font is too big to be stored in localStorage');
-            } else throw err;
+            showErrorMessage('Error loading font from localStorage');
+            error = err;
         }     
 
         onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data, { lowMemory: true }));
