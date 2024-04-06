@@ -180,7 +180,7 @@ function parseColor(color, targetFormat = 'hexa') {
         if (returnRaw) {
             return bgraToRaw(color);
         }
-    } else if(!isRaw && /^#([a-f0-9]{3}|[a-f0-9]{4}|[a-f0-9]{6}|[a-f0-9]{8})$/.test(color.trim())) {
+    } else if(!isRaw && /^#([a-f0-9]{3}|[a-f0-9]{4}|[a-f0-9]{6}|[a-f0-9]{8})$/i.test(color.trim())) {
         color = color.trim().substring(1);
         switch(color.length) {
             case 3:
