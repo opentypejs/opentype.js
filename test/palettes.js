@@ -14,7 +14,12 @@ describe('palettes.js', function() {
         assert.equal(Array.isArray(palettes), true);
         assert.equal(palettes.length, 1);
         assert.equal(palettes[0].length, 35);
-        assert.deepEqual(palettes[0][7], '#3f3f3f80');
+        assert.deepEqual(palettes[0], [
+            '#00000040', '#00000066', '#00000099', '#000000ff', '#186648ff', '#1e50a0ff', '#352318ff', '#3f3f3f80', '#3f3f3fff', '#5c9e31ff',
+            '#61b2e4ff', '#6a462fff', '#781e32ff', '#8967aaff', '#92d3f5ff', '#9b9b9aff', '#9b9b9aff', '#a57939ff', '#b1cc33ff', '#b399c8ff',
+            '#c19a65ff', '#d0cfce80', '#d0cfceff', '#d22f27ff', '#debb90ff', '#e27022ff', '#e67a94ff', '#ea5a47ff', '#f1b31c66', '#f1b31cff',
+            '#f4aa41ff', '#fadcbcff', '#fcea2bff', '#ffa7c0ff', '#ffffffff'
+        ]);
         assert.deepEqual(palettesBGRA[0][0], {r: 0, g:0, b: 0, a: 0.25098039215686274});
     });
 

@@ -4,8 +4,9 @@ import { readFileSync } from 'fs';
 import util from './testutil.js';
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
+const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0.ttf');
+
 describe('glyph.js', function() {
-    const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0.ttf');
 
     describe('lazy loading', function() {
         let font;
@@ -155,8 +156,8 @@ describe('glyph.js', function() {
         });
     });
 
-    describe('drawing', function() {
-        it('draws layers', function() {
+    describe('color glyph drawing/rendering', function() {
+        it('draws and renders layers correctly', function() {
             let contextLogs = [];
             const ctx = util.createMockObject(contextLogs, undefined/*, { consoleLog: 'ctx' }*/);
             emojiFont.glyphs.get(138).draw(ctx, 0, 0, 12, {}, emojiFont);
@@ -174,6 +175,10 @@ describe('glyph.js', function() {
             assert.deepEqual(contextLogs[14], { property: 'fillStyle', value: 'rgba(210, 47, 39, 1)' });
             assert.deepEqual(contextLogs[22], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
             assert.deepEqual(contextLogs[43], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
+            const layerPath = emojiFont.glyphs.get(3540).getPath(0, 0, 72, {colorFormat: 'hexa'}, emojiFont)._layers[0];
+            const layerGlyphPath = emojiFont.glyphs.get(21090).getPath(0, 0, 72, {}, emojiFont);
+            assert.deepEqual(layerPath.commands, layerGlyphPath.commands);
+            assert.deepEqual(layerPath.fill, '#3f3f3fff');
         });
 
         it('does not draw layers when options.drawLayers = false', function() {
@@ -184,6 +189,22 @@ describe('glyph.js', function() {
                 'beginPath', 'moveTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
             ];
             assert.deepEqual(contextLogs.map(log => log.property), expectedProps);
+        });
+
+        it('reflects color and palette changes', function() {
+            let path = emojiFont.glyphs.get(929).getPath(0, 0, 12, {}, emojiFont);
+            emojiFont.palettes.add(emojiFont.palettes.get(0).reverse());
+            assert.equal(path._layers.length, 8);
+            path = emojiFont.glyphs.get(929).getPath(0, 0, 12, {usePalette: 1, colorFormat: 'hexa'}, emojiFont);
+            assert.deepEqual(path._layers.map(p => p.fill), [
+                '#c19a65ff', '#00000099', '#61b2e4ff',
+            ].concat(Array(5).fill('#fadcbcff')));
+            emojiFont.layers.setPaletteIndex(929, 2, 25);
+            path = emojiFont.glyphs.get(929).getPath(0, 0, 12, {usePalette: 1, colorFormat: 'hexa'}, emojiFont);
+            assert.deepEqual(path._layers[2].fill, '#5c9e31ff');
+            emojiFont.palettes.setColor(25, '#ff000099', 1);
+            path = emojiFont.glyphs.get(929).getPath(0, 0, 12, {usePalette: 1, colorFormat: 'hexa'}, emojiFont);
+            assert.deepEqual(path._layers[2].fill, '#ff000099');
         });
     });
 });
@@ -221,7 +242,6 @@ describe('glyph.js on low memory mode', function() {
         });
 
         it('lazily loads COLR layers on paths', function() {
-            const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0.ttf', opt);
             const layers = emojiFont.glyphs.get(138).getLayers(emojiFont);
             assert.equal(Array.isArray(layers), true);
             assert.equal(layers.length, 4);
