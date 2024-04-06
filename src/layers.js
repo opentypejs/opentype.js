@@ -10,7 +10,7 @@ export class LayerManager {
     }
 
     /**
-     * Ensures that the COLR table exists and is populated with default values
+     * Mainly used internally. Ensures that the COLR table exists and is populated with default values
      * @returns the LayerManager's font instance for chaining
      */
     ensureCOLR() {
@@ -157,6 +157,13 @@ export class LayerManager {
         this.updateColrTable(glyphIndex, currentLayers);
     }
 
+    /**
+     * Mainly used internally. Mainly used internally. Updates the colr table, adding a baseGlyphRecord if needed,
+     * ensuring that it's inserted at the correct position, updating numLayers, and adjusting firstLayerIndex values
+     * for all baseGlyphRecords according to any deletions or insertions.
+     * @param {integer} glyphIndex 
+     * @param {Array<Object>} layers array of layer objects {glyphID, paletteIndex}
+     */
     updateColrTable(glyphIndex, layers) {
         // Ensure the COLR table exists with the correct structure
         this.ensureCOLR();
