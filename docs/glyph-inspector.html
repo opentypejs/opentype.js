@@ -479,6 +479,7 @@ window.showColorPicker = (event, el) => {
         const newColor = picker.value + ('0' + Math.round(alphaPicker.value * 255).toString(16)).slice(-2);
         el.style.background = newColor;
         el.dataset.color = newColor;
+        el.title = `${el.dataset.colorIndex}: ${newColor}`;
         window.font.palettes.setColor(el.dataset.colorIndex, newColor, el.dataset.paletteIndex);
         const glyphIndex = document.querySelector('[data-glyph-index]')?.dataset.glyphIndex;
         redraw(false);
