@@ -1,6 +1,7 @@
 // Parsing utility functions
 
 import check from './check.js';
+import table from './table.js';
 
 // Retrieve an unsigned byte from the DataView.
 function getByte(dataView, offset) {
@@ -771,7 +772,8 @@ Parser.prototype.parseTupleVariationStoreList = function(axisCount) {
 
 Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCount) {
     const relativeOffset = this.relativeOffset;
-
+    let maxOffset = tableOffset + length;
+    
     this.relativeOffset = tableOffset;
 
     // header
@@ -793,25 +795,30 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
         this.relativeOffset = tableOffset + dataOffset;
     }    
 
+    const serializedDataOffset = this.relativeOffset;
+
     if (hasSharedPoints) {
-        sharedPoints = this.parsePackedPointNumbers();
+        sharedPoints = this.parsePackedPointNumbers(maxOffset);
     }
 
     const perTupleDataOffset = this.relativeOffset;
+    maxOffset = perTupleDataOffset
 
     for(let h = 0; h < count; h++) {
         const header = headers[h];
+        maxOffset = serializedDataOffset + header.variationDataSize;
         header.privatePoints = [];
         header.deltas = [];
         header.deltasY = [];
         if(header.flags.privatePointNumbers) {
-            header.privatePoints = this.parsePackedPointNumbers();;
-            console.log({privatePoints: header.privatePoints} );
+            header.privatePoints = this.parsePackedPointNumbers(maxOffset);
+            // console.log({privatePoints: header.privatePoints});
         }
 
         header.deltas = this.parsePackedDeltas(sharedPoints.length + header.privatePoints.length);
+        header.deltasY = this.parsePackedDeltas(sharedPoints.length + header.privatePoints.length);
 
-        this.relativeOffset = perTupleDataOffset + header.variationDataSize;
+        this.relativeOffset = maxOffset;
     }
 
     this.relativeOffset = relativeOffset;
@@ -868,10 +875,22 @@ function hex(bytes) {
     return values.join(' ').toUpperCase();
 }
 
-Parser.prototype.parsePackedPointNumbers = function() {
+function checkMaxOffset(maxOffset = 0) {
+    const reached = maxOffset && this.relativeOffset >= maxOffset;
+    if (reached) {
+        // this can occur e.g. when the totalPointCount value is too high,
+        // as it happens in some of the TestGVAR* fonts
+        console.error('end of table reached before parsing all points');
+    }
+    return reached;
+}
+
+Parser.prototype.parsePackedPointNumbers = function(maxOffset = 0) {
     const countByte1 = this.parseByte();
     const points = [];
     let totalPointCount;
+
+    console.log(countByte1.toString(16), (countByte1 & 0x7F).toString(16));
 
     if (countByte1 === 0) {
         // all glyph points are considered, no second byte.
@@ -883,19 +902,30 @@ Parser.prototype.parsePackedPointNumbers = function() {
     } else if (countByte1 >= 128) {
         // High bit is set, need to read a second byte and combine.
         const countByte2 = this.parseByte();
+        console.log(countByte2.toString(16));
+    
         // Combine as big-endian uint16, with high bit of the first byte cleared.
         // This is done by masking the first byte with 0x7F (to clear the high bit)
         // and then shifting it left by 8 bits before adding the second byte.
         totalPointCount = (((countByte1 & 0x7F) << 8) | countByte2);
     }
+
+    console.log({totalPointCount});
+    // console.trace();
     
-    let lastPoint = -1; // Starting before the first point
+    let lastPoint = 0;
     while (points.length < totalPointCount) {
+        if(checkMaxOffset.call(this, maxOffset)) {
+            break;
+        }
         const controlByte = this.parseByte();
         const numbersAre16Bit = (controlByte & masks.POINTS_ARE_WORDS) !== 0; // Check if high bit is set
         let runCount = (controlByte & masks.POINT_RUN_COUNT_MASK) + 1; // Number of points in this run
-
+        console.log({runCount, numbersAre16Bit, points});
         for (let i = 0; i < runCount && points.length < totalPointCount; i++) {
+            if(checkMaxOffset.call(this, maxOffset)) {
+                break;
+            }
             let pointDelta;
             if (numbersAre16Bit) {
                 pointDelta = this.parseUShort(); // Parse delta as uint16
@@ -903,9 +933,11 @@ Parser.prototype.parsePackedPointNumbers = function() {
                 pointDelta = this.parseByte(); // Parse delta as uint8
             }
             // For the first point of the first run, use the value directly. Otherwise, accumulate.
-            lastPoint = (lastPoint === -1) ? pointDelta : lastPoint + pointDelta;
+            lastPoint = lastPoint + pointDelta;
             points.push(lastPoint);
         }
+        
+        console.log(this.relativeOffset, maxOffset);
     }
 
     // console.log(points);
@@ -934,7 +966,7 @@ Parser.prototype.parsePackedDeltas = function(expectedCount) {
         }
     }
 
-    console.log(deltas);
+    // console.log(deltas);
 
     return deltas;
 };

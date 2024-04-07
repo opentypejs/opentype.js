@@ -12,7 +12,7 @@ function parseGvarTable(data, start, fvar) {
     if (tableVersionMajor !== 1) {
         console.warn(`Unsupported gvar table version ${tableVersionMajor}.${tableVersionMinor}`);
     }
-    const axisCount = p.parseUShort();  // Or use the passed axisCount if already available
+    const axisCount = p.parseUShort();
     if(axisCount !== fvar.axes.length) {
         console.warn(`axisCount ${axisCount} in gvar table does not match the number of axes ${fvar.axes.length} in the fvar table!`);
     }
@@ -26,8 +26,6 @@ function parseGvarTable(data, start, fvar) {
 
     return {
         version: [tableVersionMajor, tableVersionMinor],
-        axisCount,
-        sharedTupleCount,
         sharedTuples,
         glyphVariations
     };
