@@ -46,8 +46,8 @@
     <canvas id="snap" width="940" height="300" class="text"></canvas>
     <label>Strength <input type="range" min="0" max="100" value="80" name="snapStrength" oninput="nextElementSibling.innerText=value"/><output>80</output></label>
     <label>Distance<input type="range" min="1" max="100" value="53" name="snapDistance" oninput="nextElementSibling.innerText=value"/><output>53</output></label>
-    <label>X<input type="range" min="-100" max="100" value="0" name="snapX" oninput="snextElementSibling.innerText=value"/><output>0</output></label>
-    <label>Y<input type="range" min="-100" max="100" value="0" name="snapY" oninput="snextElementSibling.innerText=value"/><output>0</output></label>
+    <label>X<input type="range" min="-100" max="100" value="0" name="snapX" oninput="nextElementSibling.innerText=value"/><output>0</output></label>
+    <label>Y<input type="range" min="-100" max="100" value="0" name="snapY" oninput="nextElementSibling.innerText=value"/><output>0</output></label>
 
     <hr>
 
@@ -81,6 +81,13 @@ let font = null;
 
 
 function doSnap(path) {
+    const layers = path._layers;
+    if ( layers && layers.length ) {
+        for( let l = 0; l < layers.length; l++ ) {
+            doSnap(layers[l]);
+        }
+        return;
+    }
     // Round a value to the nearest "step".
     const snap = (v, distance, strength) => (v * (1.0 - strength)) + (strength * Math.round(v / distance) * distance);
     const strength = +form.snapStrength.value / 100.0;
@@ -117,6 +124,7 @@ function renderText() {
             rlig: form.ligatures.checked
         }
     };
+    options = Object.assign({}, font.defaultRenderOptions, options);
     previewCtx.clearRect(0, 0, 940, 300);
     const fontSize = +form.fontsize.value;
     font.draw(previewCtx, textToRender, 0, 200, fontSize, options);
@@ -189,7 +197,7 @@ function onFontLoaded(font) {
     for (let i = 0; i < amount; i++) {
         const glyph = font.glyphs.get(i);
         const ctx = createGlyphCanvas(glyph, 150);
-        glyph.draw(ctx, x, y, fontSize);
+        glyph.draw(ctx, x, y, fontSize, {}, font);
         glyph.drawPoints(ctx, x, y, fontSize);
         glyph.drawMetrics(ctx, x, y, fontSize);
     }
