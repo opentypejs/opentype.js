@@ -736,7 +736,7 @@ Parser.prototype.parseDeltaSets = function(itemCount, wordDeltaCount) {
     return deltas;
 };
 
-Parser.prototype.parseTupleVariationStoreList = function(axisCount) {
+Parser.prototype.parseTupleVariationStoreList = function(axisCount, flavor, glyphs) {
     const glyphCount = this.parseUShort();
     const flags = this.parseUShort();
     const offsetSizeIs32Bit = flags & 0x01;
@@ -755,12 +755,16 @@ Parser.prototype.parseTupleVariationStoreList = function(axisCount) {
         if (!offsetSizeIs32Bit) nextOffset *= 2;
         
         const length = nextOffset - currentOffset;
+        console.log(length);
 
         glyphVariations[i] = length
             ? this.parseTupleVariationStore(
                 glyphVariationDataArrayOffset + currentOffset,
                 length,
-                axisCount
+                axisCount,
+                flavor,
+                glyphs,
+                i
             )
             : undefined;
         
@@ -770,7 +774,7 @@ Parser.prototype.parseTupleVariationStoreList = function(axisCount) {
     return glyphVariations;
 };
 
-Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCount) {
+Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCount, flavor, glyphs, glyphIndex) {
     const relativeOffset = this.relativeOffset;
     let maxOffset = tableOffset + length;
     
@@ -802,23 +806,76 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
     }
 
     const perTupleDataOffset = this.relativeOffset;
-    maxOffset = perTupleDataOffset
 
     for(let h = 0; h < count; h++) {
         const header = headers[h];
-        maxOffset = serializedDataOffset + header.variationDataSize;
         header.privatePoints = [];
-        header.deltas = [];
-        header.deltasY = [];
+
         if(header.flags.privatePointNumbers) {
             header.privatePoints = this.parsePackedPointNumbers(maxOffset);
-            // console.log({privatePoints: header.privatePoints});
+        }
+        
+        const deltasOffset = this.offset;
+        const deltasRelativeOffset = this.relativeOffset;
+
+        function defineDeltas(propertyName) {
+            let _deltas = undefined;
+            let _deltasY = undefined;
+
+            const parseDeltas = () => {
+                let pointsCount = header.privatePoints.length || sharedPoints.length;
+                if(!pointsCount) {
+                    const glyph = glyphs.get(glyphIndex);
+                    // make sure the path is available
+                    glyph.path;
+                    pointsCount = glyph.points.length;
+                    // add 4 phantom points, see https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructing_glyphs#phantoms
+                    // @TODO: actually generate these points from glyph.getBoundingBox() and glyph.getMetrics(),
+                    // as they may be influenced by variation as well
+                    pointsCount+= 4;
+                }
+
+                console.log({pointsCount});
+
+                const offsetBefore = this.offset;
+                const relativeOffsetBefore = this.relativeOffset;
+                this.offset = deltasOffset;
+                this.relativeOffset = deltasRelativeOffset;
+                _deltas = this.parsePackedDeltas(pointsCount);
+                
+                if(flavor === 'gvar') {
+                    _deltasY = this.parsePackedDeltas(pointsCount);
+                }
+                this.offset = offsetBefore;
+                this.relativeOffset = relativeOffsetBefore;
+            }
+
+            return {
+                configurable: true,
+        
+                get: function() {
+                    if(_deltas === undefined) parseDeltas();
+                    return propertyName === 'deltasY' ? _deltasY : _deltas;
+                },
+        
+                set: function(deltas) {
+                    if(_deltas === undefined) parseDeltas();
+                    if(propertyName === 'deltasY') {
+                        _deltasY = deltas;
+                    } else {
+                        _deltas = deltas;
+                    }
+                }
+            };
         }
 
-        header.deltas = this.parsePackedDeltas(sharedPoints.length + header.privatePoints.length);
-        header.deltasY = this.parsePackedDeltas(sharedPoints.length + header.privatePoints.length);
+        Object.defineProperty(header, 'deltas', defineDeltas.call(this, 'deltas'));
+        if(flavor === 'gvar') {
+            Object.defineProperty(header, 'deltasY', defineDeltas.call(this, 'deltasY'));
+        }        
 
-        this.relativeOffset = maxOffset;
+        console.log({variationDataSize: header.variationDataSize, perTupleDataOffset}, perTupleDataOffset + header.variationDataSize, this.offset, this.relativeOffset, this.offset+this.relativeOffset);
+        this.relativeOffset = perTupleDataOffset + header.variationDataSize;
     }
 
     this.relativeOffset = relativeOffset;
@@ -921,7 +978,6 @@ Parser.prototype.parsePackedPointNumbers = function(maxOffset = 0) {
         const controlByte = this.parseByte();
         const numbersAre16Bit = (controlByte & masks.POINTS_ARE_WORDS) !== 0; // Check if high bit is set
         let runCount = (controlByte & masks.POINT_RUN_COUNT_MASK) + 1; // Number of points in this run
-        console.log({runCount, numbersAre16Bit, points});
         for (let i = 0; i < runCount && points.length < totalPointCount; i++) {
             if(checkMaxOffset.call(this, maxOffset)) {
                 break;
@@ -936,8 +992,6 @@ Parser.prototype.parsePackedPointNumbers = function(maxOffset = 0) {
             lastPoint = lastPoint + pointDelta;
             points.push(lastPoint);
         }
-        
-        console.log(this.relativeOffset, maxOffset);
     }
 
     // console.log(points);
@@ -946,7 +1000,6 @@ Parser.prototype.parsePackedPointNumbers = function(maxOffset = 0) {
 };
 
 Parser.prototype.parsePackedDeltas = function(expectedCount) {
-    console.log({expectedCount});
     const deltas = [];
     
     while (deltas.length < expectedCount) {

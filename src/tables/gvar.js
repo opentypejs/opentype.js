@@ -5,7 +5,7 @@ import check from '../check.js';
 import parse from '../parse.js';
 import table from '../table.js';
 
-function parseGvarTable(data, start, fvar) {
+function parseGvarTable(data, start, fvar, glyphs) {
     const p = new parse.Parser(data, start);
     const tableVersionMajor = p.parseUShort();
     const tableVersionMinor = p.parseUShort();
@@ -22,7 +22,7 @@ function parseGvarTable(data, start, fvar) {
         return this.parseTupleRecords(sharedTupleCount, axisCount);
     });
 
-    const glyphVariations = p.parseTupleVariationStoreList(axisCount);
+    const glyphVariations = p.parseTupleVariationStoreList(axisCount, 'gvar', glyphs);
 
     return {
         version: [tableVersionMajor, tableVersionMinor],
