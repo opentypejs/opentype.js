@@ -1,9 +1,13 @@
 import assert  from 'assert';
 import { parse, Glyph, Path } from '../src/opentype.js';
 import { readFileSync } from 'fs';
+import util from './testutil.js';
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
+const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0-subset.otf');
+
 describe('glyph.js', function() {
+
     describe('lazy loading', function() {
         let font;
         let glyph;
@@ -31,6 +35,12 @@ describe('glyph.js', function() {
 
         it('lazily loads numberOfContours', function() {
             assert.equal(glyph.numberOfContours, 2);
+        });
+
+        it('lazily loads COLR layers on paths', function() {
+            const layers = emojiFont.glyphs.get(138).getLayers(emojiFont);
+            assert.equal(Array.isArray(layers), true);
+            assert.equal(layers.length, 4);
         });
     });
 
@@ -106,7 +116,9 @@ describe('glyph.js', function() {
                 svgMarkup,
                 '<path d="' + expectedPath + '"/>'
             );
+
             // we can't test toDOMElement() in node context!
+            // @TODO: we'll be able to by leveraging the new mock functionality in testutil.js
 
             const trianglePathUp = 'M318 230L182 230L250 93Z';
             const trianglePathDown = 'M318 320L182 320L250 457Z';
@@ -145,6 +157,58 @@ describe('glyph.js', function() {
             assert.deepEqual(glyph.toPathData(), 'M91 284L440 284L440 342L91 342ZM236 487L236 138L294 138L294 487Z');
         });
     });
+
+    describe('color glyph drawing/rendering', function() {
+        it('draws and renders layers correctly', function() {
+            let contextLogs = [];
+            const ctx = util.createMockObject(contextLogs, undefined/*, { consoleLog: 'ctx' }*/);
+            emojiFont.glyphs.get(138).draw(ctx, 0, 0, 12, {}, emojiFont);
+            const expectedProps = [
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
+                'beginPath', 'moveTo', 'lineTo', 'bezierCurveTo', 'lineTo', 'lineTo', 'bezierCurveTo',
+                'lineTo', 'lineTo', 'bezierCurveTo', 'lineTo', 'lineTo', 'bezierCurveTo', 'lineTo',
+                'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
+
+            ];
+            assert.deepEqual(contextLogs.map(log => log.property), expectedProps);
+            assert.deepEqual(contextLogs[6], { property: 'fillStyle', value: 'rgba(241, 179, 28, 1)' });
+            assert.deepEqual(contextLogs[14], { property: 'fillStyle', value: 'rgba(210, 47, 39, 1)' });
+            assert.deepEqual(contextLogs[22], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
+            assert.deepEqual(contextLogs[43], { property: 'fillStyle', value: 'rgba(0, 0, 0, 1)' });
+            const layerPath = emojiFont.glyphs.get(3540).getPath(0, 0, 72, {colorFormat: 'hexa'}, emojiFont)._layers[0];
+            const layerGlyphPath = emojiFont.glyphs.get(21090).getPath(0, 0, 72, {}, emojiFont);
+            assert.deepEqual(layerPath.commands, layerGlyphPath.commands);
+            assert.deepEqual(layerPath.fill, '#3f3f3fff');
+        });
+
+        it('does not draw layers when options.drawLayers = false', function() {
+            let contextLogs = [];
+            const ctx = util.createMockObject(contextLogs, undefined/*, { consoleLog: 'ctx' }*/);
+            emojiFont.glyphs.get(138).draw(ctx, 0, 0, 12, { drawLayers: false }, emojiFont);
+            const expectedProps = [
+                'beginPath', 'moveTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
+            ];
+            assert.deepEqual(contextLogs.map(log => log.property), expectedProps);
+        });
+
+        it('reflects color and palette changes', function() {
+            let path = emojiFont.glyphs.get(929).getPath(0, 0, 12, {}, emojiFont);
+            emojiFont.palettes.add(emojiFont.palettes.get(0).reverse());
+            assert.equal(path._layers.length, 8);
+            path = emojiFont.glyphs.get(929).getPath(0, 0, 12, {usePalette: 1, colorFormat: 'hexa'}, emojiFont);
+            assert.deepEqual(path._layers.map(p => p.fill), [
+                '#c19a65ff', '#00000099', '#61b2e4ff',
+            ].concat(Array(5).fill('#fadcbcff')));
+            emojiFont.layers.setPaletteIndex(929, 2, 25);
+            path = emojiFont.glyphs.get(929).getPath(0, 0, 12, {usePalette: 1, colorFormat: 'hexa'}, emojiFont);
+            assert.deepEqual(path._layers[2].fill, '#5c9e31ff');
+            emojiFont.palettes.setColor(25, '#ff000099', 1);
+            path = emojiFont.glyphs.get(929).getPath(0, 0, 12, {usePalette: 1, colorFormat: 'hexa'}, emojiFont);
+            assert.deepEqual(path._layers[2].fill, '#ff000099');
+        });
+    });
 });
 
 describe('glyph.js on low memory mode', function() {
@@ -177,6 +241,12 @@ describe('glyph.js on low memory mode', function() {
 
         it('lazily loads numberOfContours', function() {
             assert.equal(glyph.numberOfContours, 2);
+        });
+
+        it('lazily loads COLR layers on paths', function() {
+            const layers = emojiFont.glyphs.get(138).getLayers(emojiFont);
+            assert.equal(Array.isArray(layers), true);
+            assert.equal(layers.length, 4);
         });
     });
 
