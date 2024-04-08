@@ -8,7 +8,12 @@ import table from '../table.js';
 function parseColrTable(data, start) {
     const p = new Parser(data, start);
     const version = p.parseUShort();
-    check.argument(version === 0x0000, 'Only COLRv0 supported.');
+    /**
+     * @see https://learn.microsoft.com/en-us/typography/opentype/spec/colr#mixing-version-0-and-version-1-formats
+     */
+    if(version !== 0x0000) {
+        console.warn('Only COLRv0 is currently fully supported. A subset of color glyphs might be available in this font if provided in the v0 format.');
+    }
     const numBaseGlyphRecords = p.parseUShort();
     const baseGlyphRecordsOffset = p.parseOffset32();
     const layerRecordsOffset = p.parseOffset32();

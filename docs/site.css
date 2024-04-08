@@ -203,11 +203,13 @@ a {
 
 #font-data dt {
     float: left;
+    clear: both;
 }
 
 #font-data dd {
     margin-left: 12em;
     word-break: break-all;
+    min-height: 1.4em;
     max-height: 100px;
     overflow-y: auto;
 }
@@ -230,10 +232,16 @@ a {
 
 /* Glyph Inspector */
 
+#pagination {
+    display: flex;
+    flex-wrap: wrap;
+}
+
 #pagination span {
     margin: 0 0.3em;
     color: #505050;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 #pagination span.page-selected {
@@ -278,15 +286,12 @@ canvas.item:hover {
     display: flex;
     flex-flow: column nowrap;
     height: 500px;
+    width: 400px;
+    overflow-y: auto;
 }
 #glyph-data dl { margin: 0; }
 #glyph-data dt { float: left; }
 #glyph-data dd { margin-left: 12em; }
-
-#glyph-contours {
-    flex: 1 1 0;
-    overflow: auto;
-}
 
 #glyph-data pre { font-size: 11px; }
 pre:not(.contour) { margin: 0; }
@@ -296,4 +301,75 @@ span.offcurve { color: red; }
 
 .disabled {
 	color: gray;
+}
+
+.color-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2em;
+}
+
+.color-swatch {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    border: 1px solid #000;
+    padding: 0;
+    text-align: center;
+    line-height: 105%;
+    cursor: pointer;
+}
+
+button.color-swatch {
+    border: 0;
+}
+
+.color-swatch dialog {
+    position: absolute;
+    overflow: visible;
+    padding: 0;
+}
+
+.color-swatch dialog > :first-child {
+    padding: 1em;
+    cursor: auto;
+}
+
+.color-swatch dialog::backdrop {
+    background: transparent;
+}
+
+.color-swatch dialog input[type="color"] {
+    padding: 0;
+    margin: -2px 5px 0 0;
+    border: 0;
+    block-size: 2em;
+    vertical-align: middle;
+}
+
+.color-swatches button.color-swatch {
+    
+}
+
+.color-swatch dialog::before {
+    content: '';
+    position: absolute;
+    top: -8px; /* Adjust as necessary to place the arrow outside the dialog. */
+    left: -2px; /* Adjust based on where you want the arrow in relation to the left side. */
+    border-left: 7px solid transparent; /* Adjust size to match the desired arrow size. */
+    border-right: 7px solid transparent; /* Adjust size to match the desired arrow size. */
+    border-bottom: 7px solid black; /* Arrow color and size. Adjust the size as necessary. */
+}
+
+#palettes dd {
+    margin-inline-start: 0.5em;
+}
+
+#palettes label {
+    margin-right: 0;
+}
+
+#layers canvas.item:hover {
+    cursor: default;
+    background-color: transparent;
 }

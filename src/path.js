@@ -14,6 +14,8 @@ function Path() {
     this.fill = 'black';
     this.stroke = null;
     this.strokeWidth = 1;
+    // the _layer property is only set on computed paths during glyph rendering
+    // this._layers = [];
 }
 
 const decimalRoundingCache = {};
@@ -503,6 +505,14 @@ Path.prototype.getBoundingBox = function() {
  * @param {CanvasRenderingContext2D} ctx - A 2D drawing context.
  */
 Path.prototype.draw = function(ctx) {
+    const layers = this._layers;
+    if ( layers && layers.length ) {
+        for ( let l = 0; l < layers.length; l++ ) {
+            this.draw.call(layers[l], ctx);
+        }
+        return;
+    }
+    
     ctx.beginPath();
     for (let i = 0; i < this.commands.length; i += 1) {
         const cmd = this.commands[i];
@@ -514,7 +524,7 @@ Path.prototype.draw = function(ctx) {
             ctx.bezierCurveTo(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
         } else if (cmd.type === 'Q') {
             ctx.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
-        } else if (cmd.type === 'Z') {
+        } else if (cmd.type === 'Z' && this.stroke && this.strokeWidth) {
             ctx.closePath();
         }
     }
@@ -623,6 +633,13 @@ Path.prototype.toPathData = function(options) {
  * @return {string}
  */
 Path.prototype.toSVG = function(options, pathData) {
+    if (this._layers && this._layers.length) {
+        /** @TODO: implement SVG output for colr fonts
+         * Is there a standardized way?
+         * @see https://github.com/unicode-org/text-rendering-tests/issues/95
+        */
+        console.warn('toSVG() does not support colr font layers yet');
+    }
     if (!pathData) {
         pathData = this.toPathData(options);
     }
@@ -652,6 +669,13 @@ Path.prototype.toSVG = function(options, pathData) {
  * @return {SVGPathElement}
  */
 Path.prototype.toDOMElement = function(options, pathData) {
+    if(this._layers && this._layers.length) {
+        /** @TODO: implement SVG output for colr fonts
+         * Is there a standardized way?
+         * @see https://github.com/unicode-org/text-rendering-tests/issues/95
+        */
+        console.warn('toDOMElement() does not support colr font layers yet');
+    }
     if (!pathData) {
         pathData = this.toPathData(options);
     }

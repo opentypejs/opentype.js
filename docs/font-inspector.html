@@ -76,7 +76,14 @@
 
         <h3 class="collapsed">Kerning <a href="https://www.microsoft.com/typography/otspec/kern.htm" target="_blank">kern</a></h3>
         <dl id="kern-table"><dt>Undefined</dt></dl>
+
+        <h3 class="collapsed">CPAL color palettes</h3>
+        <dl id="cpal-table"><dt>Undefined</dt></dl>
     </div>
+
+    <hr>
+
+    <button type="button" id="update">update</button> after modifying window.font
 
     <hr>
 
@@ -127,7 +134,7 @@ function renderText(font) {
     var previewCanvas = document.getElementById('preview');
     var previewCtx = previewCanvas.getContext("2d");
     previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-    font.draw(previewCtx, textToRender, 0, 32, fontSize, {
+    var options = {
         kerning: true,
         features: [
         /**
@@ -137,7 +144,9 @@ function renderText(font) {
             { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
             { script: 'latn', tags: ['liga', 'rlig'] }
         ]
-    });
+    };
+    options = Object.assign({}, font.defaultRenderOptions, options);
+    font.draw(previewCtx, textToRender, 0, 32, fontSize, options);
 }
 
 function showErrorMessage(message) {
@@ -193,6 +202,9 @@ function displayNames(names) {
 function displayFontData(font) {
     var html, tablename, table, property, value;
 
+    // reset all lists first
+    document.querySelectorAll('#font-data dl').forEach( dl => dl.innerHTML = '<dt>Undefined</dt>' );
+
     for (tablename in font.tables) {
         table = font.tables[tablename];
         if (tablename == 'name') {
@@ -231,6 +243,21 @@ function displayFontData(font) {
             element.innerHTML = '<dt>' + Object.keys(font.kerningPairs).length + ' Pairs</dt><dd>' + JSON.stringify(font.kerningPairs) + '</dd>';
         }
     }
+
+    if(font.tables.cpal) {
+        let markup = ' ';
+        const cpal = document.getElementById("cpal-table");
+        const dt = cpal.querySelector('dt');
+        if ( dt ) {
+            const palettes = font.palettes.getAll('hexa');
+            if ( palettes.length ) {
+                cpal.innerHTML += palettes.map((palette, idx) =>
+                    `<dt><strong>↪ Palette ${idx}</strong></dt><dd><div class="color-swatches">`+
+                    palette.map(color => `<span class="color-swatch" style="background:${color}" title="${color}"></span>`).join('')+
+                    `</div></dd>`).join('');
+            }
+        }
+    }
 }
 
 function onFontLoaded(font) {
@@ -238,6 +265,8 @@ function onFontLoaded(font) {
     renderText(font);
     displayFontData(font);
 }
+
+document.getElementById('update').addEventListener('click', () => displayFontData(window.font));
 
 var tableHeaders = document.getElementById('font-data').getElementsByTagName('h3');
 for(var i = tableHeaders.length; i--; ) {

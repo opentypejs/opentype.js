@@ -71,7 +71,7 @@ for (let i = 0; i < font2.glyphs.length; i++) {
     const x = 50;
     const y = 120;
     const fontSize = 72;
-    glyph.draw(ctx, x, y, fontSize);
+    glyph.draw(ctx, x, y, fontSize, {}, font2);
     glyph.drawPoints(ctx, x, y, fontSize);
     glyph.drawMetrics(ctx, x, y, fontSize);
 }

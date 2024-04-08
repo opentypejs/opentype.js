@@ -35,6 +35,7 @@ import os2 from './tables/os2.js';
 import post from './tables/post.js';
 import meta from './tables/meta.js';
 import gasp from './tables/gasp.js';
+import { PaletteManager } from './palettes.js';
 /**
  * The opentype library.
  * @namespace opentype
@@ -474,6 +475,8 @@ function parseBuffer(buffer, opt={}) {
         font.tables.meta = meta.parse(metaTable.data, metaTable.offset);
         font.metas = font.tables.meta;
     }
+    
+    font.palettes = new PaletteManager(font);
 
     return font;
 }
