@@ -4,7 +4,7 @@ import { readFileSync } from 'fs';
 import util from './testutil.js';
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
-const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0.ttf');
+const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0-subset.otf');
 
 describe('glyph.js', function() {
 
@@ -167,8 +167,8 @@ describe('glyph.js', function() {
                 'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
                 'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
                 'beginPath', 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
-                'beginPath', 'moveTo', 'lineTo', 'quadraticCurveTo', 'lineTo', 'lineTo', 'quadraticCurveTo',
-                'lineTo', 'lineTo', 'quadraticCurveTo', 'lineTo', 'lineTo', 'quadraticCurveTo', 'lineTo',
+                'beginPath', 'moveTo', 'lineTo', 'bezierCurveTo', 'lineTo', 'lineTo', 'bezierCurveTo',
+                'lineTo', 'lineTo', 'bezierCurveTo', 'lineTo', 'lineTo', 'bezierCurveTo', 'lineTo',
                 'moveTo', 'lineTo', 'lineTo', 'lineTo', 'lineTo', 'fillStyle', 'fill',
 
             ];

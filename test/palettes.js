@@ -6,7 +6,7 @@ import { readFileSync } from 'fs';
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('palettes.js', function() {
-    const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0.ttf');
+    const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0-subset.otf');
     const palettes = emojiFont.palettes.getAll();
     const palettesBGRA = emojiFont.palettes.getAll('bgra');
     

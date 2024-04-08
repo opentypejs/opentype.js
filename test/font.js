@@ -226,7 +226,7 @@ describe('glyphset.js', function() {
 
     
     describe('drawing', function() {
-        const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0.ttf');
+        const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0-subset.otf');
         
         it('draws layers', function() {
             let contextLogs = [];
