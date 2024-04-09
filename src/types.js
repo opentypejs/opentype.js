@@ -70,9 +70,9 @@ sizeOf.CHAR = constant(1);
  * @returns {Array}
  */
 encode.CHARARRAY = function(v) {
-    if (typeof v === 'undefined') {
+    if (v === null || typeof v === 'undefined') {
         v = '';
-        console.warn('Undefined CHARARRAY encountered and treated as an empty string. This is probably caused by a missing glyph name.');
+        console.warn('CHARARRAY with undefined or null value encountered and treated as an empty string. This is probably caused by a missing glyph name.');
     }
     const b = [];
     for (let i = 0; i < v.length; i += 1) {

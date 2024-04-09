@@ -141,7 +141,7 @@ function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
         defineDependentProperty(glyph, 'xMax', '_xMax');
         defineDependentProperty(glyph, 'yMin', '_yMin');
         defineDependentProperty(glyph, 'yMax', '_yMax');
-
+        
         return glyph;
     };
 }
