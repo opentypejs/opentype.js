@@ -84,6 +84,7 @@ function bytesToString(bytes) {
 const typeOffsets = {
     byte: 1,
     uShort: 2,
+    f2dot14: 2,
     short: 2,
     uInt24: 3,
     uLong: 4,
@@ -788,7 +789,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
     let sharedPoints = [];
     
     for(let h = 0; h < count; h++) {
-        const headerData = this.parseTupleVariationHeaders(axisCount);
+        const headerData = this.parseTupleVariationHeader(axisCount);
         headers.push(headerData);
     }
     
@@ -801,9 +802,16 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
         sharedPoints = this.parsePackedPointNumbers();
     }
 
+    let serializedDataOffset = this.relativeOffset;
+
     for(let h = 0; h < count; h++) {
         const header = headers[h];
         header.privatePoints = [];
+        this.relativeOffset = serializedDataOffset;
+        
+        if(flavor === 'cvar' && !header.peakTuple) {
+            console.warn('An embedded peak tuple is required in TupleVariationHeaders for the cvar table.');
+        }
 
         if(header.flags.privatePointNumbers) {
             header.privatePoints = this.parsePackedPointNumbers();
@@ -829,8 +837,6 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
                     pointsCount+= 4;
                 }
                 
-                const offsetBefore = this.offset;
-                const relativeOffsetBefore = this.relativeOffset;
                 this.offset = deltasOffset;
                 this.relativeOffset = deltasRelativeOffset;
                 _deltas = this.parsePackedDeltas(pointsCount);
@@ -838,8 +844,6 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
                 if(flavor === 'gvar') {
                     _deltasY = this.parsePackedDeltas(pointsCount);
                 }
-                //this.offset = offsetBefore;
-                //this.relativeOffset = relativeOffsetBefore;
             }
 
             return {
@@ -864,7 +868,9 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
         Object.defineProperty(header, 'deltas', defineDeltas.call(this, 'deltas'));
         if(flavor === 'gvar') {
             Object.defineProperty(header, 'deltasY', defineDeltas.call(this, 'deltasY'));
-        }        
+        }
+
+        serializedDataOffset += header.variationDataSize;
     }
 
     this.relativeOffset = relativeOffset;
@@ -877,7 +883,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
     };
 };
 
-Parser.prototype.parseTupleVariationHeaders = function(axisCount) {
+Parser.prototype.parseTupleVariationHeader = function(axisCount) {
     const variationDataSize = this.parseUShort();
     const tupleIndex = this.parseUShort();
 
@@ -923,16 +929,9 @@ function hex(bytes) {
 Parser.prototype.parsePackedPointNumbers = function() {
     const countByte1 = this.parseByte();
     const points = [];
-    let totalPointCount;
-
-    if (countByte1 === 0) {
-        // all glyph points are considered, no second byte.
-        totalPointCount = 0;
-        return points;
-    } else if (countByte1 >= 1 && countByte1 <= 127) {
-        // The point count is the value of the first byte, no second byte.
-        totalPointCount = countByte1;
-    } else if (countByte1 >= 128) {
+    let totalPointCount = countByte1;
+    
+    if (countByte1 >= 128) {
         // High bit is set, need to read a second byte and combine.
         const countByte2 = this.parseByte();
     
