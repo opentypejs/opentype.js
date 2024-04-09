@@ -759,7 +759,6 @@ Parser.prototype.parseTupleVariationStoreList = function(axisCount, flavor, glyp
         glyphVariations[i] = length
             ? this.parseTupleVariationStore(
                 glyphVariationDataArrayOffset + currentOffset,
-                length,
                 axisCount,
                 flavor,
                 glyphs,
@@ -773,22 +772,25 @@ Parser.prototype.parseTupleVariationStoreList = function(axisCount, flavor, glyp
     return glyphVariations;
 };
 
-Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCount, flavor, glyphs, glyphIndex) {
+Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, flavor, glyphs, glyphIndex) {
     const relativeOffset = this.relativeOffset;
     
     this.relativeOffset = tableOffset;
+    if(flavor === 'cvar') {
+        this.relativeOffset+= 4; // we already parsed the version fields in cvar.js directly
+    }
 
     // header
     const tupleVariationCount = this.parseUShort();
     const hasSharedPoints = !!(tupleVariationCount & masks.SHARED_POINT_NUMBERS);
     // const reserved = tupleVariationCount & 0x7000;
     const count = tupleVariationCount & masks.COUNT_MASK;
-    const dataOffset = this.parseOffset16();
+    let dataOffset = this.parseOffset16();
     const headers = [];
     let sharedPoints = [];
     
     for(let h = 0; h < count; h++) {
-        const headerData = this.parseTupleVariationHeader(axisCount);
+        const headerData = this.parseTupleVariationHeader(axisCount, flavor);
         headers.push(headerData);
     }
     
@@ -797,7 +799,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
         this.relativeOffset = tableOffset + dataOffset;
     }    
 
-    if (hasSharedPoints) {
+    if (flavor === 'gvar' && hasSharedPoints) {
         sharedPoints = this.parsePackedPointNumbers();
     }
 
@@ -826,14 +828,18 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
             const parseDeltas = () => {
                 let pointsCount = header.privatePoints.length || sharedPoints.length;
                 if(!pointsCount) {
-                    const glyph = glyphs.get(glyphIndex);
-                    // make sure the path is available
-                    glyph.path;
-                    pointsCount = glyph.points.length;
-                    // add 4 phantom points, see https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructing_glyphs#phantoms
-                    // @TODO: actually generate these points from glyph.getBoundingBox() and glyph.getMetrics(),
-                    // as they may be influenced by variation as well
-                    pointsCount+= 4;
+                    if(flavor === 'gvar') {
+                        const glyph = glyphs.get(glyphIndex);
+                        // make sure the path is available
+                        glyph.path;
+                        pointsCount = glyph.points.length;
+                        // add 4 phantom points, see https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructing_glyphs#phantoms
+                        // @TODO: actually generate these points from glyph.getBoundingBox() and glyph.getMetrics(),
+                        // as they may be influenced by variation as well
+                        pointsCount+= 4;
+                    } else if (flavor === 'cvar') {
+                        pointsCount = glyphs.length; // glyphs here is actually font.tables.cvt
+                    }
                 }
                 
                 this.offset = deltasOffset;
@@ -870,17 +876,22 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
         }
 
         serializedDataOffset += header.variationDataSize;
+        delete header.variationDataSize; // we don't need to expose this
     }
 
     this.relativeOffset = relativeOffset;
-
-    return {
-        sharedPoints,
+    const result = {
         headers,
     };
+
+    if(flavor === 'gvar') {
+        result.sharedPoints = sharedPoints;
+    }
+
+    return result;
 };
 
-Parser.prototype.parseTupleVariationHeader = function(axisCount) {
+Parser.prototype.parseTupleVariationHeader = function(axisCount, flavor) {
     const variationDataSize = this.parseUShort();
     const tupleIndex = this.parseUShort();
 
@@ -894,19 +905,23 @@ Parser.prototype.parseTupleVariationHeader = function(axisCount) {
     const intermediateStartTuple = intermediateRegion ? this.parseTupleRecords(1, axisCount)[0] : undefined;
     const intermediateEndTuple = intermediateRegion ? this.parseTupleRecords(1, axisCount)[0] : undefined;
 
-    return {
+    const result = {
         variationDataSize,
         peakTuple,
         intermediateStartTuple,
         intermediateEndTuple,
-        privatePointNumbers,
-        sharedTupleRecordsIndex,
         flags: {
             embeddedPeakTuple,
             intermediateRegion,
             privatePointNumbers,
         }
     };
+
+    if(flavor === 'gvar') {
+        result.sharedTupleRecordsIndex = sharedTupleRecordsIndex;
+    }
+
+    return result;
 };
 
 Parser.prototype.parsePackedPointNumbers = function() {
