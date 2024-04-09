@@ -755,7 +755,6 @@ Parser.prototype.parseTupleVariationStoreList = function(axisCount, flavor, glyp
         if (!offsetSizeIs32Bit) nextOffset *= 2;
         
         const length = nextOffset - currentOffset;
-        console.log(length);
 
         glyphVariations[i] = length
             ? this.parseTupleVariationStore(
@@ -776,7 +775,6 @@ Parser.prototype.parseTupleVariationStoreList = function(axisCount, flavor, glyp
 
 Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCount, flavor, glyphs, glyphIndex) {
     const relativeOffset = this.relativeOffset;
-    let maxOffset = tableOffset + length;
     
     this.relativeOffset = tableOffset;
 
@@ -799,20 +797,16 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
         this.relativeOffset = tableOffset + dataOffset;
     }    
 
-    const serializedDataOffset = this.relativeOffset;
-
     if (hasSharedPoints) {
-        sharedPoints = this.parsePackedPointNumbers(maxOffset);
+        sharedPoints = this.parsePackedPointNumbers();
     }
-
-    const perTupleDataOffset = this.relativeOffset;
 
     for(let h = 0; h < count; h++) {
         const header = headers[h];
         header.privatePoints = [];
 
         if(header.flags.privatePointNumbers) {
-            header.privatePoints = this.parsePackedPointNumbers(maxOffset);
+            header.privatePoints = this.parsePackedPointNumbers();
         }
         
         const deltasOffset = this.offset;
@@ -834,9 +828,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
                     // as they may be influenced by variation as well
                     pointsCount+= 4;
                 }
-
-                console.log({pointsCount});
-
+                
                 const offsetBefore = this.offset;
                 const relativeOffsetBefore = this.relativeOffset;
                 this.offset = deltasOffset;
@@ -846,8 +838,8 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
                 if(flavor === 'gvar') {
                     _deltasY = this.parsePackedDeltas(pointsCount);
                 }
-                this.offset = offsetBefore;
-                this.relativeOffset = relativeOffsetBefore;
+                //this.offset = offsetBefore;
+                //this.relativeOffset = relativeOffsetBefore;
             }
 
             return {
@@ -873,9 +865,6 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
         if(flavor === 'gvar') {
             Object.defineProperty(header, 'deltasY', defineDeltas.call(this, 'deltasY'));
         }        
-
-        console.log({variationDataSize: header.variationDataSize, perTupleDataOffset}, perTupleDataOffset + header.variationDataSize, this.offset, this.relativeOffset, this.offset+this.relativeOffset);
-        this.relativeOffset = perTupleDataOffset + header.variationDataSize;
     }
 
     this.relativeOffset = relativeOffset;
@@ -884,7 +873,6 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
         length,
         sharedPoints,
         count,
-        dataOffset,
         headers,
     };
 };
@@ -932,22 +920,10 @@ function hex(bytes) {
     return values.join(' ').toUpperCase();
 }
 
-function checkMaxOffset(maxOffset = 0) {
-    const reached = maxOffset && this.relativeOffset >= maxOffset;
-    if (reached) {
-        // this can occur e.g. when the totalPointCount value is too high,
-        // as it happens in some of the TestGVAR* fonts
-        console.error('end of table reached before parsing all points');
-    }
-    return reached;
-}
-
-Parser.prototype.parsePackedPointNumbers = function(maxOffset = 0) {
+Parser.prototype.parsePackedPointNumbers = function() {
     const countByte1 = this.parseByte();
     const points = [];
     let totalPointCount;
-
-    console.log(countByte1.toString(16), (countByte1 & 0x7F).toString(16));
 
     if (countByte1 === 0) {
         // all glyph points are considered, no second byte.
@@ -959,29 +935,19 @@ Parser.prototype.parsePackedPointNumbers = function(maxOffset = 0) {
     } else if (countByte1 >= 128) {
         // High bit is set, need to read a second byte and combine.
         const countByte2 = this.parseByte();
-        console.log(countByte2.toString(16));
     
         // Combine as big-endian uint16, with high bit of the first byte cleared.
         // This is done by masking the first byte with 0x7F (to clear the high bit)
         // and then shifting it left by 8 bits before adding the second byte.
-        totalPointCount = (((countByte1 & 0x7F) << 8) | countByte2);
+        totalPointCount = ((countByte1 & masks.POINT_RUN_COUNT_MASK) << 8) | countByte2;
     }
-
-    console.log({totalPointCount});
-    // console.trace();
     
     let lastPoint = 0;
     while (points.length < totalPointCount) {
-        if(checkMaxOffset.call(this, maxOffset)) {
-            break;
-        }
         const controlByte = this.parseByte();
-        const numbersAre16Bit = (controlByte & masks.POINTS_ARE_WORDS) !== 0; // Check if high bit is set
+        const numbersAre16Bit = !!(controlByte & masks.POINTS_ARE_WORDS); // Check if high bit is set
         let runCount = (controlByte & masks.POINT_RUN_COUNT_MASK) + 1; // Number of points in this run
         for (let i = 0; i < runCount && points.length < totalPointCount; i++) {
-            if(checkMaxOffset.call(this, maxOffset)) {
-                break;
-            }
             let pointDelta;
             if (numbersAre16Bit) {
                 pointDelta = this.parseUShort(); // Parse delta as uint16
@@ -994,8 +960,6 @@ Parser.prototype.parsePackedPointNumbers = function(maxOffset = 0) {
         }
     }
 
-    // console.log(points);
-
     return points;
 };
 
@@ -1006,7 +970,7 @@ Parser.prototype.parsePackedDeltas = function(expectedCount) {
         const controlByte = this.parseByte();
         const zeroData = !!(controlByte & masks.DELTAS_ARE_ZERO);
         const deltaWords = !!(controlByte & masks.DELTAS_ARE_WORDS);
-        const runCount = controlByte & masks.DELTA_RUN_COUNT_MASK;
+        const runCount = (controlByte & masks.DELTA_RUN_COUNT_MASK) + 1;
         
         for (let i = 0; i < runCount && deltas.length < expectedCount; i++) {
             if(zeroData) {
@@ -1018,8 +982,6 @@ Parser.prototype.parsePackedDeltas = function(expectedCount) {
             }
         }
     }
-
-    // console.log(deltas);
 
     return deltas;
 };
