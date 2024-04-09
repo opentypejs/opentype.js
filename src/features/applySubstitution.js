@@ -59,7 +59,6 @@ function ligatureSubstitutionFormat1(action, tokens, index) {
     }
 }
 
-
 /**
  * Supported substitutions
  */
