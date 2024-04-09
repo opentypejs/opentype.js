@@ -1,7 +1,6 @@
 // Parsing utility functions
 
 import check from './check.js';
-import table from './table.js';
 
 // Retrieve an unsigned byte from the DataView.
 function getByte(dataView, offset) {
@@ -820,7 +819,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
         const deltasOffset = this.offset;
         const deltasRelativeOffset = this.relativeOffset;
 
-        function defineDeltas(propertyName) {
+        const defineDeltas = (propertyName) => {
             let _deltas = undefined;
             let _deltasY = undefined;
 
@@ -844,7 +843,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
                 if(flavor === 'gvar') {
                     _deltasY = this.parsePackedDeltas(pointsCount);
                 }
-            }
+            };
 
             return {
                 configurable: true,
@@ -863,7 +862,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
                     }
                 }
             };
-        }
+        };
 
         Object.defineProperty(header, 'deltas', defineDeltas.call(this, 'deltas'));
         if(flavor === 'gvar') {
@@ -876,9 +875,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, length, axisCo
     this.relativeOffset = relativeOffset;
 
     return {
-        length,
         sharedPoints,
-        count,
         headers,
     };
 };
@@ -911,20 +908,6 @@ Parser.prototype.parseTupleVariationHeader = function(axisCount) {
         }
     };
 };
-
-function hex(bytes) {
-    const values = [];
-    for (let i = 0; i < bytes.length; i++) {
-        const b = bytes[i];
-        if (b < 16) {
-            values.push('0' + b.toString(16));
-        } else {
-            values.push(b.toString(16));
-        }
-    }
-
-    return values.join(' ').toUpperCase();
-}
 
 Parser.prototype.parsePackedPointNumbers = function() {
     const countByte1 = this.parseByte();
