@@ -1,9 +1,7 @@
 // The `gvar` table stores information on how to modify glyf outlines across the variation space
 // https://learn.microsoft.com/en-us/typography/opentype/spec/gvar
 
-import check from '../check.js';
 import parse from '../parse.js';
-import table from '../table.js';
 
 function parseGvarTable(data, start, fvar, glyphs) {
     const p = new parse.Parser(data, start);
@@ -31,7 +29,7 @@ function parseGvarTable(data, start, fvar, glyphs) {
     };
 }
 
-function makeGvarTable(gvar) {
+function makeGvarTable(/*gvar*/) {
     console.warn('Writing of gvar tables is not yet supported.');
 }
 
