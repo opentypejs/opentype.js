@@ -99,11 +99,11 @@ function makeFvarTable(fvar, names) {
     result.offsetToData = result.sizeOf();
 
     for (let i = 0; i < fvar.axes.length; i++) {
-        result.fields = result.fields.concat(makeFvarAxis(i, fvar.axes[i], names));
+        result.fields.push(...makeFvarAxis(i, fvar.axes[i], names));
     }
 
     for (let j = 0; j < fvar.instances.length; j++) {
-        result.fields = result.fields.concat(makeFvarInstance(j, fvar.instances[j], fvar.axes, names));
+        result.fields.push(...makeFvarInstance(j, fvar.instances[j], fvar.axes, names));
     }
 
     return result;

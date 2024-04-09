@@ -101,8 +101,7 @@ Bidi.prototype.registerFeatures = function (script, tags) {
     if (!Object.prototype.hasOwnProperty.call(this.featuresTags, script)) {
         this.featuresTags[script] = supportedTags;
     } else {
-        this.featuresTags[script] =
-        this.featuresTags[script].concat(supportedTags);
+        this.featuresTags[script].push(...supportedTags);
     }
 };
 

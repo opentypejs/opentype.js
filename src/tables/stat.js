@@ -180,10 +180,10 @@ axisValueMakers[4] = function axisValueMaker4(n, table) {
     ];
 
     for (let i = 0; i < table.axisValues.length; i++) {
-        returnFields = returnFields.concat([
+        returnFields.push(
             {name: `format${n}axisIndex${i}`, type: 'USHORT', value: table.axisValues[i].axisIndex},
             {name: `format${n}value${i}`, type: 'FLOAT', value: table.axisValues[i].value},
-        ]);
+        );
     }
 
     return returnFields;
@@ -222,7 +222,7 @@ function makeSTATTable(STAT) {
     for (let i = 0; i < STAT.axes.length; i++) {
         const axisRecord = makeSTATAxisRecord(i, STAT.axes[i]);
         result.offsetToAxisValueOffsets += axisRecord.sizeOf();
-        result.fields = result.fields.concat(axisRecord.fields);
+        result.fields.push(...axisRecord.fields);
     }
 
     const axisValueOffsets = [];
@@ -237,11 +237,10 @@ function makeSTATTable(STAT) {
             value: axisValueTableOffset
         });
         axisValueTableOffset += axisValueTable.sizeOf();
-        axisValueTables = axisValueTables.concat(axisValueTable.fields);
+        axisValueTables.push(...axisValueTable.fields);
     }
 
-    result.fields = result.fields.concat(axisValueOffsets);
-    result.fields = result.fields.concat(axisValueTables);
+    result.fields.push(...axisValueOffsets, ...axisValueTables);
 
     return result;
 }

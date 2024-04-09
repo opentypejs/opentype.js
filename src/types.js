@@ -753,10 +753,12 @@ encode.INDEX = function(l) {
         Array.prototype.push.apply(encodedOffsets, encodedOffset);
     }
 
-    return Array.prototype.concat(encode.Card16(l.length),
-        encode.OffSize(offSize),
-        encodedOffsets,
-        data);
+    return [
+        ...encode.Card16(l.length),
+        ...encode.OffSize(offSize),
+        ...encodedOffsets,
+        ...data
+    ];
 };
 
 /**

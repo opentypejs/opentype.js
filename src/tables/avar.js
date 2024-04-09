@@ -20,10 +20,10 @@ function makeAvarSegmentMap(n, axis) {
     let axisValueMaps = [];
     for (let i = 0; i < axis.axisValueMaps.length; i++) {
         const valueMap = makeAvarAxisValueMap(`${n}_${i}`, axis.axisValueMaps[i]);
-        axisValueMaps = axisValueMaps.concat(valueMap.fields);
+        axisValueMaps.push(...valueMap.fields);
     }
 
-    returnTable.fields = returnTable.fields.concat(axisValueMaps);
+    returnTable.fields.push(...axisValueMaps);
 
     return returnTable;
 }
@@ -40,7 +40,7 @@ function makeAvarTable(avar, fvar) {
 
     for (let i = 0; i < avar.axisSegmentMaps.length; i++) {
         const axisRecord = makeAvarSegmentMap(i, avar.axisSegmentMaps[i]);
-        result.fields = result.fields.concat(axisRecord.fields);
+        result.fields.push(...axisRecord.fields);
     }
 
     return result;

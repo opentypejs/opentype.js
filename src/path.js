@@ -76,8 +76,7 @@ function optimizeCommands(commands) {
             }
         }
     }
-    commands = [].concat.apply([], subpaths); // flatten again
-    return commands;
+    return [...subpaths.flat()]; // flatten again
 }
 
 /**
