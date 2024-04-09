@@ -15,7 +15,7 @@ function getContextParams(tokens, index) {
 }
 
 /**
- * Apply Arabic required ligatures to a context range
+ * Apply ccmp replacement ligatures to a context range
  * @param {ContextRange} range a range of tokens
  */
 function ccmpReplacementLigatures(range) {
