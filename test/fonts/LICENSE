@@ -72,6 +72,28 @@ TestCMAPMacTurkish.ttf
     SIL Open Font License, Version 1.1
     https://opensource.org/licenses/OFL-1.1
 
+TestCVARGVAROne.ttf
+TestCVARGVARTwo.ttf
+    Copyright 2015 Google Inc. All Rights Reserved.
+    SIL Open Font License, Version 1.1
+    http://scripts.sil.org/OFL
+
+TestGVAROne.ttf
+TestGVARTwo.ttf
+TestGVARThree.ttf
+    Copyright 2016 Monotype Hong Kong Ltd. and Monotype Imaging Inc. All rights reserved.
+    See font metadata for the exact license terms.
+
+TestGVARFour.ttf
+    Copyright (c) 2017 by Unicode, Inc.
+    SIL Open Font License
+    http://scripts.sil.org/OFL
+
+TestGVAR-Composite-0.ttf
+TestGVAR-Composite-0-Missing.ttf
+    This subset of the Normschrift font is licensed under https://creativecommons.org/publicdomain/zero/1.0/deed.en.
+    The full Normschrift font is copyright 2017 by Jens Kutilek.
+
 Vibur.woff
     Copyright (c) 2010, Johan Kallas (johan.kallas@gmail.com).
     SIL Open Font License, Version 1.1
