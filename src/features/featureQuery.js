@@ -533,22 +533,13 @@ FeatureQuery.prototype.lookupFeature = function (query) {
                     }
                     break;
                 case '51':
-                    substitution = lookup(contextParams);
-                    if (Array.isArray(substitution) && substitution.length) {
-                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
-                            id: 51,
-                            tag: query.tag,
-                            substitution
-                        }));
-                    }
-                    break;
                 case '53':
                     substitution = lookup(contextParams);
                     if (Array.isArray(substitution) && substitution.length) {
                         substitutions.splice(currentIndex, 1, new SubstitutionAction({
-                            id: 53,
+                            id: parseInt(substType),
                             tag: query.tag,
-                            substitution: substitution,
+                            substitution
                         }));
                     }
                     break;
