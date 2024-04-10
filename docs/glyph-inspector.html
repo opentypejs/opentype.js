@@ -517,7 +517,7 @@ function getCurrentCoords() {
 
 const throttledRedraw = throttleDebounce((...args) => {
     window.redraw(...args);
-})
+}, 50);
 
 window.onVariationChange = function(event) {
     const input = event.target;
