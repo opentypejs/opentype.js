@@ -8,6 +8,7 @@ import Position from './position.js';
 import Substitution from './substitution.js';
 import { PaletteManager } from './palettes.js';
 import { LayerManager } from './layers.js';
+import { VariationManager } from './variation.js';
 import { isBrowser, checkArgument } from './util.js';
 import HintingTrueType from './hintingtt.js';
 import Bidi from './bidi.js';
@@ -140,6 +141,17 @@ function Font(options) {
     this.position = new Position(this);
     this.substitution = new Substitution(this);
     this.tables = this.tables || {};
+
+    this.tables = new Proxy(this.tables, {
+        set: (tables, tableName, tableData) => {
+            tables[tableName] = tableData;
+            if (tableName === 'fvar') {
+                this.variation = new VariationManager(this);
+            }
+            return true;
+        }
+    });
+
     this.palettes = new PaletteManager(this);
     this.layers = new LayerManager(this);
 
