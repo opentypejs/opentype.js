@@ -30,6 +30,15 @@ function chainingSubstitutionFormat3(action, tokens, index) {
     for(let i = 0; i < action.substitution.length; i++) {
         const subst = action.substitution[i];
         const token = tokens[index + i];
+        if (Array.isArray(subst)) {
+            if (subst.length){
+                // TODO: replace one glyph with multiple glyphs
+                token.setState(action.tag, subst[0]);
+            } else {
+                token.setState('deleted', true);
+            }
+            continue;
+        }
         token.setState(action.tag, subst);
     }
 }
@@ -57,7 +66,9 @@ const SUBSTITUTIONS = {
     11: singleSubstitutionFormat1,
     12: singleSubstitutionFormat2,
     63: chainingSubstitutionFormat3,
-    41: ligatureSubstitutionFormat1
+    41: ligatureSubstitutionFormat1,
+    51: chainingSubstitutionFormat3,
+    53: chainingSubstitutionFormat3
 };
 
 /**
