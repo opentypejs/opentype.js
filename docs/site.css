@@ -373,3 +373,13 @@ button.color-swatch {
     cursor: default;
     background-color: transparent;
 }
+
+#variation-options {
+    display: flex;
+    gap: 1.5em;
+}
+
+#variation-options label + span {
+    display: inline-block;
+    min-width: 4ch;
+}
