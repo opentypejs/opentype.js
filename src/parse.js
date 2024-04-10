@@ -83,6 +83,7 @@ function bytesToString(bytes) {
 const typeOffsets = {
     byte: 1,
     uShort: 2,
+    f2dot14: 2,
     short: 2,
     uInt24: 3,
     uLong: 4,
@@ -93,7 +94,18 @@ const typeOffsets = {
 
 const masks = {
     LONG_WORDS: 0x8000,
-    WORD_DELTA_COUNT_MASK: 0x7FFF
+    WORD_DELTA_COUNT_MASK: 0x7FFF,
+    SHARED_POINT_NUMBERS: 0x8000,
+    COUNT_MASK: 0x0FFF,
+    EMBEDDED_PEAK_TUPLE: 0x8000,
+    INTERMEDIATE_REGION: 0x4000,
+    PRIVATE_POINT_NUMBERS: 0x2000,
+    TUPLE_INDEX_MASK: 0x0FFF,
+    POINTS_ARE_WORDS: 0x80,
+    POINT_RUN_COUNT_MASK: 0x7F,
+    DELTAS_ARE_ZERO: 0x80,
+    DELTAS_ARE_WORDS: 0x40,
+    DELTA_RUN_COUNT_MASK: 0x3F,
 };
 
 // A stateful parser that changes the offset whenever a value is retrieved.
@@ -344,6 +356,18 @@ Parser.prototype.parseRecordList32 = function(count, recordDescription) {
         records[i] = rec;
     }
     return records;
+};
+
+Parser.prototype.parseTupleRecords = function(tupleCount, axisCount) {
+    let tuples = [];
+    for (let i = 0; i < tupleCount; i++) {
+        let tuple = [];
+        for (let axisIndex = 0; axisIndex < axisCount; axisIndex++) {
+            tuple.push(this.parseF2Dot14());
+        }
+        tuples.push(tuple);
+    }
+    return tuples;
 };
 
 // Parse a data structure into an object
@@ -707,6 +731,253 @@ Parser.prototype.parseDeltaSets = function(itemCount, wordDeltaCount) {
     for( let i = 0; i < itemCount; i++ ) {
         const deltaParser = i < wordCount ? wordParser : restParser;
         deltas.push(deltaParser());
+    }
+
+    return deltas;
+};
+
+Parser.prototype.parseTupleVariationStoreList = function(axisCount, flavor, glyphs) {
+    const glyphCount = this.parseUShort();
+    const flags = this.parseUShort();
+    const offsetSizeIs32Bit = flags & 0x01;
+
+    const glyphVariationDataArrayOffset = this.parseOffset32();
+    const parseOffset = (offsetSizeIs32Bit ? this.parseULong : this.parseUShort).bind(this);
+
+    const glyphVariations = {};
+
+    let currentOffset = parseOffset();
+    if (!offsetSizeIs32Bit) currentOffset *= 2;
+    let nextOffset;
+
+    for (let i = 0; i < glyphCount; i++) {
+        nextOffset = parseOffset();
+        if (!offsetSizeIs32Bit) nextOffset *= 2;
+        
+        const length = nextOffset - currentOffset;
+
+        glyphVariations[i] = length
+            ? this.parseTupleVariationStore(
+                glyphVariationDataArrayOffset + currentOffset,
+                axisCount,
+                flavor,
+                glyphs,
+                i
+            )
+            : undefined;
+        
+        currentOffset = nextOffset;
+    }
+
+    return glyphVariations;
+};
+
+Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, flavor, glyphs, glyphIndex) {
+    const relativeOffset = this.relativeOffset;
+    
+    this.relativeOffset = tableOffset;
+    if(flavor === 'cvar') {
+        this.relativeOffset+= 4; // we already parsed the version fields in cvar.js directly
+    }
+
+    // header
+    const tupleVariationCount = this.parseUShort();
+    const hasSharedPoints = !!(tupleVariationCount & masks.SHARED_POINT_NUMBERS);
+    // const reserved = tupleVariationCount & 0x7000;
+    const count = tupleVariationCount & masks.COUNT_MASK;
+    let dataOffset = this.parseOffset16();
+    const headers = [];
+    let sharedPoints = [];
+    
+    for(let h = 0; h < count; h++) {
+        const headerData = this.parseTupleVariationHeader(axisCount, flavor);
+        headers.push(headerData);
+    }
+    
+    if (this.relativeOffset !== tableOffset + dataOffset) {
+        console.warn(`Unexpected offset after parsing tuple variation headers! Expected ${tableOffset + dataOffset}, actually ${this.relativeOffset}`);
+        this.relativeOffset = tableOffset + dataOffset;
+    }    
+
+    if (flavor === 'gvar' && hasSharedPoints) {
+        sharedPoints = this.parsePackedPointNumbers();
+    }
+
+    let serializedDataOffset = this.relativeOffset;
+
+    for(let h = 0; h < count; h++) {
+        const header = headers[h];
+        header.privatePoints = [];
+        this.relativeOffset = serializedDataOffset;
+        
+        if(flavor === 'cvar' && !header.peakTuple) {
+            console.warn('An embedded peak tuple is required in TupleVariationHeaders for the cvar table.');
+        }
+
+        if(header.flags.privatePointNumbers) {
+            header.privatePoints = this.parsePackedPointNumbers();
+        }
+        
+        const deltasOffset = this.offset;
+        const deltasRelativeOffset = this.relativeOffset;
+
+        const defineDeltas = (propertyName) => {
+            let _deltas = undefined;
+            let _deltasY = undefined;
+
+            const parseDeltas = () => {
+                let pointsCount = header.privatePoints.length || sharedPoints.length;
+                if(!pointsCount) {
+                    if(flavor === 'gvar') {
+                        const glyph = glyphs.get(glyphIndex);
+                        // make sure the path is available
+                        glyph.path;
+                        pointsCount = glyph.points.length;
+                        // add 4 phantom points, see https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructing_glyphs#phantoms
+                        // @TODO: actually generate these points from glyph.getBoundingBox() and glyph.getMetrics(),
+                        // as they may be influenced by variation as well
+                        pointsCount+= 4;
+                    } else if (flavor === 'cvar') {
+                        pointsCount = glyphs.length; // glyphs here is actually font.tables.cvt
+                    }
+                }
+                
+                this.offset = deltasOffset;
+                this.relativeOffset = deltasRelativeOffset;
+                _deltas = this.parsePackedDeltas(pointsCount);
+                
+                if(flavor === 'gvar') {
+                    _deltasY = this.parsePackedDeltas(pointsCount);
+                }
+            };
+
+            return {
+                configurable: true,
+        
+                get: function() {
+                    if(_deltas === undefined) parseDeltas();
+                    return propertyName === 'deltasY' ? _deltasY : _deltas;
+                },
+        
+                set: function(deltas) {
+                    if(_deltas === undefined) parseDeltas();
+                    if(propertyName === 'deltasY') {
+                        _deltasY = deltas;
+                    } else {
+                        _deltas = deltas;
+                    }
+                }
+            };
+        };
+
+        Object.defineProperty(header, 'deltas', defineDeltas.call(this, 'deltas'));
+        if(flavor === 'gvar') {
+            Object.defineProperty(header, 'deltasY', defineDeltas.call(this, 'deltasY'));
+        }
+
+        serializedDataOffset += header.variationDataSize;
+        delete header.variationDataSize; // we don't need to expose this
+    }
+
+    this.relativeOffset = relativeOffset;
+    const result = {
+        headers,
+    };
+
+    if(flavor === 'gvar') {
+        result.sharedPoints = sharedPoints;
+    }
+
+    return result;
+};
+
+Parser.prototype.parseTupleVariationHeader = function(axisCount, flavor) {
+    const variationDataSize = this.parseUShort();
+    const tupleIndex = this.parseUShort();
+
+    const embeddedPeakTuple = !!(tupleIndex & masks.EMBEDDED_PEAK_TUPLE);
+    const intermediateRegion = !!(tupleIndex & masks.INTERMEDIATE_REGION);
+    const privatePointNumbers = !!(tupleIndex & masks.PRIVATE_POINT_NUMBERS);
+    // const reserved = tupleIndex & 0x1000;
+    const sharedTupleRecordsIndex = embeddedPeakTuple ? undefined : tupleIndex & masks.TUPLE_INDEX_MASK;
+
+    const peakTuple = embeddedPeakTuple ? this.parseTupleRecords(1, axisCount)[0] : undefined;
+    const intermediateStartTuple = intermediateRegion ? this.parseTupleRecords(1, axisCount)[0] : undefined;
+    const intermediateEndTuple = intermediateRegion ? this.parseTupleRecords(1, axisCount)[0] : undefined;
+
+    const result = {
+        variationDataSize,
+        peakTuple,
+        intermediateStartTuple,
+        intermediateEndTuple,
+        flags: {
+            embeddedPeakTuple,
+            intermediateRegion,
+            privatePointNumbers,
+        }
+    };
+
+    if(flavor === 'gvar') {
+        result.sharedTupleRecordsIndex = sharedTupleRecordsIndex;
+    }
+
+    return result;
+};
+
+Parser.prototype.parsePackedPointNumbers = function() {
+    const countByte1 = this.parseByte();
+    const points = [];
+    let totalPointCount = countByte1;
+    
+    if (countByte1 >= 128) {
+        // High bit is set, need to read a second byte and combine.
+        const countByte2 = this.parseByte();
+    
+        // Combine as big-endian uint16, with high bit of the first byte cleared.
+        // This is done by masking the first byte with 0x7F (to clear the high bit)
+        // and then shifting it left by 8 bits before adding the second byte.
+        totalPointCount = ((countByte1 & masks.POINT_RUN_COUNT_MASK) << 8) | countByte2;
+    }
+    
+    let lastPoint = 0;
+    while (points.length < totalPointCount) {
+        const controlByte = this.parseByte();
+        const numbersAre16Bit = !!(controlByte & masks.POINTS_ARE_WORDS); // Check if high bit is set
+        let runCount = (controlByte & masks.POINT_RUN_COUNT_MASK) + 1; // Number of points in this run
+        for (let i = 0; i < runCount && points.length < totalPointCount; i++) {
+            let pointDelta;
+            if (numbersAre16Bit) {
+                pointDelta = this.parseUShort(); // Parse delta as uint16
+            } else {
+                pointDelta = this.parseByte(); // Parse delta as uint8
+            }
+            // For the first point of the first run, use the value directly. Otherwise, accumulate.
+            lastPoint = lastPoint + pointDelta;
+            points.push(lastPoint);
+        }
+    }
+
+    return points;
+};
+
+Parser.prototype.parsePackedDeltas = function(expectedCount) {
+    const deltas = [];
+    
+    while (deltas.length < expectedCount) {
+        const controlByte = this.parseByte();
+        const zeroData = !!(controlByte & masks.DELTAS_ARE_ZERO);
+        const deltaWords = !!(controlByte & masks.DELTAS_ARE_WORDS);
+        const runCount = (controlByte & masks.DELTA_RUN_COUNT_MASK) + 1;
+        
+        for (let i = 0; i < runCount && deltas.length < expectedCount; i++) {
+            if(zeroData) {
+                deltas.push(0);
+            } else if (deltaWords) {
+                deltas.push(this.parseShort());
+            } else {
+                deltas.push(this.parseChar());
+            }
+        }
     }
 
     return deltas;
