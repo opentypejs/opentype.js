@@ -24,6 +24,7 @@ import cpal from './cpal.js';
 import fvar from './fvar.js';
 import stat from './stat.js';
 import avar from './avar.js';
+import cvar from './cvar.js';
 import gvar from './gvar.js';
 import gasp from './gasp.js';
 
@@ -359,6 +360,7 @@ function fontToSfntTable(font) {
         colr,
         stat,
         avar,
+        cvar,
         fvar, 
         gvar,
         gasp,
@@ -372,7 +374,10 @@ function fontToSfntTable(font) {
     for (let tableName in optionalTables) {
         const table = font.tables[tableName];
         if (table) {
-            tables.push(optionalTables[tableName].make.call(font, table, ...(optionalTableArgs[tableName] || [])));
+            const tableData = optionalTables[tableName].make.call(font, table, ...(optionalTableArgs[tableName] || []));
+            if (tableData) {
+                tables.push(tableData);
+            }
         }
     }
 
