@@ -134,7 +134,7 @@ Glyph.prototype.getBoundingBox = function() {
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
  * @param  {GlyphRenderOptions=} options - xScale, yScale to stretch the glyph.
- * @param  {opentype.Font} font if hinting is to be used, or CPAL/COLR needs to be rendered, the font
+ * @param  {opentype.Font} font if hinting is to be used, or CPAL/COLR / variation needs to be rendered, the font
  * @return {opentype.Path}
  */
 Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
@@ -167,6 +167,10 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
         commands = this.path.commands;
         if (xScale === undefined) xScale = scale;
         if (yScale === undefined) yScale = scale;
+    }
+
+    if(font && font.variation && font.variation.gvar()) {
+        commands = font.variation.getTransform(this, options.variation);
     }
     
     const p = new Path();
@@ -313,7 +317,7 @@ Glyph.prototype.getMetrics = function() {
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
  * @param  {Object=} options - xScale, yScale to stretch the glyph.
- * @param  {opentype.Font} font - xScale, yScale to stretch the glyph.
+ * @param  {opentype.Font} font - if hinting is to be used, or CPAL/COLR / variation needs to be rendered, the font
  */
 Glyph.prototype.draw = function(ctx, x, y, fontSize, options, font) {
     options = Object.assign({}, font.defaultRenderOptions, options);
@@ -363,8 +367,14 @@ Glyph.prototype.drawPoints = function(ctx, x, y, fontSize, options, font) {
     const blueCircles = [];
     const redCircles = [];
     const path = this.path;
-    for (let i = 0; i < path.commands.length; i += 1) {
-        const cmd = path.commands[i];
+    let commands = path.commands;
+    
+    if(font && font.variation && font.variation.gvar()) {
+        commands = font.variation.getTransform(this, options.variation);
+    }
+
+    for (let i = 0; i < commands.length; i += 1) {
+        const cmd = commands[i];
         if (cmd.x !== undefined) {
             blueCircles.push({x: cmd.x, y: -cmd.y});
         }

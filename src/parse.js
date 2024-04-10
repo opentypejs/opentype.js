@@ -817,6 +817,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
         if(header.flags.privatePointNumbers) {
             header.privatePoints = this.parsePackedPointNumbers();
         }
+        delete header.flags; // we don't need to expose this
         
         const deltasOffset = this.offset;
         const deltasRelativeOffset = this.relativeOffset;
