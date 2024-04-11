@@ -41,7 +41,7 @@ function base64ToArrayBuffer(base64) {
 function updateVariationOptions() {
     const variationsDiv = document.getElementById('variation-options');
     variationsDiv.innerHTML = '';
-    if (!window?.font.tables?.fvar) return;
+    if (!window?.font?.variation) return;
     
     const markup = `
         <div>

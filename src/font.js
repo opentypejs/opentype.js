@@ -145,7 +145,9 @@ function Font(options) {
     this.tables = new Proxy(this.tables, {
         set: (tables, tableName, tableData) => {
             tables[tableName] = tableData;
-            if (tableName === 'fvar') {
+            // @TODO: right now we only support variable fonts with fvar and gvar tables,
+            // but there are variable CFF2 fonts without a gvar table, like Myriad Variable
+            if (tables.hasOwnProperty('fvar') && tables.hasOwnProperty('gvar')) {
                 this.variation = new VariationManager(this);
             }
             return true;
