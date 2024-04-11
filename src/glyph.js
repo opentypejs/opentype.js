@@ -103,6 +103,10 @@ Glyph.prototype.bindConstructorValues = function(options) {
         this.leftSideBearing = options.leftSideBearing;
     }
 
+    if ('points' in options) {
+        this.points = options.points;
+    }
+
     // The path for a glyph is the most memory intensive, and is bound as a value
     // with a getter/setter to ensure we actually do path parsing only once the
     // path is actually needed by anything.
@@ -148,10 +152,17 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     let yScale = options.yScale;
     const scale = 1 / (this.path.unitsPerEm || 1000) * fontSize;
 
+    let useGlyph = this;
+
+    if(font && font.variation && font.variation.gvar()) {
+        useGlyph = font.variation.getTransformGlyph(this, options.variation);
+        commands = useGlyph.path.commands;
+    }
+    
     if (options.hinting && font && font.hinting) {
         // in case of hinting, the hinting engine takes care
         // of scaling the points (not the path) before hinting.
-        hPoints = this.path && font.hinting.exec(this, fontSize);
+        hPoints = useGlyph.path && font.hinting.exec(useGlyph, fontSize);
         // in case the hinting engine failed hPoints is undefined
         // and thus reverts to plain rending
     }
@@ -164,13 +175,9 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
         // TODO in case of hinting xyScaling is not yet supported
         xScale = yScale = 1;
     } else {
-        commands = this.path.commands;
+        commands = useGlyph.path.commands;
         if (xScale === undefined) xScale = scale;
         if (yScale === undefined) yScale = scale;
-    }
-
-    if(font && font.variation && font.variation.gvar()) {
-        commands = font.variation.getTransformCommands(this, options.variation);
     }
     
     const p = new Path();

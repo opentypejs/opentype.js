@@ -6,6 +6,8 @@ export class VariationManager {
         this.process = new VariationProcessor(this.font);
         this.activateDefaultVariation();
         this.getTransform = this.process.getTransform.bind(this.process);
+        this.getTransformPath = this.process.getTransformPath.bind(this.process);
+        this.getTransformGlyph = this.process.getTransformGlyph.bind(this.process);
         this.getTransformCommands = this.process.getTransformCommands.bind(this.process);
     }
 

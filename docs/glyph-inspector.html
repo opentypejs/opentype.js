@@ -386,23 +386,6 @@ function initGlyphDisplay(font) {
     hline('Typo Descender', font.tables.os2.sTypoDescender);
 }
 
-function arrayBufferToBase64(buffer) {
-    const CHUNK_SIZE = 8192;
-    let result = '';
-    const uintArray = new Uint8Array(buffer);
-
-    for (let i = 0; i < uintArray.length; i += CHUNK_SIZE) {
-        const chunk = uintArray.subarray(i, i + CHUNK_SIZE);
-        result += String.fromCharCode.apply(null, chunk);
-    }
-
-    return btoa(result);
-}
-
-function base64ToArrayBuffer(base64) {
-    return Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
-}
-
 window.redraw = function(options = { withColors: true, withVariations: true }) {
     if ( options.withColors ) {
         updateColrOptions();

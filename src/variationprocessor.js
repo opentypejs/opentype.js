@@ -1,5 +1,6 @@
 import { getPath, transformPoints } from './tables/glyf.js';
 import { copyPoint, copyComponent } from './util.js';
+import Glyph from './glyph.js';
 
 /**
  * Part of the code of this class was based on
@@ -187,107 +188,123 @@ export class VariationProcessor {
      * @param {opentype.Glyph} glyph 
      * @param {Object} coords 
      * @param {boolean} [asCommands=false] used internally for the getTransformCommands() method
-     * @returns {Array<Object>}
+     * @param {string} [format="points"] "points" = return an array of transformed point objects, "path" = return a transformed Path object, "glyph" = return a copy of the glyph with the transformed points and path commands
+     * @returns {Array<Object>|opentype.Path}
      */
-    getTransform(glyph, coords, asCommands = false) {
-        
-        if(!glyph.points || !glyph.points.length) return [];
-
-        const glyphPoints = glyph.points;
-        const variationData = this.gvar().glyphVariations[glyph.index];
-        if(variationData) {
-            const transformedPoints = glyphPoints.map(copyPoint);
-            const sharedTuples = this.gvar().sharedTuples;
-            const { headers, sharedPoints } = variationData;
-
-            const normalizedCoords = this.getNormalizedCoords(coords);
-            const axisCount = this.fvar().axes.length;
-
-            for(let h = 0; h < headers.length; h++) {
-                const header = headers[h];
-                let factor = 1;
-                for (let a = 0; a < axisCount; a++) {
-
-                    const tupleCoords = header.peakTuple ? header.peakTuple : sharedTuples[header.sharedTupleRecordsIndex];
-
-                    if (tupleCoords[a] === 0) {
+    getTransform(glyph, coords, format = "points") {
+        if (glyph.points && glyph.points.length) {
+            const glyphPoints = glyph.points;
+            const variationData = this.gvar().glyphVariations[glyph.index];
+            if(variationData) {
+                const transformedPoints = glyphPoints.map(copyPoint);
+                const sharedTuples = this.gvar().sharedTuples;
+                const { headers, sharedPoints } = variationData;
+    
+                const normalizedCoords = this.getNormalizedCoords(coords);
+                const axisCount = this.fvar().axes.length;
+    
+                for(let h = 0; h < headers.length; h++) {
+                    const header = headers[h];
+                    let factor = 1;
+                    for (let a = 0; a < axisCount; a++) {
+    
+                        const tupleCoords = header.peakTuple ? header.peakTuple : sharedTuples[header.sharedTupleRecordsIndex];
+    
+                        if (tupleCoords[a] === 0) {
+                            continue;
+                        }
+                    
+                        if (normalizedCoords[a] === 0) {
+                            factor = 0;
+                            break;
+                        }
+                    
+                        if (!header.intermediateStartTuple) {
+                            if ((normalizedCoords[a] < Math.min(0, tupleCoords[a])) ||
+                                (normalizedCoords[a] > Math.max(0, tupleCoords[a]))) {
+                                factor = 0;
+                                break;
+                            }
+                    
+                            factor = (factor * normalizedCoords[a] + Number.EPSILON) / (tupleCoords[a] + Number.EPSILON);
+                        } else {
+                            if ((normalizedCoords[a] < header.intermediateStartTuple[a]) || (normalizedCoords[a] > header.intermediateEndTuple[a])) {
+                                factor = 0;
+                                break;
+                            } else if (normalizedCoords[a] < tupleCoords[a]) {
+                                factor = factor * (normalizedCoords[a] - header.intermediateStartTuple[a] + Number.EPSILON) / (tupleCoords[a] - header.intermediateStartTuple[a] + Number.EPSILON);
+                            } else {
+                                factor = factor * (header.intermediateEndTuple[a] - normalizedCoords[a] + Number.EPSILON) / (header.intermediateEndTuple[a] - tupleCoords[a] + Number.EPSILON);
+                            }
+                        }
+                    }
+    
+                    if (factor === 0) {
                         continue;
                     }
-                
-                    if (normalizedCoords[a] === 0) {
-                        factor = 0;
-                        break;
-                    }
-                
-                    if (!header.intermediateStartTuple) {
-                        if ((normalizedCoords[a] < Math.min(0, tupleCoords[a])) ||
-                            (normalizedCoords[a] > Math.max(0, tupleCoords[a]))) {
-                            factor = 0;
-                            break;
+    
+                    const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
+    
+                    if(glyph.isComposite) {
+                        this.transformComponents(glyph, transformedPoints, coords, tuplePoints, header, factor);
+    
+                    } else if (tuplePoints.length === 0) {
+                        for (let i = 0; i < transformedPoints.length; i++) {
+                            const point = transformedPoints[i];
+                            transformedPoints[i] = {
+                                x: point.x + Math.round(header.deltas[i] * factor),
+                                y: point.y + Math.round(header.deltasY[i] * factor),
+                                onCurve: point.onCurve,
+                                lastPointOfContour: point.lastPointOfContour
+                            };
                         }
-                
-                        factor = (factor * normalizedCoords[a] + Number.EPSILON) / (tupleCoords[a] + Number.EPSILON);
                     } else {
-                        if ((normalizedCoords[a] < header.intermediateStartTuple[a]) || (normalizedCoords[a] > header.intermediateEndTuple[a])) {
-                            factor = 0;
-                            break;
-                        } else if (normalizedCoords[a] < tupleCoords[a]) {
-                            factor = factor * (normalizedCoords[a] - header.intermediateStartTuple[a] + Number.EPSILON) / (tupleCoords[a] - header.intermediateStartTuple[a] + Number.EPSILON);
-                        } else {
-                            factor = factor * (header.intermediateEndTuple[a] - normalizedCoords[a] + Number.EPSILON) / (header.intermediateEndTuple[a] - tupleCoords[a] + Number.EPSILON);
+                        const interpolatedPoints = glyphPoints.map(copyPoint);            
+                        const deltaMap = Array(glyphPoints.length).fill(false);
+                        for (let i = 0; i < tuplePoints.length; i++) {
+                            let pointIndex = tuplePoints[i];
+                            if (pointIndex < glyphPoints.length) {
+                                let point = interpolatedPoints[pointIndex];
+                                deltaMap[pointIndex] = true;
+        
+                                point.x += Math.round(header.deltas[i] * factor);
+                                point.y += Math.round(header.deltasY[i] * factor);
+                            }
+                        }
+        
+                        this.interpolatePoints(interpolatedPoints, transformedPoints, deltaMap);
+        
+                        for (let i = 0; i < glyphPoints.length; i++) {
+                            let deltaX = interpolatedPoints[i].x - transformedPoints[i].x;
+                            let deltaY = interpolatedPoints[i].y - transformedPoints[i].y;
+        
+                            transformedPoints[i].x += deltaX;
+                            transformedPoints[i].y += deltaY;
                         }
                     }
                 }
-
-                if (factor === 0) {
-                    continue;
-                }
-
-                const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
-
-                if(glyph.isComposite) {
-                    this.transformComponents(glyph, transformedPoints, coords, tuplePoints, header, factor);
-
-                } else if (tuplePoints.length === 0) {
-                    for (let i = 0; i < transformedPoints.length; i++) {
-                        const point = transformedPoints[i];
-                        transformedPoints[i] = {
-                            x: point.x + Math.round(header.deltas[i] * factor),
-                            y: point.y + Math.round(header.deltasY[i] * factor),
-                            onCurve: point.onCurve,
-                            lastPointOfContour: point.lastPointOfContour
-                        };
-                    }
-                } else {
-                    const interpolatedPoints = glyphPoints.map(copyPoint);            
-                    const deltaMap = Array(glyphPoints.length).fill(false);
-                    for (let i = 0; i < tuplePoints.length; i++) {
-                        let pointIndex = tuplePoints[i];
-                        if (pointIndex < glyphPoints.length) {
-                            let point = interpolatedPoints[pointIndex];
-                            deltaMap[pointIndex] = true;
-    
-                            point.x += Math.round(header.deltas[i] * factor);
-                            point.y += Math.round(header.deltasY[i] * factor);
-                        }
-                    }
-    
-                    this.interpolatePoints(interpolatedPoints, transformedPoints, deltaMap);
-    
-                    for (let i = 0; i < glyphPoints.length; i++) {
-                        let deltaX = interpolatedPoints[i].x - transformedPoints[i].x;
-                        let deltaY = interpolatedPoints[i].y - transformedPoints[i].y;
-    
-                        transformedPoints[i].x += deltaX;
-                        transformedPoints[i].y += deltaY;
-                    }
+                
+                switch (format) {
+                    case "glyph":
+                        return new Glyph(Object.assign({}, glyph, {points: transformedPoints, path: getPath(transformedPoints)}));
+                    case "path":
+                        return getPath(transformedPoints);
+                    case "points":
+                    default:
+                        return transformedPoints;
                 }
             }
-            
-            return asCommands ? getPath(transformedPoints).commands : transformedPoints;
         }
 
-        return asCommands ? glyph.path.commands : glyph.points;
+        switch (format) {
+            case "glyph":
+                return glyph;
+            case "path":
+                return glyph.path;
+            case "points":
+            default:
+                return glyph.points;
+        }
     }
 
     /**
@@ -297,7 +314,27 @@ export class VariationProcessor {
      * @returns {Array<Object>}
      */
     getTransformCommands(glyph, coords) {
-        return this.getTransform(glyph, coords, true);
+        return this.getTransform(glyph, coords, "path").commands;
+    }
+    
+    /**
+     * Returns the transformed Path for a glyph based on the provided variation coordinates
+     * @param {opentype.Glyph} glyph 
+     * @param {Object} coords 
+     * @returns {opentype.Path}
+     */
+    getTransformPath(glyph, coords) {
+        return this.getTransform(glyph, coords, "path");
+    }
+
+    /**
+     * Returns a copy of a glyph based on the provided variation coordinates
+     * @param {opentype.Glyph} glyph 
+     * @param {Object} coords 
+     * @returns {opentype.Path}
+     */
+    getTransformGlyph(glyph, coords) {
+        return this.getTransform(glyph, coords, "glyph");
     }
 
     /**

@@ -21,6 +21,23 @@ function throttleDebounce(func, wait) {
     };
 }
 
+function arrayBufferToBase64(buffer) {
+    const CHUNK_SIZE = 8192;
+    let result = '';
+    const uintArray = new Uint8Array(buffer);
+
+    for (let i = 0; i < uintArray.length; i += CHUNK_SIZE) {
+        const chunk = uintArray.subarray(i, i + CHUNK_SIZE);
+        result += String.fromCharCode.apply(null, chunk);
+    }
+
+    return btoa(result);
+}
+
+function base64ToArrayBuffer(base64) {
+    return Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
+}
+
 function updateVariationOptions() {
     const variationsDiv = document.getElementById('variation-options');
     variationsDiv.innerHTML = '';

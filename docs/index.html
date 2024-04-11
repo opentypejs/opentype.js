@@ -243,8 +243,17 @@ async function display(file, name) {
     }
     try {
         const data = await file.arrayBuffer();
-        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
-        showErrorMessage('');
+        let error;
+        try {
+            const base64String = arrayBufferToBase64(data);
+            sessionStorage.setItem('fontData', base64String);
+        } catch (err) {
+            showErrorMessage('Error loading font from localStorage');
+            error = err;
+        }     
+
+        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data, { lowMemory: true }));
+        if ( !error ) showErrorMessage('');
     } catch (err) {
         showErrorMessage(err.toString());
     }
@@ -257,6 +266,12 @@ form.file.onchange = function(e) {
 enableHighDPICanvas('preview');
 enableHighDPICanvas('snap');
 
-const fontFileName = 'fonts/FiraSansMedium.woff';
-display(await fetch(fontFileName), fontFileName);
+const fontData = sessionStorage.getItem('fontData');
+if ( fontData ) {
+    const arrayBuffer = base64ToArrayBuffer(fontData);
+    onFontLoaded(opentype.parse(arrayBuffer));
+} else {
+    const fontFileName = 'fonts/FiraSansMedium.woff';
+    display(await fetch(fontFileName), fontFileName);
+}
 </script>
