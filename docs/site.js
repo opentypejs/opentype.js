@@ -1,0 +1,80 @@
+function throttleDebounce(func, wait) {
+    let timeout = null;
+    let lastFunc;
+    let lastRan;
+
+    return function() {
+        const context = this;
+        const args = arguments;
+        if (!lastRan) {
+            func.apply(context, args);
+            lastRan = Date.now();
+        } else {
+            clearTimeout(lastFunc);
+            lastFunc = setTimeout(function() {
+                if ((Date.now() - lastRan) >= wait) {
+                    func.apply(context, args);
+                    lastRan = Date.now();
+                }
+            }, Math.max(wait - (Date.now() - lastRan), 0));
+        }
+    };
+}
+
+function updateVariationOptions() {
+    const variationsDiv = document.getElementById('variation-options');
+    variationsDiv.innerHTML = '';
+    if (!window?.font.tables?.fvar) return;
+    
+    const markup = `
+        <div>
+                ${window.font.tables.fvar.axes.map((a,idx) => {
+                    const currentValue = (window.fontOptions.variation||{})[a.tag] || a.defaultValue;
+                    return `<p><label><strong>${a.name.en || a.tag}</strong>
+                        <input type="range" id="variation-tag-${a.tag}" step="${parseInt(a.defaultValue) === a.defaultValue ? 1 : 0.001}" min="${a.minValue}" max="${a.maxValue}" value="${currentValue}" oninput="onVariationChange(event)"></label> <span>${currentValue}</span></p>`;
+                }).join('')}
+        </div>
+        <div>
+            <p><label><strong>Variation Instance:</strong>
+            <select id="variation-instance" oninput="changeVariationInstance(event)">
+                ${window.font.tables.fvar.instances.map((i,idx) => {
+                    const selected = window.font.variation.getInstanceIndex(window.font.defaultRenderOptions.variation) === idx ? ' selected' : '';
+                    return `<option value="${idx}"${selected}>${i.name.en || JSON.stringify(i.coordinates)}</option>`
+                }).join('')}
+                <option${!window.font.tables.fvar.instances.length ? ' selected' : ''} disabled>custom</option>
+            </select></label></p>
+        </div>
+    `;
+    variationsDiv.innerHTML = markup;
+}
+
+function onVariationChange(event) {
+    const input = event.target;
+    input.parentNode.nextElementSibling.innerText = input.value;
+    const instanceIndex = window.font.variation.getInstanceIndex(getCurrentCoords());
+    document.getElementById('variation-instance').value = instanceIndex > -1 ? instanceIndex : 'custom';
+    window.fontOptions.variation = getCurrentCoords();
+    throttledRedraw({withVariations: false});
+};
+
+function changeVariationInstance(event) {
+    const selected = event.target.value;
+    if (selected !== 'custom') {
+        Object.entries(window.font.tables.fvar.instances[selected].coordinates).forEach(([tag, value]) => {
+            const slider = document.getElementById(`variation-tag-${tag}`);
+            slider.value = value;
+            slider.parentElement.nextElementSibling.innerText = value;
+        });
+        window.font.variation.set(parseInt(event.target.value));
+    }
+    window.fontOptions.variation = getCurrentCoords();
+    window.redraw({withVariations: false});
+};
+
+function getCurrentCoords() {
+    return Array.from(document.querySelectorAll('input[id^="variation-tag-"]')).reduce((acc, input) => {
+        const tag = input.id.substring("variation-tag-".length);
+        acc[tag] = parseInt(input.value);
+        return acc;
+    }, {});
+}

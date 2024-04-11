@@ -4,6 +4,7 @@
 <meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
 <meta charset="utf-8">
 <link rel="stylesheet" href="site.css">
+<script src="site.js"></script>
 
 <div class="header">
     <div class="container">
@@ -35,7 +36,9 @@
     <label><input type="checkbox" name="drawMetrics">Draw Metrics</label>
     <label><input type="checkbox" name="kerning" checked="checked">Kerning</label>
     <label><input type="checkbox" name="ligatures" checked="checked">Ligatures</label>
-    <label class="disabled"><input name="hinting" type="checkbox" onchange="hintingChanged(this)" disabled="true">Hinting</label>
+    <label class="disabled"><input name="hinting" type="checkbox" disabled="true">Hinting</label>
+
+    <div id="variation-options"></div>
 
     <hr>
 
@@ -79,6 +82,7 @@ const form = document.forms.demo;
 form.oninput = renderText;
 let font = null;
 
+let options = {};
 
 function doSnap(path) {
     const layers = path._layers;
@@ -116,7 +120,7 @@ function renderText() {
     if (!font) return;
     const textToRender = form.textField.value;
     var previewCtx = document.getElementById('preview').getContext('2d');
-    var options = {
+    const featureOptions = {
         kerning: form.kerning.checked,
         hinting: form.hinting.checked,
         features: {
@@ -124,7 +128,7 @@ function renderText() {
             rlig: form.ligatures.checked
         }
     };
-    options = Object.assign({}, font.defaultRenderOptions, options);
+    let options = Object.assign({}, font.defaultRenderOptions, window.fontOptions, featureOptions);
     previewCtx.clearRect(0, 0, 940, 300);
     const fontSize = +form.fontsize.value;
     font.draw(previewCtx, textToRender, 0, 200, fontSize, options);
@@ -141,6 +145,16 @@ function renderText() {
     snapCtx.clearRect(0, 0, 940, 300);
     snapPath.draw(snapCtx);
 }
+
+window.redraw = function(options = { withColors: true, withVariations: true }) {
+    if ( options.withVariations ) {
+        updateVariationOptions();
+    }
+};
+
+window.throttledRedraw = throttleDebounce((...args) => {
+    window.redraw(...args);
+}, 50);
 
 function enableHighDPICanvas(canvas) {
     if (typeof canvas === 'string') {
@@ -185,6 +199,10 @@ function showErrorMessage(message) {
 
 function onFontLoaded(font) {
     window.font = font;
+    options = Object.assign({}, window.font.defaultRenderOptions);
+    window.fontOptions = options;
+    
+    updateVariationOptions();
 
     // Show the first 100 glyphs.
     const glyphsDiv = document.getElementById('glyphs');
