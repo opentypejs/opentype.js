@@ -45,7 +45,7 @@ export class VariationManager {
         let defaultInstanceIndex = this.getInstanceIndex(defaultCoordinates);
         
         if (defaultInstanceIndex < 0) {
-            defaultInstanceIndex = this.fvar().instances.findIndex(instance => instance.name?.en === 'Regular');
+            defaultInstanceIndex = this.fvar().instances.findIndex(instance => instance.name && instance.name.en === 'Regular');
         }
 
         return defaultInstanceIndex;
@@ -70,7 +70,7 @@ export class VariationManager {
      * @returns {Object}
      */
     getInstance(index) {
-        return this.fvar().instances?.[index];
+        return this.fvar().instances && this.fvar().instances[index];
     }
 
     /**
