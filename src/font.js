@@ -147,7 +147,7 @@ function Font(options) {
             tables[tableName] = tableData;
             // @TODO: right now we only support variable fonts with fvar and gvar tables,
             // but there are variable CFF2 fonts without a gvar table, like Myriad Variable
-            if (tables.hasOwnProperty('fvar') && tables.hasOwnProperty('gvar')) {
+            if (tables.fvar && tables.gvar) {
                 this.variation = new VariationManager(this);
             }
             return true;

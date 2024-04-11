@@ -19,7 +19,7 @@ export class VariationProcessor {
      */
     getNormalizedCoords(coords) {
         let normalized = [];
-        for (var i = 0; i < this.fvar().axes.length; i++) {
+        for (let i = 0; i < this.fvar().axes.length; i++) {
             const axis = this.fvar().axes[i];
             const tagValue = coords[axis.tag];
             if (tagValue < axis.defaultValue) {
@@ -32,7 +32,7 @@ export class VariationProcessor {
         // if there is an avar table, the normalized value is calculated
         // by interpolating between the two nearest mapped values.
         if (this.avar()) {
-            for (var i = 0; i < this.avar().axisSegmentMaps.length; i++) {
+            for (let i = 0; i < this.avar().axisSegmentMaps.length; i++) {
                 let segment = this.avar().axisSegmentMaps[i];
                 for (let j = 0; j < segment.axisValueMaps.length; j++) {
                     let pair = segment.axisValueMaps[j];
@@ -191,7 +191,7 @@ export class VariationProcessor {
      * @param {string} [format="points"] "points" = return an array of transformed point objects, "path" = return a transformed Path object, "glyph" = return a copy of the glyph with the transformed points and path commands
      * @returns {Array<Object>|opentype.Path}
      */
-    getTransform(glyph, coords, format = "points") {
+    getTransform(glyph, coords, format = 'points') {
         if (glyph.points && glyph.points.length) {
             const glyphPoints = glyph.points;
             const variationData = this.gvar().glyphVariations[glyph.index];
@@ -285,11 +285,11 @@ export class VariationProcessor {
                 }
                 
                 switch (format) {
-                    case "glyph":
+                    case 'glyph':
                         return new Glyph(Object.assign({}, glyph, {points: transformedPoints, path: getPath(transformedPoints)}));
-                    case "path":
+                    case 'path':
                         return getPath(transformedPoints);
-                    case "points":
+                    case 'points':
                     default:
                         return transformedPoints;
                 }
@@ -297,11 +297,11 @@ export class VariationProcessor {
         }
 
         switch (format) {
-            case "glyph":
+            case 'glyph':
                 return glyph;
-            case "path":
+            case 'path':
                 return glyph.path;
-            case "points":
+            case 'points':
             default:
                 return glyph.points;
         }
@@ -314,7 +314,7 @@ export class VariationProcessor {
      * @returns {Array<Object>}
      */
     getTransformCommands(glyph, coords) {
-        return this.getTransform(glyph, coords, "path").commands;
+        return this.getTransform(glyph, coords, 'path').commands;
     }
     
     /**
@@ -324,7 +324,7 @@ export class VariationProcessor {
      * @returns {opentype.Path}
      */
     getTransformPath(glyph, coords) {
-        return this.getTransform(glyph, coords, "path");
+        return this.getTransform(glyph, coords, 'path');
     }
 
     /**
@@ -334,7 +334,7 @@ export class VariationProcessor {
      * @returns {opentype.Path}
      */
     getTransformGlyph(glyph, coords) {
-        return this.getTransform(glyph, coords, "glyph");
+        return this.getTransform(glyph, coords, 'glyph');
     }
 
     /**

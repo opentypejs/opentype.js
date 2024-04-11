@@ -97,7 +97,7 @@ function copyPoint(p) {
         onCurve: p.onCurve,
         lastPointOfContour: p.lastPointOfContour,
     };
-};
+}
 
 function copyComponent(c) {
     return {
@@ -108,7 +108,7 @@ function copyComponent(c) {
         yScale: c.yScale,
         dx: c.dx,
         dy: c.dy,
-    }
+    };
 }
 
 export { isBrowser, isNode, checkArgument, arraysEqual, objectsEqual, binarySearch, binarySearchIndex, binarySearchInsert, copyPoint, copyComponent };
