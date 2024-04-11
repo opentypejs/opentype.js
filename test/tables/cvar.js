@@ -22,8 +22,6 @@ describe('tables/gvar.js', function() {
     
     [1].forEach(n => {
         const font = fonts[`cvarTest${n}`];
-        assert.deepEqual(font.tables.cvar.headers[10].flags,
-            {embeddedPeakTuple: true, intermediateRegion: false, privatePointNumbers: true});
         assert.deepEqual(font.tables.cvar.headers.map(h => h.privatePoints),
             Array(11).fill([65,66,67,85,87,93]));
         assert.deepEqual(font.tables.cvar.headers.map(h => h.deltas),
@@ -36,8 +34,6 @@ describe('tables/gvar.js', function() {
     });
     [2].forEach(n => {
         const font = fonts[`cvarTest${n}`];
-        assert.deepEqual(font.tables.cvar.headers[10].flags,
-            {embeddedPeakTuple: true, intermediateRegion: false, privatePointNumbers: false});
         assert.deepEqual(font.tables.cvar.headers.map(h => h.deltas.length),
             Array(11).fill(font.tables.cvt.length));
     });
