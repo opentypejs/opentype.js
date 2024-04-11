@@ -95,12 +95,12 @@ export class VariationProcessor {
             if (curDelta === firstDelta) {
                 this.deltaShift(firstPoint, endPoint, curDelta, glyphPoints, points);
             } else {
-            // otherwise, handle the remaining points at the end and beginning of the contour
-            this.deltaInterpolate(curDelta + 1, endPoint, curDelta, firstDelta, glyphPoints, points);
-    
-            if (firstDelta > 0) {
-                this.deltaInterpolate(firstPoint, firstDelta - 1, curDelta, firstDelta, glyphPoints, points);
-            }
+                // otherwise, handle the remaining points at the end and beginning of the contour
+                this.deltaInterpolate(curDelta + 1, endPoint, curDelta, firstDelta, glyphPoints, points);
+        
+                if (firstDelta > 0) {
+                    this.deltaInterpolate(firstPoint, firstDelta - 1, curDelta, firstDelta, glyphPoints, points);
+                }
             }
     
             pointIndex = endPoint + 1;
@@ -195,7 +195,7 @@ export class VariationProcessor {
                 let factor = 1;
                 for (let a = 0; a < axisCount; a++) {
 
-                    const tupleCoords = Object.assign([], sharedTuples[header.sharedTupleRecordsIndex], header.peakTuple);
+                    const tupleCoords = header.peakTuple ? header.peakTuple : sharedTuples[header.sharedTupleRecordsIndex];
 
                     if (tupleCoords[a] === 0) {
                         continue;
@@ -230,8 +230,8 @@ export class VariationProcessor {
                     continue;
                 }
 
-                const tuplePoints = Object.assign([], sharedPoints, header.privatePoints)
-                
+                const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
+
                 if (tuplePoints.length === 0) {
                     for (let i = 0; i < transformedPoints.length; i++) {
                         const point = transformedPoints[i];
@@ -243,37 +243,32 @@ export class VariationProcessor {
                         };
                     }
                 } else {
-                    // @TODO: interpolate points
-                    console.warn('interpolating');
-                    const outPoints = transformedPoints.map(p => {
+                    const interpolatedPoints = glyphPoints.map(p => {
                         return {
                             x: p.x,
                             y: p.y,
                             onCurve: p.onCurve,
                             lastPointOfContour: p.lastPointOfContour,
                         };
-                    });
+                    });            
                     const deltaMap = Array(glyphPoints.length).fill(false);
                     for (let i = 0; i < tuplePoints.length; i++) {
                         let pointIndex = tuplePoints[i];
                         if (pointIndex < glyphPoints.length) {
-                            const point = glyphPoints[pointIndex];
-                            transformedPoints[pointIndex] = {
-                                x: point.x + Math.round(header.deltas[i] * factor),
-                                y: point.y + Math.round(header.deltasY[i] * factor),
-                                onCurve: point.onCurve,
-                                lastPointOfContour: point.lastPointOfContour
-                            };
+                            let point = interpolatedPoints[pointIndex];
                             deltaMap[pointIndex] = true;
+    
+                            point.x += Math.round(header.deltas[i] * factor);
+                            point.y += Math.round(header.deltasY[i] * factor);
                         }
                     }
-
-                    this.interpolatePoints(outPoints, glyphPoints, deltaMap);
-
+    
+                    this.interpolatePoints(interpolatedPoints, transformedPoints, deltaMap);
+    
                     for (let i = 0; i < glyphPoints.length; i++) {
-                        let deltaX = outPoints[i].x - glyphPoints[i].x;
-                        let deltaY = outPoints[i].y - glyphPoints[i].y;
-            
+                        let deltaX = interpolatedPoints[i].x - transformedPoints[i].x;
+                        let deltaY = interpolatedPoints[i].y - transformedPoints[i].y;
+    
                         transformedPoints[i].x += deltaX;
                         transformedPoints[i].y += deltaY;
                     }
