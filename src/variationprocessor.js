@@ -1,4 +1,5 @@
-import { getPath } from './tables/glyf.js';
+import { getPath, transformPoints } from './tables/glyf.js';
+import { copyPoint, copyComponent } from './util.js';
 
 /**
  * Part of the code of this class was based on
@@ -164,6 +165,23 @@ export class VariationProcessor {
         }
     }
 
+    transformComponents(glyph, transformedPoints, coords, tuplePoints, header, factor) {
+        let pointsIndex = 0;
+        for(let c = 0; c < glyph.components.length; c++) {
+            const component = glyph.components[c];
+            const componentGlyph = this.font.glyphs.get(component.glyphIndex);
+            const componentTransform = copyComponent(component);
+            const deltaIndex = tuplePoints.indexOf(c);
+            if(deltaIndex > -1) {
+                componentTransform.dx += Math.round(header.deltas[deltaIndex] * factor);
+                componentTransform.dy += Math.round(header.deltasY[deltaIndex] * factor);
+            }
+            const transformedComponentPoints = transformPoints(this.getTransform(componentGlyph, coords), componentTransform);
+            transformedPoints.splice(pointsIndex, transformedComponentPoints.length, ...transformedComponentPoints);
+            pointsIndex += componentGlyph.points.length;
+        }
+    }
+
     /**
      * Returns the transformed path points for a glyph based on the provided variation coordinates
      * @param {opentype.Glyph} glyph 
@@ -172,18 +190,13 @@ export class VariationProcessor {
      * @returns {Array<Object>}
      */
     getTransform(glyph, coords, asCommands = false) {
+        
         if(!glyph.points || !glyph.points.length) return [];
+
         const glyphPoints = glyph.points;
         const variationData = this.gvar().glyphVariations[glyph.index];
         if(variationData) {
-            const transformedPoints = glyphPoints.map(p => {
-                return {
-                    x: p.x,
-                    y: p.y,
-                    onCurve: p.onCurve,
-                    lastPointOfContour: p.lastPointOfContour,
-                };
-            });
+            const transformedPoints = glyphPoints.map(copyPoint);
             const sharedTuples = this.gvar().sharedTuples;
             const { headers, sharedPoints } = variationData;
 
@@ -232,7 +245,10 @@ export class VariationProcessor {
 
                 const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
 
-                if (tuplePoints.length === 0) {
+                if(glyph.isComposite) {
+                    this.transformComponents(glyph, transformedPoints, coords, tuplePoints, header, factor);
+
+                } else if (tuplePoints.length === 0) {
                     for (let i = 0; i < transformedPoints.length; i++) {
                         const point = transformedPoints[i];
                         transformedPoints[i] = {
@@ -243,14 +259,7 @@ export class VariationProcessor {
                         };
                     }
                 } else {
-                    const interpolatedPoints = glyphPoints.map(p => {
-                        return {
-                            x: p.x,
-                            y: p.y,
-                            onCurve: p.onCurve,
-                            lastPointOfContour: p.lastPointOfContour,
-                        };
-                    });            
+                    const interpolatedPoints = glyphPoints.map(copyPoint);            
                     const deltaMap = Array(glyphPoints.length).fill(false);
                     for (let i = 0; i < tuplePoints.length; i++) {
                         let pointIndex = tuplePoints[i];

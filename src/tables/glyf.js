@@ -340,4 +340,4 @@ function parseGlyfTable(data, start, loca, font, opt) {
 }
 
 export default { getPath, parse: parseGlyfTable};
-export { getPath };
+export { getPath, transformPoints };

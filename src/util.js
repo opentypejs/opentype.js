@@ -90,4 +90,25 @@ function binarySearchInsert(array, key, value) {
     return low;
 }
 
-export { isBrowser, isNode, checkArgument, arraysEqual, objectsEqual, binarySearch, binarySearchIndex, binarySearchInsert };
+function copyPoint(p) {
+    return {
+        x: p.x,
+        y: p.y,
+        onCurve: p.onCurve,
+        lastPointOfContour: p.lastPointOfContour,
+    };
+};
+
+function copyComponent(c) {
+    return {
+        glyphIndex: c.glyphIndex,
+        xScale: c.xScale,
+        scale01: c.scale01,
+        scale10: c.scale10,
+        yScale: c.yScale,
+        dx: c.dx,
+        dy: c.dy,
+    }
+}
+
+export { isBrowser, isNode, checkArgument, arraysEqual, objectsEqual, binarySearch, binarySearchIndex, binarySearchInsert, copyPoint, copyComponent };
