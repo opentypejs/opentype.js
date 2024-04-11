@@ -4,40 +4,16 @@
 import check from '../check.js';
 import parse from '../parse.js';
 import table from '../table.js';
-import { objectsEqual } from '../util.js';
+import { getNameByID } from './name.js';
 
-function addName(name, names) {
-    let nameID = 256;
-    for (let platform in names) {
-        for (let nameKey in names[platform]) {
-            let n = parseInt(nameKey);
-            if (!n || n < 256) {
-                continue;
-            }
-
-            if (objectsEqual(names[platform][nameKey], name)) {
-                return n;
-            }
-
-            if (nameID <= n) {
-                nameID = n + 1;
-            }
-        }
-        names[platform][nameID] = name;
-    }
-
-    return nameID;
-}
-
-function makeFvarAxis(n, axis, names) {
-    const nameID = addName(axis.name, names);
+function makeFvarAxis(n, axis) {
     return [
         {name: 'tag_' + n, type: 'TAG', value: axis.tag},
         {name: 'minValue_' + n, type: 'FIXED', value: axis.minValue << 16},
         {name: 'defaultValue_' + n, type: 'FIXED', value: axis.defaultValue << 16},
         {name: 'maxValue_' + n, type: 'FIXED', value: axis.maxValue << 16},
         {name: 'flags_' + n, type: 'USHORT', value: 0},
-        {name: 'nameID_' + n, type: 'USHORT', value: nameID}
+        {name: 'nameID_' + n, type: 'USHORT', value: axis.axisNameID}
     ];
 }
 
@@ -49,14 +25,15 @@ function parseFvarAxis(data, start, names) {
     axis.defaultValue = p.parseFixed();
     axis.maxValue = p.parseFixed();
     p.skip('uShort', 1);  // reserved for flags; no values defined
-    axis.name = (names.macintosh || names.windows || names.unicode)[p.parseUShort()] || {};
+    const axisNameID = p.parseUShort();
+    axis.axisNameID = axisNameID;
+    axis.name = getNameByID(names, axisNameID);
     return axis;
 }
 
-function makeFvarInstance(n, inst, axes, names) {
-    const nameID = addName(inst.name, names);
+function makeFvarInstance(n, inst, axes, optionalFields = {}) {
     const fields = [
-        {name: 'nameID_' + n, type: 'USHORT', value: nameID},
+        {name: 'nameID_' + n, type: 'USHORT', value: inst.subfamilyNameID},
         {name: 'flags_' + n, type: 'USHORT', value: 0}
     ];
 
@@ -69,13 +46,23 @@ function makeFvarInstance(n, inst, axes, names) {
         });
     }
 
+    if (optionalFields && optionalFields.postScriptNameID) {
+        fields.push({
+            name: 'postScriptNameID_',
+            type: 'USHORT',
+            value: inst.postScriptNameID !== undefined? inst.postScriptNameID : 0xFFFF
+        });
+    }
+
     return fields;
 }
 
-function parseFvarInstance(data, start, axes, names) {
+function parseFvarInstance(data, start, axes, names, instanceSize) {
     const inst = {};
     const p = new parse.Parser(data, start);
-    inst.name = (names.macintosh || names.windows || names.unicode)[p.parseUShort()] || {};
+    const subfamilyNameID = p.parseUShort();
+    inst.subfamilyNameID = subfamilyNameID;
+    inst.name = getNameByID(names, subfamilyNameID, [2, 17]);
     p.skip('uShort', 1);  // reserved for flags; no values defined
 
     inst.coordinates = {};
@@ -83,10 +70,21 @@ function parseFvarInstance(data, start, axes, names) {
         inst.coordinates[axes[i].tag] = p.parseFixed();
     }
 
+    if (p.relativeOffset === instanceSize) {
+        inst.postScriptNameID = undefined;
+        inst.postScriptName = undefined;
+        return inst;
+    }
+
+    const postScriptNameID = p.parseUShort();
+    inst.postScriptNameID = postScriptNameID == 0xFFFF ? undefined : postScriptNameID;
+    inst.postScriptName = inst.postScriptNameID !== undefined ? getNameByID(names, postScriptNameID, [6]) : '';
+
     return inst;
 }
 
 function makeFvarTable(fvar, names) {
+    
     const result = new table.Table('fvar', [
         {name: 'version', type: 'ULONG', value: 0x10000},
         {name: 'offsetToData', type: 'USHORT', value: 0},
@@ -102,8 +100,25 @@ function makeFvarTable(fvar, names) {
         result.fields = result.fields.concat(makeFvarAxis(i, fvar.axes[i], names));
     }
 
+    const optionalFields = {};
+
+    // first loop over instances: find out if at least one has postScriptNameID defined
     for (let j = 0; j < fvar.instances.length; j++) {
-        result.fields = result.fields.concat(makeFvarInstance(j, fvar.instances[j], fvar.axes, names));
+        if(fvar.instances[j].postScriptNameID !== undefined) {
+            result.instanceSize += 2;
+            optionalFields.postScriptNameID = true;
+            break;
+        }
+    }
+
+    // second loop over instances: find out if at least one has postScriptNameID defined
+    for (let j = 0; j < fvar.instances.length; j++) {
+        result.fields = result.fields.concat(makeFvarInstance(
+            j,
+            fvar.instances[j],
+            fvar.axes,
+            optionalFields
+        ));
     }
 
     return result;
@@ -129,7 +144,7 @@ function parseFvarTable(data, start, names) {
     const instances = [];
     const instanceStart = start + offsetToData + axisCount * axisSize;
     for (let j = 0; j < instanceCount; j++) {
-        instances.push(parseFvarInstance(data, instanceStart + j * instanceSize, axes, names));
+        instances.push(parseFvarInstance(data, instanceStart + j * instanceSize, axes, names, instanceSize));
     }
 
     return {axes: axes, instances: instances};

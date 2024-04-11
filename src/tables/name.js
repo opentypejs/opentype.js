@@ -6,7 +6,7 @@ import parse from '../parse.js';
 import table from '../table.js';
 
 // NameIDs for the name table.
-const nameTableNames = [
+export const nameTableNames = [
     'copyright',              // 0
     'fontFamily',             // 1
     'fontSubfamily',          // 2
@@ -854,4 +854,23 @@ function makeNameTable(names, ltag) {
     return t;
 }
 
-export default { parse: parseNameTable, make: makeNameTable };
+export function getNameByID(names, nameID, allowedStandardIDs = []) {
+    if (nameID < 256 && nameID in nameTableNames) {
+        if (allowedStandardIDs.length && !allowedStandardIDs.includes(parseInt(nameID))) {
+            return undefined;
+        }
+        nameID = nameTableNames[nameID];
+    }
+
+    for (let platform in names) {
+        for (let nameKey in names[platform]) {
+            if(nameKey === nameID || parseInt(nameKey) === nameID) {
+                return names[platform][nameKey];
+            }
+        }
+    }
+
+    return undefined;
+}
+
+export default { parse: parseNameTable, make: makeNameTable, getNameByID };
