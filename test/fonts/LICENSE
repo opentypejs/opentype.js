@@ -26,6 +26,21 @@ Jomhuria-Regular.ttf
     SIL Open Font License, Version 1.1.
     https://www.fontsquirrel.com/license/jomhuria
 
+liga-sub5.ttf
+    Copyright 2024, Tao Qin (https://glyphsapp.com/).
+    SIL Open Font License, Version 1.1.
+    https://opensource.org/licenses/OFL-1.1
+
+noto-emoji.ttf
+    Copyright 2021, Google Inc.
+    SIL Open Font License, version 1.1
+    http://scripts.sil.org/OFL
+
+OpenMojiCOLORv0-subset.ttf
+    All emojis designed by OpenMoji – the open-source emoji and icon project.
+    Creative Commons Share Alike License 4.0 (CC BY-SA 4.0)
+    https://creativecommons.org/licenses/by-sa/4.0/
+
 Roboto-Black.ttf
     Font data copyright Google 2012
     Apache License Version 2.0, January 2004
@@ -56,6 +71,28 @@ TestCMAPMacTurkish.ttf
     Copyright © 2016 by Unicode Inc.
     SIL Open Font License, Version 1.1
     https://opensource.org/licenses/OFL-1.1
+
+TestCVARGVAROne.ttf
+TestCVARGVARTwo.ttf
+    Copyright 2015 Google Inc. All Rights Reserved.
+    SIL Open Font License, Version 1.1
+    http://scripts.sil.org/OFL
+
+TestGVAROne.ttf
+TestGVARTwo.ttf
+TestGVARThree.ttf
+    Copyright 2016 Monotype Hong Kong Ltd. and Monotype Imaging Inc. All rights reserved.
+    See font metadata for the exact license terms.
+
+TestGVARFour.ttf
+    Copyright (c) 2017 by Unicode, Inc.
+    SIL Open Font License
+    http://scripts.sil.org/OFL
+
+TestGVAR-Composite-0.ttf
+TestGVAR-Composite-0-Missing.ttf
+    This subset of the Normschrift font is licensed under https://creativecommons.org/publicdomain/zero/1.0/deed.en.
+    The full Normschrift font is copyright 2017 by Jens Kutilek.
 
 Vibur.woff
     Copyright (c) 2010, Johan Kallas (johan.kallas@gmail.com).

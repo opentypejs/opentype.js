@@ -18,6 +18,7 @@ import cff from './tables/cff.js';
 import stat from './tables/stat.js';
 import fvar from './tables/fvar.js';
 import gvar from './tables/gvar.js';
+import cvar from './tables/cvar.js';
 import avar from './tables/avar.js';
 import glyf from './tables/glyf.js';
 import gdef from './tables/gdef.js';
@@ -35,6 +36,7 @@ import os2 from './tables/os2.js';
 import post from './tables/post.js';
 import meta from './tables/meta.js';
 import gasp from './tables/gasp.js';
+import { PaletteManager } from './palettes.js';
 /**
  * The opentype library.
  * @namespace opentype
@@ -266,6 +268,7 @@ function parseBuffer(buffer, opt={}) {
     let fvarTableEntry;
     let statTableEntry;
     let gvarTableEntry;
+    let cvarTableEntry;
     let avarTableEntry;
     let glyfTableEntry;
     let gdefTableEntry;
@@ -303,6 +306,9 @@ function parseBuffer(buffer, opt={}) {
                 break;
             case 'gvar':
                 gvarTableEntry = tableEntry;
+                break;
+            case 'cvar':
+                cvarTableEntry = tableEntry;
                 break;
             case 'fpgm' :
                 table = uncompressTable(data, tableEntry);
@@ -458,7 +464,21 @@ function parseBuffer(buffer, opt={}) {
             console.warn('This font provides a gvar table, but no glyf table. Glyph variation only works with TrueType outlines.');
         }
         const gvarTable = uncompressTable(data, gvarTableEntry);
-        font.tables.gvar = gvar.parse(gvarTable.data, gvarTable.offset, font.names);
+        font.tables.gvar = gvar.parse(gvarTable.data, gvarTable.offset, font.tables.fvar, font.glyphs);
+    }
+
+    if (cvarTableEntry) {
+        if (!fvarTableEntry) {
+            console.warn('This font provides a cvar table, but no fvar table, which is required for variable fonts.');
+        }
+        if (!font.tables.cvt) {
+            console.warn('This font provides a cvar table, but no cvt table which could be made variable.');
+        }
+        if (!glyfTableEntry) {
+            console.warn('This font provides a gvar table, but no glyf table. Glyph variation only works with TrueType outlines.');
+        }
+        const cvarTable = uncompressTable(data, cvarTableEntry);
+        font.tables.cvar = cvar.parse(cvarTable.data, cvarTable.offset, font.tables.fvar, font.tables.cvt || []);
     }
 
     if (avarTableEntry) {
@@ -474,6 +494,8 @@ function parseBuffer(buffer, opt={}) {
         font.tables.meta = meta.parse(metaTable.data, metaTable.offset);
         font.metas = font.tables.meta;
     }
+    
+    font.palettes = new PaletteManager(font);
 
     return font;
 }

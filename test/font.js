@@ -2,6 +2,7 @@ import assert from 'assert';
 import { Font, Glyph, Path, parse } from '../src/opentype.js';
 import glyphset from '../src/glyphset.js';
 import { readFileSync } from 'fs';
+import util from './testutil.js';
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
 describe('font.js', function() {
@@ -220,6 +221,40 @@ describe('glyphset.js', function() {
                 assert.equal(glyph.name, glyphs[i].name);
                 i++;
             }
+        });
+    });
+
+    
+    describe('drawing', function() {
+        const emojiFont = loadSync('./test/fonts/OpenMojiCOLRv0-subset.otf');
+        
+        it('draws layers', function() {
+            let contextLogs = [];
+            const ctx = util.createMockObject(contextLogs);
+            emojiFont.getPath('🌈🔳', 0, 0, 12).draw(ctx);
+            const expectedColors = [
+                'rgba(234, 90, 71, 1)',
+                'rgba(244, 170, 65, 1)',
+                'rgba(252, 234, 43, 1)',
+                'rgba(177, 204, 51, 1)',
+                'rgba(146, 211, 245, 1)',
+                'rgba(179, 153, 200, 1)',
+                'rgba(0, 0, 0, 1)',
+                'rgba(0, 0, 0, 1)',
+                'rgba(0, 0, 0, 1)',
+                'rgba(0, 0, 0, 1)',
+                'rgba(0, 0, 0, 1)',
+                'rgba(0, 0, 0, 1)',
+                'rgba(0, 0, 0, 1)',
+                'rgba(255, 255, 255, 1)',
+                'rgba(63, 63, 63, 1)',
+                'rgba(0, 0, 0, 1)',
+                'rgba(0, 0, 0, 1)'
+            ];
+            const fillLogs = contextLogs
+                .filter(log => log.property === 'fillStyle')
+                .map(log => log.value);
+            assert.deepEqual(fillLogs, expectedColors);
         });
     });
 });
