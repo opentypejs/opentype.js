@@ -161,7 +161,7 @@ function displayGlyphData(glyphIndex) {
     }
     html += '</dl>';
     if (glyph.numberOfContours > 0) {
-        var contours = glyph.getContours();
+        var contours = glyph.getContours(window.font.variation.getTransform(glyph, window.fontOptions.variation));
         html += 'contours:<div id="glyph-contours">' + contours.map(contourToString).join('\n') + '</div>';
     } else if (glyph.isComposite) {
         html += '<br>This composite glyph is a combination of :<ul><li>' +
@@ -538,7 +538,7 @@ function updateVariationOptions() {
                 ${window.font.tables.fvar.axes.map((a,idx) => {
                     const currentValue = (window.fontOptions.variation||{})[a.tag] || a.defaultValue;
                     return `<p><label><strong>${a.name.en || a.tag}</strong>
-                        <input type="range" id="variation-tag-${a.tag}" min="${a.minValue}" max="${a.maxValue}" value="${currentValue}" oninput="onVariationChange(event)"></label> <span>${currentValue}</span></p>`;
+                        <input type="range" id="variation-tag-${a.tag}" step="${parseInt(a.defaultValue) === a.defaultValue ? 1 : 0.001}" min="${a.minValue}" max="${a.maxValue}" value="${currentValue}" oninput="onVariationChange(event)"></label> <span>${currentValue}</span></p>`;
                 }).join('')}
         </div>
         <div>
@@ -548,7 +548,7 @@ function updateVariationOptions() {
                     const selected = window.font.variation.getInstanceIndex(window.font.defaultRenderOptions.variation) === idx ? ' selected' : '';
                     return `<option value="${idx}"${selected}>${i.name.en || JSON.stringify(i.coordinates)}</option>`
                 }).join('')}
-                <option disabled>custom</option>
+                <option${!window.font.tables.fvar.instances.length ? ' selected' : ''} disabled>custom</option>
             </select></label></p>
         </div>
     `;
@@ -644,6 +644,7 @@ async function display(file, name) {
         if ( !error ) showErrorMessage('');
     } catch (err) {
         showErrorMessage(err.toString());
+        throw err;
     }
 }
 

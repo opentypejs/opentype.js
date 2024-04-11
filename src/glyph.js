@@ -170,7 +170,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     }
 
     if(font && font.variation && font.variation.gvar()) {
-        commands = font.variation.getTransform(this, options.variation);
+        commands = font.variation.getTransformCommands(this, options.variation);
     }
     
     const p = new Path();
@@ -234,17 +234,21 @@ Glyph.prototype.getLayers = function(font) {
  * Split the glyph into contours.
  * This function is here for backwards compatibility, and to
  * provide raw access to the TrueType glyph outlines.
+ * @param {Array|null} [transformedPoints=null] Use the supplied transformed points from a glyph variation instead of the regular glyph points
  * @return {Array}
  */
-Glyph.prototype.getContours = function() {
+Glyph.prototype.getContours = function(transformedPoints = null) {
     if (this.points === undefined) {
         return [];
     }
 
     const contours = [];
     let currentContour = [];
-    for (let i = 0; i < this.points.length; i += 1) {
-        const pt = this.points[i];
+
+    let points = transformedPoints ? transformedPoints : this.points;
+
+    for (let i = 0; i < points.length; i += 1) {
+        const pt = points[i];
         currentContour.push(pt);
         if (pt.lastPointOfContour) {
             contours.push(currentContour);
@@ -370,7 +374,7 @@ Glyph.prototype.drawPoints = function(ctx, x, y, fontSize, options, font) {
     let commands = path.commands;
     
     if(font && font.variation && font.variation.gvar()) {
-        commands = font.variation.getTransform(this, options.variation);
+        commands = font.variation.getTransformCommands(this, options.variation);
     }
 
     for (let i = 0; i < commands.length; i += 1) {
