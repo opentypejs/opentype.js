@@ -52,7 +52,7 @@ function updateVariationOptions() {
                 ${window.font.tables.fvar.axes.map((a,idx) => {
                     const currentValue = (window.fontOptions.variation||{})[a.tag] || a.defaultValue;
                     const floatSteps = isFloat(a.minValue) || isFloat(a.defaultValue) || isFloat(a.maxValue);
-                    return `<p><label><strong>${a.name.en || a.tag}</strong>
+                    return `<p><label><strong>${a.name?.en || a.tag}</strong>
                         <input type="range" id="variation-tag-${a.tag}" step="${floatSteps ? 1 : 0.01}" min="${a.minValue}" max="${a.maxValue}" value="${currentValue}" oninput="onVariationChange(event)"></label> <span>${currentValue}</span></p>`;
                 }).join('')}
         </div>
@@ -61,7 +61,7 @@ function updateVariationOptions() {
             <select id="variation-instance" oninput="changeVariationInstance(event)">
                 ${window.font.tables.fvar.instances.map((i,idx) => {
                     const selected = window.font.variation.getInstanceIndex(window.font.defaultRenderOptions.variation) === idx ? ' selected' : '';
-                    return `<option value="${idx}"${selected}>${i.name.en || JSON.stringify(i.coordinates)}</option>`
+                    return `<option value="${idx}"${selected}>${i.name?.en || JSON.stringify(i.coordinates)}</option>`
                 }).join('')}
                 <option${!window.font.tables.fvar.instances.length ? ' selected' : ''} disabled>custom</option>
             </select></label></p>
