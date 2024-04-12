@@ -227,6 +227,11 @@ function drawPathWithArrows(ctx, path) {
         }
         return;
     }
+    const image = path._image;
+    if ( image ) {
+        ctx.drawImage(image.image, image.x, image.y, image.width, image.height);
+        return;
+    }
     var i, cmd, x1, y1, x2, y2;
     var arrows = [];
     ctx.beginPath();
