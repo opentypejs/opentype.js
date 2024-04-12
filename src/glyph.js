@@ -450,12 +450,20 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
 
 /**
  * Convert the Glyph's Path to a string of path data instructions
- * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true, variation:undefined}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {opentype.Font} font - A font object is required if variation is to be applied in order to get the variation data from the tables
  * @return {string}
  * @see Path.toPathData
  */
-Glyph.prototype.toPathData = function(options) {
-    return this.path.toPathData(options);
+Glyph.prototype.toPathData = function(options, font) {
+    options = Object.assign({}, { variation: font && font.defaultRenderOptions.variation }, options);
+    console.log(options);
+    let usePath = this.path;
+    if(font && font.variation && font.variation.gvar()) {
+        usePath = font.variation.getTransformPath(this, options.variation);
+    }
+
+    return usePath.toPathData(options);
 };
 
 /**
@@ -469,20 +477,29 @@ Glyph.prototype.fromSVG = function(pathData, options = {}) {
 
 /**
  * Convert the Glyph's Path to an SVG <path> element, as a string.
- * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true, variation:undefined}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {opentype.Font} font - A font object is required if variation is to be applied in order to get the variation data from the tables 
  * @return {string}
  */
-Glyph.prototype.toSVG = function(options) {
-    return this.path.toSVG(options, this.toPathData.apply(this, [options]));
+Glyph.prototype.toSVG = function(options, font) {
+    const pathData = this.toPathData.apply(this, [options, font]);
+    return this.path.toSVG(options, pathData);
 };
 
 /**
  * Convert the path to a DOM element.
- * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true, variation:undefined}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {opentype.Font} font - A font object is required if variation is to be applied in order to get the variation data from the tables 
  * @return {SVGPathElement}
  */
-Glyph.prototype.toDOMElement = function(options) {
-    return this.path.toDOMElement(options);
+Glyph.prototype.toDOMElement = function(options, font) {
+    options = Object.assign({}, { variation: font && font.defaultRenderOptions.variation }, options);
+
+    let usePath = this.path;
+    if(font && font.variation && font.variation.gvar()) {
+        usePath = font.variation.getTransformPath(this, options.variation);
+    }
+    return usePath.toDOMElement(options);
 };
 
 export default Glyph;
