@@ -170,6 +170,21 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     }
     
     const p = new Path();
+    if ( options.drawSVG ) {
+        const svgImage = this.getSvgImage(font);
+        if ( svgImage ) {
+            const layer = new Path();
+            layer._image = {
+                image: svgImage.image,
+                x: x + svgImage.leftSideBearing * scale,
+                y: y - svgImage.baseline * scale,
+                width: svgImage.image.width * scale,
+                height: svgImage.image.height * scale,
+            };
+            p._layers = [layer];
+            return p;
+        }
+    }
     if ( options.drawLayers ) {
         const layers = this.getLayers(font);
         if ( layers && layers.length ) {
@@ -224,6 +239,17 @@ Glyph.prototype.getLayers = function(font) {
         throw Error('The font object is required to read the colr/cpal tables in order to get the layers.');
     }
     return font.layers.get(this.index);
+};
+
+/**
+ * @param {opentype.Font} font
+ * @returns {import('./svgimages.js').SVGImage | undefined}
+ */
+Glyph.prototype.getSvgImage = function(font) {
+    if(!font) {
+        throw Error('The font object is required to read the svg table in order to get the image.');
+    }
+    return font.svgImages.get(this.index);
 };
 
 /**
