@@ -249,8 +249,11 @@ export class VariationProcessor {
                     const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
     
                     if(glyph.isComposite) {
+                        /** @TODO: composite glyphs that are not explicitly targeted in the gvar table
+                         ** will not be transformed. It's unclear whether this is the desired behaviour or not,
+                         ** @see https://github.com/unicode-org/text-rendering-tests/issues/96
+                         */
                         this.transformComponents(glyph, transformedPoints, coords, tuplePoints, header, factor);
-    
                     } else if (tuplePoints.length === 0) {
                         for (let i = 0; i < transformedPoints.length; i++) {
                             const point = transformedPoints[i];
