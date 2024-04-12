@@ -38,6 +38,10 @@ function base64ToArrayBuffer(base64) {
     return Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
 }
 
+function isFloat(value) {
+    return parseInt(value) !== value;
+}
+
 function updateVariationOptions() {
     const variationsDiv = document.getElementById('variation-options');
     variationsDiv.innerHTML = '';
@@ -47,8 +51,9 @@ function updateVariationOptions() {
         <div>
                 ${window.font.tables.fvar.axes.map((a,idx) => {
                     const currentValue = (window.fontOptions.variation||{})[a.tag] || a.defaultValue;
+                    const floatSteps = isFloat(a.minValue) || isFloat(a.defaultValue) || isFloat(a.maxValue);
                     return `<p><label><strong>${a.name.en || a.tag}</strong>
-                        <input type="range" id="variation-tag-${a.tag}" step="${parseInt(a.defaultValue) === a.defaultValue ? 1 : 0.001}" min="${a.minValue}" max="${a.maxValue}" value="${currentValue}" oninput="onVariationChange(event)"></label> <span>${currentValue}</span></p>`;
+                        <input type="range" id="variation-tag-${a.tag}" step="${floatSteps ? 1 : 0.001}" min="${a.minValue}" max="${a.maxValue}" value="${currentValue}" oninput="onVariationChange(event)"></label> <span>${currentValue}</span></p>`;
                 }).join('')}
         </div>
         <div>
@@ -91,7 +96,8 @@ function changeVariationInstance(event) {
 function getCurrentCoords() {
     return Array.from(document.querySelectorAll('input[id^="variation-tag-"]')).reduce((acc, input) => {
         const tag = input.id.substring("variation-tag-".length);
-        acc[tag] = parseInt(input.value);
+        acc[tag] = parseFloat(input.value);
+        console.log(acc[tag]);
         return acc;
     }, {});
 }
