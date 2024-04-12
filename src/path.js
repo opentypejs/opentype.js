@@ -646,6 +646,14 @@ Path.prototype.toSVG = function(options, pathData) {
         */
         console.warn('toSVG() does not support colr font layers yet');
     }
+    if (this._image) {
+        /**
+         * @TODO: implement SVG output for SVG glyphs
+         * We can't simply output the whole SVG document as it is, we should first sanitize it
+         * to make sure it doesn't contain any malicious scripts or features not supported in SVG fonts.
+         */
+        console.warn('toSVG() does not support SVG glyphs yet');
+    }
     if (!pathData) {
         pathData = this.toPathData(options);
     }
