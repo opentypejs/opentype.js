@@ -266,9 +266,8 @@ export class VariationProcessor {
                             if (pointIndex < glyphPoints.length) {
                                 let point = interpolatedPoints[pointIndex];
                                 deltaMap[pointIndex] = true;
-        
-                                point.x += Math.round(header.deltas[i] * factor);
-                                point.y += Math.round(header.deltasY[i] * factor);
+                                point.x += header.deltas[i] * factor;
+                                point.y += header.deltasY[i] * factor;
                             }
                         }
         
@@ -278,8 +277,8 @@ export class VariationProcessor {
                             let deltaX = interpolatedPoints[i].x - transformedPoints[i].x;
                             let deltaY = interpolatedPoints[i].y - transformedPoints[i].y;
         
-                            transformedPoints[i].x += deltaX;
-                            transformedPoints[i].y += deltaY;
+                            transformedPoints[i].x = Math.round(transformedPoints[i].x + deltaX);
+                            transformedPoints[i].y = Math.round(transformedPoints[i].y + deltaY);
                         }
                     }
                 }
