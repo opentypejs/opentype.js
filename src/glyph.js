@@ -148,21 +148,6 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     let yScale = options.yScale;
     const scale = 1 / (this.path.unitsPerEm || 1000) * fontSize;
 
-    if (options.drawSVG) {
-        const svgImage = this.getSvgImage(font);
-        if (svgImage) {
-            const path = new Path();
-            path.drawImage(
-                svgImage.image,
-                x + svgImage.leftSideBearing * scale,
-                y - svgImage.baseline * scale,
-                svgImage.image.width * scale,
-                svgImage.image.height * scale,
-            );
-            return path;
-        }
-    }
-
     if (options.hinting && font && font.hinting) {
         // in case of hinting, the hinting engine takes care
         // of scaling the points (not the path) before hinting.
@@ -185,6 +170,21 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     }
     
     const p = new Path();
+    if ( options.drawSVG ) {
+        const svgImage = this.getSvgImage(font);
+        if ( svgImage ) {
+            const layer = new Path();
+            layer._image = {
+                image: svgImage.image,
+                x: x + svgImage.leftSideBearing * scale,
+                y: y - svgImage.baseline * scale,
+                width: svgImage.image.width * scale,
+                height: svgImage.image.height * scale,
+            };
+            p._layers = [layer];
+            return p;
+        }
+    }
     if ( options.drawLayers ) {
         const layers = this.getLayers(font);
         if ( layers && layers.length ) {

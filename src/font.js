@@ -334,8 +334,8 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
  *                                 See https://www.microsoft.com/typography/otspec/featuretags.htm
  * @property {boolean} [hinting=false] - whether to apply font hinting to the outlines
  * @property {integer} [usePalette=0] For COLR/CPAL fonts, the zero-based index of the color palette to use. (Use `Font.palettes.get()` to get the available palettes)
- * @property {integer} [drawLayers=true] For COLR/CPAL fonts, this can be turned to false in order to draw the fallback glyphs instead
- * @property {integer} [drawSVG=true] For SVG fonts, this can be turned to false in order to draw the fallback glyphs instead
+ * @property {boolean} [drawLayers=true] For COLR/CPAL fonts, this can be turned to false in order to draw the fallback glyphs instead
+ * @property {boolean} [drawSVG=true] For SVG fonts, this can be turned to false in order to draw the fallback glyphs instead
  */
 Font.prototype.defaultRenderOptions = {
     kerning: true,
@@ -421,7 +421,7 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
     }
     this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
         const glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
-        if ( options.drawLayers ) {
+        if ( options.drawSVG || options.drawLayers ) {
             const layers = glyphPath._layers;
             if ( layers && layers.length ) {
                 for(let l = 0; l < layers.length; l++) {
