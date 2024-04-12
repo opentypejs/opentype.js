@@ -229,6 +229,11 @@ function drawPathWithArrows(ctx, path) {
         }
         return;
     }
+    const image = path._image;
+    if ( image ) {
+        ctx.drawImage(image.image, image.x, image.y, image.width, image.height);
+        return;
+    }
     var i, cmd, x1, y1, x2, y2;
     var arrows = [];
     ctx.beginPath();
@@ -459,6 +464,9 @@ window.throttledRedraw = throttleDebounce((...args) => {
 }, 50);
 
 function onFontLoaded(font) {
+    if (window.font) {
+        window.font.onGlyphUpdated = null
+    }
     window.font = font;
     options = Object.assign({}, window.font.defaultRenderOptions);
     window.fontOptions = options;
@@ -495,6 +503,13 @@ function onFontLoaded(font) {
     displayGlyphPage(0);
     displayGlyph(-1);
     displayGlyphData(-1);
+
+    font.onGlyphUpdated = (glyphId) => {
+        const firstGlyph = pageSelected * cellCount;
+        if (firstGlyph <= glyphId && glyphId < firstGlyph + cellCount) {
+            renderGlyphItem(document.getElementById('g'+(glyphId - firstGlyph)), glyphId);
+        }
+    };
 }
 
 function cellSelect(event) {

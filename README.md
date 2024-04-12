@@ -20,6 +20,7 @@ See [https://opentype.js.org/](https://opentype.js.org/) for a live demo.
 * Support for ligatures.
 * Support for TrueType font hinting.
 * Support arabic text rendering (See issue #364 & PR #359 #361)
+* Support for emojis and other SVG or COLR/CPAL color glyphs
 * A low memory mode is available as an option (see #329)
 * Runs in the browser and Node.js.
 

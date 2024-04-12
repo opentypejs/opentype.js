@@ -512,7 +512,13 @@ Path.prototype.draw = function(ctx) {
         }
         return;
     }
-    
+
+    const image = this._image;
+    if ( image ) {
+        ctx.drawImage(image.image, image.x, image.y, image.width, image.height);
+        return;
+    }
+
     ctx.beginPath();
     for (let i = 0; i < this.commands.length; i += 1) {
         const cmd = this.commands[i];
@@ -639,6 +645,14 @@ Path.prototype.toSVG = function(options, pathData) {
          * @see https://github.com/unicode-org/text-rendering-tests/issues/95
         */
         console.warn('toSVG() does not support colr font layers yet');
+    }
+    if (this._image) {
+        /**
+         * @TODO: implement SVG output for SVG glyphs
+         * We can't simply output the whole SVG document as it is, we should first sanitize it
+         * to make sure it doesn't contain any malicious scripts or features not supported in SVG fonts.
+         */
+        console.warn('toSVG() does not support SVG glyphs yet');
     }
     if (!pathData) {
         pathData = this.toPathData(options);

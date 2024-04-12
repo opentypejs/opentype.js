@@ -94,6 +94,13 @@ TestGVAR-Composite-0-Missing.ttf
     This subset of the Normschrift font is licensed under https://creativecommons.org/publicdomain/zero/1.0/deed.en.
     The full Normschrift font is copyright 2017 by Jens Kutilek.
 
+TestSVGgradientTransform.otf
+TestSVGgzip.otf
+TestSVGmultiGlyphs.otf
+    Copyright (c) 2019 by Unicode, Inc.
+    SIL Open Font License, Version 1.1
+    https://opensource.org/licenses/OFL-1.1
+    
 Vibur.woff
     Copyright (c) 2010, Johan Kallas (johan.kallas@gmail.com).
     SIL Open Font License, Version 1.1
