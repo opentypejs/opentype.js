@@ -18,6 +18,9 @@ export class VariationProcessor {
      * Returns the coords normalized from the axis ranges to the range from -1 to 1
      */
     getNormalizedCoords(coords) {
+        if(!coords) {
+            throw Error('Variation coords are required');
+        }
         let normalized = [];
         for (let i = 0; i < this.fvar().axes.length; i++) {
             const axis = this.fvar().axes[i];
