@@ -118,7 +118,8 @@ function doSnap(path) {
 function renderText() {
     const font = window.font;
     if (!font) return;
-    const textToRender = form.textField.value;
+    const textToRender = conditionalSampleText(font, form.textField.value);
+
     var previewCtx = document.getElementById('preview').getContext('2d');
     var options = {
         kerning: form.kerning.checked,

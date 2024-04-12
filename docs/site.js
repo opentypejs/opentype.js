@@ -79,6 +79,18 @@ function onVariationChange(event) {
     throttledRedraw({withVariations: false});
 };
 
+function conditionalSampleText(font, textToRender) {
+    const fontSampleText = font.getEnglishName('sampleText');
+    const isEmpty = !font.stringToGlyphs(textToRender).filter((g) => !!g && g.name !== '.notdef' && g.unicode !== 32 && !g.unicodes.includes(32)).length;
+    if(fontSampleText && isEmpty) {
+        textToRender = font.getEnglishName('sampleText');
+        if(document.forms.demo?.textField?.value) {
+            document.forms.demo.textField.value = textToRender;
+        }
+    }
+    return textToRender;
+}
+
 function changeVariationInstance(event) {
     const selected = event.target.value;
     if (selected !== 'custom') {
