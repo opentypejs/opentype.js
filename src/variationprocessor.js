@@ -195,105 +195,124 @@ export class VariationProcessor {
      * @returns {Array<Object>|opentype.Path}
      */
     getTransform(glyph, coords, format = 'points') {
-        if (glyph.points && glyph.points.length) {
-            const glyphPoints = glyph.points;
-            const variationData = this.gvar().glyphVariations[glyph.index];
-            if(variationData) {
-                const transformedPoints = glyphPoints.map(copyPoint);
-                const sharedTuples = this.gvar().sharedTuples;
-                const { headers, sharedPoints } = variationData;
-    
-                const normalizedCoords = this.getNormalizedCoords(coords);
-                const axisCount = this.fvar().axes.length;
-    
-                for(let h = 0; h < headers.length; h++) {
-                    const header = headers[h];
-                    let factor = 1;
-                    for (let a = 0; a < axisCount; a++) {
-    
-                        const tupleCoords = header.peakTuple ? header.peakTuple : sharedTuples[header.sharedTupleRecordsIndex];
-    
-                        if (tupleCoords[a] === 0) {
+        const hasBlend = glyph.getBlendPath;
+        const hasPoints = !!(glyph.points && glyph.points.length);
+        if (hasBlend || hasPoints) {
+            const normalizedCoords = this.getNormalizedCoords(coords);
+            let transformedPoints;
+            if(hasPoints) {
+                const variationData = this.gvar() && this.gvar().glyphVariations[glyph.index];
+                if(variationData) {
+                    const glyphPoints = glyph.points;
+                    transformedPoints = glyphPoints.map(copyPoint);
+                    const sharedTuples = this.gvar().sharedTuples;
+                    const { headers, sharedPoints } = variationData;
+        
+                    const axisCount = this.fvar().axes.length;
+        
+                    for(let h = 0; h < headers.length; h++) {
+                        const header = headers[h];
+                        let factor = 1;
+                        for (let a = 0; a < axisCount; a++) {
+        
+                            const tupleCoords = header.peakTuple ? header.peakTuple : sharedTuples[header.sharedTupleRecordsIndex];
+        
+                            if (tupleCoords[a] === 0) {
+                                continue;
+                            }
+                        
+                            if (normalizedCoords[a] === 0) {
+                                factor = 0;
+                                break;
+                            }
+                        
+                            if (!header.intermediateStartTuple) {
+                                if ((normalizedCoords[a] < Math.min(0, tupleCoords[a])) ||
+                                    (normalizedCoords[a] > Math.max(0, tupleCoords[a]))) {
+                                    factor = 0;
+                                    break;
+                                }
+                        
+                                factor = (factor * normalizedCoords[a] + Number.EPSILON) / (tupleCoords[a] + Number.EPSILON);
+                            } else {
+                                if ((normalizedCoords[a] < header.intermediateStartTuple[a]) || (normalizedCoords[a] > header.intermediateEndTuple[a])) {
+                                    factor = 0;
+                                    break;
+                                } else if (normalizedCoords[a] < tupleCoords[a]) {
+                                    factor = factor * (normalizedCoords[a] - header.intermediateStartTuple[a] + Number.EPSILON) / (tupleCoords[a] - header.intermediateStartTuple[a] + Number.EPSILON);
+                                } else {
+                                    factor = factor * (header.intermediateEndTuple[a] - normalizedCoords[a] + Number.EPSILON) / (header.intermediateEndTuple[a] - tupleCoords[a] + Number.EPSILON);
+                                }
+                            }
+                        }
+        
+                        if (factor === 0) {
                             continue;
                         }
-                    
-                        if (normalizedCoords[a] === 0) {
-                            factor = 0;
-                            break;
-                        }
-                    
-                        if (!header.intermediateStartTuple) {
-                            if ((normalizedCoords[a] < Math.min(0, tupleCoords[a])) ||
-                                (normalizedCoords[a] > Math.max(0, tupleCoords[a]))) {
-                                factor = 0;
-                                break;
+        
+                        const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
+        
+                        if(glyph.isComposite) {
+                            /** @TODO: composite glyphs that are not explicitly targeted in the gvar table
+                             ** will not be transformed. It's unclear whether this is the desired behaviour or not,
+                            ** @see https://github.com/unicode-org/text-rendering-tests/issues/96
+                            */
+                            this.transformComponents(glyph, transformedPoints, coords, tuplePoints, header, factor);
+                        } else if (tuplePoints.length === 0) {
+                            for (let i = 0; i < transformedPoints.length; i++) {
+                                const point = transformedPoints[i];
+                                transformedPoints[i] = {
+                                    x: point.x + Math.round(header.deltas[i] * factor),
+                                    y: point.y + Math.round(header.deltasY[i] * factor),
+                                    onCurve: point.onCurve,
+                                    lastPointOfContour: point.lastPointOfContour
+                                };
                             }
-                    
-                            factor = (factor * normalizedCoords[a] + Number.EPSILON) / (tupleCoords[a] + Number.EPSILON);
                         } else {
-                            if ((normalizedCoords[a] < header.intermediateStartTuple[a]) || (normalizedCoords[a] > header.intermediateEndTuple[a])) {
-                                factor = 0;
-                                break;
-                            } else if (normalizedCoords[a] < tupleCoords[a]) {
-                                factor = factor * (normalizedCoords[a] - header.intermediateStartTuple[a] + Number.EPSILON) / (tupleCoords[a] - header.intermediateStartTuple[a] + Number.EPSILON);
-                            } else {
-                                factor = factor * (header.intermediateEndTuple[a] - normalizedCoords[a] + Number.EPSILON) / (header.intermediateEndTuple[a] - tupleCoords[a] + Number.EPSILON);
+                            const interpolatedPoints = glyphPoints.map(copyPoint);            
+                            const deltaMap = Array(glyphPoints.length).fill(false);
+                            for (let i = 0; i < tuplePoints.length; i++) {
+                                let pointIndex = tuplePoints[i];
+                                if (pointIndex < glyphPoints.length) {
+                                    let point = interpolatedPoints[pointIndex];
+                                    deltaMap[pointIndex] = true;
+                                    point.x = header.deltas[i] * factor;
+                                    point.y = header.deltasY[i] * factor;
+                                }
+                            }
+            
+                            this.interpolatePoints(interpolatedPoints, transformedPoints, deltaMap);
+            
+                            for (let i = 0; i < glyphPoints.length; i++) {
+                                let deltaX = interpolatedPoints[i].x - transformedPoints[i].x;
+                                let deltaY = interpolatedPoints[i].y - transformedPoints[i].y;
+            
+                                transformedPoints[i].x = Math.round(transformedPoints[i].x + deltaX);
+                                transformedPoints[i].y = Math.round(transformedPoints[i].y + deltaY);
                             }
                         }
                     }
-    
-                    if (factor === 0) {
-                        continue;
-                    }
-    
-                    const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
-    
-                    if(glyph.isComposite) {
-                        /** @TODO: composite glyphs that are not explicitly targeted in the gvar table
-                         ** will not be transformed. It's unclear whether this is the desired behaviour or not,
-                         ** @see https://github.com/unicode-org/text-rendering-tests/issues/96
-                         */
-                        this.transformComponents(glyph, transformedPoints, coords, tuplePoints, header, factor);
-                    } else if (tuplePoints.length === 0) {
-                        for (let i = 0; i < transformedPoints.length; i++) {
-                            const point = transformedPoints[i];
-                            transformedPoints[i] = {
-                                x: point.x + Math.round(header.deltas[i] * factor),
-                                y: point.y + Math.round(header.deltasY[i] * factor),
-                                onCurve: point.onCurve,
-                                lastPointOfContour: point.lastPointOfContour
-                            };
-                        }
-                    } else {
-                        const interpolatedPoints = glyphPoints.map(copyPoint);            
-                        const deltaMap = Array(glyphPoints.length).fill(false);
-                        for (let i = 0; i < tuplePoints.length; i++) {
-                            let pointIndex = tuplePoints[i];
-                            if (pointIndex < glyphPoints.length) {
-                                let point = interpolatedPoints[pointIndex];
-                                deltaMap[pointIndex] = true;
-                                point.x += header.deltas[i] * factor;
-                                point.y += header.deltasY[i] * factor;
-                            }
-                        }
-        
-                        this.interpolatePoints(interpolatedPoints, transformedPoints, deltaMap);
-        
-                        for (let i = 0; i < glyphPoints.length; i++) {
-                            let deltaX = interpolatedPoints[i].x - transformedPoints[i].x;
-                            let deltaY = interpolatedPoints[i].y - transformedPoints[i].y;
-        
-                            transformedPoints[i].x = Math.round(transformedPoints[i].x + deltaX);
-                            transformedPoints[i].y = Math.round(transformedPoints[i].y + deltaY);
-                        }
+                    
+                    switch (format) {
+                        case 'glyph':
+                            return new Glyph(Object.assign({}, glyph, {points: transformedPoints, path: getPath(transformedPoints)}));
+                        case 'path':
+                            return getPath(transformedPoints);
+                        case 'points':
+                        default:
+                            return transformedPoints;
                     }
                 }
-                
+            } else if (hasBlend) {
+                if (format === 'points') {
+                    throw Error('Cannot return points for CFF2 glyphs');
+                }
+                const blendPath = glyph.getBlendPath(coords);
                 switch (format) {
                     case 'glyph':
-                        return new Glyph(Object.assign({}, glyph, {points: transformedPoints, path: getPath(transformedPoints)}));
+                        return new Glyph(Object.assign({}, glyph, {path: blendPath}));
                     case 'path':
-                        return getPath(transformedPoints);
+                        return blendPath;
                     case 'points':
                     default:
                         return transformedPoints;
@@ -340,6 +359,86 @@ export class VariationProcessor {
      */
     getTransformGlyph(glyph, coords) {
         return this.getTransform(glyph, coords, 'glyph');
+    }
+
+    getDelta(itemStore, outerIndex, innerIndex, coords) {
+        if (outerIndex >= itemStore.itemVariationData.length) {
+            return 0;
+        }
+    
+        let varData = itemStore.itemVariationData[outerIndex];
+        if (innerIndex >= varData.deltaSets.length) {
+            return 0;
+        }
+    
+        let deltaSet = varData.deltaSets[innerIndex];
+        let blendVector = this.getBlendVector(itemStore, outerIndex, coords);
+        let netAdjustment = 0;
+    
+        for (let master = 0; master < varData.regionIndexCount; master++) {
+            netAdjustment += Math.round(deltaSet.deltas[master] * blendVector[master]);
+        }
+    
+        return netAdjustment;
+    }
+
+    getBlendVector(itemStore, itemIndex, coords) {
+        if(!coords) {
+            coords = this.font.variation.get();
+        }
+        let varData = itemStore.itemVariationSubtables[itemIndex];
+
+        const normalizedCoords = this.getNormalizedCoords(coords);
+        let blendVector = [];
+    
+        // outer loop steps through master designs to be blended
+        for (let master = 0; master < varData.regionIndexes.length; master++) {
+            let scalar = 1;
+            let regionIndex = varData.regionIndexes[master];
+            let axes = itemStore.variationRegions[regionIndex].regionAxes;
+    
+            // inner loop steps through axes in this region
+            for (let j = 0; j < axes.length; j++) {
+                let axis = axes[j];
+                let axisScalar;
+    
+                // compute the scalar contribution of this axis
+                // ignore invalid ranges
+                if (axis.startCoord > axis.peakCoord || axis.peakCoord > axis.endCoord) {
+                    axisScalar = 1;
+    
+                } else if (axis.startCoord < 0 && axis.endCoord > 0 && axis.peakCoord !== 0) {
+                    axisScalar = 1;
+    
+                    // peak of 0 means ignore this axis
+                } else if (axis.peakCoord === 0) {
+                    axisScalar = 1;
+    
+                    // ignore this region if coords are out of range
+                } else if (normalizedCoords[j] < axis.startCoord || normalizedCoords[j] > axis.endCoord) {
+                    axisScalar = 0;
+    
+                    // calculate a proportional factor
+                } else {
+                    if (normalizedCoords[j] === axis.peakCoord) {
+                        axisScalar = 1;
+                    } else if (normalizedCoords[j] < axis.peakCoord) {
+                        axisScalar = (normalizedCoords[j] - axis.startCoord + Number.EPSILON) /
+                  (axis.peakCoord - axis.startCoord + Number.EPSILON);
+                    } else {
+                        axisScalar = (axis.endCoord - normalizedCoords[j] + Number.EPSILON) /
+                  (axis.endCoord - axis.peakCoord + Number.EPSILON);
+                    }
+                }
+    
+                // take product of all the axis scalars
+                scalar *= axisScalar;
+            }
+    
+            blendVector[master] = scalar;
+        }
+    
+        return blendVector;
     }
 
     /**

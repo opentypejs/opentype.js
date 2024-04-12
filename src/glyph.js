@@ -154,7 +154,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
 
     let useGlyph = this;
 
-    if(font && font.variation && font.variation.gvar()) {
+    if(font && font.variation) {
         useGlyph = font.variation.getTransformGlyph(this, options.variation);
         commands = useGlyph.path.commands;
     }
@@ -406,7 +406,7 @@ Glyph.prototype.drawPoints = function(ctx, x, y, fontSize, options, font) {
     const path = this.path;
     let commands = path.commands;
     
-    if(font && font.variation && font.variation.gvar()) {
+    if(font && font.variation) {
         commands = font.variation.getTransformCommands(this, options.variation);
     }
 
@@ -485,7 +485,7 @@ Glyph.prototype.toPathData = function(options, font) {
     options = Object.assign({}, { variation: font && font.defaultRenderOptions.variation }, options);
     console.log(options);
     let usePath = this.path;
-    if(font && font.variation && font.variation.gvar()) {
+    if(font && font.variation) {
         usePath = font.variation.getTransformPath(this, options.variation);
     }
 
@@ -522,7 +522,7 @@ Glyph.prototype.toDOMElement = function(options, font) {
     options = Object.assign({}, { variation: font && font.defaultRenderOptions.variation }, options);
 
     let usePath = this.path;
-    if(font && font.variation && font.variation.gvar()) {
+    if(font && font.variation) {
         usePath = font.variation.getTransformPath(this, options.variation);
     }
     return usePath.toDOMElement(options);
