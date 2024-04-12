@@ -53,7 +53,7 @@ function updateVariationOptions() {
                     const currentValue = (window.fontOptions.variation||{})[a.tag] || a.defaultValue;
                     const floatSteps = isFloat(a.minValue) || isFloat(a.defaultValue) || isFloat(a.maxValue);
                     return `<p><label><strong>${a.name?.en || a.tag}</strong>
-                        <input type="range" id="variation-tag-${a.tag}" step="${floatSteps ? 1 : 0.01}" min="${a.minValue}" max="${a.maxValue}" value="${currentValue}" oninput="onVariationChange(event)"></label> <span>${currentValue}</span></p>`;
+                        <input type="range" id="variation-tag-${a.tag}" step="${floatSteps ? 0.01 : 1}" min="${a.minValue}" max="${a.maxValue}" value="${currentValue}" oninput="onVariationChange(event)"></label> <span>${currentValue}</span></p>`;
                 }).join('')}
         </div>
         <div>
