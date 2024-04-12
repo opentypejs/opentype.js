@@ -53,7 +53,7 @@ function updateVariationOptions() {
                     const currentValue = (window.fontOptions.variation||{})[a.tag] || a.defaultValue;
                     const floatSteps = isFloat(a.minValue) || isFloat(a.defaultValue) || isFloat(a.maxValue);
                     return `<p><label><strong>${a.name.en || a.tag}</strong>
-                        <input type="range" id="variation-tag-${a.tag}" step="${floatSteps ? 1 : 0.001}" min="${a.minValue}" max="${a.maxValue}" value="${currentValue}" oninput="onVariationChange(event)"></label> <span>${currentValue}</span></p>`;
+                        <input type="range" id="variation-tag-${a.tag}" step="${floatSteps ? 1 : 0.01}" min="${a.minValue}" max="${a.maxValue}" value="${currentValue}" oninput="onVariationChange(event)"></label> <span>${currentValue}</span></p>`;
                 }).join('')}
         </div>
         <div>
@@ -97,7 +97,6 @@ function getCurrentCoords() {
     return Array.from(document.querySelectorAll('input[id^="variation-tag-"]')).reduce((acc, input) => {
         const tag = input.id.substring("variation-tag-".length);
         acc[tag] = parseFloat(input.value);
-        console.log(acc[tag]);
         return acc;
     }, {});
 }
