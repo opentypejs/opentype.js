@@ -801,7 +801,7 @@ Parser.prototype.parseDeltaSets = function(itemCount, wordDeltaCount, regionInde
     }
     
     const wordParser = (longFlag ? this.parseLong : this.parseShort).bind(this);
-    const restParser = (longFlag ? this.parseShort : this.parseByte).bind(this);
+    const restParser = (longFlag ? this.parseShort : this.parseChar).bind(this);
     
     for (let i = 0; i < itemCount; i++) {
         for (let j = 0; j < regionIndexCount; j++) {
