@@ -1155,7 +1155,6 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
         });
     }
     
-    // @TODO: check if we need to handle/apply hmtx/HVAR data here or elsewhere, once HVAR is supported
     if (haveWidth) {
         glyph.advanceWidth = width;
     }

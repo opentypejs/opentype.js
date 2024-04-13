@@ -187,16 +187,14 @@ export class VariationProcessor {
     }
 
     /**
-     * Returns the transformed path points for a glyph based on the provided variation coordinates
+     * Returns a transformed copy of a glyph based on the provided variation coordinates, or the glyph itself if no variation was applied
      * @param {opentype.Glyph} glyph 
-     * @param {Object} coords 
-     * @param {boolean} [asCommands=false] used internally for the getTransformCommands() method
-     * @param {string} [format="points"] "points" = return an array of transformed point objects, "path" = return a transformed Path object, "glyph" = return a copy of the glyph with the transformed points and path commands
-     * @returns {Array<Object>|opentype.Path}
+     * @returns {opentype.Glyh}
      */
-    getTransform(glyph, coords, format = 'points') {
+    getTransform(glyph, coords) {
         const hasBlend = glyph.getBlendPath;
         const hasPoints = !!(glyph.points && glyph.points.length);
+        let transformedGlyph = glyph;
         if (hasBlend || hasPoints) {
             const normalizedCoords = this.getNormalizedCoords(coords);
             let transformedPoints;
@@ -293,90 +291,60 @@ export class VariationProcessor {
                         }
                     }
                     
-                    switch (format) {
-                        case 'glyph':
-                            return new Glyph(Object.assign({}, glyph, {points: transformedPoints, path: getPath(transformedPoints)}));
-                        case 'path':
-                            return getPath(transformedPoints);
-                        case 'points':
-                        default:
-                            return transformedPoints;
-                    }
+                    transformedGlyph = new Glyph(Object.assign({}, glyph, {points: transformedPoints, path: getPath(transformedPoints)}));
                 }
             } else if (hasBlend) {
-                if (format === 'points') {
-                    throw Error('Cannot return points for CFF2 glyphs');
-                }
                 const blendPath = glyph.getBlendPath(coords);
-                switch (format) {
-                    case 'glyph':
-                        return new Glyph(Object.assign({}, glyph, {path: blendPath}));
-                    case 'path':
-                        return blendPath;
-                    case 'points':
-                    default:
-                        return transformedPoints;
-                }
+                transformedGlyph = new Glyph(Object.assign({}, glyph, {path: blendPath}));
             }
         }
 
-        switch (format) {
-            case 'glyph':
-                return glyph;
-            case 'path':
-                return glyph.path;
-            case 'points':
-            default:
-                return glyph.points;
+        if(this.font.tables.hvar) {
+            glyph._advanceWidth = typeof glyph._advanceWidth !== 'undefined' ? glyph._advanceWidth: glyph.advanceWidth;
+            transformedGlyph.advanceWidth = Math.round(glyph._advanceWidth + this.getAdvanceAdjustment(transformedGlyph.index, coords));
         }
+
+        return transformedGlyph;
     }
 
-    /**
-     * Returns the transformed path commands for a glyph based on the provided variation coordinates
-     * @param {opentype.Glyph} glyph 
-     * @param {Object} coords 
-     * @returns {Array<Object>}
-     */
-    getTransformCommands(glyph, coords) {
-        return this.getTransform(glyph, coords, 'path').commands;
-    }
+    getAdvanceAdjustment(gid, coords) {
+        coords = coords || this.font.variation.get();
+        
+        let outerIndex, innerIndex;
+        
+        const hvar = this.font.tables.hvar;
+        const mapSize = hvar.advanceWidth && hvar.advanceWidth.map.length;
+        if (mapSize) {
+            let i = gid;
+            if (i >= mapSize) {
+                i = mapSize - 1;
+            }
+            
+            ({outerIndex, innerIndex} = hvar.advanceWidth.map[i]);
+        } else {
+            outerIndex = 0;
+            innerIndex = gid;
+        }
     
-    /**
-     * Returns the transformed Path for a glyph based on the provided variation coordinates
-     * @param {opentype.Glyph} glyph 
-     * @param {Object} coords 
-     * @returns {opentype.Path}
-     */
-    getTransformPath(glyph, coords) {
-        return this.getTransform(glyph, coords, 'path');
-    }
-
-    /**
-     * Returns a copy of a glyph based on the provided variation coordinates
-     * @param {opentype.Glyph} glyph 
-     * @param {Object} coords 
-     * @returns {opentype.Path}
-     */
-    getTransformGlyph(glyph, coords) {
-        return this.getTransform(glyph, coords, 'glyph');
+        return this.getDelta(hvar.itemVariationStore, outerIndex, innerIndex, coords);
     }
 
     getDelta(itemStore, outerIndex, innerIndex, coords) {
-        if (outerIndex >= itemStore.itemVariationData.length) {
+        if (outerIndex >= itemStore.itemVariationSubtables.length) {
             return 0;
         }
-    
-        let varData = itemStore.itemVariationData[outerIndex];
+        
+        let varData = itemStore.itemVariationSubtables[outerIndex];
         if (innerIndex >= varData.deltaSets.length) {
             return 0;
         }
-    
+        
         let deltaSet = varData.deltaSets[innerIndex];
         let blendVector = this.getBlendVector(itemStore, outerIndex, coords);
         let netAdjustment = 0;
     
-        for (let master = 0; master < varData.regionIndexCount; master++) {
-            netAdjustment += Math.round(deltaSet.deltas[master] * blendVector[master]);
+        for (let master = 0; master < varData.regionIndexes.length; master++) {
+            netAdjustment += deltaSet[master] * blendVector[master];
         }
     
         return netAdjustment;

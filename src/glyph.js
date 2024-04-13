@@ -155,7 +155,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     let useGlyph = this;
 
     if(font && font.variation) {
-        useGlyph = font.variation.getTransformGlyph(this, options.variation);
+        useGlyph = font.variation.getTransform(this, options.variation);
         commands = useGlyph.path.commands;
     }
     
@@ -271,7 +271,7 @@ Glyph.prototype.getSvgImage = function(font) {
  * @return {Array}
  */
 Glyph.prototype.getContours = function(transformedPoints = null) {
-    if (this.points === undefined) {
+    if (this.points === undefined && !transformedPoints) {
         return [];
     }
 
@@ -407,7 +407,7 @@ Glyph.prototype.drawPoints = function(ctx, x, y, fontSize, options, font) {
     let commands = path.commands;
     
     if(font && font.variation) {
-        commands = font.variation.getTransformCommands(this, options.variation);
+        commands = font.variation.getTransform(this, options.variation).path.commands;
     }
 
     for (let i = 0; i < commands.length; i += 1) {
@@ -486,7 +486,7 @@ Glyph.prototype.toPathData = function(options, font) {
     console.log(options);
     let usePath = this.path;
     if(font && font.variation) {
-        usePath = font.variation.getTransformPath(this, options.variation);
+        usePath = font.variation.getTransform(this, options.variation).path;
     }
 
     return usePath.toPathData(options);
@@ -523,7 +523,7 @@ Glyph.prototype.toDOMElement = function(options, font) {
 
     let usePath = this.path;
     if(font && font.variation) {
-        usePath = font.variation.getTransformPath(this, options.variation);
+        usePath = font.variation.getTransform(this, options.variation).path;
     }
     return usePath.toDOMElement(options);
 };
