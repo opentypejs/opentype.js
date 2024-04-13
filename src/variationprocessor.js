@@ -301,32 +301,42 @@ export class VariationProcessor {
 
         if(this.font.tables.hvar) {
             glyph._advanceWidth = typeof glyph._advanceWidth !== 'undefined' ? glyph._advanceWidth: glyph.advanceWidth;
-            transformedGlyph.advanceWidth = Math.round(glyph._advanceWidth + this.getAdvanceAdjustment(transformedGlyph.index, coords));
+            glyph.advanceWidth = transformedGlyph.advanceWidth = Math.round(glyph._advanceWidth + this.getVariableAdjustment(transformedGlyph.index, 'hvar', 'advanceWidth', coords));
+            
+            glyph._leftSideBearing = typeof glyph._leftSideBearing !== 'undefined' ? glyph._leftSideBearing: glyph.leftSideBearing;
+            glyph.leftSideBearing = transformedGlyph.leftSideBearing = Math.round(glyph._leftSideBearing + this.getVariableAdjustment(transformedGlyph.index, 'hvar', 'leftSideBearing', coords));
         }
 
         return transformedGlyph;
     }
 
-    getAdvanceAdjustment(gid, coords) {
+    getVariableAdjustment(gid, tableName, parameter, coords) {
         coords = coords || this.font.variation.get();
-        
+
         let outerIndex, innerIndex;
         
-        const hvar = this.font.tables.hvar;
-        const mapSize = hvar.advanceWidth && hvar.advanceWidth.map.length;
+        const table = this.font.tables[tableName];
+        if(!table) {
+            throw Error(`trying to get variation adjustment from non-existent table "${table}"`);
+        }
+        if(!table.itemVariationStore) {
+            throw Error(`trying to get variation adjustment from table "${table}" which does not have an itemVariationStore`);
+        }
+        const mapSize = table[parameter] && table[parameter].map.length;
         if (mapSize) {
             let i = gid;
             if (i >= mapSize) {
                 i = mapSize - 1;
             }
             
-            ({outerIndex, innerIndex} = hvar.advanceWidth.map[i]);
+            ({outerIndex, innerIndex} = table[parameter].map[i]);
         } else {
             outerIndex = 0;
             innerIndex = gid;
         }
     
-        return this.getDelta(hvar.itemVariationStore, outerIndex, innerIndex, coords);
+        return this.getDelta(table.itemVariationStore, outerIndex, innerIndex, coords);
+
     }
 
     getDelta(itemStore, outerIndex, innerIndex, coords) {
