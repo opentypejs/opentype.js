@@ -76,6 +76,7 @@ function onVariationChange(event) {
     const instanceIndex = window.font.variation.getInstanceIndex(getCurrentCoords());
     document.getElementById('variation-instance').value = instanceIndex > -1 ? instanceIndex : 'custom';
     window.fontOptions.variation = getCurrentCoords();
+    window.font.variation.set(getCurrentCoords());
     throttledRedraw({withVariations: false});
 };
 
@@ -102,6 +103,7 @@ function changeVariationInstance(event) {
         window.font.variation.set(parseInt(event.target.value));
     }
     window.fontOptions.variation = getCurrentCoords();
+    window.font.variation.set(getCurrentCoords());
     window.redraw({withVariations: false});
 };
 
