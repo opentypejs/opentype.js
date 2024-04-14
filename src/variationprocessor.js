@@ -260,8 +260,8 @@ export class VariationProcessor {
                             for (let i = 0; i < transformedPoints.length; i++) {
                                 const point = transformedPoints[i];
                                 transformedPoints[i] = {
-                                    x: point.x + Math.round(header.deltas[i] * factor),
-                                    y: point.y + Math.round(header.deltasY[i] * factor),
+                                    x: Math.round(point.x + header.deltas[i] * factor),
+                                    y: Math.round(point.y + header.deltasY[i] * factor),
                                     onCurve: point.onCurve,
                                     lastPointOfContour: point.lastPointOfContour
                                 };
