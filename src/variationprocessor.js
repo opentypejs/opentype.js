@@ -15,7 +15,9 @@ export class VariationProcessor {
     }
 
     /**
-     * Returns the coords normalized from the axis ranges to the range from -1 to 1
+     * Normalizes the coordinates from the axis ranges to a range of -1 to 1.
+     * @param {Object} coords - The coordinates object to normalize.
+     * @returns {Array<number>} The normalized coordinates as an array
      */
     getNormalizedCoords(coords) {
         if(!coords) {
@@ -55,7 +57,10 @@ export class VariationProcessor {
     }
 
     /**
-     * Returns interpolated points if deltas are not provided for all points in a glyph
+     * Interpolates points within a glyph if deltas are not provided for all points.
+     * @param {Array<Object>} points - The points to be interpolated.
+     * @param {Array<Object>} glyphPoints - Reference points from the glyph.
+     * @param {Object} deltaMap - A map indicating which points have deltas.
      */
     interpolatePoints(points, glyphPoints, deltaMap) {
         if (points.length === 0) {
@@ -112,6 +117,15 @@ export class VariationProcessor {
         }
     }
 
+    /**
+     * Interpolates delta values between two points.
+     * @param {number} p1 - Start point index for interpolation.
+     * @param {number} p2 - End point index for interpolation.
+     * @param {number} ref1 - Reference point index for the start delta.
+     * @param {number} ref2 - Reference point index for the end delta.
+     * @param {Array<Object>} glyphPoints - Reference points from the glyph.
+     * @param {Array<Object>} points - The points to be adjusted.
+     */
     deltaInterpolate(p1, p2, ref1, ref2, glyphPoints, points) {
         if (p1 > p2) {
             return;
@@ -153,6 +167,14 @@ export class VariationProcessor {
         }
     }
 
+    /**
+     * Applies a delta shift to a range of points based on a reference point.
+     * @param {number} p1 - Start point index for shifting.
+     * @param {number} p2 - End point index for shifting.
+     * @param {number} ref - Reference point index.
+     * @param {Array<Object>} glyphPoints - Reference points from the glyph.
+     * @param {Array<Object>} points - The points to be shifted.
+     */
     deltaShift(p1, p2, ref, glyphPoints, points) {
         let deltaX = points[ref].x - glyphPoints[ref].x;
         let deltaY = points[ref].y - glyphPoints[ref].y;
@@ -169,6 +191,15 @@ export class VariationProcessor {
         }
     }
 
+    /**
+     * Transforms glyph components based on variation data.
+     * @param {Glyph} glyph - The composite glyph to transform.
+     * @param {Array<Object>} transformedPoints - Points that are already transformed.
+     * @param {Object} coords - Variation coordinates.
+     * @param {Array<number>} tuplePoints - Points that are part of the tuple.
+     * @param {Object} header - Header information from the variation data.
+     * @param {number} factor - The scaling factor for the transformation.
+     */
     transformComponents(glyph, transformedPoints, coords, tuplePoints, header, factor) {
         let pointsIndex = 0;
         for(let c = 0; c < glyph.components.length; c++) {
@@ -186,11 +217,12 @@ export class VariationProcessor {
         }
     }
 
+    
     /**
-     * Returns a transformed copy of a glyph based on the provided variation coordinates, or the glyph itself if no variation was applied
-     * @param {opentype.Glyph|integer} glyph Glyph or index of glyph to transform
-     * @param {Object} coords Variation coords object (will fall back to variation coords in the defaultRenderOptions)
-     * @returns {opentype.Glyh}
+     * Retrieves a transformed copy of a glyph based on the provided variation coordinates, or the glyph itself if no variation was applied
+     * @param {opentype.Glyph|number} glyph - Glyph or index of glyph to transform.
+     * @param {Object} coords - Variation coords object (will fall back to variation coords in the defaultRenderOptions)
+     * @returns {opentype.Glyph} - The transformed glyph.
      */
     getTransform(glyph, coords) {
         if(Number.isInteger(glyph)) {
@@ -317,6 +349,14 @@ export class VariationProcessor {
         return transformedGlyph;
     }
 
+    /**
+     * Calculates the variable adjustment for a glyph property from variation data.
+     * @param {number} gid - Glyph ID.
+     * @param {string} tableName - The name of the variation data table.
+     * @param {string} parameter - The property to adjust.
+     * @param {Object} coords - Variation coordinates.
+     * @returns {number} - The calculated adjustment.
+     */
     getVariableAdjustment(gid, tableName, parameter, coords) {
         coords = coords || this.font.variation.get();
 
@@ -346,6 +386,14 @@ export class VariationProcessor {
 
     }
 
+    /**
+     * Retrieves the delta value from a variation store.
+     * @param {Object} itemStore - The item variation store.
+     * @param {number} outerIndex - The outer index in the variation subtables.
+     * @param {number} innerIndex - The inner index in the delta sets.
+     * @param {Object} coords - Variation coordinates.
+     * @returns {number} - The delta value.
+     */
     getDelta(itemStore, outerIndex, innerIndex, coords) {
         if (outerIndex >= itemStore.itemVariationSubtables.length) {
             return 0;
@@ -367,6 +415,13 @@ export class VariationProcessor {
         return netAdjustment;
     }
 
+    /**
+     * Calculates the blend vector for a set of variation coordinates.
+     * @param {Object} itemStore - The item variation store.
+     * @param {number} itemIndex - Index of the current item in the variation subtables.
+     * @param {Object} coords - Variation coordinates.
+     * @returns {Array<number>} - The blend vector for the given coordinates.
+     */
     getBlendVector(itemStore, itemIndex, coords) {
         if(!coords) {
             coords = this.font.variation.get();

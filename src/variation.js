@@ -22,8 +22,8 @@ export class VariationManager {
     }
 
     /**
-     * Returns the coordinates made up of all the axes' default values
-     * @returns {Object}
+     * Retrieves the default coordinates for the font's variation axes.
+     * @returns {Object} An object mapping axis tags to their default values.
      */
     getDefaultCoordinates() {
         return this.fvar().axes.reduce((acc, axis) => {
@@ -34,7 +34,7 @@ export class VariationManager {
 
     /**
      * Gets the index of the default variation instance or -1 if not able to determine
-     * @returns {integer}
+     * @returns {integer} default index or -1
      */
     getDefaultInstanceIndex() {
         const defaultCoordinates = this.getDefaultCoordinates();
@@ -49,9 +49,9 @@ export class VariationManager {
     }
 
     /**
-     * Gets the index of the variation instance matching the coordinates object or -1 if not able to determine
-     * @param {integer|Object} coordinates An object with axis tags as keys and variation values as values} index 
-     * @returns {integer}
+     * Retrieves the index of the variation instance matching the coordinates object or -1 if not able to determine
+     * @param {integer|Object} coordinates An object where keys are axis tags and values are the corresponding variation values.
+     * @returns {integer} The index of the matching instance or -1 if no match is found.
      */
     getInstanceIndex(coordinates) {
         return this.fvar().instances.findIndex(instance =>
@@ -62,9 +62,9 @@ export class VariationManager {
     }
 
     /**
-     * Gets a variation instance by its zero-based index
-     * @param {integer} index 
-     * @returns {Object}
+     * Retrieves a variation instance by its zero-based index
+     * @param {integer} index - zero-based index of the variation instance
+     * @returns {Object} - variation instance or null if the index is invalid.
      */
     getInstance(index) {
         return this.fvar().instances && this.fvar().instances[index];

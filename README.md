@@ -347,6 +347,92 @@ Sets a color glyph layer's paletteIndex property to a new index
 ###### `Font.layers.updateColrTable(glyphIndex, layers)`
 Mainly used internally. Updates the colr table, adding a baseGlyphRecord if needed, ensuring that it's inserted at the correct position, updating numLayers, and adjusting firstLayerIndex values for all baseGlyphRecords according to any deletions or insertions.
 
+
+##### The `Font.variation` object (`VariationManager`)
+The `VariationManager` handles variable font properties using the OpenType font variation tables.
+
+###### `Font.variation.activateDefaultVariation()`
+Activates the default variation by setting its variation data as the font's default render options. Uses the default instance if available; otherwise, it defaults to the coordinates of all axes.
+ 
+###### `Font.variation.getDefaultCoordinates()`
+Returns the default coordinates for the font's variation axes.
+* Returns: An object mapping axis tags to their default values.
+
+###### `Font.variation.getDefaultInstanceIndex()`
+Determines and returns the index of the default variation instance. Returns `-1` if it cannot be determined.
+* Returns: Integer representing the default instance index or `-1`.
+
+###### `Font.variation.getInstanceIndex(coordinates)`
+Finds the index of the variation instance that matches the provided coordinates, or `-1` if none match.
+* `coordinates`: Object with axis tags as keys and variation values as corresponding values.
+* Returns: Integer of the matching instance index or `-1`.
+
+###### `Font.variation.getInstance(index)`
+Retrieves a specific variation instance by its zero-based index.
+* `index`: Zero-based index of the variation instance.
+* Returns: Object representing the variation instance, or `null` if the index is invalid.
+
+###### `Font.variation.set(instanceIdOrObject)`
+Sets the variation coordinates to be used by default for rendering in the font's default render options.
+* `instanceIdOrObject`: Either the zero-based index of a variation instance or an object mapping axis tags to variation values.
+
+###### `Font.variation.get()`
+Gets the current variation settings from the font's default render options.
+* Returns: Object with the current variation settings.
+
+
+##### The `Font.variation.process` object (`VariationProcessor`)
+The `VariationProcessor` is a component of the `VariationManager`, used mainly internally for computing and applying variations to the glyphs in a variable font. It handles transformations and adjustments based on the font's variable axes and instances.
+
+###### `Font.variation.process.getNormalizedCoords()`
+Returns normalized coordinates for the variation axes based on the current settings.
+* Returns: Normalized coordinates as an object mapping axis tags to normalized values.
+
+###### `Font.variation.process.interpolatePoints(points, deltas, scalar)`
+Interpolates points based on provided deltas and a scalar value.
+* `points`: Array of original points.
+* `deltas`: Array of point deltas.
+* `scalar`: Scalar value for interpolation.
+* Returns: Array of interpolated points.
+
+###### `Font.variation.process.deltaInterpolate(original, deltaValues, scalar)`
+Calculates the interpolated value for a single point given original values, deltas, and a scalar.
+* `original`: Original value of the point.
+* `deltaValues`: Array of delta values for the point.
+* `scalar`: Scalar value for interpolation.
+* Returns: Interpolated value.
+
+###### `Font.variation.process.deltaShift(points, deltas)`
+Applies delta values to shift points.
+* `points`: Array of original points.
+* `deltas`: Array of deltas to apply.
+* Returns: Array of shifted points.
+
+###### `Font.variation.process.transformComponents(components, transformation)`
+Transforms components of a glyph using a specified transformation matrix.
+* `components`: Components of the glyph.
+* `transformation`: Transformation matrix to apply.
+* Returns: Transformed components.
+
+###### `Font.variation.process.getTransform()`
+Computes the transformation matrix based on current variation settings.
+* Returns: Transformation matrix for the current variation settings.
+
+###### `Font.variation.process.getVariableAdjustment(adjustment)`
+Calculates the variable adjustment for a given adjustment parameter.
+* `adjustment`: Adjustment parameter.
+* Returns: Adjusted value based on current variation settings.
+
+###### `Font.variation.process.getDelta(deltas)`
+Selects the appropriate delta values from a collection of deltas based on the current variation settings.
+* `deltas`: Collection of delta values.
+* Returns: Appropriate delta values for the current settings.
+
+###### `Font.variation.process.getBlendVector()`
+Computes the blend vector for interpolations based on the current settings.
+* Returns: Blend vector used for interpolation calculations.
+
+
 #### The Glyph object
 A Glyph is an individual mark that often corresponds to a character. Some glyphs, such as ligatures, are a combination of many characters. Glyphs are the basic building blocks of a font.
 
