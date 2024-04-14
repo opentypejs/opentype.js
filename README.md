@@ -552,12 +552,13 @@ MIT
 
 Thanks
 ======
-I would like to acknowledge the work of others without which opentype.js wouldn't be possible:
+We would like to acknowledge the work of others without which opentype.js wouldn't be possible:
 
 * [pdf.js](https://mozilla.github.io/pdf.js/): for an awesome implementation of font parsing in the browser.
 * [FreeType](https://www.freetype.org/): for the nitty-gritty details and filling in the gaps when the spec was incomplete.
 * [ttf.js](https://ynakajima.github.io/ttf.js/demo/glyflist/): for hints about the TrueType parsing code.
 * [CFF-glyphlet-fonts](https://pomax.github.io/CFF-glyphlet-fonts/): for a great explanation/implementation of CFF font writing.
+* [fontkit](https://github.com/foliojs/fontkit/): for a great implementation of CFF2 parsing and variable font features
 * [tiny-inflate](https://github.com/foliojs/tiny-inflate): for WOFF decompression.
 * [Microsoft Typography](https://docs.microsoft.com/en-us/typography/opentype/spec/otff): the go-to reference for all things OpenType.
 * [Adobe Compact Font Format spec](http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf) and the [Adobe Type 2 Charstring spec](http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/type2.pdf): explains the data structures and commands for the CFF glyph format.
