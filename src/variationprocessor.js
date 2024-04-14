@@ -267,7 +267,7 @@ export class VariationProcessor {
                                 };
                             }
                         } else {
-                            const interpolatedPoints = glyphPoints.map(copyPoint);            
+                            const interpolatedPoints = transformedPoints.map(copyPoint);            
                             const deltaMap = Array(glyphPoints.length).fill(false);
                             for (let i = 0; i < tuplePoints.length; i++) {
                                 let pointIndex = tuplePoints[i];
