@@ -146,7 +146,7 @@ function Font(options) {
     this.tables = new Proxy(this.tables, {
         set: (tables, tableName, tableData) => {
             tables[tableName] = tableData;
-            if (tables.fvar && (tables.gvar || tables.cff2)) {
+            if (tables.fvar && (tables.gvar || tables.cff2) && !this.variation) {
                 this.variation = new VariationManager(this);
             }
             return true;

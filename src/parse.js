@@ -879,7 +879,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
         this.relativeOffset = tableOffset + dataOffset;
     }    
 
-    if (flavor === 'gvar' && hasSharedPoints) {
+    if (hasSharedPoints) {
         sharedPoints = this.parsePackedPointNumbers();
     }
 
@@ -907,9 +907,10 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
             let _deltasY = undefined;
 
             const parseDeltas = () => {
-                let pointsCount = header.privatePoints.length || sharedPoints.length;
-                if(!pointsCount) {
-                    if(flavor === 'gvar') {
+                let pointsCount = 0;
+                if(flavor === 'gvar') {
+                    pointsCount = header.privatePoints.length || sharedPoints.length;
+                    if(!pointsCount) {
                         const glyph = glyphs.get(glyphIndex);
                         // make sure the path is available
                         glyph.path;
@@ -918,9 +919,9 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
                         // @TODO: actually generate these points from glyph.getBoundingBox() and glyph.getMetrics(),
                         // as they may be influenced by variation as well
                         pointsCount+= 4;
-                    } else if (flavor === 'cvar') {
-                        pointsCount = glyphs.length; // glyphs here is actually font.tables.cvt
                     }
+                } else if (flavor === 'cvar') {
+                    pointsCount = glyphs.length; // glyphs here is actually font.tables.cvt
                 }
                 
                 this.offset = deltasOffset;
@@ -965,9 +966,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
         headers,
     };
 
-    if(flavor === 'gvar') {
-        result.sharedPoints = sharedPoints;
-    }
+    result.sharedPoints = sharedPoints;
 
     return result;
 };

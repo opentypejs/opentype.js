@@ -621,7 +621,7 @@ Hinting.prototype.exec = function(glyph, ppem) {
 
         // Creates a copy of the cvt table
         // and scales it to the current ppem setting.
-        const oCvt = font.tables.cvt;
+        const oCvt = font.variation && font.variation.process.getCvarTransform() || font.tables.cvt;
         if (oCvt) {
             const cvt = prepState.cvt = new Array(oCvt.length);
             const scale = ppem / font.unitsPerEm;

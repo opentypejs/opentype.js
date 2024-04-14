@@ -121,15 +121,7 @@ function renderText() {
     const textToRender = conditionalSampleText(font, form.textField.value);
 
     var previewCtx = document.getElementById('preview').getContext('2d');
-    var options = {
-        kerning: form.kerning.checked,
-        hinting: form.hinting.checked,
-        features: {
-            liga: form.ligatures.checked,
-            rlig: form.ligatures.checked
-        }
-    };
-    options = Object.assign({}, font.defaultRenderOptions, getDrawOptions(), window.fontOptions);
+    var options = Object.assign({}, font.defaultRenderOptions, getDrawOptions());
     previewCtx.clearRect(0, 0, 940, 300);
     const fontSize = +form.fontsize.value;
     font.draw(previewCtx, textToRender, 0, 200, fontSize, options);
@@ -148,7 +140,7 @@ function renderText() {
 }
 
 function getDrawOptions() {
-    return {
+    const options = {
         kerning: form.kerning.checked,
         hinting: form.hinting.checked,
         features: {
@@ -156,6 +148,8 @@ function getDrawOptions() {
             rlig: form.ligatures.checked
         }
     };
+    window.fontOptions = Object.assign({}, window.font.defaultRenderOptions, window.fontOptions, options);
+    return window.fontOptions;
 }
 
 window.redraw = function(options = { withColors: true, withVariations: true }) {
@@ -260,8 +254,7 @@ function onFontLoaded(font) {
         }
 
         const textToRender = form.textField.value;
-        const options = Object.assign({}, font.defaultRenderOptions, getDrawOptions(), window.fontOptions);
-        const glyphIds = font.stringToGlyphIndexes(textToRender, options);
+        const glyphIds = font.stringToGlyphIndexes(textToRender, getDrawOptions());
         if (glyphIds.includes(glyphId)) {
             renderText();
         }

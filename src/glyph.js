@@ -162,7 +162,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     if (options.hinting && font && font.hinting) {
         // in case of hinting, the hinting engine takes care
         // of scaling the points (not the path) before hinting.
-        hPoints = useGlyph.path && font.hinting.exec(useGlyph, fontSize);
+        hPoints = useGlyph.path && font.hinting.exec(useGlyph, fontSize, options);
         // in case the hinting engine failed hPoints is undefined
         // and thus reverts to plain rending
     }
@@ -483,7 +483,6 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
  */
 Glyph.prototype.toPathData = function(options, font) {
     options = Object.assign({}, { variation: font && font.defaultRenderOptions.variation }, options);
-    console.log(options);
     let usePath = this.path;
     if(font && font.variation) {
         usePath = font.variation.getTransform(this, options.variation).path;

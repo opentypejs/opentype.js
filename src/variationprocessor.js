@@ -217,6 +217,133 @@ export class VariationProcessor {
         }
     }
 
+    applyTupleVariationStore(variationData, points, coords, flavor = 'gvar', args = {}) {
+        if(!coords) {
+            coords = this.font.variation.get();
+        }
+        const normalizedCoords = this.getNormalizedCoords(coords);
+        const { headers, sharedPoints } = variationData;
+
+        const axisCount = this.fvar().axes.length;
+
+        let transformedPoints;
+
+        if (flavor === 'gvar') {
+            transformedPoints = points.map(copyPoint);
+        } else if (flavor === 'cvar') {
+            transformedPoints = [...points];
+        }
+
+        for(let h = 0; h < headers.length; h++) {
+            const header = headers[h];
+            let factor = 1;
+            for (let a = 0; a < axisCount; a++) {
+
+                let tupleCoords = [0];
+                switch(flavor) {
+                    case 'gvar':
+                        tupleCoords = header.peakTuple ? header.peakTuple : this.gvar().sharedTuples[header.sharedTupleRecordsIndex];
+                        break;
+                    case 'cvar':
+                        tupleCoords = header.peakTuple;
+                        break;
+                }
+
+                
+                if (tupleCoords[a] === 0) {
+                    continue;
+                }
+                
+                if (normalizedCoords[a] === 0) {
+                    factor = 0;
+                    break;
+                }
+            
+                if (!header.intermediateStartTuple) {
+                    if ((normalizedCoords[a] < Math.min(0, tupleCoords[a])) ||
+                        (normalizedCoords[a] > Math.max(0, tupleCoords[a]))) {
+                        factor = 0;
+                        break;
+                    }
+            
+                    factor = (factor * normalizedCoords[a] + Number.EPSILON) / (tupleCoords[a] + Number.EPSILON);
+                } else {
+                    if ((normalizedCoords[a] < header.intermediateStartTuple[a]) || (normalizedCoords[a] > header.intermediateEndTuple[a])) {
+                        factor = 0;
+                        break;
+                    } else if (normalizedCoords[a] < tupleCoords[a]) {
+                        factor = factor * (normalizedCoords[a] - header.intermediateStartTuple[a] + Number.EPSILON) / (tupleCoords[a] - header.intermediateStartTuple[a] + Number.EPSILON);
+                    } else {
+                        factor = factor * (header.intermediateEndTuple[a] - normalizedCoords[a] + Number.EPSILON) / (header.intermediateEndTuple[a] - tupleCoords[a] + Number.EPSILON);
+                    }
+                }
+            }
+
+            if (factor === 0) {
+                continue;
+            }
+
+            const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
+
+            if(flavor === 'gvar' && args.glyph && args.glyph.isComposite) {
+                /** @TODO: composite glyphs that are not explicitly targeted in the gvar table
+                 ** will not be transformed. It's unclear whether this is the desired behaviour or not,
+                ** @see https://github.com/unicode-org/text-rendering-tests/issues/96
+                */
+                this.transformComponents(args.glyph, transformedPoints, coords, tuplePoints, header, factor);
+            } else if (tuplePoints.length === 0) {
+                for (let i = 0; i < transformedPoints.length; i++) {
+                    const point = transformedPoints[i];
+                    if(flavor === 'gvar') {
+                        transformedPoints[i] = {
+                            x: Math.round(point.x + header.deltas[i] * factor),
+                            y: Math.round(point.y + header.deltasY[i] * factor),
+                            onCurve: point.onCurve,
+                            lastPointOfContour: point.lastPointOfContour
+                        };
+                    } else if (flavor === 'cvar') {
+                        transformedPoints[i] = Math.round(point + header.deltas[i] * factor);
+                    }
+                }
+            } else {
+                let interpolatedPoints;
+                if(flavor === 'gvar') {
+                    interpolatedPoints = transformedPoints.map(copyPoint);
+                } else if (flavor === 'cvar') {
+                    interpolatedPoints = transformedPoints;
+                }
+                const deltaMap = Array(points.length).fill(false);
+                for (let i = 0; i < tuplePoints.length; i++) {
+                    let pointIndex = tuplePoints[i];
+                    if (pointIndex < points.length) {
+                        let point = interpolatedPoints[pointIndex];
+                        if(flavor === 'gvar') {
+                            deltaMap[pointIndex] = true;
+                            point.x += header.deltas[i] * factor;
+                            point.y += header.deltasY[i] * factor;
+                        } else if (flavor === 'cvar') {
+                            transformedPoints[pointIndex] = Math.round(point + header.deltas[i] * factor);
+                        }
+                    }
+                }
+
+                if(flavor === 'gvar') {
+                    this.interpolatePoints(interpolatedPoints, transformedPoints, deltaMap);
+    
+                    for (let i = 0; i < points.length; i++) {
+                        let deltaX = interpolatedPoints[i].x - transformedPoints[i].x;
+                        let deltaY = interpolatedPoints[i].y - transformedPoints[i].y;
+    
+                        transformedPoints[i].x = Math.round(transformedPoints[i].x + deltaX);
+                        transformedPoints[i].y = Math.round(transformedPoints[i].y + deltaY);
+                    }
+                }
+            }
+        }
+        
+        return transformedPoints;
+    }
+
     
     /**
      * Retrieves a transformed copy of a glyph based on the provided variation coordinates, or the glyph itself if no variation was applied
@@ -235,101 +362,12 @@ export class VariationProcessor {
             if(!coords) {
                 coords = this.font.variation.get();
             }
-            const normalizedCoords = this.getNormalizedCoords(coords);
-            let transformedPoints;
             if(hasPoints) {
                 const variationData = this.gvar() && this.gvar().glyphVariations[glyph.index];
+
                 if(variationData) {
                     const glyphPoints = glyph.points;
-                    transformedPoints = glyphPoints.map(copyPoint);
-                    const sharedTuples = this.gvar().sharedTuples;
-                    const { headers, sharedPoints } = variationData;
-        
-                    const axisCount = this.fvar().axes.length;
-        
-                    for(let h = 0; h < headers.length; h++) {
-                        const header = headers[h];
-                        let factor = 1;
-                        for (let a = 0; a < axisCount; a++) {
-        
-                            const tupleCoords = header.peakTuple ? header.peakTuple : sharedTuples[header.sharedTupleRecordsIndex];
-        
-                            if (tupleCoords[a] === 0) {
-                                continue;
-                            }
-                        
-                            if (normalizedCoords[a] === 0) {
-                                factor = 0;
-                                break;
-                            }
-                        
-                            if (!header.intermediateStartTuple) {
-                                if ((normalizedCoords[a] < Math.min(0, tupleCoords[a])) ||
-                                    (normalizedCoords[a] > Math.max(0, tupleCoords[a]))) {
-                                    factor = 0;
-                                    break;
-                                }
-                        
-                                factor = (factor * normalizedCoords[a] + Number.EPSILON) / (tupleCoords[a] + Number.EPSILON);
-                            } else {
-                                if ((normalizedCoords[a] < header.intermediateStartTuple[a]) || (normalizedCoords[a] > header.intermediateEndTuple[a])) {
-                                    factor = 0;
-                                    break;
-                                } else if (normalizedCoords[a] < tupleCoords[a]) {
-                                    factor = factor * (normalizedCoords[a] - header.intermediateStartTuple[a] + Number.EPSILON) / (tupleCoords[a] - header.intermediateStartTuple[a] + Number.EPSILON);
-                                } else {
-                                    factor = factor * (header.intermediateEndTuple[a] - normalizedCoords[a] + Number.EPSILON) / (header.intermediateEndTuple[a] - tupleCoords[a] + Number.EPSILON);
-                                }
-                            }
-                        }
-        
-                        if (factor === 0) {
-                            continue;
-                        }
-        
-                        const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
-        
-                        if(glyph.isComposite) {
-                            /** @TODO: composite glyphs that are not explicitly targeted in the gvar table
-                             ** will not be transformed. It's unclear whether this is the desired behaviour or not,
-                            ** @see https://github.com/unicode-org/text-rendering-tests/issues/96
-                            */
-                            this.transformComponents(glyph, transformedPoints, coords, tuplePoints, header, factor);
-                        } else if (tuplePoints.length === 0) {
-                            for (let i = 0; i < transformedPoints.length; i++) {
-                                const point = transformedPoints[i];
-                                transformedPoints[i] = {
-                                    x: Math.round(point.x + header.deltas[i] * factor),
-                                    y: Math.round(point.y + header.deltasY[i] * factor),
-                                    onCurve: point.onCurve,
-                                    lastPointOfContour: point.lastPointOfContour
-                                };
-                            }
-                        } else {
-                            const interpolatedPoints = transformedPoints.map(copyPoint);            
-                            const deltaMap = Array(glyphPoints.length).fill(false);
-                            for (let i = 0; i < tuplePoints.length; i++) {
-                                let pointIndex = tuplePoints[i];
-                                if (pointIndex < glyphPoints.length) {
-                                    let point = interpolatedPoints[pointIndex];
-                                    deltaMap[pointIndex] = true;
-                                    point.x += header.deltas[i] * factor;
-                                    point.y += header.deltasY[i] * factor;
-                                }
-                            }
-            
-                            this.interpolatePoints(interpolatedPoints, transformedPoints, deltaMap);
-            
-                            for (let i = 0; i < glyphPoints.length; i++) {
-                                let deltaX = interpolatedPoints[i].x - transformedPoints[i].x;
-                                let deltaY = interpolatedPoints[i].y - transformedPoints[i].y;
-            
-                                transformedPoints[i].x = Math.round(transformedPoints[i].x + deltaX);
-                                transformedPoints[i].y = Math.round(transformedPoints[i].y + deltaY);
-                            }
-                        }
-                    }
-                    
+                    let transformedPoints = this.applyTupleVariationStore(variationData, glyphPoints, coords, 'gvar', { glyph });
                     transformedGlyph = new Glyph(Object.assign({}, glyph, {points: transformedPoints, path: getPath(transformedPoints)}));
                 }
             } else if (hasBlend) {
@@ -347,6 +385,13 @@ export class VariationProcessor {
         }
 
         return transformedGlyph;
+    }
+
+    getCvarTransform(coords) {
+        const cvt = this.font.tables.cvt;
+        const variationData = this.cvar();
+        if(!cvt || !cvt.length || !variationData || !variationData.headers.length) return cvt;
+        return this.applyTupleVariationStore(variationData, cvt, coords, 'cvar');
     }
 
     /**
