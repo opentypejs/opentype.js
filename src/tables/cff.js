@@ -943,21 +943,25 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                     // https://learn.microsoft.com/en-us/typography/opentype/spec/cff2charstr#syntax-for-font-variations-support-operators
                     
                     if(!blendVector) {
-                        blendVector = font.variation && coords ? font.variation.process.getBlendVector(vstore, vsindex, coords) : [1];
+                        blendVector = font.variation && coords && font.variation.process.getBlendVector(vstore, vsindex, coords);
                     }
+                    
                     var n = stack.pop();
-                    var deltaSetCount = n * blendVector.length;
+                    var axisCount = blendVector ? blendVector.length : vstore.itemVariationSubtables[vsindex].regionIndexes.length;
+                    var deltaSetCount = n * axisCount;
                     var delta = stack.length - deltaSetCount;
                     var deltaSetIndex = delta - n;
       
-                    for (let i = 0; i < n; i++) {
-                        var sum = stack[deltaSetIndex + i];
-                        for (let j = 0; j < blendVector.length; j++) {
-                            sum += blendVector[j] * stack[delta++];
+                    if(blendVector) {
+                        for (let i = 0; i < n; i++) {
+                            var sum = stack[deltaSetIndex + i];
+                            for (let j = 0; j < axisCount; j++) {
+                                sum += blendVector[j] * stack[delta++];
+                            }
+                            stack[deltaSetIndex + i] = sum;
                         }
-                        stack[deltaSetIndex + i] = sum;
                     }
-
+    
                     while (deltaSetCount--) {
                         stack.pop();
                     }

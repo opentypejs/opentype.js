@@ -71,7 +71,7 @@ describe('tables/cff.js', function () {
             '17 0C 0C DB 95 57 F7 02 85 8B 8D 17 0C 0D F7 06 ' +
             '13 00 00 00 01 01 01 1B BD BD EF 8C 10 8B 15 F8 ' +
             '88 27 FB 5C 8C 10 06 F8 88 07 FC 88 EF F7 5C 8C ' +
-            '10 06'; // '10 06';
+            '10 06';
         const font = {
             encoding: 'cmap_encoding',
             tables: {maxp: {version: 0.5, numGlyphs: 2}}
