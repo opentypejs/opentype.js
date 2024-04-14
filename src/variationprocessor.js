@@ -26,7 +26,10 @@ export class VariationProcessor {
         let normalized = [];
         for (let i = 0; i < this.fvar().axes.length; i++) {
             const axis = this.fvar().axes[i];
-            const tagValue = coords[axis.tag];
+            let tagValue = coords[axis.tag];
+            if(tagValue === undefined) {
+                tagValue = axis.defaultValue;
+            }
             if (tagValue < axis.defaultValue) {
                 normalized.push((tagValue - axis.defaultValue + Number.EPSILON) / (axis.defaultValue - axis.minValue + Number.EPSILON));
             } else {
