@@ -304,7 +304,7 @@ export class VariationProcessor {
             glyph.advanceWidth = transformedGlyph.advanceWidth = Math.round(glyph._advanceWidth + this.getVariableAdjustment(transformedGlyph.index, 'hvar', 'advanceWidth', coords));
             
             glyph._leftSideBearing = typeof glyph._leftSideBearing !== 'undefined' ? glyph._leftSideBearing: glyph.leftSideBearing;
-            glyph.leftSideBearing = transformedGlyph.leftSideBearing = Math.round(glyph._leftSideBearing + this.getVariableAdjustment(transformedGlyph.index, 'hvar', 'leftSideBearing', coords));
+            glyph.leftSideBearing = transformedGlyph.leftSideBearing = Math.round(glyph._leftSideBearing + this.getVariableAdjustment(transformedGlyph.index, 'hvar', 'lsb', coords));
         }
 
         return transformedGlyph;
