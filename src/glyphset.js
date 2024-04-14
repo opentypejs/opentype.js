@@ -7,7 +7,10 @@ function defineDependentProperty(glyph, externalName, internalName) {
     Object.defineProperty(glyph, externalName, {
         get: function() {
             // Request the path property to make sure the path is loaded.
-            glyph.path; // jshint ignore:line
+            // optimization: do it only when the internal property is undefined,
+            // in order to prevent unnecessary computations, as well endless loops
+            // in the case of the points property
+            typeof glyph[internalName] === 'undefined' && glyph.path; // jshint ignore:line
             return glyph[internalName];
         },
         set: function(newValue) {
@@ -141,6 +144,7 @@ function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
         defineDependentProperty(glyph, 'xMax', '_xMax');
         defineDependentProperty(glyph, 'yMin', '_yMin');
         defineDependentProperty(glyph, 'yMax', '_yMax');
+        defineDependentProperty(glyph, 'points', '_points');
         
         return glyph;
     };
