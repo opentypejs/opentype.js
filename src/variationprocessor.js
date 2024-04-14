@@ -274,8 +274,8 @@ export class VariationProcessor {
                                 if (pointIndex < glyphPoints.length) {
                                     let point = interpolatedPoints[pointIndex];
                                     deltaMap[pointIndex] = true;
-                                    point.x = header.deltas[i] * factor;
-                                    point.y = header.deltasY[i] * factor;
+                                    point.x += header.deltas[i] * factor;
+                                    point.y += header.deltasY[i] * factor;
                                 }
                             }
             
