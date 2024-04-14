@@ -533,6 +533,8 @@ function prepareGlyphList() {
         canvas.className = 'item';
         canvas.id = 'g'+i;
         canvas.addEventListener('click', cellSelect, false);
+        canvas.addEventListener('keypress', (ev) => ev.keyCode === 13 && cellSelect(ev) , false);
+        canvas.tabIndex = 0;
         enableHighDPICanvas(canvas);
         parent.insertBefore(canvas, marker);
     }
