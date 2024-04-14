@@ -211,7 +211,7 @@ export class VariationProcessor {
                 componentTransform.dx += Math.round(header.deltas[deltaIndex] * factor);
                 componentTransform.dy += Math.round(header.deltasY[deltaIndex] * factor);
             }
-            const transformedComponentPoints = transformPoints(this.getTransform(componentGlyph, coords), componentTransform);
+            const transformedComponentPoints = transformPoints(this.getTransform(componentGlyph, coords).points, componentTransform);
             transformedPoints.splice(pointsIndex, transformedComponentPoints.length, ...transformedComponentPoints);
             pointsIndex += componentGlyph.points.length;
         }
