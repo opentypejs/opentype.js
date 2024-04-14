@@ -175,4 +175,44 @@ describe('tables/cff.js', function () {
         const svg2 = '<path d="M5.44-9.45C4.61-8.12 2.05-9.23 2.05-9.23M4.01-8.80C3.50-3.57 7.36 2.11 5.24-0.27C3.32-2.43 0.34-3.38 0.34-3.38M7.58-2.39L6.47-6.41L10.21-9.33L14.60-7.54L15.25-2.84L11.98-0.60L7.58-2.39"/>';
         assert.equal(path.toSVG(), svg2);
     });
+
+    it('correctly transforms CFF2 variable font glyphs using blend operations', function() {
+        const font = loadSync('./test/fonts/TestRVRN-CFF2.otf');
+        const untransformedPoints = [
+            200,700,200,100,800,100,800,700,250,150,250,650,750,650,750,150,417,254,417,240,579,
+            240,579,254,508,254,508,560,495,560,436,541,436,530,493,530,493,254
+        ];
+        const transformedPoints = [
+            200,700,200,100,800,100,800,700,275,175,275,625,725,625,725,175,395,310,395,241,606,
+            241,606,310,549,310,549,558,486,558,403,527,403,474,463,474,463,310
+        ];
+        assert.deepEqual(
+            font.glyphs.get(1).path.commands
+                .filter(c => c.type !== 'Z')
+                .map(c => [c.x, c.y]).flat(),
+            untransformedPoints
+        );
+        assert.deepEqual(
+            font.variation.getTransform(1).path.commands
+                .filter(c => c.type !== 'Z')
+                .map(c => [c.x, c.y])
+                .flat(),
+            untransformedPoints
+        );
+        assert.deepEqual(
+            font.variation.getTransform(1, {wght: 900, opsz: 10}).path.commands
+                .filter(c => c.type !== 'Z')
+                .map(c => [c.x, c.y])
+                .flat(),
+            transformedPoints
+        );
+        font.variation.set({wght: 900, opsz: 10});
+        assert.deepEqual(
+            font.variation.getTransform(font.glyphs.get(1)).path.commands
+                .filter(c => c.type !== 'Z')
+                .map(c => [c.x, c.y])
+                .flat(),
+            transformedPoints
+        );
+    });
 });

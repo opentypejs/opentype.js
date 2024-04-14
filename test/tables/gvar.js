@@ -1,5 +1,4 @@
 import assert from 'assert';
-import { hex, unhex } from '../testutil.js';
 import { parse } from '../../src/opentype.js';
 import { readFileSync } from 'fs';
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
@@ -16,6 +15,8 @@ describe('tables/gvar.js', function() {
         // gvarTest9: loadSync('./test/fonts/TestGVARNine.ttf'),
         gvarTestComp: loadSync('./test/fonts/TestGVAR-Composite-0.ttf'),
         gvarTestCompMissing: loadSync('./test/fonts/TestGVAR-Composite-Missing.ttf'),
+        gvarTestCvar1: loadSync('./test/fonts/TestCVARGVAROne.ttf'),
+        gvarTestCvar2: loadSync('./test/fonts/TestCVARGVARTwo.ttf'),
     };
     it('correctly parses the glyph variations table', function() {
         // tests for all fonts
@@ -104,6 +105,52 @@ describe('tables/gvar.js', function() {
             const font = fonts[`gvarTest${n}`];
             assert.deepEqual(font.tables.gvar.sharedTuples, [[-1]]);
         });
+    });
 
+    it('correctly transforms TrueType glyphs', function() {
+        ['Cvar1','Cvar2'].forEach(n => {
+            const font = fonts[`gvarTest${n}`];
+            const untransformedPoints = [
+                287,-10,179,-10,55,128,55,269,55,409,174,546,290,546,398,546,522,409,522,269,522,128,
+                402,-10,289,42,339,42,399,93,425,194,425,269,425,344,398,443,338,493,288,493,238,493,
+                178,443,152,344,152,269,152,194,179,93,239,42
+            ];
+            const transformedPoints = [];
+            assert.deepEqual(font.glyphs.get(4).points.map(p => [p.x, p.y]).flat(), untransformedPoints);
+        });
+    });
+
+    it('correctly transforms composite glyphs', function() {
+        ['Comp'/*,'CompMissing'*/].forEach(n => {
+            const font = fonts[`gvarTest${n}`];
+            const untransformedPathData =
+                'M171 500Q135 500 106.50 483.50Q78 467 62 438.50Q46 410 46 373L46 257' +
+                'Q46 220 62 191.50Q78 163 106.50 146.50Q135 130 171 130Q208 130 236 146.50' +
+                'Q264 163 280 191.50Q296 220 296 257L296 373Q296 410 280 438.50' +
+                'Q264 467 236 483.50Q208 500 171 500ZM171 450Q205 450 225.50 429' +
+                'Q246 408 246 373L246 257Q246 222 225.50 201Q205 180 171 180Q' +
+                '137 180 116.50 201Q96 222 96 257L96 373Q96 408 116.50 429Q137 450 171 450Z' +
+                'M246 65Q236 65 228.50 57.50Q221 50 221 40L221 15Q221 4 228.50-3' +
+                'Q236-10 246-10Q257-10 264-3Q271 4 271 15L271 40Q271 50 264 57.50' +
+                'Q257 65 246 65ZM96 65Q86 65 78.50 57.50Q71 50 71 40L71 15Q71 4 78.50-3' +
+                'Q86-10 96-10Q107-10 114-3Q121 4 121 15L121 40Q121 50 114 57.50Q107 65 96 65Z'
+            assert.equal(font.glyphs.get(6).toPathData(), untransformedPathData);
+            assert.equal(font.glyphs.get(6).toPathData({}, font), untransformedPathData);
+            
+            const transformedPathData =
+                'M146 500Q109 500 82 483Q55 466 43.50 436Q32 406 38 369L57 253' +
+                'Q63 216 83 188.50Q103 161 132.50 145.50Q162 130 197 130Q235 130 261.50 147' +
+                'Q288 164 300 193.50Q312 223 306 261L286 377Q280 413 260.50 441Q' +
+                '241 469 211.50 484.50Q182 500 146 500ZM146 450Q181 450 206.50 428' +
+                'Q232 406 238 369L257 253Q262 219 246 199.50Q230 180 197 180Q162 180 137 202' +
+                'Q112 224 106 261L86 377Q81 411 97 430.50Q113 450 146 450ZM291 65' +
+                'Q280 65 272.50 56Q265 47 267 36L270 12Q271 2 278-4Q285-10 295-10' +
+                'Q306-10 313.50-1Q321 8 319 19L315 43Q314 52 307.50 58.50Q301 65 291 65Z' +
+                'M141 65Q130 65 122.50 56Q115 47 117 36L120 12Q121 2 128-4Q135-10 145-10' +
+                'Q156-10 163.50-1Q171 8 169 19L165 43Q164 52 157.50 58.50Q151 65 141 65Z';
+            assert.equal(font.glyphs.get(6).toPathData({variation: {slnt: -9}}, font), transformedPathData);
+            font.variation.set({slnt: -9});
+            assert.equal(font.glyphs.get(6).toPathData({}, font), transformedPathData);
+        });
     });
 });
