@@ -188,14 +188,21 @@ export class VariationProcessor {
 
     /**
      * Returns a transformed copy of a glyph based on the provided variation coordinates, or the glyph itself if no variation was applied
-     * @param {opentype.Glyph} glyph 
+     * @param {opentype.Glyph|integer} glyph Glyph or index of glyph to transform
+     * @param {Object} coords Variation coords object (will fall back to variation coords in the defaultRenderOptions)
      * @returns {opentype.Glyh}
      */
     getTransform(glyph, coords) {
+        if(Number.isInteger(glyph)) {
+            glyph = this.font.glyphs.get(glyph);
+        }
         const hasBlend = glyph.getBlendPath;
         const hasPoints = !!(glyph.points && glyph.points.length);
         let transformedGlyph = glyph;
         if (hasBlend || hasPoints) {
+            if(!coords) {
+                coords = this.font.variation.get();
+            }
             const normalizedCoords = this.getNormalizedCoords(coords);
             let transformedPoints;
             if(hasPoints) {
