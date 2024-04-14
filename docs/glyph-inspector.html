@@ -162,7 +162,7 @@ function displayGlyphData(glyphIndex) {
     }
     html += '</dl>';
     if (glyph.numberOfContours > 0) {
-        var contours = glyph.getContours(window.font.variation.getTransform(glyph, window.fontOptions.variation));
+        var contours = glyph.getContours(window.font.variation.getTransform(glyph, window.fontOptions.variation).points);
         html += 'contours:<div id="glyph-contours">' + contours.map(contourToString).join('\n') + '</div>';
     } else if (glyph.isComposite) {
         html += '<br>This composite glyph is a combination of :<ul><li>' +
