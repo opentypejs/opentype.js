@@ -759,7 +759,7 @@ Parser.prototype.parseDeltaSetIndexMap = function() {
     if(!mapCount) return {
         format,
         entryFormat
-    }
+    };
     
     const bitCount = (entryFormat & masks.INNER_INDEX_BIT_COUNT_MASK) + 1;
     const entrySize = ((entryFormat & masks.MAP_ENTRY_SIZE_MASK) >> 4) + 1;
@@ -791,7 +791,7 @@ Parser.prototype.parseDeltaSetIndexMap = function() {
 };
 
 Parser.prototype.parseDeltaSets = function(itemCount, wordDeltaCount, regionIndexCount) {
-    const deltas = Array.from({length: itemCount}, x=>[]); // two-dimensional array with empty rows and columns
+    const deltas = Array.from({length: itemCount},()=>[]); // two-dimensional array with empty rows and columns
 
     const longFlag = wordDeltaCount & masks.LONG_WORDS;
     const wordCount = wordDeltaCount & masks.WORD_DELTA_COUNT_MASK;
