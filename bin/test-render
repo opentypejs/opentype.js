@@ -66,11 +66,12 @@ function renderSVG() {
     let svgSymbols = [];
     let svgBody = [];
 
-    var glyphSet = new Set();
+    var symbolSet = new Set();
     let glyphData = [];
 
     const fontSize = font.unitsPerEm;
     let minWidth = 0;
+    console.log(variation);
     if(variation && font.variation) {
         font.variation.set(variation);
     }
@@ -86,7 +87,7 @@ function renderSVG() {
             glyphName = `gid${glyph.index}`;
         }
         const symbolId = testcase + '.' + glyphName;
-        if (!glyphSet.has(glyph)) {
+        if (!symbolSet.has(symbolId)) {
             const svgPath = glyph.toSVG({optimize: true, decimalPlaces: 2, flipY: false}, font)
                 // normalize with other renderers
                 .replace(/(\d+) (-?\d+)/g, '$1,$2')
@@ -95,6 +96,7 @@ function renderSVG() {
                 .replace(/\.\d+/g, '');
 
             svgSymbols.push(`  <symbol id="${symbolId}" overflow="visible">${svgPath}</symbol>`);
+            symbolSet.add(symbolId);
         }
         svgBody.push(`  <use xlink:href="#${symbolId}" x="${glyphData[i].gX}" y="${glyphData[i].gY}"/>`);
         let xMax = glyphData[i].gX + glyph.advanceWidth;
