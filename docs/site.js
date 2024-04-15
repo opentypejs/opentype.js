@@ -51,8 +51,17 @@ function updateVariationOptions() {
         <div>
                 ${window.font.tables.fvar.axes.map((a,idx) => {
                     const currentValue = (window.fontOptions.variation||{})[a.tag] || a.defaultValue;
-                    const floatSteps = isFloat(a.minValue) || isFloat(a.defaultValue) || isFloat(a.maxValue);
-                    return `<p><label><strong>${a.name?.en || a.tag}</strong>
+                    // decide whether to allow float steps for the range slider
+                    // always enable for uppercase tags or tags ending with spaces
+                    const floatSteps = isFloat(a.minValue) || isFloat(a.defaultValue) || isFloat(a.maxValue) || /^[A-Z]{0,4}\s*$/.test(a.tag);
+                    console.log(isFloat(a.minValue) || isFloat(a.defaultValue) || isFloat(a.maxValue) || /^[A-Z]{0,4}\s*$/.test(a.tag))
+                    let label = a.name?.en;
+                    if(label) {
+                        label += ` (${a.tag.trim()})`;
+                    } else {
+                        label = a.tag.trim();
+                    }
+                    return `<p><label><strong>${label}</strong>
                         <input type="range" id="variation-tag-${a.tag}" step="${floatSteps ? 0.01 : 1}" min="${a.minValue}" max="${a.maxValue}" value="${currentValue}" oninput="onVariationChange(event)"></label> <span>${currentValue}</span></p>`;
                 }).join('')}
         </div>

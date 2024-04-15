@@ -407,7 +407,7 @@ function parseBuffer(buffer, opt={}) {
                 font.tables.svg = svg.parse(table.data, table.offset);
                 break;
             default:
-                console.info(`Skipping unsupported table ${tableEntry.tag}`);
+                // console.info(`Skipping unsupported table ${tableEntry.tag}`);
                 break;
         }
     }

@@ -7,7 +7,11 @@ const loadSync = (url, opt) => parse(readFileSync(url), opt);
 describe('variation.js', function() {
     const fonts = {
         avar: loadSync('./test/fonts/TestAVAR.ttf'),
+        hvar: loadSync('./test/fonts/TestHVAROne.otf'),
+        hvar2: loadSync('./test/fonts/TestHVARTwo.ttf'),
         zycon: loadSync('./test/fonts/Zycon.ttf'),
+        cvar1: loadSync('./test/fonts/TestCVARGVAROne.ttf'),
+        cvar2: loadSync('./test/fonts/TestCVARGVARTwo.ttf'),
     };
 
     it('pads axis tags with spaces for lookup', function() {
@@ -64,6 +68,121 @@ describe('variation.js', function() {
                 }),
                 expectedFactors
             );
+        });
+    });
+    
+    describe('cvar', function() {
+        it('handles cvar data correctly', function() {
+            
+            ['cvar1','cvar2'].forEach((f) => {
+                let font = fonts[f];
+                let glyphPos = [];
+                assert.equal(
+                    font.forEachGlyph('hon', 0, 0, font.unitsPerEm, {}, function(glyph, gX, gY, gFontSize) {
+                        glyphPos.push({w: glyph.advanceWidth, lsb: glyph.leftSideBearing, gX, count: glyph.path.commands.length});
+                    }),
+                    1857
+                );
+                assert.deepEqual(glyphPos, [
+                    {count: 53, w: 635, lsb: 18, gX: 0},
+                    {count: 32, w: 577, lsb: 55, gX: 635},
+                    {count: 49, w: 645, lsb: 28, gX: 1212},
+                ]);
+                glyphPos = [];
+                font.variation.set({wght: 1000})
+                assert.equal(
+                    font.forEachGlyph('hon', 0, 0, font.unitsPerEm, {}, function(glyph, gX, gY, gFontSize) {
+                        glyphPos.push({w: glyph.advanceWidth, lsb: glyph.leftSideBearing, gX, count: glyph.path.commands.length});
+                    }),
+                    1857
+                );
+                assert.deepEqual(glyphPos, [
+                    {count: 53, w: 635, lsb: 18, gX: 0},
+                    {count: 32, w: 577, lsb: 55, gX: 635},
+                    {count: 49, w: 645, lsb: 28, gX: 1212},
+                ]);
+
+                font = fonts.hvar2;
+                glyphPos = [];
+                assert.equal(
+                    font.forEachGlyph('AB', 0, 0, font.unitsPerEm, {}, function(glyph, gX, gY, gFontSize) {
+                        glyphPos.push({w: glyph.advanceWidth, lsb: glyph.leftSideBearing, gX});
+                    }),
+                    900
+                );
+                assert.deepEqual(glyphPos, [
+                    {w: 450, lsb: 0, gX: 0},
+                    {w: 450, lsb: 0, gX: 450},
+                ]);
+                glyphPos = [];
+                font.variation.set({wght: 1000})
+                assert.equal(
+                    font.forEachGlyph('AB', 0, 0, font.unitsPerEm, {}, function(glyph, gX, gY, gFontSize) {
+                        glyphPos.push({w: glyph.advanceWidth, lsb: glyph.leftSideBearing, gX});
+                    }),
+                    900
+                );
+                assert.deepEqual(glyphPos, [
+                    {w: 450, lsb: 0, gX: 0},
+                    {w: 450, lsb: 0, gX: 450},
+                ]);
+            });
+        });
+    });
+    
+    describe('hvar', function() {
+        it('transforms advanceWidth', function() {
+            let font = fonts.hvar;
+            let glyphPos = [];
+            assert.equal(
+                font.forEachGlyph('ABC', 0, 0, font.unitsPerEm, {}, function(glyph, gX, gY, gFontSize) {
+                    glyphPos.push({w: glyph.advanceWidth, lsb: glyph.leftSideBearing, gX});
+                }),
+                1656
+            );
+            assert.deepEqual(glyphPos, [
+                {w: 520, lsb: 10, gX: 0},
+                {w: 574, lsb: 100, gX: 520},
+                {w: 562, lsb: 56, gX: 1094},
+            ]);
+            glyphPos = [];
+            font.variation.set({wght: 1000})
+            assert.equal(
+                font.forEachGlyph('ABC', 0, 0, font.unitsPerEm, {}, function(glyph, gX, gY, gFontSize) {
+                    glyphPos.push({w: glyph.advanceWidth, lsb: glyph.leftSideBearing, gX});
+                }),
+                1656
+            );
+            assert.deepEqual(glyphPos, [
+                {w: 520, lsb: 10, gX: 0},
+                {w: 574, lsb: 100, gX: 520},
+                {w: 562, lsb: 56, gX: 1094},
+            ]);
+
+            font = fonts.hvar2;
+            glyphPos = [];
+            assert.equal(
+                font.forEachGlyph('AB', 0, 0, font.unitsPerEm, {}, function(glyph, gX, gY, gFontSize) {
+                    glyphPos.push({w: glyph.advanceWidth, lsb: glyph.leftSideBearing, gX});
+                }),
+                900
+            );
+            assert.deepEqual(glyphPos, [
+                {w: 450, lsb: 0, gX: 0},
+                {w: 450, lsb: 0, gX: 450},
+            ]);
+            glyphPos = [];
+            font.variation.set({wght: 1000})
+            assert.equal(
+                font.forEachGlyph('AB', 0, 0, font.unitsPerEm, {}, function(glyph, gX, gY, gFontSize) {
+                    glyphPos.push({w: glyph.advanceWidth, lsb: glyph.leftSideBearing, gX});
+                }),
+                900
+            );
+            assert.deepEqual(glyphPos, [
+                {w: 450, lsb: 0, gX: 0},
+                {w: 450, lsb: 0, gX: 450},
+            ]);
         });
     });
 
