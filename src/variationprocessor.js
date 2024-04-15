@@ -26,10 +26,6 @@ export class VariationProcessor {
                 delete coords[tag];
             }
         }
-        for (let i = 0; i < this.fvar().axes.length; i++) {
-            const axis = this.fvar().axes[i];
-            let tagValue = coords[axis.tag];
-        }
     }
 
     /**
@@ -39,7 +35,7 @@ export class VariationProcessor {
      */
     getNormalizedCoords(coords) {
         if(!coords) {
-            throw Error('Variation coords are required');
+            coords = this.font.variation.get();
         }
         let normalized = [];
         this.normalizeCoordTags(coords);

@@ -6,7 +6,7 @@ AbrilFatface-Regular.otf
 CFF1SingleLinePaintTypeTEST.otf
     Copyright (c) 2023, Constantin Groß, https://www.48design.com
     SIL Open Font License, Version 1.1
-    https://opensource.org/licenses/OFL-1.1    
+    https://opensource.org/licenses/OFL-1.1
     
 Changa-Regular.ttf
 Changa-VariableFont_wght.ttf
@@ -56,6 +56,11 @@ SourceSansPro-Regular.otf
     Copyright 2010, 2012 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name ‘Source’. All Rights Reserved. Source is a trademark of Adobe Systems Incorporated in the United States and/or other countries.
     SIL Open Font License, Version 1.1
     https://www.fontsquirrel.com/license/source-sans-pro
+
+TestAVAR.ttf
+    Copyright (c) 2016 by Unicode, Inc.
+    SIL Open Font License version 1.1 (OFL-1.1)
+    https://opensource.org/licenses/OFL-1.1
 
 TestCMAP13.otf
     Copyright 2023 Unicode Inc. All rights reserved.
@@ -109,3 +114,9 @@ Vibur.woff
     Copyright (c) 2010, Johan Kallas (johan.kallas@gmail.com).
     SIL Open Font License, Version 1.1
     https://www.fontsquirrel.com/license/vibur
+
+Zycon.ttf
+    Copyright (c)1993-2016 by The Font Bureau, Inc. with Reserved Font Name "Zycon"
+    SIL Open Font License, Version 1.1
+    https://opensource.org/licenses/OFL-1.1
+
