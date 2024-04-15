@@ -7,7 +7,7 @@ const loadSync = (url, opt) => parse(readFileSync(url), opt);
 describe('variation.js', function() {
     const fonts = {
         avar: loadSync('./test/fonts/TestAVAR.ttf'),
-        zycon: loadSync('./test/fonts/zycon.ttf'),
+        zycon: loadSync('./test/fonts/Zycon.ttf'),
     };
 
     it('pads axis tags with spaces for lookup', function() {
