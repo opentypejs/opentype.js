@@ -42,14 +42,27 @@ function roundDecimal(float, places) {
 function optimizeCommands(commands) {
     // separate subpaths
     let subpaths = [[]];
+    let startX = 0,
+        startY = 0;
     for (let i = 0; i < commands.length; i += 1) {
         const subpath = subpaths[subpaths.length - 1];
         const cmd = commands[i];
         const firstCommand = subpath[0];
         const secondCommand = subpath[1];
         const previousCommand = subpath[subpath.length - 1];
+        const nextCommand = commands[i + 1];
         subpath.push(cmd);
-        if (cmd.type === 'Z') {
+        
+        if (cmd.type === 'M') {
+            startX = cmd.x;
+            startY = cmd.y;
+        } else if (cmd.type === 'L' && (!nextCommand || nextCommand.command === 'Z')) {
+            if(!(Math.abs(cmd.x - startX) > 1 || Math.abs(cmd.y - startY) > 1)) {
+                subpath.pop();
+            }
+        } else if (cmd.type === 'L' && previousCommand && previousCommand.x === cmd.x && previousCommand.y === cmd.y) {
+            subpath.pop();
+        } else if (cmd.type === 'Z') {
             // When closing at the same position as the path started,
             // remove unnecessary line command
             if (
@@ -69,11 +82,8 @@ function optimizeCommands(commands) {
             if (i + 1 < commands.length) {
                 subpaths.push([]);
             }
-        } else if (cmd.type === 'L') {
-            // remove lines that lead to the same position as the previous command
-            if (previousCommand && previousCommand.x === cmd.x && previousCommand.y === cmd.y) {
-                subpath.pop();
-            }
+        } else if (cmd.type === 'L' && previousCommand && previousCommand.x === cmd.x && previousCommand.y === cmd.y) {
+            subpath.pop();
         }
     }
     commands = [].concat.apply([], subpaths); // flatten again
