@@ -483,9 +483,14 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
  */
 Glyph.prototype.toPathData = function(options, font) {
     options = Object.assign({}, { variation: font && font.defaultRenderOptions.variation }, options);
-    let usePath = this.path;
+    let useGlyph = this;
     if(font && font.variation) {
-        usePath = font.variation.getTransform(this, options.variation).path;
+        useGlyph = font.variation.getTransform(this, options.variation);
+    }
+
+    let usePath = useGlyph.points && options.pointsTransform ? options.pointsTransform(useGlyph.points) : useGlyph.path;
+    if(options.pathTramsform) {
+        usePath = options.pathTramsform(usePath);
     }
 
     return usePath.toPathData(options);
