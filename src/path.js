@@ -82,8 +82,6 @@ function optimizeCommands(commands) {
             if (i + 1 < commands.length) {
                 subpaths.push([]);
             }
-        } else if (cmd.type === 'L' && previousCommand && previousCommand.x === cmd.x && previousCommand.y === cmd.y) {
-            subpath.pop();
         }
     }
     commands = [].concat.apply([], subpaths); // flatten again
