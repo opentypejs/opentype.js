@@ -153,14 +153,18 @@ function renderSVG() {
         // of minor differences in path construction, tests will fail.
         // Therefore we re-calculate the path based on the points.
         const pointsTransform = function(points) {
-
-            // Scale to 1000 and filter out lines back to the starting point of a contour
+            // Scale to 1000
             for (point of points) {
                 point.x *= scale;
                 point.y *= scale;
             }
             
             const path = getPath(points);
+            return path;
+        }
+
+        const pathTransform = function(path) {
+            // filter out lines back to the starting point of a contour
             var startX = 0, startY = 0;
             path.commands = path.commands.filter(function (c, i) {
                 path.commands[i] = c;
@@ -175,10 +179,10 @@ function renderSVG() {
             });
 
             return path;
-        }
+        };
 
         if (!symbolSet.has(symbolId)) {
-            const svgPath = glyph.toSVG({optimize: true, decimalPlaces: 2, flipY: false, pointsTransform}, font)
+            const svgPath = glyph.toSVG({optimize: true, decimalPlaces: 2, flipY: false, pointsTransform, pathTransform}, font)
                 // normalize with other renderers
                 .replace(/(\d+) (-?\d+)/g, '$1,$2')
                 .replace(/(\d)(-)/g, '$1,$2')
@@ -189,12 +193,14 @@ function renderSVG() {
             svgSymbols.push(`  <symbol id="${symbolId}" overflow="visible">${svgPath}</symbol>`);
             symbolSet.add(symbolId);
         }
-        svgBody.push(`  <use xlink:href="#${symbolId}" x="${glyphData[i].gX}" y="${glyphData[i].gY}"/>`);
-        let xMax = glyphData[i].gX + glyph.advanceWidth;
+        svgBody.push(`  <use xlink:href="#${symbolId}" x="${gX}" y="${gY}"/>`);
+        let xMax = gX + glyph.advanceWidth;
         if(xMax > minWidth) {
             minWidth = xMax;
         }
-    }
+
+        const glyphWidth = glyph.getMetrics().xMax;
+    });
 
     let minX = 0;
     let minY = Math.round(font.descender);
@@ -203,7 +209,7 @@ function renderSVG() {
 <svg version="1.1"
     xmlns="http://www.w3.org/2000/svg"
     xmlns:xlink="http://www.w3.org/1999/xlink"
-    viewBox="${minX} ${minY} ${minWidth} ${height}">`;
+    viewBox="${Math.round(minX * scale)} ${Math.round(minY * scale)} ${Math.round(minWidth * scale)} ${Math.round(height * scale)}">`;
 
     return svgHeader + svgSymbols.join('\n') + svgBody.join('\n') + SVG_FOOTER;
 }
