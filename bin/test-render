@@ -81,10 +81,19 @@ function renderSVG() {
 
     for (let i = 0; i < glyphData.length; i++) {
         const glyph = glyphData[i].glyph;
-        const symbolId = testcase + '.' + glyph.name;
+        let glyphName = glyph.name;
+        if(!glyphName || /^cid\d+$/.test(glyphName)) {
+            glyphName = `gid${glyph.index}`;
+        }
+        const symbolId = testcase + '.' + glyphName;
         if (!glyphSet.has(glyph)) {
-            glyphSet.add(glyph);
-            const svgPath = glyph.toSVG({optimize: true, decimalPlaces: 0, flipY: false}, font);
+            const svgPath = glyph.toSVG({optimize: true, decimalPlaces: 2, flipY: false}, font)
+                // normalize with other renderers
+                .replace(/(\d+) (-?\d+)/g, '$1,$2')
+                .replace(/(\d)([A-Z])/g, '$1 $2')
+                .replace(/Z([^\s])/g, 'Z $1')
+                .replace(/\.\d+/g, '');
+
             svgSymbols.push(`  <symbol id="${symbolId}" overflow="visible">${svgPath}</symbol>`);
         }
         svgBody.push(`  <use xlink:href="#${symbolId}" x="${glyphData[i].gX}" y="${glyphData[i].gY}"/>`);
