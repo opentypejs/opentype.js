@@ -15,6 +15,24 @@ export class VariationProcessor {
     }
 
     /**
+     * Modifies a coords object to make sure that tags have a length of 4
+     * @param {Object} coords - variation coordinates
+     */
+    normalizeCoordTags(coords) {
+        for (const tag in coords) {
+            if(tag.length < 4) {
+                const padded = tag.padEnd(4, ' ');
+                coords[padded] === undefined && (coords[padded] = coords[tag]);
+                delete coords[tag];
+            }
+        }
+        for (let i = 0; i < this.fvar().axes.length; i++) {
+            const axis = this.fvar().axes[i];
+            let tagValue = coords[axis.tag];
+        }
+    }
+
+    /**
      * Normalizes the coordinates from the axis ranges to a range of -1 to 1.
      * @param {Object} coords - The coordinates object to normalize.
      * @returns {Array<number>} The normalized coordinates as an array
@@ -24,6 +42,7 @@ export class VariationProcessor {
             throw Error('Variation coords are required');
         }
         let normalized = [];
+        this.normalizeCoordTags(coords);
         for (let i = 0; i < this.fvar().axes.length; i++) {
             const axis = this.fvar().axes[i];
             let tagValue = coords[axis.tag];

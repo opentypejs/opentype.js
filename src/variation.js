@@ -84,8 +84,16 @@ export class VariationManager {
             variationData = {...instance.coordinates};
         } else {
             variationData = instanceIdOrObject;
+            this.process.normalizeCoordTags(variationData);
         }
-        this.font.defaultRenderOptions = Object.assign({}, this.font.defaultRenderOptions, {variation: variationData});
+        variationData = Object.assign({},
+            this.font.defaultRenderOptions.variation,
+            variationData
+        );
+        this.font.defaultRenderOptions = Object.assign({},
+            this.font.defaultRenderOptions,
+            {variation: variationData}
+        );
     }
 
     /**
