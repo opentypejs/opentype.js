@@ -54,7 +54,6 @@ function updateVariationOptions() {
                     // decide whether to allow float steps for the range slider
                     // always enable for uppercase tags or tags ending with spaces
                     const floatSteps = isFloat(a.minValue) || isFloat(a.defaultValue) || isFloat(a.maxValue) || /^[A-Z]{0,4}\s*$/.test(a.tag);
-                    console.log(isFloat(a.minValue) || isFloat(a.defaultValue) || isFloat(a.maxValue) || /^[A-Z]{0,4}\s*$/.test(a.tag))
                     let label = a.name?.en;
                     if(label) {
                         label += ` (${a.tag.trim()})`;
