@@ -174,7 +174,8 @@ function displayGlyphData(glyphIndex) {
                 }
             }).join('</li><li>') + '</li></ul>';
     } else if (glyph.path) {
-        html += 'path:<br><pre>  ' + glyph.path.commands.map(pathCommandToString).join('\n  ') + '\n</pre>';
+        const transGlyph = window.font.variation.getTransform(glyph, window.fontOptions.variation);
+        html += 'path:<br><pre>  ' + transGlyph.path.commands.map(pathCommandToString).join('\n  ') + '\n</pre>';
     }
 
     const layers = glyph.getLayers(font);

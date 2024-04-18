@@ -377,16 +377,20 @@ const TOP_DICT_META = [
 ];
 
 const TOP_DICT_META_CFF2 = [
+    {name: 'fdArray', op: 1236, type: 'offset'},
+    {name: 'charStrings', op: 17, type: 'offset'},
+    // only if variation data is needed:
+    {name: 'vstore', op: 24, type: 'offset'},
+    // only if there is more than one Font Dict
+    {name: 'fdSelect', op: 1237, type: 'offset'},
+    // only if unitsPerEm in head table !== 1000
     {
         name: 'fontMatrix',
         op: 1207,
         type: ['real', 'real', 'real', 'real', 'real', 'real'],
-        value: [0.001, 0, 0, 0.001, 0, 0]
+        // 1/unitsPerEm 0 0 1/unitsPerEm 0 0
+        // value: [0.001, 0, 0, 0.001, 0, 0]
     },
-    {name: 'charStrings', op: 17, type: 'offset'},
-    {name: 'fdArray', op: 1236, type: 'offset'},
-    {name: 'fdSelect', op: 1237, type: 'offset'},
-    {name: 'vstore', op: 24, type: 'offset'}
 ];
 
 const PRIVATE_DICT_META = [
@@ -618,17 +622,21 @@ function applyPaintType(font, path) {
 // The encoding is described in the Type 2 Charstring Format
 // https://www.microsoft.com/typography/OTSPEC/charstr2.htm
 function parseCFFCharstring(font, glyph, code, version, coords) {
+    if(glyph.index !==2) return new Path();
     let c1x;
     let c1y;
     let c2x;
     let c2y;
     const p = new Path();
     const stack = [];
+    const blendStack = [];
     let nStems = 0;
     let haveWidth = false;
     let open = false;
     let x = 0;
     let y = 0;
+    let blendX;
+    let blendY;
     let subrs;
     let subrsBias;
     let defaultWidthX;
@@ -636,6 +644,7 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
     let vsindex = 0;
     let vstore = [];
     let blendVector;
+    
     const cffTable = font.tables.cff2 || font.tables.cff;
     defaultWidthX = cffTable.topDict._defaultWidthX;
     nominalWidthX = cffTable.topDict._nominalWidthX;
@@ -643,6 +652,9 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
 
     if (!glyph.getBlendPath) {
         glyph.getBlendPath = function(variationCoords) {
+            if(glyph.blendDeltas && glyph.blendDeltas.length) {
+                glyph.blendDeltas = [];
+            }
             return parseCFFCharstring(font, glyph, code, version, variationCoords);
         };
     }
@@ -717,6 +729,7 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                     parseStems();
                     break;
                 case 4: // vmoveto
+                    console.log('vmoveto');
                     if (stack.length > 1 && !haveWidth) {
                         width = stack.shift() + nominalWidthX;
                         haveWidth = true;
@@ -724,42 +737,83 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
 
                     y += stack.pop();
                     newContour(x, y);
+                    if(blendStack.length) {
+                        p.commands[p.commands.length - 1].deltas = {
+                            x: blendX,
+                            y: blendStack.pop(),
+                        };
+                    }
                     break;
                 case 5: // rlineto
+                    console.log('rlineto');
                     while (stack.length > 0) {
                         x += stack.shift();
                         y += stack.shift();
                         p.lineTo(x, y);
-                    }
 
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                x: blendStack.shift(),
+                                y: blendStack.shift(),
+                            };
+                        }
+                    }
                     break;
                 case 6: // hlineto
+                    console.log('hlineto');
                     while (stack.length > 0) {
                         x += stack.shift();
                         p.lineTo(x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                x: blendStack.shift(),
+                                y: blendY,
+                            };
+                        }
                         if (stack.length === 0) {
                             break;
                         }
 
                         y += stack.shift();
                         p.lineTo(x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                x: blendX,
+                                y: blendStack.shift(),
+                            };
+                        }
                     }
 
                     break;
                 case 7: // vlineto
+                    console.log('vlineto');
                     while (stack.length > 0) {
                         y += stack.shift();
                         p.lineTo(x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                y: blendStack.shift(),
+                                x: blendX,
+                            };
+                        }
                         if (stack.length === 0) {
                             break;
                         }
 
                         x += stack.shift();
                         p.lineTo(x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                x: blendStack.shift(),
+                                y: blendY
+                            };
+                        }
+                        
                     }
 
                     break;
                 case 8: // rrcurveto
+                    console.log('rrcurveto');
                     while (stack.length > 0) {
                         c1x = x + stack.shift();
                         c1y = y + stack.shift();
@@ -768,12 +822,23 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                         x = c2x + stack.shift();
                         y = c2y + stack.shift();
                         p.curveTo(c1x, c1y, c2x, c2y, x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                c1x: blendStack.shift(),
+                                c1y: blendStack.shift(),
+                                c2x: blendStack.shift(),
+                                c2y: blendStack.shift(),
+                                x: blendStack.shift(),
+                                y: blendStack.shift(),
+                            };
+                        }
                     }
-
                     break;
                 case 10: // callsubr
+                    console.log('callsubr');
                     codeIndex = stack.pop() + subrsBias;
                     subrCode = subrs[codeIndex];
+                    console.log({subrsBias, codeIndex, subrCode});
                     if (subrCode) {
                         parse(subrCode);
                     }
@@ -786,6 +851,7 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                     }
                     return;
                 case 12: // flex operators
+                    console.log('flex');
                     v = code[i];
                     i += 1;
                     switch (v) {
@@ -805,7 +871,27 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                             y = c4y   + stack.shift();    // dy6
                             stack.shift();                // flex depth
                             p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
+                            if(blendStack.length) {
+                                p.commands[p.commands.length - 1].deltas = {
+                                    c1x: blendStack.pop(),
+                                    c1y: blendStack.pop(),
+                                    c2x: blendStack.pop(),
+                                    c2y: blendStack.pop(),
+                                    jpx: blendStack.pop(),
+                                    jpy: blendStack.pop(),
+                                };
+                            }
                             p.curveTo(c3x, c3y, c4x, c4y, x, y);
+                            if(blendStack.length) {
+                                p.commands[p.commands.length - 1].deltas = {
+                                    c3x: blendStack.pop(),
+                                    c3y: blendStack.pop(),
+                                    c4x: blendStack.pop(),
+                                    c4y: blendStack.pop(),
+                                    x: blendStack.pop(),
+                                    y: blendStack.pop(),
+                                };
+                            }
                             break;
                         case 34: // hflex
                             // |- dx1 dx2 dy2 dx3 dx4 dx5 dx6 hflex (12 34) |-
@@ -821,7 +907,27 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                             c4y = y;                      // dy5
                             x = c4x + stack.shift();      // dx6
                             p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
+                            if(blendStack.length) {
+                                p.commands[p.commands.length - 1].deltas = {
+                                    c1x: blendStack.pop(),
+                                    c1y: 0,
+                                    c2x: blendStack.pop(),
+                                    c2y: blendStack.pop(),
+                                    jpx: blendStack.pop(),
+                                    jpy: 0,
+                                };
+                            }
                             p.curveTo(c3x, c3y, c4x, c4y, x, y);
+                            if(blendStack.length) {
+                                p.commands[p.commands.length - 1].deltas = {
+                                    c3x: blendStack.pop(),
+                                    c3y: 0,
+                                    c4x: blendStack.pop(),
+                                    c4y: 0,
+                                    x: blendStack.pop(),
+                                    y: 0,
+                                };
+                            }
                             break;
                         case 36: // hflex1
                             // |- dx1 dy1 dx2 dy2 dx3 dx4 dx5 dy5 dx6 hflex1 (12 36) |-
@@ -837,7 +943,27 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                             c4y = c3y + stack.shift();    // dy5
                             x = c4x + stack.shift();      // dx6
                             p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
+                            if(blendStack.length) {
+                                p.commands[p.commands.length - 1].deltas = {
+                                    c1x: blendStack.pop(),
+                                    c1y: blendStack.pop(),
+                                    c2x: blendStack.pop(),
+                                    c2y: blendStack.pop(),
+                                    jpx: blendStack.pop(),
+                                    jpy: 0,
+                                };
+                            }
                             p.curveTo(c3x, c3y, c4x, c4y, x, y);
+                            if(blendStack.length) {
+                                p.commands[p.commands.length - 1].deltas = {
+                                    c3x: blendStack.pop(),
+                                    c3y: 0,
+                                    c4x: blendStack.pop(),
+                                    c4y: blendStack.pop(),
+                                    x: blendStack.pop(),
+                                    y: 0,
+                                };
+                            }
                             break;
                         case 37: // flex1
                             // |- dx1 dy1 dx2 dy2 dx3 dy3 dx4 dy4 dx5 dy5 d6 flex1 (12 37) |-
@@ -858,7 +984,27 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                             }
 
                             p.curveTo(c1x, c1y, c2x, c2y, jpx, jpy);
+                            if(blendStack.length) {
+                                p.commands[p.commands.length - 1].deltas = {
+                                    c1x: blendStack.pop(),
+                                    c1y: blendStack.pop(),
+                                    c2x: blendStack.pop(),
+                                    c2y: blendStack.pop(),
+                                    jpx: blendStack.pop(),
+                                    jpy: blendStack.pop(),
+                                };
+                            }
                             p.curveTo(c3x, c3y, c4x, c4y, x, y);
+                            if(blendStack.length) {
+                                p.commands[p.commands.length - 1].deltas = {
+                                    c3x: blendStack.pop(),
+                                    c3y: blendStack.pop(),
+                                    c4x: blendStack.pop(),
+                                    c4y: blendStack.pop(),
+                                    x: blendStack.pop(),
+                                    y: blendStack.pop(),
+                                };
+                            }
                             break;
                         default:
                             console.log('Glyph ' + glyph.index + ': unknown operator ' + 1200 + v);
@@ -928,6 +1074,7 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
 
                     break;
                 case 15: // vsindex
+                    console.log('vsindex');
                     if ( version < 2 ) {
                         console.error('CFF2 CharString operator vsindex (15) is not supported in CFF');
                         break;
@@ -935,6 +1082,7 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                     vsindex = stack.pop();
                     break;
                 case 16: // blend
+                    console.log('blend');
                     if ( version < 2 ) {
                         console.error('CFF2 CharString operator blend (16) is not supported in CFF');
                         break;
@@ -951,20 +1099,43 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                     var deltaSetCount = n * axisCount;
                     var delta = stack.length - deltaSetCount;
                     var deltaSetIndex = delta - n;
-      
+                    var lendiff = stack.length - blendStack.length - deltaSetCount - 1;
+                    // console.log({delta, deltaSetIndex, deltaSetCount, lendiff, stack: JSON.stringify(stack), blendStack: JSON.stringify(blendStack1)});
+
+                    glyph.blendDeltas = glyph.blendDeltas || [];
+                    
                     if(blendVector) {
                         for (let i = 0; i < n; i++) {
-                            var sum = stack[deltaSetIndex + i];
+                            var defaultValue = stack[deltaSetIndex + i]; // Base value before blending
+                            var deltaValues = stack.slice(delta, delta + axisCount); // Capture the raw deltas directly from the stack
+                            var sum = defaultValue;
+                
+                            blendStack[deltaSetIndex + i] = [defaultValue, deltaValues];
+                            
                             for (let j = 0; j < axisCount; j++) {
-                                sum += blendVector[j] * stack[delta++];
+                                sum += blendVector[j] * deltaValues[j]; // Apply blending using the blend vector
                             }
-                            stack[deltaSetIndex + i] = sum;
+                
+                            stack[deltaSetIndex + i] = sum; // Update stack with blended value
+                            console.log(`modified at index ${deltaSetIndex + i}`);
+                            delta += axisCount; // Move the delta index forward by the axisCount
                         }
                     }
-    
+                    
+                    // fill blend stack with null for unmodified values
+                    if(blendStack.length < (stack.length - deltaSetCount)) {
+                        blendStack.length = stack.length - deltaSetCount;
+                    }
+
+                    console.log('rawStack:', JSON.stringify(stack));
+                    var deltas = [];
                     while (deltaSetCount--) {
                         stack.pop();
+                        blendStack.pop();
                     }
+                    console.log('stack:', JSON.stringify(stack));
+                    console.log('blendStack:', JSON.stringify(blendStack));
+                    console.log({deltas});
                     break;
                 case 18: // hstemhm
                     parseStems();
@@ -975,6 +1146,7 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                     i += (nStems + 7) >> 3;
                     break;
                 case 21: // rmoveto
+                    console.log('rmoveto');
                     if (stack.length > 2 && !haveWidth) {
                         width = stack.shift() + nominalWidthX;
                         haveWidth = true;
@@ -983,8 +1155,18 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                     y += stack.pop();
                     x += stack.pop();
                     newContour(x, y);
+                    console.log(x, y);
+
+                    if(blendStack.length) {
+                        p.commands[p.commands.length - 1].deltas = {
+                            y: blendStack.pop(),
+                            x: blendStack.pop(),
+                        };
+                        console.log(p.commands[p.commands.length - 1].deltas);
+                    }
                     break;
                 case 22: // hmoveto
+                    console.log('hmoveto');
                     if (stack.length > 1 && !haveWidth) {
                         width = stack.shift() + nominalWidthX;
                         haveWidth = true;
@@ -992,11 +1174,18 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
 
                     x += stack.pop();
                     newContour(x, y);
+                    if(blendStack.length) {
+                        p.commands[p.commands.length - 1].deltas = {
+                            x: blendStack.pop(),
+                            y: blendY,
+                        };
+                    }
                     break;
                 case 23: // vstemhm
                     parseStems();
                     break;
                 case 24: // rcurveline
+                    console.log('rcurveline');
                     while (stack.length > 2) {
                         c1x = x + stack.shift();
                         c1y = y + stack.shift();
@@ -1005,17 +1194,40 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                         x = c2x + stack.shift();
                         y = c2y + stack.shift();
                         p.curveTo(c1x, c1y, c2x, c2y, x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                c1x: blendStack.shift(),
+                                c1y: blendStack.shift(),
+                                c2x: blendStack.shift(),
+                                c2y: blendStack.shift(),
+                                x: blendStack.shift(),
+                                y: blendStack.shift(),
+                            };
+                        }
                     }
 
                     x += stack.shift();
                     y += stack.shift();
                     p.lineTo(x, y);
+                    if(blendStack.length) {
+                        p.commands[p.commands.length - 1].deltas = {
+                            x: blendStack.shift(),
+                            y: blendStack.shift(),
+                        };
+                    }
                     break;
                 case 25: // rlinecurve
+                    console.log('rlinecurve');
                     while (stack.length > 6) {
                         x += stack.shift();
                         y += stack.shift();
                         p.lineTo(x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                x: blendStack.shift(),
+                                y: blendStack.shift(),
+                            };
+                        }
                     }
 
                     c1x = x + stack.shift();
@@ -1025,10 +1237,23 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                     x = c2x + stack.shift();
                     y = c2y + stack.shift();
                     p.curveTo(c1x, c1y, c2x, c2y, x, y);
+                    if(blendStack.length) {
+                        p.commands[p.commands.length - 1].deltas = {
+                            c1x: blendStack.shift(),
+                            c1y: blendStack.shift(),
+                            c2x: blendStack.shift(),
+                            c2y: blendStack.shift(),
+                            x: blendStack.shift(),
+                            y: blendStack.shift(),
+                        };
+                    }
                     break;
                 case 26: // vvcurveto
                     if (stack.length & 1) {
                         x += stack.shift();
+                        if(blendStack.length) {
+                            blendX = blendStack.shift();
+                        }
                     }
 
                     while (stack.length > 0) {
@@ -1039,12 +1264,25 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                         x = c2x;
                         y = c2y + stack.shift();
                         p.curveTo(c1x, c1y, c2x, c2y, x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                c1x: blendX,
+                                c1y: blendStack.shift(),
+                                c2x: blendStack.shift(),
+                                c2y: blendStack.shift(),
+                                x: blendX,
+                                y: blendStack.shift(),
+                            };
+                        }
                     }
 
                     break;
                 case 27: // hhcurveto
                     if (stack.length & 1) {
                         y += stack.shift();
+                        if(blendStack.length) {
+                            blendY = blendStack.shift();
+                        }
                     }
 
                     while (stack.length > 0) {
@@ -1055,18 +1293,31 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                         x = c2x + stack.shift();
                         y = c2y;
                         p.curveTo(c1x, c1y, c2x, c2y, x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                c1x: blendStack.shift(),
+                                c1y: blendY,
+                                c2x: blendStack.shift(),
+                                c2y: blendStack.shift(),
+                                x: blendStack.shift(),
+                                y: blendY,
+                            };
+                        }
                     }
 
                     break;
                 case 28: // shortint
+                    console.log('shortint')
                     b1 = code[i];
                     b2 = code[i + 1];
                     stack.push(((b1 << 24) | (b2 << 16)) >> 16);
                     i += 2;
                     break;
                 case 29: // callgsubr
+                    console.log('callgsubr');
                     codeIndex = stack.pop() + font.gsubrsBias;
                     subrCode = font.gsubrs[codeIndex];
+                    console.log({gsubrBias: font.gsubrsBias, codeIndex, subrCode});
                     if (subrCode) {
                         parse(subrCode);
                     }
@@ -1081,6 +1332,16 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                         x = c2x + stack.shift();
                         y = c2y + (stack.length === 1 ? stack.shift() : 0);
                         p.curveTo(c1x, c1y, c2x, c2y, x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                c1x: blendX,
+                                c1y: blendStack.shift(),
+                                c2x: blendStack.shift(),
+                                c2y: blendStack.shift(),
+                                x: blendX,
+                                y: (blendStack.length === 1 ? blendStack.shift() : 0),
+                            };
+                        }
                         if (stack.length === 0) {
                             break;
                         }
@@ -1092,6 +1353,16 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                         y = c2y + stack.shift();
                         x = c2x + (stack.length === 1 ? stack.shift() : 0);
                         p.curveTo(c1x, c1y, c2x, c2y, x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                c1x: blendStack.shift(),
+                                c1y: blendY,
+                                c2x: blendStack.shift(),
+                                c2y: blendStack.shift(),
+                                y: blendStack.shift(),
+                                x: (blendStack.length === 1 ? blendStack.shift() : 0),
+                            };
+                        }
                     }
 
                     break;
@@ -1104,6 +1375,16 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                         y = c2y + stack.shift();
                         x = c2x + (stack.length === 1 ? stack.shift() : 0);
                         p.curveTo(c1x, c1y, c2x, c2y, x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                c1x: blendStack.shift(),
+                                c1y: blendY,
+                                c2x: blendStack.shift(),
+                                c2y: blendStack.shift(),
+                                y: blendStack.shift(),
+                                x: blendStack.shift(),
+                            };
+                        }
                         if (stack.length === 0) {
                             break;
                         }
@@ -1115,12 +1396,23 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                         x = c2x + stack.shift();
                         y = c2y + (stack.length === 1 ? stack.shift() : 0);
                         p.curveTo(c1x, c1y, c2x, c2y, x, y);
+                        if(blendStack.length) {
+                            p.commands[p.commands.length - 1].deltas = {
+                                c1x: blendX,
+                                c1y: blendStack.shift(),
+                                c2x: blendStack.shift(),
+                                c2y: blendStack.shift(),
+                                x: blendStack.shift(),
+                                y: blendStack.shift(),
+                            };
+                        }
                     }
 
                     break;
                 default:
                     if (v < 32) {
                         console.log('Glyph ' + glyph.index + ': unknown operator ' + v);
+                        break;
                     } else if (v < 247) {
                         stack.push(v - 139);
                     } else if (v < 251) {
@@ -1139,21 +1431,29 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                         i += 4;
                         stack.push(((b1 << 24) | (b2 << 16) | (b3 << 8) | b4) / 65536);
                     }
+                    console.log('default push: ', stack[stack.length - 1]);
             }
+            blendStack.length = stack.length;            
         }
     }
+
+    console.log(code);
 
     parse(code);
 
     if(font.variation && coords) {
-        // round the point values:  we can't do that directly in the blend operator,
+        // round the point values: we can't do that directly in the blend operator,
         // because that might run multiple times and rounding errors might accumulate
         p.commands = p.commands.map(c => {
             const keys = Object.keys(c);
             for(let i = 0; i < keys.length; i++) {
                 const key = keys[i];
-                if(key === 'type') continue;
+                if(key[0] !== 'x' && key[0] !== 'y') continue;
                 c[key] = Math.round(c[key]);
+            }
+            // clean up empty delta sets
+            if(c.deltas && !Object.values(c.deltas).some(v => v !== null && v !== undefined)) {
+                delete c.deltas;
             }
             return c;
         });
@@ -1384,12 +1684,16 @@ function encodeString(s, strings) {
     return sid;
 }
 
-function makeHeader() {
+function makeHeader(versionMajor) {
+    // @TODO: if we have gvar data, we'll need to use the CFF2 format
     return new table.Record('Header', [
-        {name: 'major', type: 'Card8', value: 1},
+        {name: 'major', type: 'Card8', value: versionMajor},
         {name: 'minor', type: 'Card8', value: 0},
-        {name: 'hdrSize', type: 'Card8', value: 4},
-        {name: 'major', type: 'Card8', value: 1}
+        {name: 'hdrSize', type: 'Card8', value: versionMajor > 1 ? 5 : 4},
+        versionMajor > 1 ?
+            {name: 'topDictLength', type: 'USHORT', value: 1}
+            :
+            {name: 'offSize', type: 'Card8', value: 1}
     ]);
 }
 
@@ -1452,10 +1756,10 @@ function makeStringIndex(strings) {
     return t;
 }
 
-function makeGlobalSubrIndex() {
+function makeGlobalSubrIndex(version) {
     // Currently we don't use subroutines.
     return new table.Record('Global Subr INDEX', [
-        {name: 'subrs', type: 'INDEX', value: []}
+        {name: 'subrs', type: version > 1 ? 'INDEX32' : 'INDEX', value: []}
     ]);
 }
 
@@ -1473,13 +1777,16 @@ function makeCharsets(glyphNames, strings) {
 }
 
 function glyphToOps(glyph, version) {
+    // @TODO: write existing blend data if we already have a CFF2 font
+    // @TODO: if we have a gvar table, we'll need to convert its data to CFF2 blend data
     const ops = [];
     const path = glyph.path;
     if ( version < 2 ) {
         ops.push({name: 'width', type: 'NUMBER', value: glyph.advanceWidth});
     }
     let x = 0;
-    let y = 0;
+    let y = 0;x;
+
     for (let i = 0; i < path.commands.length; i += 1) {
         let dx;
         let dy;
@@ -1505,8 +1812,29 @@ function glyphToOps(glyph, version) {
         if (cmd.type === 'M') {
             dx = Math.round(cmd.x - x);
             dy = Math.round(cmd.y - y);
+            
             ops.push({name: 'dx', type: 'NUMBER', value: dx});
             ops.push({name: 'dy', type: 'NUMBER', value: dy});
+            if(version > 1 && cmd.deltas) {
+                const deltas = cmd.deltas;
+                let setCount = 0;
+                if(deltas.x) {
+                    setCount++;
+                    // @TODO: check that delta count equals axis count in fvar
+                    for(let n=0; n < deltas.x[1].length; n++) {
+                        ops.push({name: 'blendX', type: 'NUMBER', value: deltas.x[1][n]});
+                    }
+                }
+                if(deltas.y) {
+                    setCount++;
+                    // ops.push({name: 'blendY', type: 'NUMBER', value: deltas.y[0]});
+                    for(let n=0; n < deltas.y[1].length; n++) {
+                        ops.push({name: 'blendX', type: 'NUMBER', value: deltas.y[1][n]});
+                    }
+                }
+                ops.push({name: 'blendX', type: 'NUMBER', value: setCount});
+                ops.push({name: 'blend', type: 'OP', value: 16});
+            }
             ops.push({name: 'rmoveto', type: 'OP', value: 21});
             x = Math.round(cmd.x);
             y = Math.round(cmd.y);
@@ -1547,7 +1875,7 @@ function glyphToOps(glyph, version) {
 
 function makeCharStringsIndex(glyphs, version) {
     const t = new table.Record('CharStrings INDEX', [
-        {name: 'charStrings', type: 'INDEX', value: []}
+        {name: 'charStrings', type: version > 1 ? 'INDEX32' : 'INDEX', value: []}
     ]);
 
     for (let i = 0; i < glyphs.length; i += 1) {
@@ -1567,12 +1895,10 @@ function makePrivateDict(attrs, strings, version) {
     return t;
 }
 
-function makeCFFTable(glyphs, options) {
-    // @TODO: make it configurable to use CFF or CFF2 for output
-    // right now, CFF2 fonts can be parsed, but will be saved as CFF
-    const cffVersion = 1;
+function makeCFFTable(glyphs, options, version) {
+    const cffVersion = version || 1;
 
-    const t = new table.Table('CFF ', [
+    const tableFields = cffVersion < 2 ? [
         {name: 'header', type: 'RECORD'},
         {name: 'nameIndex', type: 'RECORD'},
         {name: 'topDictIndex', type: 'RECORD'},
@@ -1581,13 +1907,20 @@ function makeCFFTable(glyphs, options) {
         {name: 'charsets', type: 'RECORD'},
         {name: 'charStringsIndex', type: 'RECORD'},
         {name: 'privateDict', type: 'RECORD'}
-    ]);
+        ] : [
+        {name: 'header', type: 'RECORD'},
+        {name: 'topDict', type: 'RECORD'},
+        {name: 'globalSubrIndex', type: 'RECORD'},
+        ];
+
+
+    const t = new table.Table(cffVersion > 1 ? 'CFF2' : 'CFF ', tableFields);
 
     const fontScale = 1 / options.unitsPerEm;
     // We use non-zero values for the offsets so that the DICT encodes them.
     // This is important because the size of the Top DICT plays a role in offset calculation,
     // and the size shouldn't change after we've written correct offsets.
-    const attrs = {
+    const attrs = cffVersion < 2 ? {
         version: options.version,
         fullName: options.fullName,
         familyName: options.familyName,
@@ -1598,6 +1931,9 @@ function makeCFFTable(glyphs, options) {
         encoding: 0,
         charStrings: 999,
         private: [0, 999]
+    } : {
+        fdArray: 207, // dummy value which will be set to the correct offset 
+        charStrings: 56
     };
 
     const topDictOptions = options && options.topDict || {};
@@ -1610,43 +1946,81 @@ function makeCFFTable(glyphs, options) {
     const privateAttrs = {};
 
     const glyphNames = [];
-    let glyph;
-
-    // Skip first glyph (.notdef)
-    for (let i = 1; i < glyphs.length; i += 1) {
-        glyph = glyphs.get(i);
-        glyphNames.push(glyph.name);
+    if(cffVersion < 2) {
+        let glyph;
+    
+        // Skip first glyph (.notdef)
+        for (let i = 1; i < glyphs.length; i += 1) {
+            glyph = glyphs.get(i);
+            glyphNames.push(glyph.name);
+        }
     }
 
     const strings = [];
 
-    t.header = makeHeader();
-    t.nameIndex = makeNameIndex([options.postScriptName]);
-    let topDict = makeTopDict(attrs, strings);
-    t.topDictIndex = makeTopDictIndex(topDict);
-    t.globalSubrIndex = makeGlobalSubrIndex();
-    t.charsets = makeCharsets(glyphNames, strings);
-    t.charStringsIndex = makeCharStringsIndex(glyphs, cffVersion);
-    t.privateDict = makePrivateDict(privateAttrs, strings);
+    t.header = makeHeader(cffVersion);
+    if(cffVersion < 2) {
+        t.nameIndex = makeNameIndex([options.postScriptName]);
+    } else {
+        const font = glyphs.font;
+        if(font.tables.cff2._vstore) {
+            t.vstore = 16;
+        }
+    }
+    let topDict = makeTopDict(attrs, strings, cffVersion);
+    if(cffVersion < 2) {
+        t.topDictIndex = makeTopDictIndex(topDict);
+    } else {
+        t.topDict = topDict;
+    }
+    t.globalSubrIndex = makeGlobalSubrIndex(cffVersion);
+    if(cffVersion < 2) {
+        t.charsets = makeCharsets(glyphNames, strings);
+        t.charStringsIndex = makeCharStringsIndex(glyphs, cffVersion);
+        t.privateDict = makePrivateDict(privateAttrs, strings);
 
-    // Needs to come at the end, to encode all custom strings used in the font.
-    t.stringIndex = makeStringIndex(strings);
+        // Needs to come at the end, to encode all custom strings used in the font.
+        t.stringIndex = makeStringIndex(strings);
+    }    
 
-    const startOffset = t.header.sizeOf() +
-        t.nameIndex.sizeOf() +
-        t.topDictIndex.sizeOf() +
-        t.stringIndex.sizeOf() +
-        t.globalSubrIndex.sizeOf();
-    attrs.charset = startOffset;
+    if(cffVersion < 2) {
+        const startOffset = t.header.sizeOf() +
+            (cffVersion < 2 ?
+                t.nameIndex.sizeOf() +
+                t.topDictIndex.sizeOf() +
+                t.stringIndex.sizeOf()
+            : 0) +
+            t.globalSubrIndex.sizeOf();
+            
+        attrs.charset = startOffset;
 
-    // We use the CFF standard encoding; proper encoding will be handled in cmap.
-    attrs.encoding = 0;
-    attrs.charStrings = attrs.charset + t.charsets.sizeOf();
-    attrs.private[1] = attrs.charStrings + t.charStringsIndex.sizeOf();
+        // We use the CFF standard encoding; proper encoding will be handled in cmap.
+        attrs.encoding = 0;
+        attrs.charStrings = attrs.charset + t.charsets.sizeOf();
+        attrs.private[1] = attrs.charStrings + t.charStringsIndex.sizeOf();
 
-    // Recreate the Top DICT INDEX with the correct offsets.
-    topDict = makeTopDict(attrs, strings);
-    t.topDictIndex = makeTopDictIndex(topDict);
+        // Recreate the Top DICT INDEX with the correct offsets.
+        topDict = makeTopDict(attrs, strings);
+        t.topDictIndex = makeTopDictIndex(topDict);
+    }
+    
+    console.log(t.topDict)
+    t.header.topDictLength = t.header.fields[3].value = topDict.sizeOf();
+
+    if(cffVersion > 1) {
+        // {name: 'VariationStore', type: 'RECORD'}
+        // t.VariationStore =
+        // {name: 'FDSelect', type: 'RECORD'}
+        // t.FDSelect =
+        // {name: 'FontDICTIndex', type: 'RECORD'}
+        // t.FontDICTIndex =
+        // {name: 'fdArray', type: 'RECORD'}
+        // t.fdArray =
+        // {name: 'privateDict', type: 'RECORD'}
+        // t.privateDict =
+    }
+
+    console.log(t);
 
     return t;
 }

@@ -544,6 +544,13 @@ Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
  */
 Font.prototype.getEnglishName = function(name) {
     const translations = (this.names.unicode || this.names.macintosh || this.names.windows)[name];
+    if(!translations) {
+        for(let platform of ['unicode', 'macintosh', 'windows']) {
+            if(this.names[platform] && this.names[platform][name]) {
+                return this.names[platform][name].en;
+            }
+        }
+    }
     if (translations) {
         return translations.en;
     }

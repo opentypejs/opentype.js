@@ -723,9 +723,10 @@ encode.VARDELTAS = function(deltas) {
 // The values should be objects containing name / type / value.
 /**
  * @param {Array} l
+ * @param {Function} countEncoder - encoder for the array count, defaults to encode.Card16
  * @returns {Array}
  */
-encode.INDEX = function(l) {
+encode.INDEX = function(l, countEncoder = encode.Card16) {
     //var offset, offsets, offsetEncoder, encodedOffsets, encodedOffset, data,
     //    i, v;
     // Because we have to know which data type to use to encode the offsets,
@@ -753,7 +754,7 @@ encode.INDEX = function(l) {
         Array.prototype.push.apply(encodedOffsets, encodedOffset);
     }
 
-    return Array.prototype.concat(encode.Card16(l.length),
+    return Array.prototype.concat(countEncoder(l.length),
         encode.OffSize(offSize),
         encodedOffsets,
         data);
@@ -765,6 +766,22 @@ encode.INDEX = function(l) {
  */
 sizeOf.INDEX = function(v) {
     return encode.INDEX(v).length;
+};
+
+/**
+ * @param {Array} l
+ * @returns {Array}
+ */
+encode.INDEX32 = function(l) {
+    return encode.INDEX(l, encode.ULONG);
+};
+
+/**
+ * @param {Array}
+ * @returns {number}
+ */
+sizeOf.INDEX32 = function(v) {
+    return encode.INDEX(v, encode.ULONG).length;
 };
 
 /**
