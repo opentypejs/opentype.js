@@ -623,7 +623,7 @@ function applyPaintType(font, path) {
 // The encoding is described in the Type 2 Charstring Format
 // https://www.microsoft.com/typography/OTSPEC/charstr2.htm
 function parseCFFCharstring(font, glyph, code, version, coords) {
-    if(glyph.index !==2) return new Path();
+    if(globalThis.window && glyph.index !==2) return new Path();
     let c1x;
     let c1y;
     let c2x;
@@ -1759,7 +1759,7 @@ function makeStringIndex(strings) {
 
 function makeGlobalSubrIndex(version) {
     // Currently we don't use subroutines.
-    console.log(version > 1 ? 'INDEX32' : 'INDEX')
+    // @TODO: write subroutines from existing fonts?
     return new table.Record('Global Subr INDEX', [
         {name: 'subrs', type: version > 1 ? 'INDEX32' : 'INDEX', value: []}
     ]);
@@ -1981,16 +1981,14 @@ function makeCFFTable(glyphs, options, version) {
         t.topDict = topDict;
     }
     t.globalSubrIndex = makeGlobalSubrIndex(cffVersion);
+    t.charStringsIndex = makeCharStringsIndex(glyphs, cffVersion);
     if(cffVersion < 2) {
         t.charsets = makeCharsets(glyphNames, strings);
-        t.charStringsIndex = makeCharStringsIndex(glyphs, cffVersion);
         t.privateDict = makePrivateDict(privateAttrs, strings);
 
         // Needs to come at the end, to encode all custom strings used in the font.
         t.stringIndex = makeStringIndex(strings);
-    }    
-
-    if(cffVersion < 2) {
+        
         const startOffset = t.header.sizeOf() +
             (cffVersion < 2 ?
                 t.nameIndex.sizeOf() +
@@ -2017,8 +2015,10 @@ function makeCFFTable(glyphs, options, version) {
         if(vstore) {
             t.fields.push({name: 'VariationStore_Data', type: 'USHORT'});
             t.fields.push({name: 'VariationStore', type: 'RECORD'});
-            t.VariationStore = make.ItemVariationStore(vstore.itemVariationStore);
+            t.VariationStore = make.ItemVariationStore(vstore.itemVariationStore, font.tables.fvar);
             t.VariationStore_Data = t.VariationStore.sizeOf();
+
+            t.fields.push({name: 'charStringsIndex', type: 'RECORD'});
         }
         
         // {name: 'FDSelect', type: 'RECORD'}

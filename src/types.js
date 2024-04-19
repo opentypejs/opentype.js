@@ -834,20 +834,6 @@ encode.OPERATOR = function(v) {
     }
 };
 
-function hex(bytes) {
-    const values = [];
-    for (let i = 0; i < bytes.length; i++) {
-        const b = bytes[i];
-        if (b < 16) {
-            values.push('0' + b.toString(16));
-        } else {
-            values.push(b.toString(16));
-        }
-    }
-
-    return values.join(' ').toUpperCase();
-}
-
 /**
  * @param {Array} v
  * @param {string}
@@ -950,6 +936,13 @@ sizeOf.CHARSTRING = function(ops) {
  * @returns {Array}
  */
 encode.OBJECT = function(v) {
+    if(Array.isArray(v)) {
+        const encoded = [];
+        for(let o of v) {
+            encoded.push(sizeOf.OBJECT(o));
+        }
+        return encoded;
+    }
     const encodingFunction = encode[v.type];
     check.argument(encodingFunction !== undefined, 'No encoding function for type ' + v.type);
     return encodingFunction(v.value);
@@ -960,6 +953,13 @@ encode.OBJECT = function(v) {
  * @returns {number}
  */
 sizeOf.OBJECT = function(v) {
+    if(Array.isArray(v)) {
+        let size = 0;
+        for(let o of v) {
+            size += sizeOf.OBJECT(o);
+        }
+        return size;
+    }
     const sizeOfFunction = sizeOf[v.type];
     check.argument(sizeOfFunction !== undefined, 'No sizeOf function for type ' + v.type);
     return sizeOfFunction(v.value);
