@@ -15,6 +15,7 @@ import {
     cffExpertSubsetStrings } from '../encoding.js';
 import glyphset from '../glyphset.js';
 import parse from '../parse.js';
+import * as make from '../make.js';
 import Path from '../path.js';
 import table from '../table.js';
 
@@ -377,12 +378,12 @@ const TOP_DICT_META = [
 ];
 
 const TOP_DICT_META_CFF2 = [
-    {name: 'fdArray', op: 1236, type: 'offset'},
-    {name: 'charStrings', op: 17, type: 'offset'},
+    {name: 'fdArray', op: 1236, type: 'varoffset', variable: true},
+    {name: 'charStrings', op: 17, type: 'varoffset', variable: true},
     // only if variation data is needed:
-    {name: 'vstore', op: 24, type: 'offset'},
+    {name: 'vstore', op: 24, type: 'varoffset', variable: true},
     // only if there is more than one Font Dict
-    {name: 'fdSelect', op: 1237, type: 'offset'},
+    {name: 'fdSelect', op: 1237, type: 'varoffset', variable: true},
     // only if unitsPerEm in head table !== 1000
     {
         name: 'fontMatrix',
@@ -1758,6 +1759,7 @@ function makeStringIndex(strings) {
 
 function makeGlobalSubrIndex(version) {
     // Currently we don't use subroutines.
+    console.log(version > 1 ? 'INDEX32' : 'INDEX')
     return new table.Record('Global Subr INDEX', [
         {name: 'subrs', type: version > 1 ? 'INDEX32' : 'INDEX', value: []}
     ]);
@@ -1896,7 +1898,10 @@ function makePrivateDict(attrs, strings, version) {
 }
 
 function makeCFFTable(glyphs, options, version) {
+    const font = glyphs.font;
     const cffVersion = version || 1;
+    console.log(font);
+    const cffTable = font.tables[cffVersion > 1 ? 'cff2' : 'cff'];
 
     const tableFields = cffVersion < 2 ? [
         {name: 'header', type: 'RECORD'},
@@ -1932,8 +1937,9 @@ function makeCFFTable(glyphs, options, version) {
         charStrings: 999,
         private: [0, 999]
     } : {
-        fdArray: 207, // dummy value which will be set to the correct offset 
-        charStrings: 56
+        // @TODO: don't use dummy values
+        fdArray: 68, // dummy value which will be set to the correct offset 
+        charStrings: 56,
     };
 
     const topDictOptions = options && options.topDict || {};
@@ -1957,14 +1963,15 @@ function makeCFFTable(glyphs, options, version) {
     }
 
     const strings = [];
+    const vstore = cffTable.topDict._vstore;
 
     t.header = makeHeader(cffVersion);
     if(cffVersion < 2) {
         t.nameIndex = makeNameIndex([options.postScriptName]);
     } else {
-        const font = glyphs.font;
-        if(font.tables.cff2._vstore) {
-            t.vstore = 16;
+        if(vstore) {
+            // @TODO: don't use dummy value
+            attrs.vstore = 16;
         }
     }
     let topDict = makeTopDict(attrs, strings, cffVersion);
@@ -2004,12 +2011,16 @@ function makeCFFTable(glyphs, options, version) {
         t.topDictIndex = makeTopDictIndex(topDict);
     }
     
-    console.log(t.topDict)
     t.header.topDictLength = t.header.fields[3].value = topDict.sizeOf();
 
     if(cffVersion > 1) {
-        // {name: 'VariationStore', type: 'RECORD'}
-        // t.VariationStore =
+        if(vstore) {
+            t.fields.push({name: 'VariationStore_Data', type: 'USHORT'});
+            t.fields.push({name: 'VariationStore', type: 'RECORD'});
+            t.VariationStore = make.ItemVariationStore(vstore.itemVariationStore);
+            t.VariationStore_Data = t.VariationStore.sizeOf();
+        }
+        
         // {name: 'FDSelect', type: 'RECORD'}
         // t.FDSelect =
         // {name: 'FontDICTIndex', type: 'RECORD'}
@@ -2019,8 +2030,6 @@ function makeCFFTable(glyphs, options, version) {
         // {name: 'privateDict', type: 'RECORD'}
         // t.privateDict =
     }
-
-    console.log(t);
 
     return t;
 }

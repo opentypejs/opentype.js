@@ -21,7 +21,8 @@ describe('tables/cff.js', function () {
     const cff2ExampleData =
         '01 02 03 04 ' + // just some dummy padding to test offsets
         // https://learn.microsoft.com/en-us/typography/opentype/spec/cff2#appendix-a-example-cff2-font
-        '02 00 05 00 07 CF 0C 24 C3 11 9B 18 00 00 00 00 ' +
+        // but with Top DICT Data order changed due to JS object key order
+        '02 00 05 00 07 C3 11 9B 18 CF 0C 24 00 00 00 00 ' +
         '00 26 00 01 00 00 00 0C 00 01 00 00 00 1C 00 01 ' +
         '00 02 C0 00 E0 00 00 00 C0 00 C0 00 E0 00 00 00 ' +
         '00 00 00 02 00 00 00 01 00 00 00 02 01 01 03 05 ' +
@@ -56,7 +57,7 @@ describe('tables/cff.js', function () {
         path.quadraticCurveTo(1, 3, 2, 0);
         const bumpsGlyph = new Glyph({ name: 'bumps', path, advanceWidth: 16 });
         const nodefGlyph = new Glyph({ name: 'nodef', path: new Path(), advanceWidth: 16 });
-        const glyphSetFont = { unitsPerEm: 8 };
+        const glyphSetFont = { unitsPerEm: 8, tables: { cff: { topDict: {} } } };
         const glyphs = new glyphset.GlyphSet(glyphSetFont, [nodefGlyph, bumpsGlyph]);
 
         assert.deepEqual(cffExampleData, hex(cff.make(glyphs, options).encode()));
@@ -159,7 +160,7 @@ describe('tables/cff.js', function () {
                     topDict: {
                         _vstore: {
                             itemVariationStore: {
-                                
+                                itemVariationSubtables: []
                             }
                         }
                     }

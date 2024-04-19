@@ -723,10 +723,10 @@ encode.VARDELTAS = function(deltas) {
 // The values should be objects containing name / type / value.
 /**
  * @param {Array} l
- * @param {Function} countEncoder - encoder for the array count, defaults to encode.Card16
+ * @param {Function} countEncoder - encoder for the array count, defaults to 'Card16'
  * @returns {Array}
  */
-encode.INDEX = function(l, countEncoder = encode.Card16) {
+encode.INDEX = function(l, countEncoder = 'Card16') {
     //var offset, offsets, offsetEncoder, encodedOffsets, encodedOffset, data,
     //    i, v;
     // Because we have to know which data type to use to encode the offsets,
@@ -743,7 +743,7 @@ encode.INDEX = function(l, countEncoder = encode.Card16) {
     }
 
     if (data.length === 0) {
-        return [0, 0];
+        return Array(sizeOf[countEncoder]()).fill(0);
     }
 
     const encodedOffsets = [];
@@ -754,7 +754,7 @@ encode.INDEX = function(l, countEncoder = encode.Card16) {
         Array.prototype.push.apply(encodedOffsets, encodedOffset);
     }
 
-    return Array.prototype.concat(countEncoder(l.length),
+    return Array.prototype.concat(encode[countEncoder](l.length),
         encode.OffSize(offSize),
         encodedOffsets,
         data);
@@ -773,7 +773,7 @@ sizeOf.INDEX = function(v) {
  * @returns {Array}
  */
 encode.INDEX32 = function(l) {
-    return encode.INDEX(l, encode.ULONG);
+    return encode.INDEX(l, 'ULONG');
 };
 
 /**
@@ -781,7 +781,7 @@ encode.INDEX32 = function(l) {
  * @returns {number}
  */
 sizeOf.INDEX32 = function(v) {
-    return encode.INDEX(v, encode.ULONG).length;
+    return encode.INDEX(v, 'ULONG').length;
 };
 
 /**
@@ -834,6 +834,20 @@ encode.OPERATOR = function(v) {
     }
 };
 
+function hex(bytes) {
+    const values = [];
+    for (let i = 0; i < bytes.length; i++) {
+        const b = bytes[i];
+        if (b < 16) {
+            values.push('0' + b.toString(16));
+        } else {
+            values.push(b.toString(16));
+        }
+    }
+
+    return values.join(' ').toUpperCase();
+}
+
 /**
  * @param {Array} v
  * @param {string}
@@ -858,11 +872,12 @@ encode.OPERAND = function(v, type) {
         } else if (type === 'offset') {
             // We make it easy for ourselves and always encode offsets as
             // 4 bytes. This makes offset calculation for the top dict easier.
+            // for CFF2 an in order to save space, we use the 'varoffset' type
             const enc1 = encode.NUMBER32(v);
             for (let j = 0; j < enc1.length; j++) {
                 d.push(enc1[j]);
             }
-        } else if (type === 'number') {
+        } else if (type === 'number' || type === 'varoffset') {
             const enc1 = encode.NUMBER(v);
             for (let j = 0; j < enc1.length; j++) {
                 d.push(enc1[j]);
