@@ -363,7 +363,7 @@ Determines and returns the index of the default variation instance. Returns `-1`
 * Returns: Integer representing the default instance index or `-1`.
 
 ###### `Font.variation.getTransform(glyph, coords)`
-Just a shortcut for [`Font.variation.process.getTransform()`](#fontvariationprocessgettransform).
+Just a shortcut for [`Font.variation.process.getTransform()`](#fontvariationprocessgettransformglyph-coords).
 
 ###### `Font.variation.getInstanceIndex(coordinates)`
 Finds the index of the variation instance that matches the provided coordinates, or `-1` if none match.
