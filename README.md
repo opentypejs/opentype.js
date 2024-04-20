@@ -41,7 +41,7 @@ Select one of the following sources in the next example:
 
 <!-- using module declaration (need full path) -->
 <script type=module>
-import { parse } from "https://unpkg.com/opentype.js/dist/opentype.module.js";
+import { parse } from "https://unpkg.com/opentype.js/dist/opentype.mjs";
 parse(...);
 </script>
 ```
