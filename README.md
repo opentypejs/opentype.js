@@ -362,6 +362,9 @@ Returns the default coordinates for the font's variation axes.
 Determines and returns the index of the default variation instance. Returns `-1` if it cannot be determined.
 * Returns: Integer representing the default instance index or `-1`.
 
+###### `Font.variation.getTransform(glyph, coords)`
+Just a shortcut for [`Font.variation.process.getTransform()`](#fontvariationprocessgettransform).
+
 ###### `Font.variation.getInstanceIndex(coordinates)`
 Finds the index of the variation instance that matches the provided coordinates, or `-1` if none match.
 * `coordinates`: Object with axis tags as keys and variation values as corresponding values.
@@ -384,8 +387,9 @@ Gets the current variation settings from the font's default render options.
 ##### The `Font.variation.process` object (`VariationProcessor`)
 The `VariationProcessor` is a component of the `VariationManager`, used mainly internally for computing and applying variations to the glyphs in a variable font. It handles transformations and adjustments based on the font's variable axes and instances.
 
-###### `Font.variation.process.getNormalizedCoords()`
+###### `Font.variation.process.getNormalizedCoords(coords)`
 Returns normalized coordinates for the variation axes based on the current settings.
+* `coords`: The coordinates object to normalize (or the variation coords in the font's `defaultRenderOptions` by default)
 * Returns: Normalized coordinates as an object mapping axis tags to normalized values.
 
 ###### `Font.variation.process.interpolatePoints(points, deltas, scalar)`
@@ -414,9 +418,11 @@ Transforms components of a glyph using a specified transformation matrix.
 * `transformation`: Transformation matrix to apply.
 * Returns: Transformed components.
 
-###### `Font.variation.process.getTransform()`
-Computes the transformation matrix based on current variation settings.
-* Returns: Transformation matrix for the current variation settings.
+###### `Font.variation.process.getTransform(glyph, coords)`
+Retrieves a transformed copy of a glyph based on the provided variation coordinates, or the glyph itself if no variation was applied
+* `glyph`: Glyph or index of glyph to transform.
+* `coords`: Variation coords object (or the variation coords in the font's `defaultRenderOptions` by default)
+* Returns: `opentype.Glyph`
 
 ###### `Font.variation.process.getVariableAdjustment(adjustment)`
 Calculates the variable adjustment for a given adjustment parameter.
