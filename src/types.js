@@ -858,7 +858,7 @@ encode.OPERAND = function(v, type) {
         } else if (type === 'offset') {
             // We make it easy for ourselves and always encode offsets as
             // 4 bytes. This makes offset calculation for the top dict easier.
-            // for CFF2 an in order to save space, we use the 'varoffset' type
+            // For CFF2 an in order to save space, we use the 'varoffset' type
             const enc1 = encode.NUMBER32(v);
             for (let j = 0; j < enc1.length; j++) {
                 d.push(enc1[j]);

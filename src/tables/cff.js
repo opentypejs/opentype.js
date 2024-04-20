@@ -422,7 +422,7 @@ const PRIVATE_DICT_META_CFF2 = [
 
 // https://learn.microsoft.com/en-us/typography/opentype/spec/cff2#table-10-font-dict-operator-entries
 const FONT_DICT_META = [
-    {name: 'private', op: 18, type: ['number', 'offset'], value: [0, 0]}
+    {name: 'private', op: 18, type: ['number', 'varoffset'], value: [0, 0]}
 ];
 
 // Parse the CFF top dictionary. A CFF table can contain multiple fonts, each with their own top dictionary.
@@ -659,6 +659,8 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
             if(glyph.blendDeltas && glyph.blendDeltas.length) {
                 glyph.blendDeltas = [];
             }
+            // @TODO: instead of re-parsing the path each time (which will not take into account any possible changes to the path),
+            // apply the stored (and possible modified) blend data
             return parseCFFCharstring(font, glyph, code, version, variationCoords);
         };
     }
@@ -1806,6 +1808,7 @@ function glyphToOps(glyph, version, font) {
     // candidates for sub routines and extracts them from the glyphs, replacing the actual commands
     if(glyph.subrs && glyph.gsubrs && glyph.subrs.length === glyph.gsubrs.length) {
         const cffTable = font.tables[version < 2 ? 'cff' : 'cff2'];
+        if(!cffTable) return;
         const fdIndex = cffTable.topDict._fdSelect ? cffTable.topDict._fdSelect[glyph.index] : 0;
         const fdDict = cffTable.topDict._fdArray[fdIndex];
         for(let i = 0; i < glyph.subrs.length; i++) {
@@ -1935,18 +1938,36 @@ function makeCharStringsIndex(glyphs, version) {
     return t;
 }
 
-function makePrivateDict(attrs, strings, version) {
+function makeFontDictIndex(fontDicts) {
+    let dicts = [];
+    for(let i = 0; i < fontDicts.length; i++) {
+        dicts.push({name: `fontDict_${i}`, type: 'TABLE', value: fontDicts[i]});
+    }
+    const t = new table.Record('Font DICT INDEX', [
+        {name: 'fontDicts', type: 'INDEX32', value: fontDicts}
+    ]);
+    return t;
+}
+
+function makeFontDict(attrs) {
+    const t = new table.Record('Font DICT', [
+        {name: 'dict', type: 'DICT', value: {}}
+    ]);
+    t.dict = makeDict(FONT_DICT_META, attrs);
+    return t;
+}
+
+function makePrivateDict(attrs, strings) {
     const t = new table.Record('Private DICT', [
         {name: 'dict', type: 'DICT', value: {}}
     ]);
-    t.dict = makeDict(version > 1 ? PRIVATE_DICT_META_CFF2 : PRIVATE_DICT_META, attrs, strings);
+    t.dict = makeDict(FONT_DICT_META, attrs, strings);
     return t;
 }
 
 function makeCFFTable(glyphs, options, version) {
     const font = glyphs.font;
     const cffVersion = version || 1;
-    console.log(font);
     const cffTable = font.tables[cffVersion > 1 ? 'cff2' : 'cff'];
 
     const tableFields = cffVersion < 2 ? [
@@ -2009,7 +2030,8 @@ function makeCFFTable(glyphs, options, version) {
     }
 
     const strings = [];
-    const vstore = cffTable.topDict._vstore;
+    const vstore = cffTable && cffTable.topDict._vstore;
+    // @TODO: If we have a gvar table, make a vstore for the output font
 
     t.header = makeHeader(cffVersion);
     if(cffVersion < 2) {
@@ -2067,10 +2089,24 @@ function makeCFFTable(glyphs, options, version) {
             t.fields.push({name: 'charStringsIndex', type: 'RECORD'});
         }
         
+        // @TODO: if there's more than one fontDict
         // {name: 'FDSelect', type: 'RECORD'}
         // t.FDSelect =
-        // {name: 'FontDICTIndex', type: 'RECORD'}
-        // t.FontDICTIndex =
+
+        t.fields.push({name: 'fontDictIndex', type: 'RECORD'});
+        let fontDicts = cffTable && cffTable.topDict._fdArray;
+        if (!fontDicts) {
+            fontDicts = [makeFontDict([0, 0])];
+        } else {
+            fontDicts = fontDicts.map(d => {
+                return makeFontDict([0, 0]);
+            });
+        }
+        t.fontDictIndex = makeFontDictIndex(fontDicts);
+
+        console.log('#########################################')
+        console.log(t.fontDictIndex)
+        
         // {name: 'fdArray', type: 'RECORD'}
         // t.fdArray =
         // {name: 'privateDict', type: 'RECORD'}
