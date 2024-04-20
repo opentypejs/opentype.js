@@ -390,7 +390,7 @@ const TOP_DICT_META_CFF2 = [
         op: 1207,
         type: ['real', 'real', 'real', 'real', 'real', 'real'],
         // 1/unitsPerEm 0 0 1/unitsPerEm 0 0
-        // value: [0.001, 0, 0, 0.001, 0, 0]
+        value: [0.001, 0, 0, 0.001, 0, 0]
     },
 ];
 
@@ -645,6 +645,9 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
     let vsindex = 0;
     let vstore = [];
     let blendVector;
+    const usedOps = [];
+    const glyphSubrs= [];
+    const glyphGSubrs= [];
     
     const cffTable = font.tables.cff2 || font.tables.cff;
     defaultWidthX = cffTable.topDict._defaultWidthX;
@@ -704,7 +707,7 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
         haveWidth = true;
     }
 
-    function parse(code) {
+    function parse(code, fromSubr = false) {
         let b1;
         let b2;
         let b3;
@@ -721,6 +724,7 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
         let i = 0;
         while (i < code.length) {
             let v = code[i];
+            !fromSubr && v < 32 && usedOps.push(v);
             i += 1;
             switch (v) {
                 case 1: // hstem
@@ -838,10 +842,12 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                 case 10: // callsubr
                     console.log('callsubr');
                     codeIndex = stack.pop() + subrsBias;
+                    glyphSubrs.push(codeIndex);
+                    glyphGSubrs.push(null);
                     subrCode = subrs[codeIndex];
                     console.log({subrsBias, codeIndex, subrCode});
                     if (subrCode) {
-                        parse(subrCode);
+                        parse(subrCode, true);
                     }
 
                     break;
@@ -1317,10 +1323,12 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                 case 29: // callgsubr
                     console.log('callgsubr');
                     codeIndex = stack.pop() + font.gsubrsBias;
+                    glyphSubrs.push(null);
+                    glyphGSubrs.push(codeIndex);
                     subrCode = font.gsubrs[codeIndex];
                     console.log({gsubrBias: font.gsubrsBias, codeIndex, subrCode});
                     if (subrCode) {
-                        parse(subrCode);
+                        parse(subrCode, true);
                     }
 
                     break;
@@ -1462,6 +1470,15 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
     
     if (haveWidth) {
         glyph.advanceWidth = width;
+    }
+
+    
+    // glyph only consists of (global) subroutines
+    if(usedOps.filter(o => o === 10 || o === 29).length === glyphSubrs.filter(s => s!==null).length + glyphGSubrs.filter(s => s!==null).length) {
+        glyph.subrs = glyphSubrs;
+        glyph.gsubrs = glyphGSubrs;
+        console.log('#########');
+        console.log(glyph);
     }
 
     return p;
@@ -1778,11 +1795,40 @@ function makeCharsets(glyphNames, strings) {
     return t;
 }
 
-function glyphToOps(glyph, version) {
+function glyphToOps(glyph, version, font) {
     // @TODO: write existing blend data if we already have a CFF2 font
     // @TODO: if we have a gvar table, we'll need to convert its data to CFF2 blend data
     const ops = [];
     const path = glyph.path;
+
+    // @TODO: Right now we only make use of (global) sub routines if the whole glyph is made up of them
+    // and they are already defined on the glyph. In the future we'll need an algorithm that finds
+    // candidates for sub routines and extracts them from the glyphs, replacing the actual commands
+    if(glyph.subrs && glyph.gsubrs && glyph.subrs.length === glyph.gsubrs.length) {
+        const cffTable = font.tables[version < 2 ? 'cff' : 'cff2'];
+        const fdIndex = cffTable.topDict._fdSelect ? cffTable.topDict._fdSelect[glyph.index] : 0;
+        const fdDict = cffTable.topDict._fdArray[fdIndex];
+        for(let i = 0; i < glyph.subrs.length; i++) {
+            let v = glyph.subrs[i];
+            let name = 'subr';
+            let op = 10;
+            if(v === null) {
+                v = glyph.gsubrs[i];
+                name = 'gsubr';
+                op = 29;
+                if (v === null) {
+                    throw Error(`Inconsistend subr/gsubr values on glyph ${glyph.index}`);
+                }
+                v -= font.gsubrsBias;
+            } else {
+                v -= fdDict._subrsBias;
+            }
+            ops.push({name: `${name}Index`, type: 'NUMBER', value: v});
+            ops.push({name, type: 'OP', value: op});
+        }
+        return ops;
+    }
+
     if ( version < 2 ) {
         ops.push({name: 'width', type: 'NUMBER', value: glyph.advanceWidth});
     }
@@ -1882,7 +1928,7 @@ function makeCharStringsIndex(glyphs, version) {
 
     for (let i = 0; i < glyphs.length; i += 1) {
         const glyph = glyphs.get(i);
-        const ops = glyphToOps(glyph, version);
+        const ops = glyphToOps(glyph, version, glyphs.font);
         t.charStrings.push({name: glyph.name, type: 'CHARSTRING', value: ops});
     }
 
