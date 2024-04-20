@@ -3,6 +3,14 @@ import { unhex } from './testutil.js';
 import { Parser } from '../src/parse.js';
 
 describe('parse.js', function() {
+    // interpret hex as signed integer
+    const signed = hex => {
+        const bitLength = hex.toString(16).length * 4;
+        const mask = 1 << (bitLength - 1);
+        const maxUnsigned = (1 << bitLength) - 1;
+        return (hex & mask) ? -(~hex & maxUnsigned) - 1 : hex;
+    };    
+
     describe('parseUShortList', function() {
         it('can parse an empty list', function() {
             const p = new Parser(unhex('0000'), 0);
@@ -240,20 +248,36 @@ describe('parse.js', function() {
 
     describe('parseDeltaSets', function() {
         it('should parse DeltaSets without the LONG_WORDS flag', function() {
-            const data = '0123 4567 891A BCDE FADE C0FF EEEE';
+            const data = '0123 4567 891A BCDE FADE C0FF EE0F DEAD BEEF BADA 55DE CADE';
             const p = new Parser(unhex(data), 0);
-            assert.deepEqual(p.parseDeltaSets(4, 0x0000), [ 0x01, 0x23, 0x45, 0x67 ]);
-            assert.deepEqual(p.parseDeltaSets(3, 0x0001), [ 0x891A, 0xBC, 0xDE ]);
-            assert.deepEqual(p.parseDeltaSets(3, 0x0002), [ 0xFADE, 0xC0FF, 0xEE]);
+            assert.deepEqual(p.parseDeltaSets(4, 0x0000, 2), [
+                [0x01, 0x23], [0x45, 0x67], [0x89, 0x1A], [0xBC, 0xDE]
+            ].map(x => x.map(signed)));
+            assert.deepEqual(p.parseDeltaSets(4, 0x0001, 3), [
+                [0xFADE, 0xC0, 0xFF], [0xEE0F, 0xDE, 0xAD],
+                [0xBEEF, 0xBA, 0xDA], [0x55DE, 0xCA, 0xDE]
+            ].map(x => x.map(signed)));
+            p.relativeOffset = 0;
+            assert.deepEqual(p.parseDeltaSets(4, 0x0002, 4), [
+                [0x0123, 0x4567, 0x89, 0x1A], [0xBCDE, 0xFADE, 0xC0, 0xFF],
+                [0xEE0F, 0xDEAD, 0xBE, 0xEF], [0xBADA, 0x55DE, 0xCA, 0xDE],
+            ].map(x => x.map(signed)));
         });
 
         it('should parse DeltaSets with the LONG_WORDS flag', function() {
-            const data = '0123 4567 891A BCDE FADE C0FF EEEE BA5E';
+            const data = '0123 4567 891A BCDE FADE C0FF EEEE BA5E DEAD BEEF DEFA CE0F BADA 55E5 0011 2233 2211 2233 2211';
             const p = new Parser(unhex(data), 0);
-            assert.deepEqual(p.parseDeltaSets(4, 0x8000), [ 0x0123, 0x4567, 0x891A, 0xBCDE ]);
-            assert.deepEqual(p.parseDeltaSets(3, 0x8001), [ 0xFADEC0FF, 0xEEEE, 0xBA5E ]);
-            p.relativeOffset = 8;
-            assert.deepEqual(p.parseDeltaSets(2, 0x8002), [ 0xFADEC0FF, 0xEEEEBA5E ]);
+            assert.deepEqual(p.parseDeltaSets(4, 0x8000, 2), [
+                [0x0123, 0x4567], [0x891A, 0xBCDE], [0xFADE, 0xC0FF], [0xEEEE, 0xBA5E]
+            ].map(x => x.map(signed)));
+            p.relativeOffset = 0;
+            assert.deepEqual(p.parseDeltaSets(1, 0x8001, 3), [
+                [0x01234567, 0x891A, 0xBCDE ],
+            ].map(x => x.map(signed)));
+            p.relativeOffset = 28;
+            assert.deepEqual(p.parseDeltaSets(1, 0x8002, 3), [
+                [0x00112233, 0x22112233, 0x2211],
+            ].map(x => x.map(signed)));
         });
     });
 

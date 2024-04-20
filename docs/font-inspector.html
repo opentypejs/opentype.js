@@ -4,6 +4,7 @@
 <meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
 <meta charset="utf-8">
 <link rel="stylesheet" href="site.css">
+<script src="site.js"></script>
 
 <div class="header">
     <div class="container">
@@ -102,7 +103,6 @@ import * as opentype from "/dist/opentype.module.js";
 
 var font = null;
 const fontSize = 32;
-const textToRender = 'Grumpy wizards make toxic brew for the evil Queen and Jack.';
 const drawOptions = {
     kerning: true,
     features: [
@@ -141,6 +141,8 @@ function enableHighDPICanvas(canvas) {
 
 function renderText(font) {
     if (!font) return;
+
+    const textToRender = conditionalSampleText(font, 'Grumpy wizards make toxic brew for the evil Queen and Jack.');
 
     var previewCanvas = document.getElementById('preview');
     var previewCtx = previewCanvas.getContext("2d");

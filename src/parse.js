@@ -29,6 +29,13 @@ function getULong(dataView, offset) {
     return dataView.getUint32(offset, false);
 }
 
+// Retrieve a signed 32-bit long from the DataView.
+// The value is stored in big endian.
+function getLong(dataView, offset) {
+    return dataView.getInt32(offset, false);
+}
+
+
 // Retrieve a 32-bit signed fixed-point number (16.16) from the DataView.
 // The value is stored in big endian.
 function getFixed(dataView, offset) {
@@ -106,6 +113,8 @@ const masks = {
     DELTAS_ARE_ZERO: 0x80,
     DELTAS_ARE_WORDS: 0x40,
     DELTA_RUN_COUNT_MASK: 0x3F,
+    INNER_INDEX_BIT_COUNT_MASK: 0x0F,
+    MAP_ENTRY_SIZE_MASK: 0x30,
 };
 
 // A stateful parser that changes the offset whenever a value is retrieved.
@@ -161,6 +170,12 @@ Parser.prototype.parseUInt24 = function() {
 
 Parser.prototype.parseULong = function() {
     const v = getULong(this.data, this.offset + this.relativeOffset);
+    this.relativeOffset += 4;
+    return v;
+};
+
+Parser.prototype.parseLong = function() {
+    const v = getLong(this.data, this.offset + this.relativeOffset);
     this.relativeOffset += 4;
     return v;
 };
@@ -713,24 +728,89 @@ Parser.prototype.parseItemVariationSubtable = function() {
     const itemCount = this.parseUShort();
     const wordDeltaCount = this.parseUShort();
 
+    const regionIndexes = this.parseUShortList();
+    const regionIndexCount = regionIndexes.length;
+    
     const subtable = {
-        regionIndexes: this.parseUShortList(),
-        deltaSets: this.parseDeltaSets(itemCount, wordDeltaCount)
+        regionIndexes,
+        deltaSets: itemCount && regionIndexCount ? this.parseDeltaSets(itemCount, wordDeltaCount, regionIndexCount) : []
     };
 
     return subtable;
 };
 
-Parser.prototype.parseDeltaSets = function(itemCount, wordDeltaCount) {
-    const deltas = [];
+Parser.prototype.parseDeltaSetIndexMap = function() {
+    const format = this.parseByte();
+    const entryFormat = this.parseByte();
+    const map = [];
+    let mapCount = 0;
+    
+    switch(format) {
+        case 0:
+            mapCount = this.parseUShort();
+            break;
+        case 1:
+            mapCount = this.parseULong();
+            break;
+        default:
+            console.error(`unsupported DeltaSetIndexMap format ${format}`);
+    }
+
+    if(!mapCount) return {
+        format,
+        entryFormat
+    };
+    
+    const bitCount = (entryFormat & masks.INNER_INDEX_BIT_COUNT_MASK) + 1;
+    const entrySize = ((entryFormat & masks.MAP_ENTRY_SIZE_MASK) >> 4) + 1;
+
+    for (let n = 0; n < mapCount; n++) {
+        let entry;
+        if (entrySize === 1) {
+            entry = this.parseByte();
+        } else if (entrySize === 2) {
+            entry = this.parseUShort();
+        } else if (entrySize === 3) {
+            entry = this.parseUInt24();
+        } else if (entrySize === 4) {
+            entry = this.getULong();
+        } else {
+            throw new Error(`Invalid entry size of ${entrySize}`);
+        }
+    
+        const outerIndex = entry >> bitCount;
+        const innerIndex = entry & ((1 << bitCount) - 1);
+        map.push({ outerIndex, innerIndex });
+    }
+
+    return {
+        format,
+        entryFormat,
+        map,
+    };
+};
+
+Parser.prototype.parseDeltaSets = function(itemCount, wordDeltaCount, regionIndexCount) {
+    const deltas = Array.from({length: itemCount},()=>[]); // two-dimensional array with empty rows and columns
+
     const longFlag = wordDeltaCount & masks.LONG_WORDS;
     const wordCount = wordDeltaCount & masks.WORD_DELTA_COUNT_MASK;
 
-    const wordParser = (longFlag ? this.parseULong : this.parseUShort).bind(this);
-    const restParser = (longFlag ? this.parseUShort : this.parseByte).bind(this);
-    for( let i = 0; i < itemCount; i++ ) {
-        const deltaParser = i < wordCount ? wordParser : restParser;
-        deltas.push(deltaParser());
+    if(wordCount > regionIndexCount) {
+        throw Error('wordCount must be less than or equal to regionIndexCount');
+    }
+    
+    const wordParser = (longFlag ? this.parseLong : this.parseShort).bind(this);
+    const restParser = (longFlag ? this.parseShort : this.parseChar).bind(this);
+    
+    for (let i = 0; i < itemCount; i++) {
+        for (let j = 0; j < regionIndexCount; j++) {
+            if (j < wordCount) {
+                deltas[i].push(wordParser());
+            } else {
+                deltas[i].push(restParser());
+            }
+        }
     }
 
     return deltas;
@@ -799,7 +879,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
         this.relativeOffset = tableOffset + dataOffset;
     }    
 
-    if (flavor === 'gvar' && hasSharedPoints) {
+    if (hasSharedPoints) {
         sharedPoints = this.parsePackedPointNumbers();
     }
 
@@ -817,6 +897,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
         if(header.flags.privatePointNumbers) {
             header.privatePoints = this.parsePackedPointNumbers();
         }
+        delete header.flags; // we don't need to expose this
         
         const deltasOffset = this.offset;
         const deltasRelativeOffset = this.relativeOffset;
@@ -826,9 +907,10 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
             let _deltasY = undefined;
 
             const parseDeltas = () => {
-                let pointsCount = header.privatePoints.length || sharedPoints.length;
-                if(!pointsCount) {
-                    if(flavor === 'gvar') {
+                let pointsCount = 0;
+                if(flavor === 'gvar') {
+                    pointsCount = header.privatePoints.length || sharedPoints.length;
+                    if(!pointsCount) {
                         const glyph = glyphs.get(glyphIndex);
                         // make sure the path is available
                         glyph.path;
@@ -837,9 +919,9 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
                         // @TODO: actually generate these points from glyph.getBoundingBox() and glyph.getMetrics(),
                         // as they may be influenced by variation as well
                         pointsCount+= 4;
-                    } else if (flavor === 'cvar') {
-                        pointsCount = glyphs.length; // glyphs here is actually font.tables.cvt
                     }
+                } else if (flavor === 'cvar') {
+                    pointsCount = glyphs.length; // glyphs here is actually font.tables.cvt
                 }
                 
                 this.offset = deltasOffset;
@@ -884,9 +966,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
         headers,
     };
 
-    if(flavor === 'gvar') {
-        result.sharedPoints = sharedPoints;
-    }
+    result.sharedPoints = sharedPoints;
 
     return result;
 };

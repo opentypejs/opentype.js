@@ -20,6 +20,7 @@ import fvar from './tables/fvar.js';
 import gvar from './tables/gvar.js';
 import cvar from './tables/cvar.js';
 import avar from './tables/avar.js';
+import hvar from './tables/hvar.js';
 import glyf from './tables/glyf.js';
 import gdef from './tables/gdef.js';
 import gpos from './tables/gpos.js';
@@ -276,6 +277,7 @@ function parseBuffer(buffer, opt={}) {
     let gposTableEntry;
     let gsubTableEntry;
     let hmtxTableEntry;
+    let hvarTableEntry;
     let kernTableEntry;
     let locaTableEntry;
     let nameTableEntry;
@@ -328,6 +330,9 @@ function parseBuffer(buffer, opt={}) {
                 font.ascender = font.tables.hhea.ascender;
                 font.descender = font.tables.hhea.descender;
                 font.numberOfHMetrics = font.tables.hhea.numberOfHMetrics;
+                break;
+            case 'HVAR':
+                hvarTableEntry = tableEntry;
                 break;
             case 'hmtx':
                 hmtxTableEntry = tableEntry;
@@ -400,6 +405,9 @@ function parseBuffer(buffer, opt={}) {
             case 'SVG ':
                 table = uncompressTable(data, tableEntry);
                 font.tables.svg = svg.parse(table.data, table.offset);
+                break;
+            default:
+                // console.info(`Skipping unsupported table ${tableEntry.tag}`);
                 break;
         }
     }
@@ -492,6 +500,19 @@ function parseBuffer(buffer, opt={}) {
         }
         const avarTable = uncompressTable(data, avarTableEntry);
         font.tables.avar = avar.parse(avarTable.data, avarTable.offset, font.tables.fvar);
+    }
+
+    if (hvarTableEntry) {
+        if (!fvarTableEntry) {
+            console.warn('This font provides an HVAR table, but no fvar table, which is required for variable fonts.');
+        }
+
+        if (!hmtxTableEntry) {
+            console.warn('This font provides an HVAR table, but no hmtx table to vary.');
+        }
+
+        const hvarTable = uncompressTable(data, hvarTableEntry);
+        font.tables.hvar = hvar.parse(hvarTable.data, hvarTable.offset, font.tables.fvar);
     }
 
     if (metaTableEntry) {

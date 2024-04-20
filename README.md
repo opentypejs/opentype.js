@@ -347,6 +347,92 @@ Sets a color glyph layer's paletteIndex property to a new index
 ###### `Font.layers.updateColrTable(glyphIndex, layers)`
 Mainly used internally. Updates the colr table, adding a baseGlyphRecord if needed, ensuring that it's inserted at the correct position, updating numLayers, and adjusting firstLayerIndex values for all baseGlyphRecords according to any deletions or insertions.
 
+
+##### The `Font.variation` object (`VariationManager`)
+The `VariationManager` handles variable font properties using the OpenType font variation tables.
+
+###### `Font.variation.activateDefaultVariation()`
+Activates the default variation by setting its variation data as the font's default render options. Uses the default instance if available; otherwise, it defaults to the coordinates of all axes.
+ 
+###### `Font.variation.getDefaultCoordinates()`
+Returns the default coordinates for the font's variation axes.
+* Returns: An object mapping axis tags to their default values.
+
+###### `Font.variation.getDefaultInstanceIndex()`
+Determines and returns the index of the default variation instance. Returns `-1` if it cannot be determined.
+* Returns: Integer representing the default instance index or `-1`.
+
+###### `Font.variation.getInstanceIndex(coordinates)`
+Finds the index of the variation instance that matches the provided coordinates, or `-1` if none match.
+* `coordinates`: Object with axis tags as keys and variation values as corresponding values.
+* Returns: Integer of the matching instance index or `-1`.
+
+###### `Font.variation.getInstance(index)`
+Retrieves a specific variation instance by its zero-based index.
+* `index`: Zero-based index of the variation instance.
+* Returns: Object representing the variation instance, or `null` if the index is invalid.
+
+###### `Font.variation.set(instanceIdOrObject)`
+Sets the variation coordinates to be used by default for rendering in the font's default render options.
+* `instanceIdOrObject`: Either the zero-based index of a variation instance or an object mapping axis tags to variation values.
+
+###### `Font.variation.get()`
+Gets the current variation settings from the font's default render options.
+* Returns: Object with the current variation settings.
+
+
+##### The `Font.variation.process` object (`VariationProcessor`)
+The `VariationProcessor` is a component of the `VariationManager`, used mainly internally for computing and applying variations to the glyphs in a variable font. It handles transformations and adjustments based on the font's variable axes and instances.
+
+###### `Font.variation.process.getNormalizedCoords()`
+Returns normalized coordinates for the variation axes based on the current settings.
+* Returns: Normalized coordinates as an object mapping axis tags to normalized values.
+
+###### `Font.variation.process.interpolatePoints(points, deltas, scalar)`
+Interpolates points based on provided deltas and a scalar value.
+* `points`: Array of original points.
+* `deltas`: Array of point deltas.
+* `scalar`: Scalar value for interpolation.
+* Returns: Array of interpolated points.
+
+###### `Font.variation.process.deltaInterpolate(original, deltaValues, scalar)`
+Calculates the interpolated value for a single point given original values, deltas, and a scalar.
+* `original`: Original value of the point.
+* `deltaValues`: Array of delta values for the point.
+* `scalar`: Scalar value for interpolation.
+* Returns: Interpolated value.
+
+###### `Font.variation.process.deltaShift(points, deltas)`
+Applies delta values to shift points.
+* `points`: Array of original points.
+* `deltas`: Array of deltas to apply.
+* Returns: Array of shifted points.
+
+###### `Font.variation.process.transformComponents(components, transformation)`
+Transforms components of a glyph using a specified transformation matrix.
+* `components`: Components of the glyph.
+* `transformation`: Transformation matrix to apply.
+* Returns: Transformed components.
+
+###### `Font.variation.process.getTransform()`
+Computes the transformation matrix based on current variation settings.
+* Returns: Transformation matrix for the current variation settings.
+
+###### `Font.variation.process.getVariableAdjustment(adjustment)`
+Calculates the variable adjustment for a given adjustment parameter.
+* `adjustment`: Adjustment parameter.
+* Returns: Adjusted value based on current variation settings.
+
+###### `Font.variation.process.getDelta(deltas)`
+Selects the appropriate delta values from a collection of deltas based on the current variation settings.
+* `deltas`: Collection of delta values.
+* Returns: Appropriate delta values for the current settings.
+
+###### `Font.variation.process.getBlendVector()`
+Computes the blend vector for interpolations based on the current settings.
+* Returns: Blend vector used for interpolation calculations.
+
+
 #### The Glyph object
 A Glyph is an individual mark that often corresponds to a character. Some glyphs, such as ligatures, are a combination of many characters. Glyphs are the basic building blocks of a font.
 
@@ -466,12 +552,13 @@ MIT
 
 Thanks
 ======
-I would like to acknowledge the work of others without which opentype.js wouldn't be possible:
+We would like to acknowledge the work of others without which opentype.js wouldn't be possible:
 
 * [pdf.js](https://mozilla.github.io/pdf.js/): for an awesome implementation of font parsing in the browser.
 * [FreeType](https://www.freetype.org/): for the nitty-gritty details and filling in the gaps when the spec was incomplete.
 * [ttf.js](https://ynakajima.github.io/ttf.js/demo/glyflist/): for hints about the TrueType parsing code.
 * [CFF-glyphlet-fonts](https://pomax.github.io/CFF-glyphlet-fonts/): for a great explanation/implementation of CFF font writing.
+* [fontkit](https://github.com/foliojs/fontkit/): for a great implementation of CFF2 parsing and variable font features
 * [tiny-inflate](https://github.com/foliojs/tiny-inflate): for WOFF decompression.
 * [Microsoft Typography](https://docs.microsoft.com/en-us/typography/opentype/spec/otff): the go-to reference for all things OpenType.
 * [Adobe Compact Font Format spec](http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf) and the [Adobe Type 2 Charstring spec](http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/type2.pdf): explains the data structures and commands for the CFF glyph format.

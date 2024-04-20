@@ -9,6 +9,7 @@ import Substitution from './substitution.js';
 import { PaletteManager } from './palettes.js';
 import { LayerManager } from './layers.js';
 import { SVGImageManager } from './svgimages.js';
+import { VariationManager } from './variation.js';
 import { isBrowser, checkArgument } from './util.js';
 import HintingTrueType from './hintingtt.js';
 import Bidi from './bidi.js';
@@ -141,6 +142,17 @@ function Font(options) {
     this.position = new Position(this);
     this.substitution = new Substitution(this);
     this.tables = this.tables || {};
+
+    this.tables = new Proxy(this.tables, {
+        set: (tables, tableName, tableData) => {
+            tables[tableName] = tableData;
+            if (tables.fvar && (tables.gvar || tables.cff2) && !this.variation) {
+                this.variation = new VariationManager(this);
+            }
+            return true;
+        }
+    });
+
     this.palettes = new PaletteManager(this);
     this.layers = new LayerManager(this);
     this.svgImages = new SVGImageManager(this);
@@ -419,7 +431,7 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
         const scale = 1 / (fullPath.unitsPerEm || 1000) * fontSize;
         fullPath.strokeWidth *= scale;
     }
-    this.forEachGlyph(text, x, y, fontSize, options, function(glyph, gX, gY, gFontSize) {
+    this.forEachGlyph(text, x, y, fontSize, options, (glyph, gX, gY, gFontSize) => {
         const glyphPath = glyph.getPath(gX, gY, gFontSize, options, this);
         if ( options.drawSVG || options.drawLayers ) {
             const layers = glyphPath._layers;

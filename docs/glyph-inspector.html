@@ -4,6 +4,7 @@
 <meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
 <meta charset="utf-8">
 <link rel="stylesheet" href="site.css">
+<script src="site.js"></script>
 
 <div class="header">
     <div class="container">
@@ -32,6 +33,7 @@
     <hr>
 
     <div>
+        <div id="variation-options"></div>
         <div id="colr-cpal-options" style="display:none">
             <label><input type="checkbox" name="drawLayers" oninput="window.fontOptions.drawLayers = this.checked; window.redraw();"> options.drawLayers</label><br>
             <div id="palettes"></div>
@@ -160,7 +162,7 @@ function displayGlyphData(glyphIndex) {
     }
     html += '</dl>';
     if (glyph.numberOfContours > 0) {
-        var contours = glyph.getContours();
+        var contours = glyph.getContours(window.font.variation.getTransform(glyph, window.fontOptions.variation).points);
         html += 'contours:<div id="glyph-contours">' + contours.map(contourToString).join('\n') + '</div>';
     } else if (glyph.isComposite) {
         html += '<br>This composite glyph is a combination of :<ul><li>' +
@@ -389,26 +391,12 @@ function initGlyphDisplay(font) {
     hline('Typo Descender', font.tables.os2.sTypoDescender);
 }
 
-function arrayBufferToBase64(buffer) {
-    const CHUNK_SIZE = 8192;
-    let result = '';
-    const uintArray = new Uint8Array(buffer);
-
-    for (let i = 0; i < uintArray.length; i += CHUNK_SIZE) {
-        const chunk = uintArray.subarray(i, i + CHUNK_SIZE);
-        result += String.fromCharCode.apply(null, chunk);
-    }
-
-    return btoa(result);
-}
-
-function base64ToArrayBuffer(base64) {
-    return Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
-}
-
-window.redraw = function(withColors = true) {
-    if ( withColors ) {
+window.redraw = function(options = { withColors: true, withVariations: true }) {
+    if ( options.withColors ) {
         updateColrOptions();
+    }
+    if ( options.withVariations ) {
+        updateVariationOptions();
     }
     const selectedPage = document.querySelector('.page-selected');
     const pageIndex = Array.from(selectedPage.parentElement.children).indexOf(selectedPage);    
@@ -418,29 +406,6 @@ window.redraw = function(withColors = true) {
         displayGlyph(glyphIndex);
         displayGlyphData(glyphIndex);
     }
-}
-
-function throttleDebounce(func, wait) {
-    let timeout = null;
-    let lastFunc;
-    let lastRan;
-
-    return function() {
-        const context = this;
-        const args = arguments;
-        if (!lastRan) {
-            func.apply(context, args);
-            lastRan = Date.now();
-        } else {
-            clearTimeout(lastFunc);
-            lastFunc = setTimeout(function() {
-                if ((Date.now() - lastRan) >= wait) {
-                    func.apply(context, args);
-                    lastRan = Date.now();
-                }
-            }, Math.max(wait - (Date.now() - lastRan), 0));
-        }
-    };
 }
 
 function updateColrOptions() {
@@ -459,7 +424,7 @@ function updateColrOptions() {
         });
     }
     markup += '<p><button type="button" onclick="font.palettes.add(); redraw();">+</button></p>';
-    palettesDiv.innerHTML += markup;
+    palettesDiv.innerHTML = markup;
 
     document.getElementById('colr-cpal-options').style.display = window.font.tables.cpal ? 'block' : 'none';
 }
@@ -494,6 +459,10 @@ window.showColorPicker = (event, el) => {
     alphaPicker.addEventListener('input', colorChangeHandler);
 };
 
+window.throttledRedraw = throttleDebounce((...args) => {
+    window.redraw(...args);
+}, 50);
+
 function onFontLoaded(font) {
     if (window.font) {
         window.font.onGlyphUpdated = null
@@ -503,6 +472,7 @@ function onFontLoaded(font) {
     window.fontOptions = options;
 
     updateColrOptions();
+    updateVariationOptions();
 
     var w = cellWidth - cellMarginLeftRight * 2,
         h = cellHeight - cellMarginTop - cellMarginBottom,
@@ -563,6 +533,8 @@ function prepareGlyphList() {
         canvas.className = 'item';
         canvas.id = 'g'+i;
         canvas.addEventListener('click', cellSelect, false);
+        canvas.addEventListener('keypress', (ev) => ev.keyCode === 13 && cellSelect(ev) , false);
+        canvas.tabIndex = 0;
         enableHighDPICanvas(canvas);
         parent.insertBefore(canvas, marker);
     }
@@ -592,6 +564,7 @@ async function display(file, name) {
         if ( !error ) showErrorMessage('');
     } catch (err) {
         showErrorMessage(err.toString());
+        throw err;
     }
 }
 

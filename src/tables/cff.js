@@ -617,7 +617,7 @@ function applyPaintType(font, path) {
 // Take in charstring code and return a Glyph object.
 // The encoding is described in the Type 2 Charstring Format
 // https://www.microsoft.com/typography/OTSPEC/charstr2.htm
-function parseCFFCharstring(font, glyph, code, version) {
+function parseCFFCharstring(font, glyph, code, version, coords) {
     let c1x;
     let c1y;
     let c2x;
@@ -635,16 +635,25 @@ function parseCFFCharstring(font, glyph, code, version) {
     let nominalWidthX;
     let vsindex = 0;
     let vstore = [];
+    let blendVector;
     const cffTable = font.tables.cff2 || font.tables.cff;
     defaultWidthX = cffTable.topDict._defaultWidthX;
     nominalWidthX = cffTable.topDict._nominalWidthX;
+    coords = coords || font.variation && font.variation.get();
+
+    if (!glyph.getBlendPath) {
+        glyph.getBlendPath = function(variationCoords) {
+            return parseCFFCharstring(font, glyph, code, version, variationCoords);
+        };
+    }
+
     if (font.isCIDFont || version > 1) {
         const fdIndex = cffTable.topDict._fdSelect ? cffTable.topDict._fdSelect[glyph.index] : 0;
         const fdDict = cffTable.topDict._fdArray[fdIndex];
         subrs = fdDict._subrs;
         subrsBias = fdDict._subrsBias;
         if ( version > 1 ) {
-            vstore = cffTable.topDict._vstore.itemVariationStore.itemVariationSubtables;
+            vstore = cffTable.topDict._vstore.itemVariationStore;
             vsindex = fdDict._privateDict.vsindex;
         } else {
             defaultWidthX = fdDict._defaultWidthX;
@@ -931,23 +940,28 @@ function parseCFFCharstring(font, glyph, code, version) {
                         break;
                     }
 
-                    // @TODO: apply actual blend
                     // https://learn.microsoft.com/en-us/typography/opentype/spec/cff2charstr#syntax-for-font-variations-support-operators
                     
-                    var blendStore = vstore[vsindex];
+                    if(!blendVector) {
+                        blendVector = font.variation && coords && font.variation.process.getBlendVector(vstore, vsindex, coords);
+                    }
+                    
                     var n = stack.pop();
-                    var deltaSetCount = n * blendStore.regionIndexes.length;
+                    var axisCount = blendVector ? blendVector.length : vstore.itemVariationSubtables[vsindex].regionIndexes.length;
+                    var deltaSetCount = n * axisCount;
                     var delta = stack.length - deltaSetCount;
                     var deltaSetIndex = delta - n;
       
-                    for (let i = 0; i < n; i++) {
-                        var sum = stack[deltaSetIndex + i];
-                        for (let j = 0; j < n.length; j++) {
-                            sum += 1 * stack[delta++];
+                    if(blendVector) {
+                        for (let i = 0; i < n; i++) {
+                            var sum = stack[deltaSetIndex + i];
+                            for (let j = 0; j < axisCount; j++) {
+                                sum += blendVector[j] * stack[delta++];
+                            }
+                            stack[deltaSetIndex + i] = sum;
                         }
-                        stack[deltaSetIndex + i] = sum;
                     }
-      
+    
                     while (deltaSetCount--) {
                         stack.pop();
                     }
@@ -1130,8 +1144,21 @@ function parseCFFCharstring(font, glyph, code, version) {
     }
 
     parse(code);
+
+    if(font.variation && coords) {
+        // round the point values:  we can't do that directly in the blend operator,
+        // because that might run multiple times and rounding errors might accumulate
+        p.commands = p.commands.map(c => {
+            const keys = Object.keys(c);
+            for(let i = 0; i < keys.length; i++) {
+                const key = keys[i];
+                if(key === 'type') continue;
+                c[key] = Math.round(c[key]);
+            }
+            return c;
+        });
+    }
     
-    // @TODO: check if we need to handle/apply hmtx/HVAR data here or elsewhere, once HVAR is supported
     if (haveWidth) {
         glyph.advanceWidth = width;
     }

@@ -4,6 +4,7 @@
 <meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
 <meta charset="utf-8">
 <link rel="stylesheet" href="site.css">
+<script src="site.js"></script>
 
 <div class="header">
     <div class="container">
@@ -35,7 +36,9 @@
     <label><input type="checkbox" name="drawMetrics">Draw Metrics</label>
     <label><input type="checkbox" name="kerning" checked="checked">Kerning</label>
     <label><input type="checkbox" name="ligatures" checked="checked">Ligatures</label>
-    <label class="disabled"><input name="hinting" type="checkbox" onchange="hintingChanged(this)" disabled="true">Hinting</label>
+    <label class="disabled"><input name="hinting" type="checkbox" disabled="true">Hinting</label>
+
+    <div id="variation-options"></div>
 
     <hr>
 
@@ -79,6 +82,7 @@ const form = document.forms.demo;
 form.oninput = renderText;
 let font = null;
 
+let options = {};
 
 function doSnap(path) {
     const layers = path._layers;
@@ -114,7 +118,8 @@ function doSnap(path) {
 function renderText() {
     const font = window.font;
     if (!font) return;
-    const textToRender = form.textField.value;
+    const textToRender = conditionalSampleText(font, form.textField.value);
+
     var previewCtx = document.getElementById('preview').getContext('2d');
     var options = Object.assign({}, font.defaultRenderOptions, getDrawOptions());
     previewCtx.clearRect(0, 0, 940, 300);
@@ -135,7 +140,7 @@ function renderText() {
 }
 
 function getDrawOptions() {
-    return {
+    const options = {
         kerning: form.kerning.checked,
         hinting: form.hinting.checked,
         features: {
@@ -143,7 +148,19 @@ function getDrawOptions() {
             rlig: form.ligatures.checked
         }
     };
+    window.fontOptions = Object.assign({}, window.font.defaultRenderOptions, window.fontOptions, options);
+    return window.fontOptions;
 }
+
+window.redraw = function(options = { withColors: true, withVariations: true }) {
+    if ( options.withVariations ) {
+        updateVariationOptions();
+    }
+};
+
+window.throttledRedraw = throttleDebounce((...args) => {
+    window.redraw(...args);
+}, 50);
 
 function enableHighDPICanvas(canvas) {
     if (typeof canvas === 'string') {
@@ -191,6 +208,10 @@ function onFontLoaded(font) {
         window.font.onGlyphUpdated = null
     }
     window.font = font;
+    options = Object.assign({}, window.font.defaultRenderOptions);
+    window.fontOptions = options;
+    
+    updateVariationOptions();
 
     // Show the first 100 glyphs.
     const glyphsDiv = document.getElementById('glyphs');
@@ -233,8 +254,7 @@ function onFontLoaded(font) {
         }
 
         const textToRender = form.textField.value;
-        const options = Object.assign({}, font.defaultRenderOptions, getDrawOptions());
-        const glyphIds = font.stringToGlyphIndexes(textToRender, options);
+        const glyphIds = font.stringToGlyphIndexes(textToRender, getDrawOptions());
         if (glyphIds.includes(glyphId)) {
             renderText();
         }
@@ -250,8 +270,17 @@ async function display(file, name) {
     }
     try {
         const data = await file.arrayBuffer();
-        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
-        showErrorMessage('');
+        let error;
+        try {
+            const base64String = arrayBufferToBase64(data);
+            sessionStorage.setItem('fontData', base64String);
+        } catch (err) {
+            showErrorMessage('Error loading font from localStorage');
+            error = err;
+        }     
+
+        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data, { lowMemory: true }));
+        if ( !error ) showErrorMessage('');
     } catch (err) {
         showErrorMessage(err.toString());
     }
@@ -264,6 +293,12 @@ form.file.onchange = function(e) {
 enableHighDPICanvas('preview');
 enableHighDPICanvas('snap');
 
-const fontFileName = 'fonts/FiraSansMedium.woff';
-display(await fetch(fontFileName), fontFileName);
+const fontData = sessionStorage.getItem('fontData');
+if ( fontData ) {
+    const arrayBuffer = base64ToArrayBuffer(fontData);
+    onFontLoaded(opentype.parse(arrayBuffer));
+} else {
+    const fontFileName = 'fonts/FiraSansMedium.woff';
+    display(await fetch(fontFileName), fontFileName);
+}
 </script>
