@@ -29,6 +29,10 @@
     <input name="file" type="file">
     <output class="info" name="fontname"></output>
     <canvas id="preview" width="940" height="50" class="text"></canvas>
+
+    <style id="opentypejs-preview-fontface"></style>
+    <textarea id="preview-textarea" class="text" rows="6"></textarea>
+
     <div id="message"></div>
 
     <hr>
@@ -262,7 +266,7 @@ function displayFontData(font) {
     }
 }
 
-function onFontLoaded(font) {
+function onFontLoaded(font, data) {
     if (window.font) {
         window.font.onGlyphUpdated = null;
     }
@@ -276,6 +280,14 @@ function onFontLoaded(font) {
             renderText(font);
         }
     };
+    document.getElementById('opentypejs-preview-fontface').innerHTML = `
+    @font-face {
+        font-family: "OpenteJsPreview";
+        src: url('${URL.createObjectURL(new Blob([data]))}');
+    }
+    `;
+    const textarea = document.getElementById('preview-textarea');
+    textarea.innerText = conditionalSampleText(font, 'Grumpy wizards make toxic brew for the evil Queen and Jack.');
 }
 
 document.getElementById('update').addEventListener('click', () => displayFontData(window.font));
@@ -298,7 +310,7 @@ async function display(file, name) {
     }
     try {
         const data = await file.arrayBuffer();
-        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data));
+        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data), data);
         showErrorMessage('');
     } catch (err) {
         showErrorMessage(err.toString());

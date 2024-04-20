@@ -83,10 +83,17 @@ body {
     display: block;
 }
 
-canvas.text {
+canvas.text, textarea.text {
     border: 1px solid #ddd;
     box-shadow: 1px 0 5px rgba(0, 0, 0, 0.2);
     margin-bottom: 5px;
+}
+
+textarea.text {
+    width: 100%;
+    resize: vertical;
+    font-size: 32px;
+    font-family: 'OpenteJsPreview';
 }
 
 .wrapper {
