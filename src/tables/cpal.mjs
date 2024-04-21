@@ -220,7 +220,7 @@ function parseColor(color, targetFormat = 'hexa') {
         if(targetFormat == 'bgra') {
             return color;
         }
-    } else if(globalThis.window && globalThis.window.HTMLCanvasElement && /^[a-z]+$/i.test(color)) {
+    } else if(typeof document !== 'undefined' && /^[a-z]+$/i.test(color)) {
         // assume CSS color name (only works in browser context!)
         const ctx = document.createElement('canvas').getContext('2d');
         ctx.fillStyle = color;

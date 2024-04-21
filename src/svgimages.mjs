@@ -126,7 +126,7 @@ function createSvgImageCacheEntry(font, svgTemplatePromise, glyphIndex) {
 * @param {Uint8Array} buf
 * @returns {Promise<string>}
 */
-export const decodeSvgDocument = globalThis.DecompressionStream
+export const decodeSvgDocument = typeof DecompressionStream === 'function'
     ? decodeSvgDocumentWithDecompressionStream
     : decodeSvgDocumentWithTinyInflate;
 
