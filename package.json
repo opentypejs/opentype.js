@@ -27,8 +27,8 @@
     "build": "npm run b:umd && npm run b:esm",
     "dist": " npm run d:umd && npm run d:esm",
     "test": "npm run build && npm run dist && mocha && npm run lint",
-    "lint": "eslint src --ext .js,.mjs",
-    "lint-fix": "eslint src --fix --ext .js,.mjs",
+    "lint": "eslint src --ext .mjs",
+    "lint-fix": "eslint src --fix --ext .mjs",
     "start": "esbuild --bundle src/opentype.mjs --outdir=dist --target=es2018 --format=esm  --out-extension:.js=.mjs     --define:DEBUG=false --global-name=opentype --watch --servedir=. --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\" --footer:js=\"new EventSource('/esbuild').addEventListener('change', () => location.reload())\"",
     "b:umd": "esbuild --bundle src/opentype.mjs --outdir=dist --target=es2018 --format=iife --out-extension:.js=.js      --define:DEBUG=false --global-name=opentype                      --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\"",
     "d:umd": "esbuild --bundle src/opentype.mjs --outdir=dist --target=es2018 --format=iife --out-extension:.js=.min.js  --define:DEBUG=false --global-name=opentype --minify --sourcemap --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\"",
@@ -38,9 +38,7 @@
   "devDependencies": {
     "mocha": "^10.4.0",
     "esbuild": "^0.20.0",
-    "eslint": "^8.56.0",
-    "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-local-rules": "^2.0.1"
+    "eslint": "^8.56.0"
   },
   "bin": {
     "ot": "./bin/ot"
@@ -55,19 +53,12 @@
       "es2021": true,
       "node": true
     },
-    "plugins": [
-      "eslint-plugin-local-rules",
-      "eslint-plugin-import"
-    ],
     "extends": "eslint:recommended",
     "parserOptions": {
       "ecmaVersion": 2018,
       "sourceType": "module"
     },
     "rules": {
-      "import/no-cycle": [
-        "error"
-      ],
       "indent": [
         "error",
         4,
@@ -87,8 +78,13 @@
         "error",
         "always"
       ],
-      "local-rules/ban-foreach": 2,
-      "local-rules/import-extensions": 2
+      "no-restricted-syntax": [
+        "error",
+        {
+          "message": "For consistency, Use `for()` loops instead of `.forEach()`",
+          "selector": "MemberExpression > Identifier[name=\"forEach\"]"
+        }
+      ]
     }
   }
 }
