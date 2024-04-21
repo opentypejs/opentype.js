@@ -873,6 +873,8 @@ encode.OPERAND = function(v, type) {
             for (let j = 0; j < enc1.length; j++) {
                 d.push(enc1[j]);
             }
+        } else if (type === 'delta') {
+            console.log('encode delta:', v)
         } else {
             throw new Error('Unknown operand type ' + type);
             // FIXME Add support for booleans
@@ -944,6 +946,10 @@ encode.OBJECT = function(v) {
         return encoded;
     }
     const encodingFunction = encode[v.type];
+    if(encodingFunction === undefined) {
+
+        console.log('~~~~~~~~~~~~~', v)
+    }
     check.argument(encodingFunction !== undefined, 'No encoding function for type ' + v.type);
     return encodingFunction(v.value);
 };

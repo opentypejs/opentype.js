@@ -18,6 +18,7 @@ import parse from '../parse.js';
 import * as make from '../make.js';
 import Path from '../path.js';
 import table from '../table.js';
+import { sizeOf } from '../types.js';
 
 // Custom equals function that can also check lists.
 function equals(a, b) {
@@ -1126,7 +1127,7 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                             }
                 
                             stack[deltaSetIndex + i] = sum; // Update stack with blended value
-                            console.log(`modified at index ${deltaSetIndex + i}`);
+                            // console.log(`modified at index ${deltaSetIndex + i}`);
                             delta += axisCount; // Move the delta index forward by the axisCount
                         }
                     }
@@ -1939,29 +1940,29 @@ function makeCharStringsIndex(glyphs, version) {
 }
 
 function makeFontDictIndex(fontDicts) {
-    let dicts = [];
-    for(let i = 0; i < fontDicts.length; i++) {
-        dicts.push({name: `fontDict_${i}`, type: 'TABLE', value: fontDicts[i]});
-    }
     const t = new table.Record('Font DICT INDEX', [
-        {name: 'fontDicts', type: 'INDEX32', value: fontDicts}
+        {name: 'fontDicts', type: 'INDEX32', value: []}
     ]);
+    t.fontDicts = [];
+    for(let i = 0; i < fontDicts.length; i++) {
+        t.fontDicts.push({name: `fontDict_${i}`, type: 'TABLE', value: fontDicts[i]})
+    }
     return t;
 }
 
-function makeFontDict(attrs) {
+function makeFontDict(attrs, strings) {
     const t = new table.Record('Font DICT', [
         {name: 'dict', type: 'DICT', value: {}}
     ]);
-    t.dict = makeDict(FONT_DICT_META, attrs);
+    t.dict = makeDict(FONT_DICT_META, attrs, strings);
     return t;
 }
 
-function makePrivateDict(attrs, strings) {
+function makePrivateDict(attrs, strings, version) {
     const t = new table.Record('Private DICT', [
         {name: 'dict', type: 'DICT', value: {}}
     ]);
-    t.dict = makeDict(FONT_DICT_META, attrs, strings);
+    t.dict = makeDict(version > 1 ? PRIVATE_DICT_META_CFF2 : FONT_DICT_META, attrs, strings);
     return t;
 }
 
@@ -2095,18 +2096,31 @@ function makeCFFTable(glyphs, options, version) {
 
         t.fields.push({name: 'fontDictIndex', type: 'RECORD'});
         let fontDicts = cffTable && cffTable.topDict._fdArray;
-        if (!fontDicts) {
-            fontDicts = [makeFontDict([0, 0])];
+        let encodeFontDicts = fontDicts;
+        if (!encodeFontDicts) {
+            encodeFontDicts = [makeFontDict([])];
         } else {
-            fontDicts = fontDicts.map(d => {
-                return makeFontDict([0, 0]);
+            encodeFontDicts = fontDicts.map(d => {
+                let attrs = {private: [114, 79]};
+                return makeFontDict(attrs);
             });
         }
-        t.fontDictIndex = makeFontDictIndex(fontDicts);
+        t.fontDictIndex = makeFontDictIndex(encodeFontDicts);
+
+        for(let i = 0; i < fontDicts.length; i++) {
+            t.fields.push({name: `fontDict_${i}`, type: 'RECORD', value: encodeFontDicts[i]});
+        }
+
+        for(let i = 0; i < fontDicts.length; i++) {
+            let attrs = fontDicts && fontDicts[i] && fontDicts[i]._privateDict || [];
+            let privateDict = makePrivateDict(attrs, strings, 2);
+            t.fields.push({name: `privateDict_${i}`, type: 'RECORD', value: privateDict});
+        }
 
         console.log('#########################################')
-        console.log(t.fontDictIndex)
         
+        console.log(t.fields);
+
         // {name: 'fdArray', type: 'RECORD'}
         // t.fdArray =
         // {name: 'privateDict', type: 'RECORD'}
