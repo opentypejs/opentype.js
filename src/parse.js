@@ -1079,4 +1079,18 @@ export default {
     Parser,
 };
 
-export { Parser };
+export {
+    getByte,
+    getByte as getCard8,
+    getUShort,
+    getUShort as getCard16,
+    getShort,
+    getUInt24,
+    getULong,
+    getFixed,
+    getTag,
+    getOffset,
+    getBytes,
+    bytesToString,
+    Parser
+};

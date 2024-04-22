@@ -40,10 +40,8 @@ import gasp from './tables/gasp.js';
 import svg from './tables/svg.js';
 import { PaletteManager } from './palettes.js';
 import { sizeOf } from './types.js';
-import { plugins, checkPlugin } from './plugins.mjs';
+import { plugins, applyPlugins } from './plugins.mjs';
 
-import cff1file from './plugins/opentypejs.plugin.cff1file.mjs';
-plugins.push(cff1file);
 /**
  * The opentype library.
  * @namespace opentype
@@ -266,11 +264,14 @@ function parseBuffer(buffer, opt={}) {
     } else if (signature === 'wOF2') {
         var issue = 'https://github.com/opentypejs/opentype.js/issues/183#issuecomment-1147228025';
         throw new Error('WOFF2 require an external decompressor library, see examples at: ' + issue);
-    } else if(checkPlugin('parseBuffer_signature', font, signature, data, tableEntries)) {
+    } else if(
+        applyPlugins(
+            'parseBuffer_signature',
+            { opentype: this, font, signature, data, createDefaultNamesInfo, parse, sizeOf, tableEntries }
+        )
+    ) {
         numTables = tableEntries.length;
     } else if (signature.substring(0,2) === '%!' || (parse.getByte(data, 0) === 0x80 && parse.getByte(data, 1) === 0x01)) {
-        // https://adobe-type-tools.github.io/font-tech-notes/pdfs/T1_SPEC.pdf
-        // https://personal.math.ubc.ca/~cass/piscript/type1.pdf
         throw new Error('PostScript/PS1/T1/Adobe Type 1 fonts are not supported directly, but you can use the plugin "opentypejs.plugin.type1"');
     } else if (data.buffer.byteLength > (3 * sizeOf.Card8() + sizeOf.OffSize()) && parse.getByte(data, 0) === 0x01) {
         console.warn('Standalone CFF1 files are not supported directly, but you can use the plugin "opentypejs.plugin.cff1file"');
@@ -425,7 +426,7 @@ function parseBuffer(buffer, opt={}) {
         }
     }
 
-    checkPlugin('parseBuffer_processed', font, data);
+    applyPlugins('parseBuffer_processed', {opentype: this, font, data});
 
     if (nameTableEntry) {
         const nameTable = uncompressTable(data, nameTableEntry);
@@ -465,7 +466,7 @@ function parseBuffer(buffer, opt={}) {
         console.error('Font is missing the required table "hmtx"');
     }
 
-    checkPlugin('parseBuffer_before_addGlyphNames', font, data);
+    applyPlugins('parseBuffer_before_addGlyphNames', { opentype: this, font, data, createDefaultNamesInfo});
 
     if(font.tables.cmap) {
         addGlyphNames(font, opt);
@@ -562,7 +563,7 @@ function parseBuffer(buffer, opt={}) {
     
     font.palettes = new PaletteManager(font);
 
-    checkPlugin('parseBuffer_parsed', font, data, tableEntries);
+    applyPlugins('parseBuffer_parsed', { opentype: this, font, data, tableEntries});
 
     return font;
 }

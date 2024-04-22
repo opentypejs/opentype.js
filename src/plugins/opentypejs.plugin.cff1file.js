@@ -1,7 +1,3 @@
-import { createDefaultNamesInfo } from '../font.js';
-import { sizeOf } from '../types.js';
-import parse from '../parse.js';
-
 /**
  * OpenType.js plugin to support parsing of standalone CFF1 font files
  * 
@@ -10,8 +6,9 @@ import parse from '../parse.js';
 
 let isResponsible = new WeakMap();
 
-export default {
-    parseBuffer_signature: function(font, returnData, signature, data, tableEntries) {
+const plugin_cff1file = {
+    parseBuffer_signature: function(returnData, params) {
+        const { font, data, sizeOf, parse, tableEntries } = params;
         if(!(data.buffer.byteLength > (3 * sizeOf.Card8() + sizeOf.OffSize()) && parse.getByte(data, 0) === 0x01)) return false;
         isResponsible.set(font, true);
 
@@ -20,8 +17,10 @@ export default {
         tableEntries.push({ tag: 'hmtx' });
         return true;
     },
-    parseBuffer_before_addGlyphNames: function(font, returnData, data, tableEntries) {
+    parseBuffer_before_addGlyphNames: function(returnData, params) {
         if(!isResponsible.get(font)) return false;
+
+        const { font, createDefaultNamesInfo } = params;
 
         font.numGlyphs = font.nGlyphs;
 
@@ -67,3 +66,5 @@ export default {
         }
     }
 };
+
+export default plugin_cff1file;
