@@ -80,14 +80,18 @@ If you plan on improving or debugging opentype.js, you can:
 
 ### Loading a WOFF/OTF/TTF font
 
+This is done in two steps: first, we load the font file into an `ArrayBuffer` ...
 ```js
-// case 1: from an URL
+// either from an URL
 const buffer = fetch('/fonts/my.woff').then(res => res.arrayBuffer());
-// case 2: from filesystem (node)
+// ... or from filesystem (node)
 const buffer = require('fs').promises.readFile('./my.woff');
-// case 3: from an <input type=file id=myfile>
+// ... or from an <input type=file id=myfile> (browser)
 const buffer = document.getElementById('myfile').files[0].arrayBuffer();
+```
 
+... then we `.parse()` it into a `Font` instance
+```js
 // if running in async context:
 const font = opentype.parse(await buffer);
 console.log(font);
@@ -99,7 +103,8 @@ buffer.then(data => {
 })
 ```
 
-### Loading a WOFF2 font
+<details>
+<summary>Loading a WOFF2 font</summary>
 
 WOFF2 Brotli compression perform [29% better](https://www.w3.org/TR/WOFF20ER/#appendixB) than it WOFF predecessor.
 But this compression is also more complex, and would result in a much heavier (&gt;10×!) opentype.js library (≈120KB => ≈1400KB).
@@ -123,30 +128,14 @@ if (!window.Module) {
 // decompress before parsing
 const font = opentype.parse(Module.decompress(await buffer));
 ```
+</details>
 
-### Loading a font (1.x style)
+### Craft a font
 
-This example relies on the deprecated `.load()` method
+It is also possible to craft a Font from scratch by defining each glyph bézier paths.
 
-```js
-// case 1: from an URL
-const font = opentype.load('./fonts/my.woff', {}, {isUrl: true});
-// case 2: from filesystem
-const font = opentype.load('./fonts/my.woff', {}, {isUrl: false});
-
-// ... play with `font` ...
-console.log(font.supported);
-```
-
-### Writing a font
-Once you have a `Font` object (either by using `opentype.load()` or by creating a new one from scratch) you can write it
-back out as a binary file.
-
-In the browser, you can use `Font.download()` to instruct the browser to download a binary .OTF file. The name is based
-on the font name.
 ```javascript
-// Create the bézier paths for each of the glyphs.
-// Note that the .notdef glyph is required.
+// this .notdef glyph is required.
 const notdefGlyph = new opentype.Glyph({
     name: '.notdef',
     advanceWidth: 650,
@@ -164,21 +153,27 @@ const aGlyph = new opentype.Glyph({
     path: aPath
 });
 
-const glyphs = [notdefGlyph, aGlyph];
 const font = new opentype.Font({
     familyName: 'OpenTypeSans',
     styleName: 'Medium',
     unitsPerEm: 1000,
     ascender: 800,
     descender: -200,
-    glyphs: glyphs});
-font.download();
+    glyphs: [notdefGlyph, aGlyph]});
 ```
 
-If you want to inspect the font, use `font.toTables()`
-to generate an object showing the data structures that map directly to binary values.
-If you want to get an `ArrayBuffer`, use `font.toArrayBuffer()`.
+### Saving a Font
 
+Once you have a `Font` object (from crafting or from `.parse()`) you can save it back out as file.
+
+```js
+// using node:fs
+fs.writeFileSync("out.otf", Buffer.from(font.toArrayBuffer()));
+
+// using the browser to createElement a <a> that will be clicked 
+const href = window.URL.createObjectURL(new Blob([font.toArrayBuffer()]), {type: "font/opentype"});
+Object.assign(document.createElement('a'), {download: "out.otf", href}).click();
+```
 
 ### The Font object
 A Font represents a loaded OpenType font file. It contains a set of glyphs and methods to draw text on a drawing context, or to get a path representing the text.

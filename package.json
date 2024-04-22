@@ -26,7 +26,7 @@
   "scripts": {
     "build": "npm run b:umd && npm run b:esm",
     "dist": " npm run d:umd && npm run d:esm",
-    "test": "npm run build && npm run dist && mocha && npm run lint",
+    "test": "npm run build && npm run dist && mocha --recursive && npm run lint",
     "lint": "eslint src",
     "lint-fix": "eslint src --fix",
     "start": "esbuild --bundle src/opentype.mjs --outdir=dist --target=es2018 --format=esm  --out-extension:.js=.mjs     --define:DEBUG=false --global-name=opentype --watch --servedir=. --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\" --footer:js=\"new EventSource('/esbuild').addEventListener('change', () => location.reload())\"",

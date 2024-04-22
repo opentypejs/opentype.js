@@ -75,7 +75,7 @@ describe('opentype.mjs', function() {
     });
 });
 
-describe('opentype.mjs on low memory mode', function() {
+describe('opentype.js on low memory mode', function() {
     const opt = { lowMemory: true };
 
     it('can load a TrueType font', function() {
