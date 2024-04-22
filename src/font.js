@@ -15,13 +15,13 @@ import HintingTrueType from './hintingtt.js';
 import Bidi from './bidi.js';
 import { applyPaintType } from './tables/cff.js';
 
-function createDefaultNamesInfo(options) {
+export function createDefaultNamesInfo(options) {
     return {
         fontFamily: {en: options.familyName || ' '},
         fontSubfamily: {en: options.styleName || ' '},
         fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
         // postScriptName may not contain any whitespace
-        postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
+        postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).toString().replace(/\s/g, '')},
         designer: {en: options.designer || ' '},
         designerURL: {en: options.designerURL || ' '},
         manufacturer: {en: options.manufacturer || ' '},

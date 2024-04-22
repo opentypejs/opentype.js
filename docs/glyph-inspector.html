@@ -162,7 +162,8 @@ function displayGlyphData(glyphIndex) {
     }
     html += '</dl>';
     if (glyph.numberOfContours > 0) {
-        var contours = glyph.getContours(window.font.variation.getTransform(glyph, window.fontOptions.variation).points);
+        const points = window.font.variation &&window.font.variation.getTransform(glyph, window.fontOptions.variation).points || glyph.points;
+        var contours = glyph.getContours(points);
         html += 'contours:<div id="glyph-contours">' + contours.map(contourToString).join('\n') + '</div>';
     } else if (glyph.isComposite) {
         html += '<br>This composite glyph is a combination of :<ul><li>' +
@@ -387,8 +388,8 @@ function initGlyphDisplay(font) {
     hline('yMin', font.tables.head.yMin);
     hline('Ascender', font.tables.hhea.ascender);
     hline('Descender', font.tables.hhea.descender);
-    hline('Typo Ascender', font.tables.os2.sTypoAscender);
-    hline('Typo Descender', font.tables.os2.sTypoDescender);
+    hline('Typo Ascender', font.tables?.os2?.sTypoAscender);
+    hline('Typo Descender', font.tables?.os2?.sTypoDescender);
 }
 
 window.redraw = function(options = { withColors: true, withVariations: true }) {
@@ -581,6 +582,8 @@ const fontData = sessionStorage.getItem('fontData');
 if ( fontData ) {
     const arrayBuffer = base64ToArrayBuffer(fontData);
     onFontLoaded(opentype.parse(arrayBuffer));
+    // redraw with correct widths
+    window.redraw();
 } else {
     const fontFileName = 'fonts/FiraSansMedium.woff';
     display(await fetch(fontFileName), fontFileName);
