@@ -100,6 +100,11 @@
 
 <script type="module">
 import * as opentype from "/dist/opentype.module.js";
+import cff1filePlugin from '/dist/plugins/opentypejs.plugin.cff1file.module.js';
+import type1Plugin from '/dist/plugins/opentypejs.plugin.type1.module.js';
+
+opentype.plugins.push(cff1filePlugin);
+opentype.plugins.push(type1Plugin);
 
 var font = null;
 const fontSize = 32;

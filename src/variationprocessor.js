@@ -2,7 +2,7 @@ import { getPath, transformPoints } from './tables/glyf.js';
 import { copyPoint, copyComponent } from './util.js';
 import Glyph from './glyph.js';
 
-/**
+/*!
  * Part of the code of this class was based on
  * https://github.com/foliojs/fontkit/blob/a5fe0a1834241dbc6eb02beea3b7414c118c5ac9/src/glyph/GlyphVariationProcessor.js
  * Copyright (c) 2014 Devon Govett

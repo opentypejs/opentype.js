@@ -29,6 +29,5 @@ export function applyPlugins(entryPoint, params) {
         }
         if(!!pluginReturnData) handled = true;
     }
-
     return handled ? returnData : false;
 }

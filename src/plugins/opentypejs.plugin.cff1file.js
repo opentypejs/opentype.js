@@ -1,7 +1,12 @@
-/**
+/*!
  * OpenType.js plugin to support parsing of standalone CFF1 font files
  * 
  * https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf
+ * 
+ * opentype.js
+ * https://github.com/opentypejs/opentype.js
+ * (c) 2015-present Frederik De Bleser and contributors
+ * opentype.js may be freely distributed under the MIT license.
  */
 
 let isResponsible = new WeakMap();
@@ -18,7 +23,7 @@ const plugin_cff1file = {
         return true;
     },
     parseBuffer_before_addGlyphNames: function(returnData, params) {
-        if(!isResponsible.get(font)) return false;
+        if(!isResponsible.get(params.font)) return false;
 
         const { font, createDefaultNamesInfo } = params;
 

@@ -1,12 +1,14 @@
-// opentype.js
-// https://github.com/opentypejs/opentype.js
-// (c) 2015 Frederik De Bleser
-// opentype.js may be freely distributed under the MIT license.
+/*! opentype.js
+ * https://github.com/opentypejs/opentype.js
+ * (c) 2015-present Frederik De Bleser and contributors
+ * opentype.js may be freely distributed under the MIT license.
+ */
 
 import { tinf_uncompress as inflate } from './tiny-inflate@1.0.3.esm.js'; // from code4fukui/tiny-inflate-es
 import { isNode } from './util.js';
 import Font, { createDefaultNamesInfo } from './font.js';
 import Glyph from './glyph.js';
+import glyphset from './glyphset.js';
 import { CmapEncoding, GlyphNames, addGlyphNames } from './encoding.js';
 import parse from './parse.js';
 import BoundingBox from './bbox.js';
@@ -267,7 +269,7 @@ function parseBuffer(buffer, opt={}) {
     } else if(
         applyPlugins(
             'parseBuffer_signature',
-            { opentype: this, font, signature, data, createDefaultNamesInfo, parse, sizeOf, tableEntries }
+            { opentype: this, font, opt, cff, CmapEncoding, glyphset, signature, data, createDefaultNamesInfo, parse, sizeOf, tableEntries }
         )
     ) {
         numTables = tableEntries.length;
@@ -426,21 +428,19 @@ function parseBuffer(buffer, opt={}) {
         }
     }
 
-    applyPlugins('parseBuffer_processed', {opentype: this, font, data});
+    applyPlugins('parseBuffer_processed', {opentype: this, font, opt, data});
 
     if (nameTableEntry) {
         const nameTable = uncompressTable(data, nameTableEntry);
         font.tables.name = _name.parse(nameTable.data, nameTable.offset, ltagTable);
         font.names = font.tables.name;
-    } else {
+    } else if(!font.names) {
         console.error('Font is missing the required table "name"');
         font.names = {};
         font.names.unicode = createDefaultNamesInfo({});
         font.names.macintosh = createDefaultNamesInfo({});
         font.names.windows = createDefaultNamesInfo({});
     }
-
-
 
     if (glyfTableEntry && locaTableEntry) {
         const shortVersion = indexToLocFormat === 0;
@@ -454,7 +454,7 @@ function parseBuffer(buffer, opt={}) {
     } else if (cff2TableEntry) {
         const cffTable2 = uncompressTable(data, cff2TableEntry);
         cff.parse(cffTable2.data, cffTable2.offset, font, opt);
-    } else {
+    } else if (!font.nGLyphs && !font.numGlyphs) {
         throw new Error('Font doesn\'t contain TrueType, CFF or CFF2 outlines.');
     }
 
@@ -462,11 +462,11 @@ function parseBuffer(buffer, opt={}) {
     if(hmtxTableEntry) {
         const hmtxTable = uncompressTable(data, hmtxTableEntry);
         hmtx.parse(font, hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs, opt);
-    } else {
+    } else if(!font._hmtxTableData) {
         console.error('Font is missing the required table "hmtx"');
     }
 
-    applyPlugins('parseBuffer_before_addGlyphNames', { opentype: this, font, data, createDefaultNamesInfo});
+    applyPlugins('parseBuffer_before_addGlyphNames', { opentype: this, font, opt, data, createDefaultNamesInfo});
 
     if(font.tables.cmap) {
         addGlyphNames(font, opt);
@@ -563,7 +563,7 @@ function parseBuffer(buffer, opt={}) {
     
     font.palettes = new PaletteManager(font);
 
-    applyPlugins('parseBuffer_parsed', { opentype: this, font, data, tableEntries});
+    applyPlugins('parseBuffer_parsed', { opentype: this, font, opt, data, tableEntries});
 
     return font;
 }
@@ -622,9 +622,13 @@ function loadSync(url, opt) {
     return parseBuffer(require('fs').readFileSync(url), opt);
 }
 
+const { GlyphSet } = glyphset;
+
 export {
     Font,
+    GlyphSet,
     Glyph,
+    GlyphNames,
     Path,
     BoundingBox,
     parse as _parse,
