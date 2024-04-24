@@ -13,98 +13,98 @@
  * limitations under the License.
  */
 
-import { bytesToString, shadow, unreachable } from '../shared/util.js';
+import { bytesToString, shadow, unreachable } from "../shared/util.js";
 
 class BaseStream {
-    constructor() {
-        if (this.constructor === BaseStream) {
-            unreachable('Cannot initialize BaseStream.');
-        }
+  constructor() {
+    if (this.constructor === BaseStream) {
+      unreachable("Cannot initialize BaseStream.");
     }
+  }
 
-    // eslint-disable-next-line getter-return
-    get length() {
-        unreachable('Abstract getter `length` accessed');
+  // eslint-disable-next-line getter-return
+  get length() {
+    unreachable("Abstract getter `length` accessed");
+  }
+
+  // eslint-disable-next-line getter-return
+  get isEmpty() {
+    unreachable("Abstract getter `isEmpty` accessed");
+  }
+
+  get isDataLoaded() {
+    return shadow(this, "isDataLoaded", true);
+  }
+
+  getByte() {
+    unreachable("Abstract method `getByte` called");
+  }
+
+  getBytes(length) {
+    unreachable("Abstract method `getBytes` called");
+  }
+
+  peekByte() {
+    const peekedByte = this.getByte();
+    if (peekedByte !== -1) {
+      this.pos--;
     }
+    return peekedByte;
+  }
 
-    // eslint-disable-next-line getter-return
-    get isEmpty() {
-        unreachable('Abstract getter `isEmpty` accessed');
+  peekBytes(length) {
+    const bytes = this.getBytes(length);
+    this.pos -= bytes.length;
+    return bytes;
+  }
+
+  getUint16() {
+    const b0 = this.getByte();
+    const b1 = this.getByte();
+    if (b0 === -1 || b1 === -1) {
+      return -1;
     }
+    return (b0 << 8) + b1;
+  }
 
-    get isDataLoaded() {
-        return shadow(this, 'isDataLoaded', true);
-    }
+  getInt32() {
+    const b0 = this.getByte();
+    const b1 = this.getByte();
+    const b2 = this.getByte();
+    const b3 = this.getByte();
+    return (b0 << 24) + (b1 << 16) + (b2 << 8) + b3;
+  }
 
-    getByte() {
-        unreachable('Abstract method `getByte` called');
-    }
+  getByteRange(begin, end) {
+    unreachable("Abstract method `getByteRange` called");
+  }
 
-    getBytes(length) {
-        unreachable('Abstract method `getBytes` called');
-    }
+  getString(length) {
+    return bytesToString(this.getBytes(length));
+  }
 
-    peekByte() {
-        const peekedByte = this.getByte();
-        if (peekedByte !== -1) {
-            this.pos--;
-        }
-        return peekedByte;
-    }
+  skip(n) {
+    this.pos += n || 1;
+  }
 
-    peekBytes(length) {
-        const bytes = this.getBytes(length);
-        this.pos -= bytes.length;
-        return bytes;
-    }
+  reset() {
+    unreachable("Abstract method `reset` called");
+  }
 
-    getUint16() {
-        const b0 = this.getByte();
-        const b1 = this.getByte();
-        if (b0 === -1 || b1 === -1) {
-            return -1;
-        }
-        return (b0 << 8) + b1;
-    }
+  moveStart() {
+    unreachable("Abstract method `moveStart` called");
+  }
 
-    getInt32() {
-        const b0 = this.getByte();
-        const b1 = this.getByte();
-        const b2 = this.getByte();
-        const b3 = this.getByte();
-        return (b0 << 24) + (b1 << 16) + (b2 << 8) + b3;
-    }
+  makeSubStream(start, length, dict = null) {
+    unreachable("Abstract method `makeSubStream` called");
+  }
 
-    getByteRange(begin, end) {
-        unreachable('Abstract method `getByteRange` called');
-    }
-
-    getString(length) {
-        return bytesToString(this.getBytes(length));
-    }
-
-    skip(n) {
-        this.pos += n || 1;
-    }
-
-    reset() {
-        unreachable('Abstract method `reset` called');
-    }
-
-    moveStart() {
-        unreachable('Abstract method `moveStart` called');
-    }
-
-    makeSubStream(start, length, dict = null) {
-        unreachable('Abstract method `makeSubStream` called');
-    }
-
-    /**
+  /**
    * @returns {Array | null}
    */
-    getBaseStreams() {
-        return null;
-    }
+  getBaseStreams() {
+    return null;
+  }
 }
 
 export { BaseStream };

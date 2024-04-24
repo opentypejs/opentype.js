@@ -13,74 +13,74 @@
  * limitations under the License.
  */
 
-import { BaseStream } from './base_stream.js';
+import { BaseStream } from "./base_stream.js";
 
 class Stream extends BaseStream {
-    constructor(arrayBuffer, start, length, dict) {
-        super();
+  constructor(arrayBuffer, start, length, dict) {
+    super();
 
-        this.bytes =
+    this.bytes =
       arrayBuffer instanceof Uint8Array
-          ? arrayBuffer
-          : new Uint8Array(arrayBuffer);
-        this.start = start || 0;
-        this.pos = this.start;
-        this.end = start + length || this.bytes.length;
-        this.dict = dict;
-    }
+        ? arrayBuffer
+        : new Uint8Array(arrayBuffer);
+    this.start = start || 0;
+    this.pos = this.start;
+    this.end = start + length || this.bytes.length;
+    this.dict = dict;
+  }
 
-    get length() {
-        return this.end - this.start;
-    }
+  get length() {
+    return this.end - this.start;
+  }
 
-    get isEmpty() {
-        return this.length === 0;
-    }
+  get isEmpty() {
+    return this.length === 0;
+  }
 
-    getByte() {
-        if (this.pos >= this.end) {
-            return -1;
-        }
-        return this.bytes[this.pos++];
+  getByte() {
+    if (this.pos >= this.end) {
+      return -1;
     }
+    return this.bytes[this.pos++];
+  }
 
-    getBytes(length) {
-        const bytes = this.bytes;
-        const pos = this.pos;
-        const strEnd = this.end;
+  getBytes(length) {
+    const bytes = this.bytes;
+    const pos = this.pos;
+    const strEnd = this.end;
 
-        if (!length) {
-            return bytes.subarray(pos, strEnd);
-        }
-        let end = pos + length;
-        if (end > strEnd) {
-            end = strEnd;
-        }
-        this.pos = end;
-        return bytes.subarray(pos, end);
+    if (!length) {
+      return bytes.subarray(pos, strEnd);
     }
-
-    getByteRange(begin, end) {
-        if (begin < 0) {
-            begin = 0;
-        }
-        if (end > this.end) {
-            end = this.end;
-        }
-        return this.bytes.subarray(begin, end);
+    let end = pos + length;
+    if (end > strEnd) {
+      end = strEnd;
     }
+    this.pos = end;
+    return bytes.subarray(pos, end);
+  }
 
-    reset() {
-        this.pos = this.start;
+  getByteRange(begin, end) {
+    if (begin < 0) {
+      begin = 0;
     }
+    if (end > this.end) {
+      end = this.end;
+    }
+    return this.bytes.subarray(begin, end);
+  }
 
-    moveStart() {
-        this.start = this.pos;
-    }
+  reset() {
+    this.pos = this.start;
+  }
 
-    makeSubStream(start, length, dict = null) {
-        return new Stream(this.bytes.buffer, start, length, dict);
-    }
+  moveStart() {
+    this.start = this.pos;
+  }
+
+  makeSubStream(start, length, dict = null) {
+    return new Stream(this.bytes.buffer, start, length, dict);
+  }
 }
 
 export { Stream };
