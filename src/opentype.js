@@ -269,11 +269,14 @@ function parseBuffer(buffer, opt={}) {
     } else if(
         applyPlugins(
             'parseBuffer_signature',
-            { opentype: this, font, opt, cff, CmapEncoding, glyphset, signature, data, createDefaultNamesInfo, parse, sizeOf, tableEntries }
+            { font, opt, cff, CmapEncoding, Glyph, GlyphNames, glyphset, signature, data, createDefaultNamesInfo, parse, sizeOf, tableEntries }
         )
     ) {
         numTables = tableEntries.length;
-    } else if (signature.substring(0,2) === '%!' || (parse.getByte(data, 0) === 0x80 && parse.getByte(data, 1) === 0x01)) {
+    } else if (
+        signature.substring(0,2) === '%!' ||
+        (parse.getByte(data, 0) === 0x80 && parse.getByte(data, 1) === 0x01)
+    ) {
         throw new Error('PostScript/PS1/T1/Adobe Type 1 fonts are not supported directly, but you can use the plugin "opentypejs.plugin.type1"');
     } else if (data.buffer.byteLength > (3 * sizeOf.Card8() + sizeOf.OffSize()) && parse.getByte(data, 0) === 0x01) {
         console.warn('Standalone CFF1 files are not supported directly, but you can use the plugin "opentypejs.plugin.cff1file"');

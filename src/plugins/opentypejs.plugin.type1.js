@@ -52,6 +52,7 @@ function extractExtendedHeader(properties) {
     let token;
     let skippedToken;
     let prevToken;
+    let supported = true;
     while ((token = this.getToken()) !== null) {
         if (token !== "/") {
             skippedToken = token;
@@ -67,6 +68,17 @@ function extractExtendedHeader(properties) {
         } else switch (token) {
             case "FontBBox":
                 properties.fontBBox = this.readNumberArray();
+                break;
+            case "$Blend":
+            case "Blend":
+            case "BlendAxisTypes":
+            case "BlendDesignMap":
+            case "BlendDesignPositions":
+            case "WeightVector":
+                if(supported) {
+                    supported = false;
+                    console.warn('Type1 multiple master fonts are not supported and will contain incorrect data');
+                }
                 break;
         }
         prevToken = token;
@@ -117,7 +129,6 @@ const plugin_cff1file = {
                 if(properties.builtInEncoding[0] !== '.notdef') {
                     charset.push('.notdef');
                 }
-                font.cffEncoding = { charset: charset.concat(properties.builtInEncoding.filter(Boolean)) };
             }
 
             params.numTables = 0;
@@ -135,7 +146,8 @@ const plugin_cff1file = {
                 version: topDict.version,
                 postScriptName: topDict.postScriptName || '',
             };
-            font.glyphNames = new params.opentype.GlyphNames({});
+
+            font.glyphNames = new params.GlyphNames({});
             font.names = {};
             font.names.unicode = font.names.macintosh = font.names.windows = createDefaultNamesInfo(metaData);
 
@@ -162,14 +174,8 @@ const plugin_cff1file = {
             font.descender = properties.descend || bBox[1];
 
             font.tables.cmap = {
-                glyphIndexMap: {
-                    0:0,
-                    1:1,
-                    2:2,
-                    72: 31,
-                }
+                glyphIndexMap: {}
             };
-            font.encoding = new params.CmapEncoding(font.tables.cmap);
 
             font.tables.head = {
                 xMin: bBox && bBox.length && bBox[1],
@@ -197,21 +203,33 @@ const plugin_cff1file = {
             font.gsubrsBias = params.cff.calcCFFSubroutineBias(font.gsubrs);
 
             font.glyphs = new params.glyphset.GlyphSet(font);
-            
-            if(!glyphData.charstrings.length) { // then builtinEncoding must be set
+            if(!glyphData.charstrings.length && properties.builtInEncoding) {
                 if(properties.builtInEncoding[0] !== '.notdef') {
-                    font.glyphs.push(0, new opentype.Glyph({ name: '.notdef' }));
+                    font.glyphs.push(0, new params.Glyph({ name: '.notdef' }));
+                    font.glyphNames.names.push('.notdef');
                 }
-                for(let i = 0; i < font.nGlyphs; i++) {
+                for(let i = 0; i < properties.builtInEncoding.length; i++) {
                     const index = font.glyphs.length;
-                    font.glyphs.push(index, new opentype.Glyph({ index, name: properties.builtInEncoding[i], advanceWidth: properties.widths && properties.widths[i] }));
+                    font.glyphs.push(index, new params.Glyph({ index, name: properties.builtInEncoding[i], advanceWidth: properties.widths && properties.widths[i] }));
                 }
             } else {
+                for (let i = 0; i < font.nGlyphs; i += 1) {
+                    font._hmtxTableData[i] = {
+                        advanceWidth: glyphData.charstrings[i].width,
+                        leftSideBearing: glyphData.charstrings[i].lsb,
+                    };
+                    const name = glyphData.charstrings[i].glyphName;
+                    font.glyphNames.names.push(name);
+                    if(properties.builtInEncoding) {
+                        const charIndex = properties.builtInEncoding.indexOf(name);
+                        (charIndex > -1) && (font.tables.cmap.glyphIndexMap[charIndex] = i);
+                    }
+                }
                 const glyphLoader = function(font, i, glyphName, charString) {
                     return function() {
                         const glyph = params.glyphset.cffGlyphLoader(font, i, charString, 1)();
                         glyph.name = glyphName;
-                        glyph.advanceWidth = glyphData.charstrings[i].advanceWidth;
+                        glyph.advanceWidth = glyphData.charstrings[i].width;
                         glyph.leftSideBearing = glyphData.charstrings[i].lsb;
                         return glyph;
                     };
@@ -230,6 +248,8 @@ const plugin_cff1file = {
                     }
                 }
             }
+
+            font.encoding = new params.CmapEncoding(font.tables.cmap);
         } else {
             console.error('Type 1 font is missing eexec comand or binary data');
             return false;
