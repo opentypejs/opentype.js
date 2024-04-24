@@ -1203,7 +1203,7 @@ function parseCFFFDSelect(data, start, nGlyphs, fdArrayCount, version) {
             first = next;
         }
         if (next !== nGlyphs) {
-            throw new Error('CFF Table CID Font FDSelect format 3 range has bad final (Sentinal) GID ' + next);
+            console.warn('CFF Table CID Font FDSelect format 3 range has bad final (Sentinal) GID ' + next);
         }
     } else {
         throw new Error('CFF Table CID Font FDSelect table has unsupported format ' + format);
@@ -1302,7 +1302,7 @@ function parseCFFTable(data, start, font, opt) {
     let charStringsIndex;
     if (opt.lowMemory) {
         charStringsIndex = parseCFFIndexLowMemory(data, start + topDict.charStrings, header.formatMajor);
-        font.nGlyphs = charStringsIndex.offsets.length - (header.formatMajor > 1 ? 1 : 0); // number of elements is count + 1
+        font.nGlyphs = charStringsIndex.offsets.length - 1; // number of elements is count + 1
     } else {
         charStringsIndex = parseCFFIndex(data, start + topDict.charStrings, null, header.formatMajor);
         font.nGlyphs = charStringsIndex.objects.length;
@@ -1651,5 +1651,5 @@ function makeCFFTable(glyphs, options) {
     return t;
 }
 
-export default { parse: parseCFFTable, make: makeCFFTable };
-export { applyPaintType };
+export default { parse: parseCFFTable, make: makeCFFTable, applyPaintType, parseCFFCharstring, calcCFFSubroutineBias };
+export { applyPaintType, parseCFFCharstring, calcCFFSubroutineBias };

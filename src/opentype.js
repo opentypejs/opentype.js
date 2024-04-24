@@ -1,12 +1,14 @@
-// opentype.js
-// https://github.com/opentypejs/opentype.js
-// (c) 2015 Frederik De Bleser
-// opentype.js may be freely distributed under the MIT license.
+/*! opentype.js
+ * https://github.com/opentypejs/opentype.js
+ * (c) 2015-present Frederik De Bleser and contributors
+ * opentype.js may be freely distributed under the MIT license.
+ */
 
 import { tinf_uncompress as inflate } from './tiny-inflate@1.0.3.esm.js'; // from code4fukui/tiny-inflate-es
 import { isNode } from './util.js';
-import Font from './font.js';
+import Font, { createDefaultNamesInfo } from './font.js';
 import Glyph from './glyph.js';
+import glyphset from './glyphset.js';
 import { CmapEncoding, GlyphNames, addGlyphNames } from './encoding.js';
 import parse from './parse.js';
 import BoundingBox from './bbox.js';
@@ -39,6 +41,9 @@ import meta from './tables/meta.js';
 import gasp from './tables/gasp.js';
 import svg from './tables/svg.js';
 import { PaletteManager } from './palettes.js';
+import { sizeOf } from './types.js';
+import { plugins, applyPlugins } from './plugins.mjs';
+
 /**
  * The opentype library.
  * @namespace opentype
@@ -261,6 +266,20 @@ function parseBuffer(buffer, opt={}) {
     } else if (signature === 'wOF2') {
         var issue = 'https://github.com/opentypejs/opentype.js/issues/183#issuecomment-1147228025';
         throw new Error('WOFF2 require an external decompressor library, see examples at: ' + issue);
+    } else if(
+        applyPlugins(
+            'parseBuffer_signature',
+            { font, opt, cff, CmapEncoding, Glyph, GlyphNames, glyphset, signature, data, createDefaultNamesInfo, parse, sizeOf, tableEntries }
+        )
+    ) {
+        numTables = tableEntries.length;
+    } else if (
+        signature.substring(0,2) === '%!' ||
+        (parse.getByte(data, 0) === 0x80 && parse.getByte(data, 1) === 0x01)
+    ) {
+        throw new Error('PostScript/PS1/T1/Adobe Type 1 fonts are not supported directly, but you can use the plugin "opentypejs.plugin.type1"');
+    } else if (data.buffer.byteLength > (3 * sizeOf.Card8() + sizeOf.OffSize()) && parse.getByte(data, 0) === 0x01) {
+        throw new Error('Standalone CFF1 files are not supported directly, but you can use the plugin "opentypejs.plugin.cff1file"');
     } else {
         throw new Error('Unsupported OpenType signature ' + signature);
     }
@@ -412,9 +431,19 @@ function parseBuffer(buffer, opt={}) {
         }
     }
 
-    const nameTable = uncompressTable(data, nameTableEntry);
-    font.tables.name = _name.parse(nameTable.data, nameTable.offset, ltagTable);
-    font.names = font.tables.name;
+    applyPlugins('parseBuffer_processed', {opentype: this, font, opt, data});
+
+    if (nameTableEntry) {
+        const nameTable = uncompressTable(data, nameTableEntry);
+        font.tables.name = _name.parse(nameTable.data, nameTable.offset, ltagTable);
+        font.names = font.tables.name;
+    } else if(!font.names) {
+        console.error('Font is missing the required table "name"');
+        font.names = {};
+        font.names.unicode = createDefaultNamesInfo({});
+        font.names.macintosh = createDefaultNamesInfo({});
+        font.names.windows = createDefaultNamesInfo({});
+    }
 
     if (glyfTableEntry && locaTableEntry) {
         const shortVersion = indexToLocFormat === 0;
@@ -428,13 +457,27 @@ function parseBuffer(buffer, opt={}) {
     } else if (cff2TableEntry) {
         const cffTable2 = uncompressTable(data, cff2TableEntry);
         cff.parse(cffTable2.data, cffTable2.offset, font, opt);
-    } else {
+    } else if (!font.nGLyphs && !font.numGlyphs) {
         throw new Error('Font doesn\'t contain TrueType, CFF or CFF2 outlines.');
     }
 
-    const hmtxTable = uncompressTable(data, hmtxTableEntry);
-    hmtx.parse(font, hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs, opt);
-    addGlyphNames(font, opt);
+
+    if(hmtxTableEntry) {
+        const hmtxTable = uncompressTable(data, hmtxTableEntry);
+        hmtx.parse(font, hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs, opt);
+    } else if(!font._hmtxTableData) {
+        console.error('Font is missing the required table "hmtx"');
+    }
+
+    applyPlugins('parseBuffer_before_addGlyphNames', { opentype: this, font, opt, data, createDefaultNamesInfo});
+
+    if(font.tables.cmap) {
+        addGlyphNames(font, opt);
+    } else {
+        font._IndexToUnicodeMap = font._IndexToUnicodeMap || {};
+        font.glyphNames = font.glyphNames || new GlyphNames({});
+        console.warn('This font has no "cmap" table');
+    }
 
     if (kernTableEntry) {
         const kernTable = uncompressTable(data, kernTableEntry);
@@ -523,6 +566,8 @@ function parseBuffer(buffer, opt={}) {
     
     font.palettes = new PaletteManager(font);
 
+    applyPlugins('parseBuffer_parsed', { opentype: this, font, opt, data, tableEntries});
+
     return font;
 }
 
@@ -580,13 +625,18 @@ function loadSync(url, opt) {
     return parseBuffer(require('fs').readFileSync(url), opt);
 }
 
+const { GlyphSet } = glyphset;
+
 export {
     Font,
+    GlyphSet,
     Glyph,
+    GlyphNames,
     Path,
     BoundingBox,
     parse as _parse,
     parseBuffer as parse,
     load,
-    loadSync
+    loadSync,
+    plugins
 };

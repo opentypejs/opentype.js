@@ -66,7 +66,7 @@ if(typeof Symbol !== 'undefined' && Symbol.iterator) {
  */
 GlyphSet.prototype.get = function(index) {
     // this.glyphs[index] is 'undefined' when low memory mode is on. glyph is pushed on request only.
-    if (this.glyphs[index] === undefined) {
+    if (index != null && this.glyphs[index] === undefined && index < (this.font.numGlyphs || this.font.nGlyphs)) {
         this.font._push(index);
         if (typeof this.glyphs[index] === 'function') {
             this.glyphs[index] = this.glyphs[index]();
@@ -153,7 +153,6 @@ function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
  * @alias opentype.cffGlyphLoader
  * @param  {opentype.Font} font
  * @param  {number} index
- * @param  {Function} parseCFFCharstring
  * @param  {string} charstring
  * @return {opentype.Glyph}
  */
