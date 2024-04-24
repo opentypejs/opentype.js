@@ -15,9 +15,9 @@
 
 // Checks if ch is one of the following characters: SPACE, TAB, CR or LF.
 function isWhiteSpace(ch) {
-  return ch === 0x20 || ch === 0x09 || ch === 0x0d || ch === 0x0a;
+    return ch === 0x20 || ch === 0x09 || ch === 0x0d || ch === 0x0a;
 }
 
 export {
-  isWhiteSpace,
+    isWhiteSpace,
 };
