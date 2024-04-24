@@ -1,7 +1,6 @@
 // The GlyphSet object
 
 import Glyph from './glyph.js';
-import cff from './tables/cff.js';
 
 // Define a property on the glyph that depends on the path being loaded.
 function defineDependentProperty(glyph, externalName, internalName) {
@@ -157,12 +156,12 @@ function ttfGlyphLoader(font, index, parseGlyph, data, position, buildPath) {
  * @param  {string} charstring
  * @return {opentype.Glyph}
  */
-function cffGlyphLoader(font, index, charstring, version) {
+function cffGlyphLoader(font, index, parseCFFCharstring, charstring, version) {
     return function() {
         const glyph = new Glyph({index: index, font: font});
 
         glyph.path = function() {
-            const path = cff.parseCFFCharstring(font, glyph, charstring, version);
+            const path = parseCFFCharstring(font, glyph, charstring, version);
             path.unitsPerEm = font.unitsPerEm;
             return path;
         };

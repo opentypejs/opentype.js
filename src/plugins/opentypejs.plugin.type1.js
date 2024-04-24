@@ -87,7 +87,7 @@ function extractExtendedHeader(properties) {
 
 const plugin_cff1file = {
     parseBuffer_signature: function(returnData, params) {
-        const { font, createDefaultNamesInfo, data, signature, parse, tableEntries } = params;
+        const { font, createDefaultNamesInfo, data, signature, parse } = params;
         const pfbHeader = parse.getByte(data, 0) === 0x80 && parse.getByte(data, 1) === 0x01 ? 6 : 0;
         if(signature.substring(0,2) !== '%!' && !pfbHeader) return false;
         isResponsible.set(font, true);
@@ -227,7 +227,7 @@ const plugin_cff1file = {
                 }
                 const glyphLoader = function(font, i, glyphName, charString) {
                     return function() {
-                        const glyph = params.glyphset.cffGlyphLoader(font, i, charString, 1)();
+                        const glyph = params.glyphset.cffGlyphLoader(font, i, params.cff.parseCFFCharString, charString, 1)();
                         glyph.name = glyphName;
                         glyph.advanceWidth = glyphData.charstrings[i].width;
                         glyph.leftSideBearing = glyphData.charstrings[i].lsb;
