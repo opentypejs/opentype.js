@@ -476,7 +476,7 @@ function parseBuffer(buffer, opt={}) {
     } else {
         font._IndexToUnicodeMap = font._IndexToUnicodeMap || {};
         font.glyphNames = font.glyphNames || new GlyphNames({});
-        console.warn('This font has no "cmap" table')
+        console.warn('This font has no "cmap" table');
     }
 
     if (kernTableEntry) {

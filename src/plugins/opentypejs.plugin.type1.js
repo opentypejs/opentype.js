@@ -33,17 +33,17 @@ let isResponsible = new WeakMap();
 function findEexecPosition(dataView, pfbHeader) {
     const sequence = [0x65, 0x65, 0x78, 0x65, 0x63]; // "eexec"
     for (let i = pfbHeader; i < dataView.byteLength - sequence.length + 1; i++) {
-      let match = true;
-      for (let j = 0; j < sequence.length; j++) {
-        if (dataView.getUint8(i + j) !== sequence[j]) {
-          match = false;
-          break;
+        let match = true;
+        for (let j = 0; j < sequence.length; j++) {
+            if (dataView.getUint8(i + j) !== sequence[j]) {
+                match = false;
+                break;
+            }
         }
-      }
-      if (match) {
-        let pos = i + sequence.length + pfbHeader;
-        return pos;
-      }
+        if (match) {
+            let pos = i + sequence.length + pfbHeader;
+            return pos;
+        }
     }
     return -1;
 }
@@ -54,7 +54,7 @@ function extractExtendedHeader(properties) {
     let prevToken;
     let supported = true;
     while ((token = this.getToken()) !== null) {
-        if (token !== "/") {
+        if (token !== '/') {
             skippedToken = token;
             continue;
         }
@@ -66,15 +66,15 @@ function extractExtendedHeader(properties) {
         } else if(prevToken === 'FontName') {
             properties.fullName = token;
         } else switch (token) {
-            case "FontBBox":
+            case 'FontBBox':
                 properties.fontBBox = this.readNumberArray();
                 break;
-            case "$Blend":
-            case "Blend":
-            case "BlendAxisTypes":
-            case "BlendDesignMap":
-            case "BlendDesignPositions":
-            case "WeightVector":
+            case '$Blend':
+            case 'Blend':
+            case 'BlendAxisTypes':
+            case 'BlendDesignMap':
+            case 'BlendDesignPositions':
+            case 'WeightVector':
                 if(supported) {
                     supported = false;
                     console.warn('Type1 multiple master fonts are not supported and will contain incorrect data');
