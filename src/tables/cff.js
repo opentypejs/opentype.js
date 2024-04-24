@@ -1305,7 +1305,7 @@ function parseCFFTable(data, start, font, opt) {
         font.nGlyphs = charStringsIndex.offsets.length - 1; // number of elements is count + 1
     } else {
         charStringsIndex = parseCFFIndex(data, start + topDict.charStrings, null, header.formatMajor);
-        font.nGlyphs = charStringsIndex.objects.length - 1; // number of elements is count + 1
+        font.nGlyphs = charStringsIndex.objects.length;
     }
 
     if ( header.formatMajor > 1 && font.tables.maxp && font.nGlyphs !== font.tables.maxp.numGlyphs ) {
