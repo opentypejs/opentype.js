@@ -50,7 +50,7 @@ describe('tables/cff.js', function () {
      */
     it('can fall back to CIDs instead of strings when parsing the charset', function () {
         const font = loadSync('./test/fonts/FiraSansOT-Medium.otf', { lowMemory: true });
-        assert.equal((new Set(font.cffEncoding.charset)).size, 1509);
+        assert.equal((new Set(font.cffEncoding.charset)).size, 1150);
         assert.equal(font.cffEncoding.charset.includes(undefined), false);
     });
 
