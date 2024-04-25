@@ -18,7 +18,7 @@ import parse from '../parse.js';
 import * as make from '../make.js';
 import Path from '../path.js';
 import table from '../table.js';
-import { sizeOf } from '../types.js';
+import { chunkArray } from '../util.js';
 
 // Custom equals function that can also check lists.
 function equals(a, b) {
@@ -230,6 +230,8 @@ function parseCFFDict(data, start, size, version) {
     start = start !== undefined ? start : 0;
     const parser = new parse.Parser(data, start);
     const entries = [];
+    const blends = []; 
+    let blendStack = [];
     let operands = [];
     size = size !== undefined ? size : data.byteLength;
 
@@ -246,10 +248,19 @@ function parseCFFDict(data, start, size, version) {
                 op = 1200 + parser.parseByte();
             }
             if (version > 1 && op === 23) {
-                parseBlend(operands);
+                const opBlends = parseBlend(operands);
+                blendStack.unshift(opBlends);
                 // don't clear the stack
                 continue;
             }
+            if(blendStack.length) {
+                let blendValues = blendStack.pop();
+                if(operands.length > 1) {
+                    blendValues = chunkArray(blendValues, operands.length);
+                }
+                blends.push([op, blendValues]);
+            }
+
             entries.push([op, operands]);
             operands = [];
         } else {
@@ -259,7 +270,12 @@ function parseCFFDict(data, start, size, version) {
         }
     }
 
-    return entriesToObject(entries);
+    const dict = entriesToObject(entries);
+    if(blends.length) {
+        dict._blends = entriesToObject(blends);
+    }
+
+    return dict;
 }
 
 // Given a String Index (SID), return the value of the string.
@@ -280,6 +296,7 @@ function getCFFString(strings, index) {
 // This function takes `meta` which is a list of objects containing `operand`, `name` and `default`.
 function interpretDict(dict, meta, strings) {
     const newDict = {};
+    const blends = {};
     let value;
 
     // Because we also want to include missing values, we start out from the meta list
@@ -300,11 +317,16 @@ function interpretDict(dict, meta, strings) {
                 }
                 values[j] = value;
             }
+            if (dict._blends && dict._blends[m.op]) {
+                blends[m.name] = dict._blends[m.op];
+            }
             newDict[m.name] = values;
         } else {
             value = dict[m.op];
             if (value === undefined) {
                 value = m.value !== undefined ? m.value : null;
+            } else if (dict._blends && dict._blends[m.op]) {
+                blends[m.name] = dict._blends[m.op];
             }
 
             if (m.type === 'SID') {
@@ -312,6 +334,11 @@ function interpretDict(dict, meta, strings) {
             }
             newDict[m.name] = value;
         }
+
+    }
+
+    if(Object.keys(blends).length) {
+        newDict._blends = blends;
     }
 
     return newDict;
@@ -405,7 +432,6 @@ const PRIVATE_DICT_META = [
 const PRIVATE_DICT_META_CFF2 = [
     {name: 'blueValues', op: 6, type: 'delta'},
     {name: 'otherBlues', op: 7, type: 'delta'},
-    {name: 'familyBlues', op: 7, type: 'delta'},
     {name: 'familyBlues', op: 8, type: 'delta'},
     {name: 'familyOtherBlues', op: 9, type: 'delta'},
     {name: 'blueScale', op: 1209, type: 'number', value: 0.039625},
@@ -436,6 +462,7 @@ function parseCFFTopDict(data, start, strings, version) {
 // Parse the CFF private dictionary. We don't fully parse out all the values, only the ones we need.
 function parseCFFPrivateDict(data, start, size, strings, version) {
     const dict = parseCFFDict(data, start, size, version);
+    console.log({dict})
     return interpretDict(dict, version > 1 ? PRIVATE_DICT_META_CFF2 : PRIVATE_DICT_META, strings);
 }
 
@@ -598,10 +625,12 @@ function parseCFFEncoding(data, start) {
 }
 
 function parseBlend(operands) {
-    let numberOfBlends = operands.pop();
+    const numberOfBlends = operands.pop();
+    const blends = [];
     while (operands.length > numberOfBlends) {
-        operands.pop();
+        blends.unshift(operands.pop());
     }
+    return blends;
 }
 
 /**
@@ -656,12 +685,80 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
     coords = coords || font.variation && font.variation.get();
 
     if (!glyph.getBlendPath) {
-        glyph.getBlendPath = function(variationCoords) {
-            if(glyph.blendDeltas && glyph.blendDeltas.length) {
-                glyph.blendDeltas = [];
-            }
+        glyph.getBlendPath = function(font, variationCoords) {
             // @TODO: instead of re-parsing the path each time (which will not take into account any possible changes to the path),
-            // apply the stored (and possible modified) blend data
+            // apply the stored (and possibly modified) blend data
+            // if(glyph.vsindex !== undefined) {
+            //     const path = glyph.path;
+            //     const blendVector = font.variation && variationCoords && font.variation.process.getBlendVector(vstore, glyph.vsindex, variationCoords);
+            //     const commands = path.commands;
+            //     const newCommands = [];
+            //     let x = 0;
+            //     let y = 0;
+            //     for(let c = 0; c < commands.length; c++) {
+            //         const cmd = Object.assign({}, commands[c]);
+            //         const isCurve = cmd.type === 'C';
+            //         const deltas = cmd.deltas;
+            //         if(deltas) {
+            //             let sum = {};
+
+            //             if(isCurve) {
+            //                 sum.c1x = deltas.c1x ? deltas.c1x[0] : x;
+            //                 sum.c1y = deltas.c1y ? deltas.c1y[0] : y;
+            //                 sum.c2x = deltas.c2x ? deltas.c2x[0] : sum.c1x;
+            //                 sum.c2y = deltas.c2y ? deltas.c2y[0] : sum.c1y;
+            //                 sum.x = deltas.x ? deltas.x[0] : sum.c2x;
+            //                 sum.y = deltas.y ? deltas.y[0] : sum.c2y;
+            //             } else {
+            //                 sum.x = deltas.x ? deltas.x[0] : x;
+            //                 sum.y = deltas.y ? deltas.y[0] : y;
+            //             }
+
+            //             for (let j = 0; j < blendVector.length; j++) {
+            //                 if(deltas.x) {
+            //                     sum.x += blendVector[j] * deltas.x[1][j];
+            //                 }
+            //                 if(deltas.y) {
+            //                     sum.y += blendVector[j] * deltas.y[1][j];
+            //                 }
+            //                 if (isCurve) {
+            //                     if(deltas.c1x) {
+            //                         sum.c1x += blendVector[j] * deltas.c1x[1][j];
+            //                     }
+            //                     if(deltas.c1y) {
+            //                         sum.c1y += blendVector[j] * deltas.c1y[1][j];
+            //                     }
+            //                     if(deltas.c2x) {
+            //                         sum.c2x += blendVector[j] * deltas.c2x[1][j];
+            //                     }
+            //                     if(deltas.c2y) {
+            //                         sum.c2y += blendVector[j] * deltas.c2y[1][j];
+            //                     }
+            //                 }
+            //             }
+
+            //             x = cmd.x = Math.round(sum.x);
+            //             y = cmd.y = Math.round(sum.y);
+
+            //             if(isCurve) {
+            //                 x = cmd.c1x = Math.round(sum.c1x);
+            //                 y = cmd.c1y = Math.round(sum.c1y);
+            //                 cmd.c2x = Math.round(sum.c2x);
+            //                 cmd.c2y = Math.round(sum.c2y);
+            //             }
+            //         }
+            //         newCommands.push(cmd);
+            //     }
+            //     const newPath = new Path();
+            //     newPath.commands = newCommands;
+            //     newPath.fill = path.fill;
+            //     newPath.stroke = path.stroke;
+            //     newPath.strokeWidth = path.strokeWidth;
+            //     if(path._layers) {
+            //         newPath._layers = path._layers;
+            //     }
+            //     return newPath;
+            // }
             return parseCFFCharstring(font, glyph, code, version, variationCoords);
         };
     }
@@ -1109,10 +1206,8 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                     var deltaSetCount = n * axisCount;
                     var delta = stack.length - deltaSetCount;
                     var deltaSetIndex = delta - n;
-                    var lendiff = stack.length - blendStack.length - deltaSetCount - 1;
-                    // console.log({delta, deltaSetIndex, deltaSetCount, lendiff, stack: JSON.stringify(stack), blendStack: JSON.stringify(blendStack1)});
 
-                    glyph.blendDeltas = glyph.blendDeltas || [];
+                    glyph.vsindex = vsindex;
                     
                     if(blendVector) {
                         for (let i = 0; i < n; i++) {
@@ -1732,16 +1827,34 @@ function makeNameIndex(fontNames) {
 
 // Given a dictionary's metadata, create a DICT structure.
 function makeDict(meta, attrs, strings) {
+    console.log('~~~~~~~~~~~~~+',attrs);
     const m = {};
     for (let i = 0; i < meta.length; i += 1) {
         const entry = meta[i];
         let value = attrs[entry.name];
         if (value !== undefined && !equals(value, entry.value)) {
+            console.log('************', entry, value);
             if (entry.type === 'SID') {
                 value = encodeString(value, strings);
             }
 
+            const blend = attrs._blends && attrs._blends[entry.name];
+
+            if(blend) {
+                console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+                if (!Array.isArray(value)) {
+                    value = [value];
+                }
+                const flat = blend.flat();
+                for(let i = 0; i < flat.length; i++) {
+                    value.push(flat[i]);
+                }
+            }
+
             m[entry.op] = {name: entry.name, type: entry.type, value: value};
+            if (blend) {
+                m[entry.op].blend = blend.length;
+            }
         }
     }
 
@@ -1837,7 +1950,7 @@ function glyphToOps(glyph, version, font) {
         ops.push({name: 'width', type: 'NUMBER', value: glyph.advanceWidth});
     }
     let x = 0;
-    let y = 0;x;
+    let y = 0;
 
     for (let i = 0; i < path.commands.length; i += 1) {
         let dx;
@@ -2097,6 +2210,7 @@ function makeCFFTable(glyphs, options, version) {
         t.fields.push({name: 'fontDictIndex', type: 'RECORD'});
         let fontDicts = cffTable && cffTable.topDict._fdArray;
         let encodeFontDicts = fontDicts;
+        console.log(fontDicts);
         if (!encodeFontDicts) {
             encodeFontDicts = [makeFontDict([])];
         } else {
@@ -2108,13 +2222,10 @@ function makeCFFTable(glyphs, options, version) {
         t.fontDictIndex = makeFontDictIndex(encodeFontDicts);
 
         for(let i = 0; i < fontDicts.length; i++) {
-            t.fields.push({name: `fontDict_${i}`, type: 'RECORD', value: encodeFontDicts[i]});
-        }
-
-        for(let i = 0; i < fontDicts.length; i++) {
-            let attrs = fontDicts && fontDicts[i] && fontDicts[i]._privateDict || [];
-            let privateDict = makePrivateDict(attrs, strings, 2);
-            t.fields.push({name: `privateDict_${i}`, type: 'RECORD', value: privateDict});
+            let privateAttrs = fontDicts && fontDicts[i] && fontDicts[i]._privateDict || {};
+            let privateDict = makePrivateDict(privateAttrs, strings, 2);
+            t.fields.push({name: `privateDict_${i}`, type: 'RECORD' });
+            t[`privateDict_${i}`] = privateDict;
         }
 
         console.log('#########################################')

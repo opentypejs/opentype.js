@@ -800,16 +800,24 @@ encode.DICT = function(m) {
         // Object.keys() return string keys, but our keys are always numeric.
         const k = parseInt(keys[i], 0);
         const v = m[k];
+        if(v.blend) {
+            v.value.push(v.blend);
+        }
         // Value comes before the key.
         const enc1 = encode.OPERAND(v.value, v.type);
         const enc2 = encode.OPERATOR(k);
         for (let j = 0; j < enc1.length; j++) {
             d.push(enc1[j]);
         }
+        if(v.blend) {
+            d.push(0x17);
+        }
         for (let j = 0; j < enc2.length; j++) {
             d.push(enc2[j]);
         }
+        
     }
+
 
     return d;
 };
@@ -874,7 +882,13 @@ encode.OPERAND = function(v, type) {
                 d.push(enc1[j]);
             }
         } else if (type === 'delta') {
-            console.log('encode delta:', v)
+            for (let i = 0; i < v.length; i++) {
+                const n = encode.NUMBER(v[i], 'number');
+                for (let j = 0; j < n.length; j++) {
+                    d.push(n[j]);
+                }
+            }
+            console.log(d)
         } else {
             throw new Error('Unknown operand type ' + type);
             // FIXME Add support for booleans

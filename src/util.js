@@ -157,4 +157,16 @@ function copyComponent(c) {
     };
 }
 
-export { isBrowser, isNode, checkArgument, arraysEqual, objectsEqual, binarySearch, binarySearchIndex, binarySearchInsert, isGzip, unGzip, copyPoint, copyComponent };
+function chunkArray(array, chunks) {
+    const chunkLength = Math.ceil(array.length / chunks);
+    return array.reduce((chunkedArray, element, index) => { 
+        const i = Math.floor(index / chunkLength);
+        if(!chunkedArray[i]) {
+            chunkedArray[i] = [];
+        }
+        chunkedArray[i].push(element)
+        return chunkedArray;
+    }, []);
+}
+
+export { isBrowser, isNode, checkArgument, arraysEqual, objectsEqual, binarySearch, binarySearchIndex, binarySearchInsert, isGzip, unGzip, copyPoint, copyComponent, chunkArray };
