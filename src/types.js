@@ -340,7 +340,7 @@ encode.REAL = function(v) {
             nibbles += 'a';
         } else if (c === '-') {
             nibbles += 'e';
-        } else {
+        } else if(nibbles.length || c !== '0') { // omit leading zeroes
             nibbles += c;
         }
     }
@@ -857,6 +857,13 @@ encode.OPERAND = function(v, type) {
                 d.push(enc1[j]);
             }
         }
+    } else if (Array.isArray(v)) {
+        for (let i = 0; i < v.length; i++) {
+            const n = encode.OPERAND(v[i], type);
+            for (let j = 0; j < n.length; j++) {
+                d.push(n[j]);
+            }
+        }
     } else {
         if (type === 'SID') {
             const enc1 = encode.NUMBER(v);
@@ -871,24 +878,19 @@ encode.OPERAND = function(v, type) {
             for (let j = 0; j < enc1.length; j++) {
                 d.push(enc1[j]);
             }
-        } else if (type === 'number' || type === 'varoffset') {
+        } else if (
+            type === 'varoffset' ||
+            ((type === 'number' || type === 'delta') && Number.isInteger(v))
+        ) {
             const enc1 = encode.NUMBER(v);
             for (let j = 0; j < enc1.length; j++) {
                 d.push(enc1[j]);
             }
-        } else if (type === 'real') {
+        } else if (type === 'real' || !isNaN(parseFloat(v)) && !Number.isInteger(v)) {
             const enc1 = encode.REAL(v);
             for (let j = 0; j < enc1.length; j++) {
                 d.push(enc1[j]);
             }
-        } else if (type === 'delta') {
-            for (let i = 0; i < v.length; i++) {
-                const n = encode.NUMBER(v[i], 'number');
-                for (let j = 0; j < n.length; j++) {
-                    d.push(n[j]);
-                }
-            }
-            console.log(d)
         } else {
             throw new Error('Unknown operand type ' + type);
             // FIXME Add support for booleans
