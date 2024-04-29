@@ -85,6 +85,7 @@ function makeSfntTable(tables) {
 
     for (let i = 0; i < tables.length; i += 1) {
         const t = tables[i];
+        console.log(t)
         check.argument(t.tableName.length === 4, 'Table name' + t.tableName + ' is invalid.');
         const tableLength = t.sizeOf();
         const tableRecord = makeTableRecord(t.tableName, computeCheckSum(t.encode()), offset, tableLength);
@@ -335,6 +336,8 @@ function fontToSfntTable(font) {
     const ltagTable = (languageTags.length > 0 ? ltag.make(languageTags) : undefined);
 
     const postTable = post.make(font);
+    const useCFFtable = font.tables.cff || font.tables.cff2;
+    console.log(useCFFtable, font.tables.cff2);
     const cffTable = cff.make(font.glyphs, {
         version: font.getEnglishName('version'),
         fullName: englishFullName,
@@ -343,8 +346,8 @@ function fontToSfntTable(font) {
         postScriptName: postScriptName,
         unitsPerEm: font.unitsPerEm,
         fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax],
-        topDict: font.tables.cff && font.tables.cff.topDict || {}
-    });
+        topDict: useCFFtable && useCFFtable.topDict || {},
+    }, font.tables.cff2 ? 2 : 1);
 
     const metaTable = (font.metas && Object.keys(font.metas).length > 0) ? meta.make(font.metas) : undefined;
 
@@ -371,6 +374,7 @@ function fontToSfntTable(font) {
     const optionalTableArgs = {
         avar: [font.tables.fvar],
         fvar: [font.names],
+        gvar: [font.tables.fvar],
     };
 
     for (let tableName in optionalTables) {

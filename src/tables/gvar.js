@@ -30,7 +30,9 @@ function parseGvarTable(data, start, fvar, glyphs) {
 }
 
 function makeGvarTable(/*gvar*/) {
-    console.warn('Writing of gvar tables is not yet supported.');
+    console.warn('Writing of gvar table data is not yet supported.');
+    // as we only write CFF fonts, we'll have to convert the gvar data to CFF2 blends
+    // this will be done in cff.js and gvar won't need a make function
 }
 
 export default { make: makeGvarTable, parse: parseGvarTable };

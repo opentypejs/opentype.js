@@ -99,7 +99,7 @@ const typeOffsets = {
     tag: 4
 };
 
-const masks = {
+export const masks = {
     LONG_WORDS: 0x8000,
     WORD_DELTA_COUNT_MASK: 0x7FFF,
     SHARED_POINT_NUMBERS: 0x8000,

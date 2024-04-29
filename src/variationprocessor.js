@@ -389,7 +389,7 @@ export class VariationProcessor {
                     transformedGlyph = new Glyph(Object.assign({}, glyph, {points: transformedPoints, path: getPath(transformedPoints)}));
                 }
             } else if (hasBlend) {
-                const blendPath = glyph.getBlendPath(coords);
+                const blendPath = glyph.getBlendPath(this.font, coords);
                 transformedGlyph = new Glyph(Object.assign({}, glyph, {path: blendPath}));
             }
         }

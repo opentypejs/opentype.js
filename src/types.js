@@ -340,7 +340,7 @@ encode.REAL = function(v) {
             nibbles += 'a';
         } else if (c === '-') {
             nibbles += 'e';
-        } else {
+        } else if(nibbles.length || c !== '0') { // omit leading zeroes
             nibbles += c;
         }
     }
@@ -723,9 +723,10 @@ encode.VARDELTAS = function(deltas) {
 // The values should be objects containing name / type / value.
 /**
  * @param {Array} l
+ * @param {Function} countEncoder - encoder for the array count, defaults to 'Card16'
  * @returns {Array}
  */
-encode.INDEX = function(l) {
+encode.INDEX = function(l, countEncoder = 'Card16') {
     //var offset, offsets, offsetEncoder, encodedOffsets, encodedOffset, data,
     //    i, v;
     // Because we have to know which data type to use to encode the offsets,
@@ -742,7 +743,7 @@ encode.INDEX = function(l) {
     }
 
     if (data.length === 0) {
-        return [0, 0];
+        return Array(sizeOf[countEncoder]()).fill(0);
     }
 
     const encodedOffsets = [];
@@ -753,7 +754,7 @@ encode.INDEX = function(l) {
         Array.prototype.push.apply(encodedOffsets, encodedOffset);
     }
 
-    return Array.prototype.concat(encode.Card16(l.length),
+    return Array.prototype.concat(encode[countEncoder](l.length),
         encode.OffSize(offSize),
         encodedOffsets,
         data);
@@ -765,6 +766,22 @@ encode.INDEX = function(l) {
  */
 sizeOf.INDEX = function(v) {
     return encode.INDEX(v).length;
+};
+
+/**
+ * @param {Array} l
+ * @returns {Array}
+ */
+encode.INDEX32 = function(l) {
+    return encode.INDEX(l, 'ULONG');
+};
+
+/**
+ * @param {Array}
+ * @returns {number}
+ */
+sizeOf.INDEX32 = function(v) {
+    return encode.INDEX(v, 'ULONG').length;
 };
 
 /**
@@ -783,16 +800,24 @@ encode.DICT = function(m) {
         // Object.keys() return string keys, but our keys are always numeric.
         const k = parseInt(keys[i], 0);
         const v = m[k];
+        if(v.blend) {
+            v.value.push(v.blend);
+        }
         // Value comes before the key.
         const enc1 = encode.OPERAND(v.value, v.type);
         const enc2 = encode.OPERATOR(k);
         for (let j = 0; j < enc1.length; j++) {
             d.push(enc1[j]);
         }
+        if(v.blend) {
+            d.push(0x17);
+        }
         for (let j = 0; j < enc2.length; j++) {
             d.push(enc2[j]);
         }
+        
     }
+
 
     return d;
 };
@@ -832,6 +857,13 @@ encode.OPERAND = function(v, type) {
                 d.push(enc1[j]);
             }
         }
+    } else if (Array.isArray(v)) {
+        for (let i = 0; i < v.length; i++) {
+            const n = encode.OPERAND(v[i], type);
+            for (let j = 0; j < n.length; j++) {
+                d.push(n[j]);
+            }
+        }
     } else {
         if (type === 'SID') {
             const enc1 = encode.NUMBER(v);
@@ -841,16 +873,20 @@ encode.OPERAND = function(v, type) {
         } else if (type === 'offset') {
             // We make it easy for ourselves and always encode offsets as
             // 4 bytes. This makes offset calculation for the top dict easier.
+            // For CFF2 an in order to save space, we use the 'varoffset' type
             const enc1 = encode.NUMBER32(v);
             for (let j = 0; j < enc1.length; j++) {
                 d.push(enc1[j]);
             }
-        } else if (type === 'number') {
+        } else if (
+            type === 'varoffset' ||
+            ((type === 'number' || type === 'delta') && Number.isInteger(v))
+        ) {
             const enc1 = encode.NUMBER(v);
             for (let j = 0; j < enc1.length; j++) {
                 d.push(enc1[j]);
             }
-        } else if (type === 'real') {
+        } else if (type === 'real' || !isNaN(parseFloat(v)) && !Number.isInteger(v)) {
             const enc1 = encode.REAL(v);
             for (let j = 0; j < enc1.length; j++) {
                 d.push(enc1[j]);
@@ -918,7 +954,18 @@ sizeOf.CHARSTRING = function(ops) {
  * @returns {Array}
  */
 encode.OBJECT = function(v) {
+    if(Array.isArray(v)) {
+        const encoded = [];
+        for(let o of v) {
+            encoded.push(sizeOf.OBJECT(o));
+        }
+        return encoded;
+    }
     const encodingFunction = encode[v.type];
+    if(encodingFunction === undefined) {
+
+        console.log('~~~~~~~~~~~~~', v)
+    }
     check.argument(encodingFunction !== undefined, 'No encoding function for type ' + v.type);
     return encodingFunction(v.value);
 };
@@ -928,6 +975,13 @@ encode.OBJECT = function(v) {
  * @returns {number}
  */
 sizeOf.OBJECT = function(v) {
+    if(Array.isArray(v)) {
+        let size = 0;
+        for(let o of v) {
+            size += sizeOf.OBJECT(o);
+        }
+        return size;
+    }
     const sizeOfFunction = sizeOf[v.type];
     check.argument(sizeOfFunction !== undefined, 'No sizeOf function for type ' + v.type);
     return sizeOfFunction(v.value);

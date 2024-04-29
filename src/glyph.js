@@ -21,6 +21,11 @@ function getPathDefinition(glyph, path) {
 
         set: function(p) {
             _path = p;
+            // remove the subrs/gsubrs
+            // @TODO: In the future we'll need an algorithm that finds
+            // candidates for sub routines and adds them to the index
+            delete glyph.subrs;
+            delete glyph.gsubrs;
         }
     };
 }

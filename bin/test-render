@@ -24,7 +24,7 @@
 //
 // When viewing the SVG, it will be upside-down (since glyphs are designed Y-up).
 
-var opentype = require('../dist/opentype.js');
+var opentype = require('/mnt/d/programming/_opensource/opentypejs/dist/opentype.js');
 
 const SVG_FOOTER = `</svg>`;
 
