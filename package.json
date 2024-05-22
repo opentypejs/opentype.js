@@ -40,6 +40,7 @@
     "esbuild": "^0.20.0",
     "eslint": "^8.56.0",
     "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-local-rules": "^2.0.1",
     "reify": "^0.20.12"
   },
   "bin": {
@@ -90,8 +91,5 @@
       "local-rules/ban-foreach": 2,
       "local-rules/import-extensions": 2
     }
-  },
-  "dependencies": {
-    "eslint-plugin-local-rules": "^2.0.1"
   }
 }
