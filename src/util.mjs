@@ -1,19 +1,16 @@
 import { tinf_uncompress as inflate } from './tiny-inflate@1.0.3.esm.mjs';
 
+function getGlobalScope() {
+    return (typeof globalThis !== "undefined"?globalThis:self);
+}
+
 function isBrowser() {
     return (
-        typeof window !== 'undefined' ||
+        (typeof getGlobalScope().window !== 'undefined' && getGlobalScope() === getGlobalScope().window && getGlobalScope().window.document) ||
         typeof WorkerGlobalScope !== 'undefined'
     );
 }
 
-function isNode() {
-    return (
-        typeof window === 'undefined' &&
-        typeof global === 'object' &&
-        typeof process === 'object'
-    );
-}
 
 // Check if 2 arrays of primitives are equal.
 function arraysEqual(ar1, ar2) {
@@ -141,4 +138,4 @@ function copyComponent(c) {
     };
 }
 
-export { isBrowser, isNode, arraysEqual, binarySearch, binarySearchIndex, binarySearchInsert, isGzip, unGzip, copyPoint, copyComponent };
+export { getGlobalScope, isBrowser, arraysEqual, binarySearch, binarySearchIndex, binarySearchInsert, isGzip, unGzip, copyPoint, copyComponent };
