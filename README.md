@@ -182,6 +182,8 @@ A Font represents a loaded OpenType font file. It contains a set of glyphs and m
 * `unitsPerEm`: X/Y coordinates in fonts are stored as integers. This value determines the size of the grid. Common values are `2048` and `4096`.
 * `ascender`: Distance from baseline of highest ascender. In font units, not pixels.
 * `descender`: Distance from baseline of lowest descender. In font units, not pixels.
+* `vertTypoAscender`: Similar to "ascender", except this is used when glyphs are drawn vertically. In font units, not pixels.
+* `vertTypoDescender`: Similar to "descender", except this is used when glyphs are drawn vertically. In font units, not pixels.
 
 #### `Font.getPath(text, x, y, fontSize, options)`
 Create a Path that represents the given text.
