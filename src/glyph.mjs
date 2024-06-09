@@ -357,7 +357,7 @@ Glyph.prototype.getMetrics = function() {
  * @param  {opentype.Font} font - if hinting is to be used, or CPAL/COLR / variation needs to be rendered, the font
  */
 Glyph.prototype.draw = function(ctx, x, y, fontSize, options, font) {
-    options = Object.assign({}, font.defaultRenderOptions, options);
+    options = Object.assign({}, font && font.defaultRenderOptions, options);
     const path = this.getPath(x, y, fontSize, options, font);
     path.draw(ctx);
 };
