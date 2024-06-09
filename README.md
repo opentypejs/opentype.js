@@ -442,8 +442,10 @@ A Glyph is an individual mark that often corresponds to a character. Some glyphs
 * `unicode`: The primary unicode value of this glyph (can be `undefined`).
 * `unicodes`: The list of unicode values for this glyph (most of the time this will be `1`, can also be empty).
 * `index`: The index number of the glyph.
-* `advanceWidth`: The width to advance the pen when drawing this glyph.
+* `advanceWidth`: The width to advance the pen when drawing this glyph horizontally.
 * `leftSideBearing`: The horizontal distance from the previous character to the origin (`0, 0`); a negative value indicates an overhang
+* `advanceHeight`: The height to advance the pen when drawing this glyph vertically.
+* `topSideBearing`: The vertical distance from the previous character to the origin (`0, 0`); a negative value indicates an overhang
 * `xMin`, `yMin`, `xMax`, `yMax`: The bounding box of the glyph.
 * `path`: The raw, unscaled path of the glyph.
 

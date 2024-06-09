@@ -26,7 +26,9 @@ import gpos from './tables/gpos.mjs';
 import gsub from './tables/gsub.mjs';
 import head from './tables/head.mjs';
 import hhea from './tables/hhea.mjs';
+import vhea from './tables/vhea.mjs';
 import hmtx from './tables/hmtx.mjs';
+import vmtx from './tables/vmtx.mjs';
 import kern from './tables/kern.mjs';
 import ltag from './tables/ltag.mjs';
 import loca from './tables/loca.mjs';
@@ -189,6 +191,7 @@ function parseBuffer(buffer, opt={}) {
     let gsubTableEntry;
     let hmtxTableEntry;
     let hvarTableEntry;
+    let vmtxTableEntry;
     let kernTableEntry;
     let locaTableEntry;
     let nameTableEntry;
@@ -247,6 +250,16 @@ function parseBuffer(buffer, opt={}) {
                 break;
             case 'hmtx':
                 hmtxTableEntry = tableEntry;
+                break;
+            case 'vhea':
+                table = uncompressTable(data, tableEntry);
+                font.tables.vhea = vhea.parse(table.data, table.offset);
+                font.vertTypoAscender = font.tables.vhea.vertTypoAscender;
+                font.vertTypoDescender = font.tables.vhea.vertTypoDescender;
+                font.numOfLongVerMetrics = font.tables.vhea.numOfLongVerMetrics;
+                break;
+            case 'vmtx':
+                vmtxTableEntry = tableEntry;
                 break;
             case 'ltag':
                 table = uncompressTable(data, tableEntry);
@@ -343,8 +356,14 @@ function parseBuffer(buffer, opt={}) {
         throw new Error('Font doesn\'t contain TrueType, CFF or CFF2 outlines.');
     }
 
-    const hmtxTable = uncompressTable(data, hmtxTableEntry);
-    hmtx.parse(font, hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs, opt);
+    if (hmtxTableEntry) {
+        const hmtxTable = uncompressTable(data, hmtxTableEntry);
+        hmtx.parse(font, hmtxTable.data, hmtxTable.offset, font.numberOfHMetrics, font.numGlyphs, font.glyphs, opt);
+    }
+    if (vmtxTableEntry) {
+        const vmtxTable = uncompressTable(data, vmtxTableEntry);
+        vmtx.parse(font, vmtxTable.data, vmtxTable.offset, font.numOfLongVerMetrics, font.numGlyphs, font.glyphs, opt);
+    }
     addGlyphNames(font, opt);
 
     if (kernTableEntry) {
