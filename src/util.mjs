@@ -1,7 +1,7 @@
 import { tinf_uncompress as inflate } from './tiny-inflate@1.0.3.esm.mjs';
 
 function getGlobalScope() {
-    return (typeof globalThis !== "undefined"?globalThis:self);
+    return (typeof globalThis !== 'undefined'?globalThis:self);
 }
 
 function isBrowser() {

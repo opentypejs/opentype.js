@@ -48,12 +48,13 @@
     "opera": "12.1",
     "android": "122",
     "ios": "8",
-    "node": "6.17.1"
+    "node": "13.2.0"
   },
   "devDependencies": {
     "mocha": "^10.4.0",
     "esbuild": "^0.21.5",
     "eslint": "^9.4.0",
+    "semver": "^7.6.2",
     "core-js": "^3.37.1",
     "@swc/core": "^1.5.28",
     "@swc/helpers": "^0.5.11"
