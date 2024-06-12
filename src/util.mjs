@@ -1,5 +1,17 @@
 import { tinf_uncompress as inflate } from './tiny-inflate@1.0.3.esm.mjs';
 
+function getGlobalScope() {
+    return (typeof globalThis !== 'undefined'?globalThis:self);
+}
+
+function isBrowser() {
+    return (
+        (typeof getGlobalScope().window !== 'undefined' && getGlobalScope() === getGlobalScope().window && getGlobalScope().window.document) ||
+        typeof WorkerGlobalScope !== 'undefined'
+    );
+}
+
+
 // Check if 2 arrays of primitives are equal.
 function arraysEqual(ar1, ar2) {
     const n = ar1.length;
@@ -126,4 +138,4 @@ function copyComponent(c) {
     };
 }
 
-export { arraysEqual, binarySearch, binarySearchIndex, binarySearchInsert, isGzip, unGzip, copyPoint, copyComponent };
+export { getGlobalScope, isBrowser, arraysEqual, binarySearch, binarySearchIndex, binarySearchInsert, isGzip, unGzip, copyPoint, copyComponent };

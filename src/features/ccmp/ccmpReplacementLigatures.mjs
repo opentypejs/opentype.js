@@ -1,7 +1,7 @@
 import { ContextParams } from '../../tokenizer.mjs';
 import applySubstitution from '../applySubstitution.mjs';
 
-// @TODO: use commonFeatureUtils.js for reduction of code duplication
+// @TODO: use commonFeatureUtils.mjs for reduction of code duplication
 // once #564 has been merged.
 
 /**

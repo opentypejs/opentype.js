@@ -93,7 +93,7 @@ function createMockObject(logsArray, baseObject = {}, options = {}) {
 
 function enableMockCanvas() {
     if (!global.window) {
-        global.window = {};
+        global.window = global;
     }
     if (!global.document) {
         global.document = {};
@@ -146,7 +146,6 @@ function enableMockCanvas() {
     };
 
     global.document.createElement = () => window.HTMLCanvasElement;
-    window.document = global.document;
 }
 
 export { hex, unhex, unhexArray, createMockObject, enableMockCanvas };

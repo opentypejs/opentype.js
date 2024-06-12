@@ -1,6 +1,9 @@
 {
   "name": "opentype.js",
   "description": "OpenType font parser",
+  "notes": [
+    "The key 'minimumSupportedTargets' is a list of the minimum supported versions of the browsers and environments that OpenType.js supports when built in compat mode, it is in the package.json as both a reference for the user and is also used during the build step to configure the esbuild and SWC targets."
+  ],
   "author": {
     "name": "Frederik De Bleser",
     "email": "frederik@debleser.be"
@@ -24,21 +27,37 @@
   "browser": "./dist/opentype.js",
   "module": "./dist/opentype.mjs",
   "scripts": {
-    "build": "npm run b:umd && npm run b:esm",
-    "dist": " npm run d:umd && npm run d:esm",
+    "build": "npm run b:umd && npm run b:esm && npm run b:compat",
+    "dist": " npm run d:umd && npm run d:esm && npm run d:compat",
     "test": "npm run build && npm run dist && mocha --recursive && npm run lint",
     "lint": "eslint src",
     "lint-fix": "eslint src --fix",
-    "start": "esbuild --bundle src/opentype.mjs --outdir=dist --target=es2018 --format=esm  --out-extension:.js=.mjs     --define:DEBUG=false --global-name=opentype --watch --servedir=. --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\" --footer:js=\"new EventSource('/esbuild').addEventListener('change', () => location.reload())\"",
-    "b:umd": "esbuild --bundle src/opentype.mjs --outdir=dist --target=es2018 --format=iife --out-extension:.js=.js      --define:DEBUG=false --global-name=opentype                      --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\"",
-    "d:umd": "esbuild --bundle src/opentype.mjs --outdir=dist --target=es2018 --format=iife --out-extension:.js=.min.js  --define:DEBUG=false --global-name=opentype --minify --sourcemap --footer:js=\"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); }(typeof self !== 'undefined' ? self : this, () => ({...opentype,'default':opentype})));\"",
-    "b:esm": "esbuild --bundle src/opentype.mjs --outdir=dist --target=es2018 --format=esm  --out-extension:.js=.mjs     --define:DEBUG=false",
-    "d:esm": "esbuild --bundle src/opentype.mjs --outdir=dist --target=es2018 --format=esm  --out-extension:.js=.min.mjs --define:DEBUG=false --minify --sourcemap"
+    "start": "node esbuild-runner.mjs --input src/opentype.mjs --output dist/opentype.mjs --target es2015 --module --watch --servedir . --global-name opentype --footer \"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); })(typeof self !== 'undefined' ? self : this, function(){return ((function(a,b){var keys=Object.keys(b);for(var i=0;i<keys.length;i++)a[keys[i]]=b[keys[i]];return a})({'default':opentype},opentype));});\"",
+    "b:umd": "node esbuild-runner.mjs --input src/opentype.mjs --output dist/opentype.js --target es2015 --global-name opentype --footer \"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); })(typeof self !== 'undefined' ? self : this, function(){return ((function(a,b){var keys=Object.keys(b);for(var i=0;i<keys.length;i++)a[keys[i]]=b[keys[i]];return a})({'default':opentype},opentype));});\"",
+    "d:umd": "node esbuild-runner.mjs --input src/opentype.mjs --output dist/opentype.min.js --target es2015 --minify --sourcemap --global-name opentype --footer \"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); })(typeof self !== 'undefined' ? self : this, function(){return ((function(a,b){var keys=Object.keys(b);for(var i=0;i<keys.length;i++)a[keys[i]]=b[keys[i]];return a})({'default':opentype},opentype));});\"",
+    "b:esm": "node esbuild-runner.mjs --input src/opentype.mjs --output dist/opentype.mjs --target es2015 --module",
+    "d:esm": "node esbuild-runner.mjs --input src/opentype.mjs --output dist/opentype.min.mjs --target es2015 --module --minify --sourcemap",
+    "b:compat": "node esbuild-runner.mjs --input src/opentype.mjs --output dist/opentype.compat.js --target compat --global-name opentype --footer \"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); })(typeof self !== 'undefined' ? self : this, function(){return ((function(a,b){var keys=Object.keys(b);for(var i=0;i<keys.length;i++)a[keys[i]]=b[keys[i]];return a})({'default':opentype},opentype));});\"",
+    "d:compat": "node esbuild-runner.mjs --input src/opentype.mjs --output dist/opentype.compat.min.js --target compat --minify --sourcemap --global-name opentype --footer \"(function (root, factory) { if (typeof define === 'function' && define.amd)define(factory); else if (typeof module === 'object' && module.exports)module.exports = factory(); else root.opentype = factory(); })(typeof self !== 'undefined' ? self : this, function(){return ((function(a,b){var keys=Object.keys(b);for(var i=0;i<keys.length;i++)a[keys[i]]=b[keys[i]];return a})({'default':opentype},opentype));});\""
+  },
+  "minimumSupportedTargets": {
+    "chrome": "19",
+    "safari": "5.1.7",
+    "firefox": "12.1",
+    "ie": "11",
+    "opera": "12.1",
+    "android": "122",
+    "ios": "8",
+    "node": "13.2.0"
   },
   "devDependencies": {
     "mocha": "^10.4.0",
     "esbuild": "^0.21.5",
-    "eslint": "^9.4.0"
+    "eslint": "^9.4.0",
+    "semver": "^7.6.2",
+    "core-js": "^3.37.1",
+    "@swc/core": "^1.5.28",
+    "@swc/helpers": "^0.5.11"
   },
   "bin": {
     "ot": "./bin/ot"
