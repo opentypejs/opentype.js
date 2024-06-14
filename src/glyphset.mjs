@@ -88,6 +88,10 @@ GlyphSet.prototype.get = function(index) {
 
         this.glyphs[index].advanceWidth = this.font._hmtxTableData[index].advanceWidth;
         this.glyphs[index].leftSideBearing = this.font._hmtxTableData[index].leftSideBearing;
+        if (this.font._vmtxTableData) {
+            this.glyphs[index].advanceHeight = this.font._vmtxTableData[index].advanceHeight;
+            this.glyphs[index].topSideBearing = this.font._vmtxTableData[index].topSideBearing;
+        }
     } else {
         if (typeof this.glyphs[index] === 'function') {
             this.glyphs[index] = this.glyphs[index]();
