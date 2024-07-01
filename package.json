@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "mocha": "^10.4.0",
-    "esbuild": "^0.21.5",
+    "esbuild": "^0.22.0",
     "eslint": "^9.4.0"
   },
   "bin": {
