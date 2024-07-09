@@ -27,4 +27,4 @@
 - [ ] I have added tests to cover my changes.
 - [ ] My change requires a change to the documentation.
 - [ ] I have updated the **README** accordingly.
-- [ ] I have read the **CONTRIBUTING** document.
+- [ ] I have read the **Contribute** README section.

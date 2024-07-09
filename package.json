@@ -36,9 +36,9 @@
     "d:esm": "esbuild --bundle src/opentype.mjs --outdir=dist --target=es2018 --format=esm  --out-extension:.js=.min.mjs --define:DEBUG=false --minify --sourcemap"
   },
   "devDependencies": {
-    "mocha": "^10.4.0",
-    "esbuild": "^0.21.5",
-    "eslint": "^9.4.0"
+    "mocha": "^10.6.0",
+    "esbuild": "^0.23.0",
+    "eslint": "^9.6.0"
   },
   "bin": {
     "ot": "./bin/ot"
