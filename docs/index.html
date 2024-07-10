@@ -77,6 +77,7 @@
 
 <script type="module">
 import * as opentype from "/dist/opentype.mjs";
+globalThis.opentype = opentype;
 
 const form = document.forms.demo;
 form.oninput = renderText;
@@ -203,11 +204,30 @@ function showErrorMessage(message) {
     el.innerHTML = message;
 }
 
+globalThis.downloadFont = async (font) => {
+    const fontArrayBuffer = font.toArrayBuffer();
+    const blob = new Blob([fontArrayBuffer], { type: 'font/otf' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'font.otf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+globalThis.calcKern = (font, letter1, letter2) => (font.getKerningValue(font.charToGlyph(letter1), font.charToGlyph(letter2)));
+
+
+
 function onFontLoaded(font) {
     if (window.font) {
         window.font.onGlyphUpdated = null
     }
     window.font = font;
+
+    window.fontArrayBuffer = font.toArrayBuffer();
+    window.font2 = opentype.parse(window.fontArrayBuffer);
+
     options = Object.assign({}, window.font.defaultRenderOptions);
     window.fontOptions = options;
     
@@ -279,7 +299,7 @@ async function display(file, name) {
             error = err;
         }     
 
-        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data, { lowMemory: true }));
+        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data, { lowMemory: false }));
         if ( !error ) showErrorMessage('');
     } catch (err) {
         showErrorMessage(err.toString());

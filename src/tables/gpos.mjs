@@ -114,13 +114,546 @@ function parseGposTable(data, start) {
 // NOT SUPPORTED
 const subtableMakers = new Array(10);
 
+// subtableMakers[2] = function makeLookup2(subtable) {
+
+//     if (subtable.posFormat === 1) {
+
+//         const pairPosTableData = [
+//             {name: 'posFormat', type: 'USHORT', value: 1},
+//             {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+//             {name: 'valueFormat1', type: 'USHORT', value: subtable.valueFormat1 },
+//             {name: 'valueFormat2', type: 'USHORT', value: subtable.valueFormat2 },
+//             // {name: 'pairSetCount', type: 'USHORT', value: subtable.pairSets.length },
+//         ];
+
+        
+//         // let offsetN = 10 + 2 * (subtable.pairSets.length);
+//         // for (let i = 0; i < subtable.pairSets.length; i++) {
+//         //     result.fields.push({ name: 'pairSetOffsets', type: 'USHORT', value: offsetN });
+//         //     offsetN = offsetN + 2 + 4 * (kerningGlyphs2[i].length);
+//         // }
+
+//         const pairSets = [];
+
+    
+//         // Add PairSet tables (one for each first letter in a kerning pair)
+//         for (let i = 0; i < subtable.pairSets.length; i++) {
+//             const pairRecords = [];
+
+
+
+//             // result.fields.push({ name: 'pairValueCount', type: 'USHORT', value: kerningGlyphs2[i].length });mmemm
+//             for (let j = 0; j < subtable.pairSets[i].length; j++) {
+//                 pairRecords.push({ name: 'secondGlyph', type: 'USHORT', value: subtable.pairSets[i][j][0] });
+//                 pairRecords.push({ name: 'valueRecord1', type: 'USHORT', value: subtable.pairSets[i][j][1] });
+
+//                 // result.fields.push({ name: 'secondGlyph', type: 'USHORT', value: kerningGlyphs2[i][j][0] });
+//                 // result.fields.push({ name: 'valueRecord1', type: 'USHORT', value: kerningGlyphs2[i][j][1] });
+//                 // console.log("Kerning: " + kerningGlyphs2[i][j][0] + " " + kerningGlyphs2[i][j][1])
+//             }
+//             pairSets.push({ name: 'pairSet', type: 'TABLE', value: new table.Table('pairSet', pairRecords) });
+//         }
+
+//         pairPosTableData.push({ name: 'pairSets', type: 'TABLE', value: new table.Table('pairSets', pairSets) });
+
+//         const pairPosTable = new table.Table('pairPosFormat1', pairPosTableData);
+    
+
+//         return pairPosTable;
+//         // return lookupTable;
+    
+//     } else {
+//         check.assert(false, 'lookup type 2 format 2 is not yet supported.');
+//     }
+
+// };
+
+
+subtableMakers[2] = function makeLookup2(subtable) {
+
+    if (subtable.posFormat === 1) {
+
+        // const posTable = new table.Table('pairPosFormat1', [
+        //     {name: 'posFormat', type: 'USHORT', value: 1},
+        //     {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+        //     {name: 'valueFormat1', type: 'USHORT', value: subtable.valueFormat1 },
+        //     {name: 'valueFormat2', type: 'USHORT', value: subtable.valueFormat2 },
+        //     // {name: 'pairSetCount', type: 'USHORT', value: subtable.pairSets.length },
+        // ].concat(table.tableList('pairSets', subtable.pairSets, function(pairSet) {
+        //     return new table.Table('pairSetTable', [
+        //     ].concat(table.tableList('pairValue', pairSet, function(pairValue) {
+        //         const xAdvance = pairValue.value1 ? pairValue.value1.xAdvance : undefined;
+        //         const yAdvance = pairValue.value2 ? pairValue.value2.yAdvance : undefined;
+        //         return new table.Table('pairValueTable',
+        //             [{name: 'secondGlyph', type: 'USHORT', value: pairValue.secondGlyph }, 
+        //                 {name: 'value1', type: 'USHORT', value: xAdvance }]
+        //         );
+        //     })));
+        // })));
+
+
+        const posTable = new table.Table('pairPosFormat1', [
+            {name: 'posFormat', type: 'USHORT', value: 1},
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+            {name: 'valueFormat1', type: 'USHORT', value: subtable.valueFormat1 },
+            {name: 'valueFormat2', type: 'USHORT', value: subtable.valueFormat2 },
+            // {name: 'pairSetCount', type: 'USHORT', value: subtable.pairSets.length },
+        ].concat(table.tableList('pairSets', subtable.pairSets, function(pairSet) {
+
+            const pairSetTable = new table.Table('pairSetTable', []);
+            pairSetTable.fields.push({name: 'pairValueCount', type: 'USHORT', value: pairSet.length });
+            for (let i = 0; i < pairSet.length; i++) {
+                const xAdvance = pairSet[i].value1 ? pairSet[i].value1.xAdvance : undefined;
+                const yAdvance = pairSet[i].value2 ? pairSet[i].value2.yAdvance : undefined;
+                pairSetTable.fields.push({name: 'secondGlyph', type: 'USHORT', value: pairSet[i].secondGlyph });
+                pairSetTable.fields.push({name: 'value1', type: 'USHORT', value: xAdvance });
+                // pairSetTable.fields.push({name: 'value2', type: 'USHORT', value: yAdvance });
+            }
+            return pairSetTable;
+        })));
+
+
+
+        debugger;
+        return posTable;
+
+
+        const pairSetTable = new table.Table('pairSetTable', []);
+        
+
+        // Offset #3
+        // Start of LookupList Table
+        // { name: 'lookupCount', type: 'USHORT', value: 1 },
+        // { name: 'lookupOffset', type: 'USHORT', value: 4 },
+        // // Start of Lookup table
+        // { name: 'lookupType', type: 'USHORT', value: 2 },
+        // { name: 'lookupFlag', type: 'USHORT', value: 0 },
+        // { name: 'subTableCount', type: 'USHORT', value: 1 },
+        // { name: 'lookupOffset2', type: 'USHORT', value: 8 },
+
+        // // Start of lookup subtable (actual kerning info)
+        // { name: 'posFormat', type: 'USHORT', value: 1 },
+        // { name: 'coverageOffset', type: 'USHORT', value: 10 + 4 * firstGlyphs.length + 4 * nPairs },
+        // // X_ADVANCE only
+        // { name: 'valueFormat1', type: 'USHORT', value: 4 },
+        // // Omit (note: using other formats will impact offset calculations)
+        // { name: 'valueFormat2', type: 'USHORT', value: 0 },
+        // // pairSetCount: Number of PairSet tables
+        // { name: 'pairSetCount', type: 'USHORT', value: firstGlyphs.length },
+        // //   {name: 'pairSetOffsets', type: 'USHORT', value: 22},
+
+
+
+        // let offsetN = 10 + 2 * (subtable.pairSets.length);
+        // for (let i = 0; i < subtable.pairSets.length; i++) {
+        //     pairSetTable.fields.push({ name: 'pairSetOffsets', type: 'USHORT', value: offsetN });
+        //     offsetN = offsetN + 2 + 4 * (subtable.pairSets[i].length);
+        // }
+    
+        // // Add PairSet tables (one for each first letter in a kerning pair)
+        // for (let i = 0; i < subtable.pairSets.length; i++) {
+        //     pairSetTable.fields.push({ name: 'pairValueCount', type: 'USHORT', value: subtable.pairSets[i].length });
+        //     for (let j = 0; j < subtable.pairSets[i].length; j++) {
+        //         pairSetTable.fields.push({ name: 'secondGlyph', type: 'USHORT', value: subtable.pairSets[i][j].secondGlyph });
+        //         const xAdvance = subtable.pairSets[i][j].value1 ? subtable.pairSets[i][j].value1.xAdvance : undefined;
+        //         pairSetTable.fields.push({ name: 'valueRecord1', type: 'USHORT', value: xAdvance });
+        //         // console.log("Kerning: " + kerningGlyphs2[i][j][0] + " " + kerningGlyphs2[i][j][1])
+        //     }
+        // }
+    
+        // const posTable = new table.Table('pairPosFormat1', [
+        //     {name: 'posFormat', type: 'USHORT', value: 1},
+        //     {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+        //     {name: 'valueFormat1', type: 'USHORT', value: subtable.valueFormat1 },
+        //     {name: 'valueFormat2', type: 'USHORT', value: subtable.valueFormat2 },
+        //     {name: 'pairSet', type: 'TABLE', value: pairSetTable},
+        //     {name: 'pairSetCount', type: 'USHORT', value: subtable.pairSets.length },
+        // ]);
+
+        
+        
+        // .concat(table.tableList('pairSets', subtable.pairSets, function(pairSet) {
+
+        //     const pairValues = [{name: 'pairValueCount', type: 'USHORT', value: pairSet.length }];
+        //     for (let i = 0; i < pairSet.length; i++) {
+        //         const xAdvance = pairSet[i].value1 ? pairSet[i].value1.xAdvance : undefined;
+        //         const yAdvance = pairSet[i].value2 ? pairSet[i].value2.yAdvance : undefined;
+        //         pairValues.push({name: 'secondGlyph', type: 'USHORT', value: pairSet[i].secondGlyph });
+        //         pairValues.push({name: 'xAdvance', type: 'USHORT', value: xAdvance });
+        //     }
+
+        //     return new table.Table('pairValues', pairValues);
+        // })));
+
+
+        // subtableMakers[3] = function makeLookup3(subtable) {
+        //     check.assert(subtable.substFormat === 1, 'Lookup type 3 substFormat must be 1.');
+        //     return new table.Table('substitutionTable', [
+        //         {name: 'substFormat', type: 'USHORT', value: 1},
+        //         {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)}
+        //     ].concat(table.tableList('altSet', subtable.alternateSets, function(alternateSet) {
+        //         return new table.Table('alternateSetTable', table.ushortList('alternate', alternateSet));
+        //     })));
+        // };
+        
+
+        debugger;
+
+        return posTable;
+
+
+
+
+        const pairPosTableData = [
+            {name: 'posFormat', type: 'USHORT', value: 1},
+            {name: 'coverage', type: 'TABLE', value: new table.Coverage(subtable.coverage)},
+            {name: 'valueFormat1', type: 'USHORT', value: subtable.valueFormat1 },
+            {name: 'valueFormat2', type: 'USHORT', value: subtable.valueFormat2 },
+            // {name: 'pairSetCount', type: 'USHORT', value: subtable.pairSets.length },
+        ];
+
+        
+
+
+        pairPosTableData.push(...table.tableList('pairSet', subtable.pairSets, function(pairSet) {
+            const pairSetTableData = [
+                // {name: 'pairValueCount', type: 'USHORT', value: pairSet.length },
+            ];
+
+            pairSetTableData.push(...table.tableList('pairValue', pairSet, function(pairValue) {
+                const pairValueTableData = [
+                    {name: 'secondGlyph', type: 'USHORT', value: pairValue.secondGlyph },
+                ];
+                const xAdvance = pairValue.value1 ? pairValue.value1.xAdvance : undefined;
+                const yAdvance = pairValue.value2 ? pairValue.value2.yAdvance : undefined;
+                pairValueTableData.push({name: 'value1', type: 'USHORT', value: xAdvance });
+                // pairValueTableData.push({name: 'value2', type: 'USHORT', value: yAdvance });
+                return new table.Table('pairValue', pairValueTableData);
+            }));
+
+            return new table.Table('pairSet', pairSetTableData);
+        }));
+    
+        // for (let i = 0; i < subtable.pairSets.length; i++) {
+    
+        //     const pairSetTableData = [
+        //         {name: 'pairValueCount', type: 'USHORT', value: subtable.pairSets[i].length },
+        //     ];
+    
+        //     for (let j = 0; j < subtable.pairSets[i].length; j++) {
+        //         pairSetTableData.push({ name: 'secondGlyph', type: 'USHORT', value: subtable.pairSets[i][j].secondGlyph });
+        //         // if (subtable.pairSets[i][j].value1) pairSetTableData.push({ name: 'value1', type: 'USHORT', value: subtable.pairSets[i][j].value1.xAdvance });
+        //         // if (subtable.pairSets[i][j].value2) pairSetTableData.push({ name: 'value2', type: 'USHORT', value: subtable.pairSets[i][j].value1.yAdvance });
+
+        //         const xAdvance = subtable.pairSets[i][j].value1 ? subtable.pairSets[i][j].value1.xAdvance : undefined;
+        //         // const yAdvance = subtable.pairSets[i][j].value2 ? subtable.pairSets[i][j].value2.yAdvance : undefined;
+
+        //         pairSetTableData.push({ name: 'value1', type: 'USHORT', value: xAdvance });
+        //         // pairSetTableData.push({ name: 'value2', type: 'USHORT', value: yAdvance });
+
+        //     }
+    
+        //     // posTableData.push({ name: 'pairSet', type: 'TABLE', value: new table.Table('pairSet', pairSetTableData) });
+        //     lookupTable.push({ name: 'pairSet', type: 'TABLE', value: new table.Table('pairSet', pairSetTableData) });
+
+        // }
+
+        // return posTable;
+    
+        return new table.Table('pairPosFormat1', pairPosTableData);
+        // return lookupTable;
+    
+    } else {
+        check.assert(false, 'lookup type 2 format 2 is not yet supported.');
+    }
+
+};
+
+
+/**
+ * Subsets the `GPOS` table to only include tables that have been implemented (pair kerning using type 2 format 1 subtables).
+ * Once write support for all `GPOS` subtables is implemented, this function should be removed.
+ * 
+ * @param {*} gpos 
+ * @returns 
+ */
+function subsetGposImplemented(gpos) {
+    // Filter lookups to only pair kerning tables; make deep copy to avoid editing original.
+    const lookups0 = gpos.lookups.filter((x) => x.lookupType === 2).map((x) => JSON.parse(JSON.stringify(x)));
+    if (lookups0.length === 0) return;
+    // Filter pair kerning tables to only type 2 format 1 subtables.
+    const lookups = lookups0.map((x) => {
+        x.subtables = x.subtables.filter((y) => y.posFormat === 1);
+        return x;
+    }).filter((x) => x.subtables.length > 0);
+    if (lookups.length === 0) return;
+
+    // const kernTableIndex = gpos.lookups.findIndex((x) => x.lookupType === 2);
+    // if (kernTableIndex === -1) return;
+    // const kernTableCopy = JSON.parse(JSON.stringify(gpos.lookups[kernTableIndex]));
+    // kernTableCopy.subtables = kernTableCopy.subtables.filter((x) => x.posFormat === 1);
+    // if (kernTableCopy.subtables.length === 0) return;
+    // const lookups = [kernTableCopy];
+
+    const featureIndices = [];
+    for(let i = 0; i < gpos.features.length; i++)
+        if (gpos.features[i].tag === 'kern')
+            featureIndices.push(i);
+
+    const features = gpos.features.filter((x) => x.tag === 'kern').map((x) => JSON.parse(JSON.stringify(x)));
+    
+    // TODO: This always points to the first lookup table, which may not be correct.
+    for (let i = 0; i < features.length; i++) {
+        features[i].feature.lookupListIndexes = [0];
+    }
+
+
+    // const featureIndex = gpos.features.findIndex((x) => x.tag === 'kern');
+    // const featureTableCopy = JSON.parse(JSON.stringify(gpos.features[featureIndex]));
+    // featureTableCopy.feature.lookupListIndexes = [0];
+    // const features = [featureTableCopy];
+
+    
+
+    // const scripts = JSON.parse(JSON.stringify(gpos.scripts.filter((x) => x.script.defaultLangSys.featureIndexes.includes(featureIndex))));
+
+    const scripts = [];
+
+    for (let i = 0; i < gpos.scripts.length; i++) {
+        const scriptI = JSON.parse(JSON.stringify(gpos.scripts[i]));
+        scriptI.script.defaultLangSys.featureIndexes = scriptI.script.defaultLangSys.featureIndexes.filter((x) => featureIndices.includes(x));
+        if (scriptI.script.defaultLangSys.featureIndexes.length === 0) continue;
+        for (let j = 0; j < scriptI.script.langSysRecords.length; j++) {
+            scriptI.script.langSysRecords[j].featureIndexes = scriptI.script.langSysRecords[j].langSys.featureIndexes.filter((x) => featureIndices.includes(x));
+        }
+        scripts.push(scriptI);
+
+
+        // scripts[i].script.defaultLangSys.featureIndexes = [0];
+        // for (let j = 0; j < scripts[i].script.langSysRecords.length; j++) {
+        //     scripts[i].script.langSysRecords[j].featureIndexes = [0];
+        // }
+    }
+
+    return {lookups, features, scripts};
+}
+
+
+
 function makeGposTable(gpos) {
+
+    gpos = subsetGposImplemented(gpos);
+
+    if (!gpos) return;
+
     return new table.Table('GPOS', [
         {name: 'version', type: 'ULONG', value: 0x10000},
         {name: 'scripts', type: 'TABLE', value: new table.ScriptList(gpos.scripts)},
         {name: 'features', type: 'TABLE', value: new table.FeatureList(gpos.features)},
         {name: 'lookups', type: 'TABLE', value: new table.LookupList(gpos.lookups, subtableMakers)}
     ]);
+}
+
+/**
+ * Converts from kerning pairs created from `kern` table to "type 2" lookup for `GPOS` table.
+ * @param {Object<string, number>} kerningPairs 
+ */
+function kernToGposType2(kerningPairs) {
+
+    // The main difference between the `kern` and `GPOS` format 1 subtable is that the `kern` table lists every kerning pair,
+    // while the `GPOS` format 1 subtable groups together kerning pairs that share the same first glyph.
+    const kerningArray = Object.entries(kerningPairs);
+    kerningArray.sort(function (a, b) {
+        const aLeftGlyph = parseInt(a[0].match(/\d+/)[0]);
+        const aRightGlyph = parseInt(a[0].match(/\d+$/)[0]);
+        const bLeftGlyph = parseInt(b[0].match(/\d+/)[0]);
+        const bRightGlyph = parseInt(b[0].match(/\d+$/)[0]);
+        if (aLeftGlyph < bLeftGlyph) {
+            return -1;
+        }
+        if (aLeftGlyph > bLeftGlyph) {
+            return 1;
+        }
+        if (aRightGlyph < bRightGlyph) {
+            return -1;
+        }
+        return 1;
+    });
+
+    const nPairs = kerningArray.length;
+
+    const coverage = [];
+    const pairSets = [];
+
+    for (let i = 0; i < nPairs; i++) {
+
+        let firstGlyph = parseInt(kerningArray[i][0].match(/\d+/)[0]);
+        let secondGlyph = parseInt(kerningArray[i][0].match(/\d+$/)[0]);
+
+        if (firstGlyph !== coverage[coverage.length - 1]) {
+            coverage.push(firstGlyph);
+            pairSets.push([]);
+        }
+
+        pairSets[coverage.length - 1].push([secondGlyph, kerningArray[i][1]]);
+    }
+
+    return {coverage, pairSets};
+}
+
+function makeGposTable3(gpos, kerningPairs) {
+
+    gpos = subsetGposImplemented(gpos);
+
+    if (!gpos) return;
+
+    // TODO: This fails with ranges.
+    const firstGlyphs = gpos.lookups[0].subtables[0].coverage.glyphs;
+    let nPairs = 0;
+    for (let i = 0; i < gpos.lookups[0].subtables[0].pairSets.length; i++) {
+        nPairs += gpos.lookups[0].subtables[0].pairSets[i].length;
+    }
+
+    const kerningGlyphs2 = [];
+    for (let i = 0; i < gpos.lookups[0].subtables[0].pairSets.length; i++) {
+        kerningGlyphs2[i] = [];
+        for (let j = 0; j < gpos.lookups[0].subtables[0].pairSets[i].length; j++) {
+            const secondGlyph = gpos.lookups[0].subtables[0].pairSets[i][j].secondGlyph;
+            const xAdvance = gpos.lookups[0].subtables[0].pairSets[i][j].value1.xAdvance;
+            kerningGlyphs2[i].push([secondGlyph, xAdvance]);
+        }
+    }
+
+    // var kerningArray = Object.entries(kerningPairs);
+    // kerningArray.sort(function (a, b) {
+    //     let aLeftGlyph = parseInt(a[0].match(/\d+/)[0]);
+    //     let aRightGlyph = parseInt(a[0].match(/\d+$/)[0]);
+    //     let bLeftGlyph = parseInt(b[0].match(/\d+/)[0]);
+    //     let bRightGlyph = parseInt(b[0].match(/\d+$/)[0]);
+    //     if (aLeftGlyph < bLeftGlyph) {
+    //         return -1;
+    //     }
+    //     if (aLeftGlyph > bLeftGlyph) {
+    //         return 1;
+    //     }
+    //     if (aRightGlyph < bRightGlyph) {
+    //         return -1;
+    //     }
+    //     return 1;
+    // });
+
+    // const nPairs = kerningArray.length;
+
+    // var firstGlyphs = [];
+    // var kerningGlyphs2 = [];
+
+    // for (let i = 0; i < nPairs; i++) {
+
+    //     let firstGlyph = parseInt(kerningArray[i][0].match(/\d+/)[0]);
+    //     let secondGlyph = parseInt(kerningArray[i][0].match(/\d+$/)[0]);
+
+    //     if (firstGlyph !== firstGlyphs[firstGlyphs.length - 1]) {
+    //         firstGlyphs.push(firstGlyph);
+    //         kerningGlyphs2[firstGlyphs.length - 1] = [];
+    //     }
+
+    //     kerningGlyphs2[firstGlyphs.length - 1].push([secondGlyph, kerningArray[i][1]]);
+    // }
+
+    var result = new table.Table('GPOS', [
+
+        // Start of GPOS Header
+        { name: 'majorVersion', type: 'USHORT', value: 1 },
+        { name: 'minorVersion', type: 'USHORT', value: 0 },
+        { name: 'scriptListOffset', type: 'USHORT', value: 10 },
+        { name: 'featureListOffset', type: 'USHORT', value: 48 },
+        { name: 'lookupListOffset', type: 'USHORT', value: 62 },
+
+        // Offset #1
+        // Start of ScriptList
+        { name: 'scriptCount', type: 'USHORT', value: 2 },
+        // Script record
+        { name: 'scriptTag', type: 'TAG', value: 'DFLT' },
+        { name: 'scriptOffset', type: 'USHORT', value: 14 },
+        { name: 'scriptTag2', type: 'TAG', value: 'latn' },
+        { name: 'scriptOffset2', type: 'USHORT', value: 26 },
+
+        // Start of Script Table #1 (Default)
+        { name: 'defaultLangSysOffset', type: 'USHORT', value: 4 },
+        { name: 'langSysCount', type: 'USHORT', value: 0 },
+        // Start of LangySys Table
+        { name: 'lookupOrderOffset', type: 'USHORT', value: 0 }, // Reserved, null
+        { name: 'requiredFeatureIndex', type: 'USHORT', value: 65535 },
+        { name: 'featureIndexCount', type: 'USHORT', value: 1 },
+        { name: 'featureIndex', type: 'USHORT', value: 0 },
+
+        // Start of Script Table #2 (Latin)
+        { name: 'defaultLangSysOffset2', type: 'USHORT', value: 4 },
+        { name: 'langSysCount2', type: 'USHORT', value: 0 },
+        // Start of LangySys Table
+        { name: 'lookupOrderOffset2', type: 'USHORT', value: 0 }, // Reserved, null
+        { name: 'requiredFeatureIndex2', type: 'USHORT', value: 65535 },
+        { name: 'featureIndexCount2', type: 'USHORT', value: 1 },
+        { name: 'featureIndex2', type: 'USHORT', value: 0 },
+
+        // Offset #2
+        // Start of FeatureList Table
+        { name: 'featureCount', type: 'USHORT', value: 1 },
+        { name: 'featureTag', type: 'TAG', value: 'kern' },
+        { name: 'featureOffset', type: 'USHORT', value: 8 },
+
+        // Start of Feature Table
+        { name: 'featureParamsOffset', type: 'USHORT', value: 0 },
+        { name: 'lookupIndexCount', type: 'USHORT', value: 1 },
+        { name: 'lookupListIndices', type: 'USHORT', value: 0 },
+
+        // Offset #3
+        // Start of LookupList Table
+        { name: 'lookupCount', type: 'USHORT', value: 1 },
+        { name: 'lookupOffset', type: 'USHORT', value: 4 },
+        // Start of Lookup table
+        { name: 'lookupType', type: 'USHORT', value: 2 },
+        { name: 'lookupFlag', type: 'USHORT', value: 0 },
+        { name: 'subTableCount', type: 'USHORT', value: 1 },
+        { name: 'lookupOffset2', type: 'USHORT', value: 8 },
+
+        // Start of lookup subtable (actual kerning info)
+        { name: 'posFormat', type: 'USHORT', value: 1 },
+        { name: 'coverageOffset', type: 'USHORT', value: 10 + 4 * firstGlyphs.length + 4 * nPairs },
+        // X_ADVANCE only
+        { name: 'valueFormat1', type: 'USHORT', value: 4 },
+        // Omit (note: using other formats will impact offset calculations)
+        { name: 'valueFormat2', type: 'USHORT', value: 0 },
+        // pairSetCount: Number of PairSet tables
+        { name: 'pairSetCount', type: 'USHORT', value: firstGlyphs.length },
+        //   {name: 'pairSetOffsets', type: 'USHORT', value: 22},
+
+    ]);
+
+    var offsetN = 10 + 2 * (firstGlyphs.length);
+    for (let i = 0; i < firstGlyphs.length; i++) {
+        result.fields.push({ name: 'pairSetOffsets', type: 'USHORT', value: offsetN });
+        offsetN = offsetN + 2 + 4 * (kerningGlyphs2[i].length);
+    }
+
+    // Add PairSet tables (one for each first letter in a kerning pair)
+    for (let i = 0; i < kerningGlyphs2.length; i++) {
+        result.fields.push({ name: 'pairValueCount', type: 'USHORT', value: kerningGlyphs2[i].length });
+        for (let j = 0; j < kerningGlyphs2[i].length; j++) {
+            result.fields.push({ name: 'secondGlyph', type: 'USHORT', value: kerningGlyphs2[i][j][0] });
+            result.fields.push({ name: 'valueRecord1', type: 'USHORT', value: kerningGlyphs2[i][j][1] });
+            // console.log("Kerning: " + kerningGlyphs2[i][j][0] + " " + kerningGlyphs2[i][j][1])
+        }
+    }
+
+    // Add Coverage tables (defines which first letters map to which PairSet table)
+    result.fields.push({ name: 'coverageFormat', type: 'USHORT', value: 1 }); // Format 1 indicates glyph pairs (format 2 uses classes of glyphs)
+    result.fields.push({ name: 'glyphCount', type: 'USHORT', value: firstGlyphs.length });
+    for (let i = 0; i < firstGlyphs.length; i++) {
+        result.fields.push({ name: 'UppercasePGlyphID', type: 'USHORT', value: firstGlyphs[i] });
+    }
+
+    return (result);
 }
 
 export default { parse: parseGposTable, make: makeGposTable };
