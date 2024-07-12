@@ -371,24 +371,16 @@ function fontToSfntTable(font) {
         svg,
     };
 
-    const kerningPairs = {};
-
-    const indexFirst = font.charToGlyphIndex('T');
-    const indexSecond = font.charToGlyphIndex('r');
-
-    kerningPairs[`${indexFirst},${indexSecond}`] = -50;
-
-
-
     const optionalTableArgs = {
         avar: [font.tables.fvar],
         fvar: [font.names],
-        gpos: [kerningPairs],
+        gpos: [font.kerningPairs],
     };
 
     for (let tableName in optionalTables) {
         const table = font.tables[tableName];
-        if (table) {
+        // The GPOS table can also be made using `kerningPairs` from the `kern` table as input.
+        if (table || tableName === 'gpos') {
             const tableData = optionalTables[tableName].make.call(font, table, ...(optionalTableArgs[tableName] || []));
             if (tableData) {
                 tables.push(tableData);

@@ -310,12 +310,8 @@ function parseBuffer(buffer, opt={}) {
                 metaTableEntry = tableEntry;
                 break;
             case 'gasp':
-                try {
-                    table = uncompressTable(data, tableEntry);
-                    font.tables.gasp = gasp.parse(table.data, table.offset);
-                } catch (e) {
-                    console.warn('Error parsing gasp table:', e);
-                }
+                table = uncompressTable(data, tableEntry);
+                font.tables.gasp = gasp.parse(table.data, table.offset);
                 break;
             case 'SVG ':
                 table = uncompressTable(data, tableEntry);
