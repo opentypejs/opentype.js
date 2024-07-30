@@ -66,7 +66,7 @@ if(typeof Symbol !== 'undefined' && Symbol.iterator) {
  */
 GlyphSet.prototype.get = function(index) {
     // this.glyphs[index] is 'undefined' when low memory mode is on. glyph is pushed on request only.
-    if (this.glyphs[index] === undefined) {
+    if (this.glyphs[index] === undefined && typeof index === 'number') {
         this.font._push(index);
         if (typeof this.glyphs[index] === 'function') {
             this.glyphs[index] = this.glyphs[index]();

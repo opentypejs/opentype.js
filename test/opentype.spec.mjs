@@ -174,6 +174,23 @@ describe('opentype.js on low memory mode', function() {
         assert.equal(ndGlyph.unicode, undefined);
     });
 
+    it('should return .notdef when looking up non-existent glyph in user-created font', function() {
+        const nullGlyph = new Glyph({
+            name: '.notdef',
+            path: new Path()
+        });
+        const font = new Font({
+            familyName: 'TestFont',
+            styleName: 'Medium',
+            unitsPerEm: 1000,
+            ascender: 800,
+            descender: -200,
+            glyphs: [nullGlyph]
+        });
+        const ndGlyph = font.charToGlyph('B');
+        assert.equal(ndGlyph.name, '.notdef');
+    });
+
     it('should correctly set unicode 0 for .null glyph', function() {
         const nullGlyph = new Glyph({
             name: '.null',
