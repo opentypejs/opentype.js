@@ -62,11 +62,15 @@ if(typeof Symbol !== 'undefined' && Symbol.iterator) {
 
 /**
  * @param  {number} index
- * @return {opentype.Glyph}
+ * @return {opentype.Glyph | undefined}
  */
 GlyphSet.prototype.get = function(index) {
     // this.glyphs[index] is 'undefined' when low memory mode is on. glyph is pushed on request only.
     if (this.glyphs[index] === undefined) {
+        if (!this.font._push) {
+            // When not in low memory mode, the index is out of bounds
+            return undefined;
+        }
         this.font._push(index);
         if (typeof this.glyphs[index] === 'function') {
             this.glyphs[index] = this.glyphs[index]();
