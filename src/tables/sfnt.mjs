@@ -297,7 +297,8 @@ function fontToSfntTable(font) {
         names[platform] = names[platform] || {};
 
         if (!names[platform].uniqueID) {
-            names[platform].uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
+            const manufacturer = font.getEnglishName('manufacturer') || '';
+            names[platform].uniqueID = { en: `${manufacturer}: ${englishFullName}` };
         }
 
         if (!names[platform].postScriptName) {
