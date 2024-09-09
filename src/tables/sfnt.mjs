@@ -292,16 +292,17 @@ function fontToSfntTable(font) {
     const fontNamesWindows = font.names.windows || {};
 
     // do this as a loop to reduce redundant code
-    for (const platform in ['unicode', 'macintosh', 'windows']) {
+    for (const platform in names) {
 
         names[platform] = names[platform] || {};
 
         if (!names[platform].uniqueID) {
-            names.unicode.uniqueID = {en: font.getEnglishName('manufacturer') + ':' + englishFullName};
+            const manufacturer = font.getEnglishName('manufacturer') || '';
+            names[platform].uniqueID = { en: `${manufacturer}: ${englishFullName}` };
         }
 
         if (!names[platform].postScriptName) {
-            names.unicode.postScriptName = {en: postScriptName};
+            names[platform].postScriptName = {en: postScriptName};
         }
     }
 

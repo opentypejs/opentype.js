@@ -1,7 +1,7 @@
 import assert from 'assert';
 import Font from '../../src/font.mjs';
-import sfnt from '../../src/tables/sfnt.mjs';
 import name from '../../src/tables/name.mjs';
+import sfnt from '../../src/tables/sfnt.mjs';
 import { encode } from '../../src/types.mjs';
 
 function encodeAndParseTable(table, parser) {
@@ -60,7 +60,8 @@ describe('tables/sfnt.mjs', function () {
                     license: { en: ' ' },
                     licenseURL: { en: ' ' },
                     preferredFamily: { en: defaultFont.familyName }, // 'MyFont'
-                    preferredSubfamily: { en: defaultFont.styleName } // 'Medium'
+                    preferredSubfamily: { en: defaultFont.styleName }, // 'Medium'
+                    uniqueID: { en: ` : ${defaultFont.familyName} ${defaultFont.styleName}` },
                 },
                 windows: {
                     copyright: { en: ' ' },
@@ -78,7 +79,8 @@ describe('tables/sfnt.mjs', function () {
                     license: { en: ' ' },
                     licenseURL: { en: ' ' },
                     preferredFamily: { en: defaultFont.familyName }, // 'MyFont'
-                    preferredSubfamily: { en: defaultFont.styleName } // 'Medium'
+                    preferredSubfamily: { en: defaultFont.styleName }, // 'Medium'
+                    uniqueID: { en: ` : ${defaultFont.familyName} ${defaultFont.styleName}` },
                 }
             });
         });
@@ -121,7 +123,9 @@ describe('tables/sfnt.mjs', function () {
                     fullName: { en: fullName },
                     version: { en: version },
                     preferredFamily: { en: preferredFamily },
-                    preferredSubfamily: { en: preferredSubfamily}
+                    preferredSubfamily: { en: preferredSubfamily },
+                    postScriptName: { en: `${fontFamily.replaceAll(' ', '')}-${fontSubfamily}` },
+                    uniqueID: { en: `: ${fontFamily} ${fontSubfamily}` },
                 },
                 windows: {
                     fontFamily: { en: fontFamily },
@@ -129,7 +133,9 @@ describe('tables/sfnt.mjs', function () {
                     fullName: { en: fullName },
                     version: { en: version },
                     preferredFamily: { en: preferredFamily },
-                    preferredSubfamily: { en: preferredSubfamily}
+                    preferredSubfamily: { en: preferredSubfamily},
+                    postScriptName: { en: `${fontFamily.replaceAll(' ', '')}-${fontSubfamily}` },
+                    uniqueID: { en: `: ${fontFamily} ${fontSubfamily}` },
                 }
             });
         });
