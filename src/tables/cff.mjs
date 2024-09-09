@@ -401,13 +401,6 @@ const TOP_DICT_META_CFF2 = [
 ];
 
 const PRIVATE_DICT_META = [
-    {name: 'subrs', op: 19, type: 'offset', value: 0},
-    {name: 'defaultWidthX', op: 20, type: 'number', value: 0},
-    {name: 'nominalWidthX', op: 21, type: 'number', value: 0}
-];
-
-// https://learn.microsoft.com/en-us/typography/opentype/spec/cff2#table-16-private-dict-operators
-const PRIVATE_DICT_META_CFF2 = [
     {name: 'blueValues', op: 6, type: 'delta'},
     {name: 'otherBlues', op: 7, type: 'delta'},
     {name: 'familyBlues', op: 8, type: 'delta'},
@@ -424,8 +417,15 @@ const PRIVATE_DICT_META_CFF2 = [
     {name: 'subrs', op: 19, type: 'offset'},
     {name: 'defaultWidthX', op: 20, type: 'number', value: 0},
     {name: 'nominalWidthX', op: 21, type: 'number', value: 0},
-    {name: 'vsindex', op: 22, type: 'number', value: 0},
+    {name: 'subrs', op: 19, type: 'offset', value: 0},
+    {name: 'defaultWidthX', op: 20, type: 'number', value: 0},
+    {name: 'nominalWidthX', op: 21, type: 'number', value: 0}
 ];
+
+// https://learn.microsoft.com/en-us/typography/opentype/spec/cff2#table-16-private-dict-operators
+const PRIVATE_DICT_META_CFF2 = PRIVATE_DICT_META.concat([
+    {name: 'vsindex', op: 22, type: 'number', value: 0},
+]);
 
 // https://learn.microsoft.com/en-us/typography/opentype/spec/cff2#table-10-font-dict-operator-entries
 const FONT_DICT_META = [
@@ -499,7 +499,7 @@ function gatherCFFTopDicts(data, start, cffIndex, strings, version) {
         const privateSize = version < 2 ? topDict.private[0] : 0;
         const privateOffset = version < 2 ? topDict.private[1] : 0;
         if (privateSize !== 0 && privateOffset !== 0) {
-            const privateDict = parseCFFPrivateDict(data, privateOffset + start, privateSize, strings, 2);
+            const privateDict = parseCFFPrivateDict(data, privateOffset + start, privateSize, strings, version);
             topDict._defaultWidthX = privateDict.defaultWidthX;
             topDict._nominalWidthX = privateDict.nominalWidthX;
             if (privateDict.subrs !== null && privateDict.subrs !== 0) {
@@ -1295,7 +1295,7 @@ function parseCFFTable(data, start, font, opt) {
 
     if (header.formatMajor < 2 && topDict.private[0] !== 0) {
         const privateDictOffset = start + topDict.private[1];
-        const privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict.private[0], stringIndex.objects, 2);
+        const privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict.private[0], stringIndex.objects, header.formatMajor);
         font.defaultWidthX = privateDict.defaultWidthX;
         font.nominalWidthX = privateDict.nominalWidthX;
 
@@ -1657,7 +1657,7 @@ function makeCFFTable(glyphs, options) {
     t.globalSubrIndex = makeGlobalSubrIndex();
     t.charsets = makeCharsets(glyphNames, strings);
     t.charStringsIndex = makeCharStringsIndex(glyphs, cffVersion);
-    t.privateDict = makePrivateDict(privateAttrs, strings, 2);
+    t.privateDict = makePrivateDict(privateAttrs, strings, cffVersion);
 
     // Needs to come at the end, to encode all custom strings used in the font.
     t.stringIndex = makeStringIndex(strings);
