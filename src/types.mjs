@@ -783,6 +783,9 @@ encode.DICT = function(m) {
         // Object.keys() return string keys, but our keys are always numeric.
         const k = parseInt(keys[i], 0);
         const v = m[k];
+        if (v.value === null) {
+            continue;
+        }
         // Value comes before the key.
         const enc1 = encode.OPERAND(v.value, v.type);
         const enc2 = encode.OPERATOR(k);

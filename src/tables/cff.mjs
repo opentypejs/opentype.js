@@ -1299,7 +1299,7 @@ function parseCFFTable(data, start, font, opt) {
         font.defaultWidthX = privateDict.defaultWidthX;
         font.nominalWidthX = privateDict.nominalWidthX;
 
-        if (privateDict.subrs !== 0) {
+        if (privateDict.subrs !== null && privateDict.subrs !== 0) {
             const subrOffset = privateDictOffset + privateDict.subrs;
             const subrIndex = parseCFFIndex(data, subrOffset);
             font.subrs = subrIndex.objects;
@@ -1586,6 +1586,11 @@ function makeCharStringsIndex(glyphs, version) {
 }
 
 function makePrivateDict(attrs, strings, version) {
+    // we do not handle (include) subrs, so we must not create the operator
+    if ('subrs' in attrs) {
+        attrs = new Object(attrs);
+        delete attrs['subrs'];
+    }
     const t = new table.Record('Private DICT', [
         {name: 'dict', type: 'DICT', value: makeDict(version > 1 ? PRIVATE_DICT_META_CFF2 : PRIVATE_DICT_META, attrs, strings)}
     ]);
