@@ -399,7 +399,6 @@ const PRIVATE_DICT_META = [
 const PRIVATE_DICT_META_CFF2 = [
     {name: 'blueValues', op: 6, type: 'delta'},
     {name: 'otherBlues', op: 7, type: 'delta'},
-    {name: 'familyBlues', op: 7, type: 'delta'},
     {name: 'familyBlues', op: 8, type: 'delta'},
     {name: 'familyOtherBlues', op: 9, type: 'delta'},
     {name: 'blueScale', op: 1209, type: 'number', value: 0.039625},
@@ -411,8 +410,10 @@ const PRIVATE_DICT_META_CFF2 = [
     {name: 'stemSnapV', op: 1213, type: 'number'},
     {name: 'languageGroup', op: 1217, type: 'number', value: 0},
     {name: 'expansionFactor', op: 1218, type: 'number', value: 0.06},
-    {name: 'vsindex', op: 22, type: 'number', value: 0},
     {name: 'subrs', op: 19, type: 'offset'},
+    {name: 'defaultWidthX', op: 20, type: 'number', value: 0},
+    {name: 'nominalWidthX', op: 21, type: 'number', value: 0},
+    {name: 'vsindex', op: 22, type: 'number', value: 0},
 ];
 
 // https://learn.microsoft.com/en-us/typography/opentype/spec/cff2#table-10-font-dict-operator-entries
