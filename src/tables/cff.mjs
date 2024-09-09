@@ -491,7 +491,7 @@ function gatherCFFTopDicts(data, start, cffIndex, strings, version) {
             const privateDict = parseCFFPrivateDict(data, privateOffset + start, privateSize, strings, version);
             topDict._defaultWidthX = privateDict.defaultWidthX;
             topDict._nominalWidthX = privateDict.nominalWidthX;
-            if (privateDict.subrs !== 0) {
+            if (privateDict.subrs !== null && privateDict.subrs !== 0) {
                 const subrOffset = privateOffset + privateDict.subrs;
                 const subrIndex = parseCFFIndex(data, subrOffset + start, undefined, version);
                 topDict._subrs = subrIndex.objects;
@@ -1282,7 +1282,7 @@ function parseCFFTable(data, start, font, opt) {
         topDict._fdSelect = parseCFFFDSelect(data, fdSelectOffset, font.numGlyphs, fdArray.length, header.formatMajor);
     }
 
-    if (header.formatMajor < 2) {
+    if (header.formatMajor < 2 && topDict.private[0] !== 0) {
         const privateDictOffset = start + topDict.private[1];
         const privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict.private[0], stringIndex.objects, header.formatMajor);
         font.defaultWidthX = privateDict.defaultWidthX;
