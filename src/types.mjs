@@ -855,6 +855,13 @@ encode.OPERAND = function(v, type) {
             for (let j = 0; j < enc1.length; j++) {
                 d.push(enc1[j]);
             }
+        } else if (type === 'delta') {
+            for (let i = 0; i < v.length; i++) {
+                const enc1 = encode.NUMBER(v[i]);
+                for (let j = 0; j < enc1.length; j++) {
+                    d.push(enc1[j]);
+                }
+            }
         } else {
             throw new Error('Unknown operand type ' + type);
             // FIXME Add support for booleans

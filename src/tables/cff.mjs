@@ -488,7 +488,7 @@ function gatherCFFTopDicts(data, start, cffIndex, strings, version) {
         const privateSize = version < 2 ? topDict.private[0] : 0;
         const privateOffset = version < 2 ? topDict.private[1] : 0;
         if (privateSize !== 0 && privateOffset !== 0) {
-            const privateDict = parseCFFPrivateDict(data, privateOffset + start, privateSize, strings, version);
+            const privateDict = parseCFFPrivateDict(data, privateOffset + start, privateSize, strings, 2);
             topDict._defaultWidthX = privateDict.defaultWidthX;
             topDict._nominalWidthX = privateDict.nominalWidthX;
             if (privateDict.subrs !== null && privateDict.subrs !== 0) {
@@ -1284,7 +1284,7 @@ function parseCFFTable(data, start, font, opt) {
 
     if (header.formatMajor < 2 && topDict.private[0] !== 0) {
         const privateDictOffset = start + topDict.private[1];
-        const privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict.private[0], stringIndex.objects, header.formatMajor);
+        const privateDict = parseCFFPrivateDict(data, privateDictOffset, topDict.private[0], stringIndex.objects, 2);
         font.defaultWidthX = privateDict.defaultWidthX;
         font.nominalWidthX = privateDict.nominalWidthX;
 
@@ -1562,9 +1562,8 @@ function makeCharStringsIndex(glyphs, version) {
 
 function makePrivateDict(attrs, strings, version) {
     const t = new table.Record('Private DICT', [
-        {name: 'dict', type: 'DICT', value: {}}
+        {name: 'dict', type: 'DICT', value: makeDict(version > 1 ? PRIVATE_DICT_META_CFF2 : PRIVATE_DICT_META, attrs, strings)}
     ]);
-    t.dict = makeDict(version > 1 ? PRIVATE_DICT_META_CFF2 : PRIVATE_DICT_META, attrs, strings);
     return t;
 }
 
@@ -1608,7 +1607,7 @@ function makeCFFTable(glyphs, options) {
         attrs.strokeWidth = topDictOptions.strokeWidth || 0;
     }
 
-    const privateAttrs = {};
+    const privateAttrs = topDictOptions._privateDict || {};
 
     const glyphNames = [];
     let glyph;
@@ -1628,7 +1627,7 @@ function makeCFFTable(glyphs, options) {
     t.globalSubrIndex = makeGlobalSubrIndex();
     t.charsets = makeCharsets(glyphNames, strings);
     t.charStringsIndex = makeCharStringsIndex(glyphs, cffVersion);
-    t.privateDict = makePrivateDict(privateAttrs, strings);
+    t.privateDict = makePrivateDict(privateAttrs, strings, 2);
 
     // Needs to come at the end, to encode all custom strings used in the font.
     t.stringIndex = makeStringIndex(strings);
@@ -1644,6 +1643,7 @@ function makeCFFTable(glyphs, options) {
     attrs.encoding = 0;
     attrs.charStrings = attrs.charset + t.charsets.sizeOf();
     attrs.private[1] = attrs.charStrings + t.charStringsIndex.sizeOf();
+    attrs.private[0] = t.privateDict.sizeOf();
 
     // Recreate the Top DICT INDEX with the correct offsets.
     topDict = makeTopDict(attrs, strings);
