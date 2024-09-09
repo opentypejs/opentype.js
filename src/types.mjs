@@ -783,6 +783,9 @@ encode.DICT = function(m) {
         // Object.keys() return string keys, but our keys are always numeric.
         const k = parseInt(keys[i], 0);
         const v = m[k];
+        if (v.value === null) {
+            continue;
+        }
         // Value comes before the key.
         const enc1 = encode.OPERAND(v.value, v.type);
         const enc2 = encode.OPERATOR(k);
@@ -854,6 +857,13 @@ encode.OPERAND = function(v, type) {
             const enc1 = encode.REAL(v);
             for (let j = 0; j < enc1.length; j++) {
                 d.push(enc1[j]);
+            }
+        } else if (type === 'delta') {
+            for (let i = 0; i < v.length; i++) {
+                const enc1 = encode.NUMBER(v[i]);
+                for (let j = 0; j < enc1.length; j++) {
+                    d.push(enc1[j]);
+                }
             }
         } else {
             throw new Error('Unknown operand type ' + type);
