@@ -309,7 +309,7 @@ function interpretDict(dict, meta, strings) {
                 value = getCFFString(strings, value);
             }
             if (m.type === 'delta' && value !== null) {
-                if (!Array.isArray(value) || value.length % 2 != 0) {
+                if (!Array.isArray(value)) {
                     throw new Error('Read delta data invalid');
                 }
                 // Convert delta array to human readable version
@@ -417,8 +417,8 @@ const PRIVATE_DICT_META_CFF2 = [
     {name: 'blueFuzz', op: 1211, type: 'number', value: 1},
     {name: 'stdHW', op: 10, type: 'number'},
     {name: 'stdVW', op: 11, type: 'number'},
-    {name: 'stemSnapH', op: 1212, type: 'number'},
-    {name: 'stemSnapV', op: 1213, type: 'number'},
+    {name: 'stemSnapH', op: 1212, type: 'delta'},
+    {name: 'stemSnapV', op: 1213, type: 'delta'},
     {name: 'languageGroup', op: 1217, type: 'number', value: 0},
     {name: 'expansionFactor', op: 1218, type: 'number', value: 0.06},
     {name: 'subrs', op: 19, type: 'offset'},
@@ -1428,7 +1428,7 @@ function makeDict(meta, attrs, strings) {
                 value = encodeString(value, strings);
             }
             if (entry.type === 'delta' && value !== null) {
-                if (!Array.isArray(value) || value.length % 2 != 0) {
+                if (!Array.isArray(value)) {
                     throw new Error('Provided delta data invalid');
                 }
                 // Convert human readable delta array to DICT version

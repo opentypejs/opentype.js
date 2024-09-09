@@ -102,8 +102,8 @@ describe('tables/cff.mjs', function () {
         assert.equal(privateDict1.blueFuzz, 0);
         assert.equal(privateDict1.stdHW, 55);
         assert.equal(privateDict1.stdVW, 80);
-        assert.deepEqual(privateDict1.stemSnapH, [40, 15]);
-        assert.deepEqual(privateDict1.stemSnapV, [80, 10]);
+        assert.deepEqual(privateDict1.stemSnapH, [40, 55]);
+        assert.deepEqual(privateDict1.stemSnapV, [80, 90]);
         assert.equal(privateDict1.languageGroup, 0);
         assert.equal(privateDict1.expansionFactor, 0.06);
         assert.deepEqual(privateDict1.vsindex, 0);
