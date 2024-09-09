@@ -34,9 +34,9 @@ function makeGaspTable(gasp) {
         {name: 'numRanges', type: 'USHORT', value: gasp.numRanges},
     ]);
 
-    for (let i in gasp.numRanges) {
-        result.fields.push({name: 'rangeMaxPPEM', type: 'USHORT', value: gasp.numRanges[i].rangeMaxPPEM});
-        result.fields.push({name: 'rangeGaspBehavior', type: 'USHORT', value: gasp.numRanges[i].rangeGaspBehavior});
+    for (let i in gasp.gaspRanges) {
+        result.fields.push({name: 'rangeMaxPPEM', type: 'USHORT', value: gasp.gaspRanges[i].rangeMaxPPEM});
+        result.fields.push({name: 'rangeGaspBehavior', type: 'USHORT', value: gasp.gaspRanges[i].rangeGaspBehavior});
     }
 
     return result;

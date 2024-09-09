@@ -29,4 +29,9 @@ describe('tables/gasp.mjs', function () {
         assert.equal(font.tables.gasp.gaspRanges[1].rangeGaspBehavior, 0x0001 + 0x0002 + 0x0004 + 0x0008); // all flags set = 15
     });
 
+    it('can write tables that are read as identical to the original', function() {
+        const font2 = parse(font.toArrayBuffer());
+        assert.deepStrictEqual(font.tables.gasp, font2.tables.gasp);
+    });
+
 });
