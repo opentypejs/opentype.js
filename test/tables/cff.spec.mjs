@@ -215,4 +215,32 @@ describe('tables/cff.mjs', function () {
             transformedPoints
         );
     });
+
+    it('does round trip CFF private DICT', function() {
+        const font = loadSync('./test/fonts/AbrilFatface-Regular.otf');
+        const checkerFunktion = function(inputFont) {
+        // from ttx:
+        //     <Private>
+        //        <BlueValues value="-10 0 476 486 700 711"/>
+        //        <OtherBlues value="-250 -238"/>
+        //        <BlueScale value="0.039625"/>
+        //        <BlueShift value="7"/>
+        //        <BlueFuzz value="1"/>
+        //        <StdHW value="18"/>
+        //        <StdVW value="186"/>
+        //        <StemSnapH value="16 18 21"/>
+        //        <StemSnapV value="120 186 205"/>
+        //        <ForceBold value="0"/>
+            const privateDict = inputFont.tables.cff.topDict._privateDict;
+            assert.deepEqual(privateDict.blueValues, [-10, 0, 476, 486, 700, 711]);
+            assert.deepEqual(privateDict.otherBlues, [-250, -238]);
+            assert.equal(privateDict.stdHW, 18);
+            assert.deepEqual(privateDict.stemSnapH, [16, 18, 21]);
+            assert.equal(privateDict.nominalWidthX, 590);
+        };
+        checkerFunktion(font);
+        let buffer = font.toArrayBuffer()
+        let font2 = parse(buffer);
+        checkerFunktion(font2);
+    });
 });
