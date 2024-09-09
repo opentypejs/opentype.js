@@ -308,6 +308,17 @@ function interpretDict(dict, meta, strings) {
             if (m.type === 'SID') {
                 value = getCFFString(strings, value);
             }
+            if (m.type === 'delta' && value !== null) {
+                if (!Array.isArray(value) || value.length % 2 != 0) {
+                    throw new Error('Read delta data invalid');
+                }
+                // Convert delta array to human readable version
+                let current = 0;
+                for(let i = 0; i < value.length; i++) {
+                    value[i] = value[i] + current;
+                    current = value[i];
+                }
+            }
             newDict[m.name] = value;
         }
     }
@@ -1415,6 +1426,20 @@ function makeDict(meta, attrs, strings) {
         if (value !== undefined && !equals(value, entry.value)) {
             if (entry.type === 'SID') {
                 value = encodeString(value, strings);
+            }
+            if (entry.type === 'delta' && value !== null) {
+                if (!Array.isArray(value) || value.length % 2 != 0) {
+                    throw new Error('Provided delta data invalid');
+                }
+                // Convert human readable delta array to DICT version
+                // See https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf
+                // Private DICT data > Table 6 Operand Types > delta
+                let current = 0;
+                for(let i = 0; i < value.length; i++) {
+                    let nextcurrent = value[i];
+                    value[i] = value[i] - current;
+                    current = nextcurrent;
+                }
             }
 
             m[entry.op] = {name: entry.name, type: entry.type, value: value};

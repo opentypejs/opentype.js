@@ -93,10 +93,10 @@ describe('tables/cff.mjs', function () {
         assert.equal(topDict.vstore, 16);
         assert.equal(topDict.fdSelect, null);
 
-        assert.deepEqual(privateDict1.blueValues, [-20, 20, 472, 18, 35, 15, 105, 15, 10, 20, 40, 20]);
-        assert.deepEqual(privateDict1.otherBlues, [-250, 10]);
-        assert.deepEqual(privateDict1.familyBlues, [-20, 20, 473, 18, 34, 15, 104, 15, 10, 20, 40, 20]);
-        assert.deepEqual(privateDict1.familyOtherBlues, [ -249, 10 ]);
+        assert.deepEqual(privateDict1.blueValues, [-20, 0, 472, 490, 525, 540, 645, 660, 670, 690, 730, 750]);
+        assert.deepEqual(privateDict1.otherBlues, [-250, -240]);
+        assert.deepEqual(privateDict1.familyBlues, [-20, 0, 473, 491, 525, 540, 644, 659, 669, 689, 729, 749]);
+        assert.deepEqual(privateDict1.familyOtherBlues, [ -249, -239 ]);
         assert.equal(privateDict1.blueScale, 0.0375);
         assert.equal(privateDict1.blueShift, 7);
         assert.equal(privateDict1.blueFuzz, 0);
