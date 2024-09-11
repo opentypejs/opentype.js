@@ -337,7 +337,7 @@ function fontToSfntTable(font) {
 
     const postTable = post.make(font);
     const cffTable = cff.make(font.glyphs, {
-        version: font.getEnglishName('version'),
+        version: font.tables.cff && font.tables.cff.topDict || font.getEnglishName('version'),
         fullName: englishFullName,
         familyName: englishFamilyName,
         weightName: englishStyleName,
