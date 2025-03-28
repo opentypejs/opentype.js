@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { unhex } from '../testutil.mjs';
 import { Parser } from '../../src/parse.mjs';
-import { parseCmapTableFormat14, parseCmapTableFormat0 } from '../../src/tables/cmap.mjs';
+import { parseCmapTableFormat14, parseCmapTableFormat6, parseCmapTableFormat0 } from '../../src/tables/cmap.mjs';
 import { parse } from '../../src/opentype.mjs';
 import { readFileSync } from 'fs';
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
@@ -80,6 +80,20 @@ describe('tables/cmap.mjs', function() {
         const testString = 'U\u13EF\u{1203C}\u{1FA00}';
         const glyphIds = font.stringToGlyphIndexes(testString);
         const expectedGlyphIds = [1,2,3,4];
+        assert.deepEqual(glyphIds, expectedGlyphIds);
+    });
+
+    it('can parse CMAP table format 6', function() {
+        let font;
+        assert.doesNotThrow(function() {
+            font = loadSync('./test/fonts/PDF-Embedded-Calibri-Subset.ttf');
+        });
+
+        // The embedded char IDs for the string "Living Room" in the PDF embedded font
+        const testString = '!"#"$%&\'(()';
+        const glyphIds = font.stringToGlyphIndexes(testString);
+
+        const expectedGlyphIds = [3, 13, 21, 13, 16, 11, 1, 5, 17, 17, 15];
         assert.deepEqual(glyphIds, expectedGlyphIds);
     });
 });

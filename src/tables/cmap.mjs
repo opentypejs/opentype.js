@@ -99,6 +99,19 @@ function parseCmapTableFormat4(cmap, p, data, start, offset) {
     }
 }
 
+function parseCmapTableFormat6(cmap, p) {   
+    cmap.length = p.parseUShort();
+    cmap.language = p.parseUShort();
+
+    cmap.firstCode = p.parseUShort();
+    cmap.entryCount = p.parseUShort();
+    cmap.glyphIndexMap = {};
+
+    for (let i = 0; i < cmap.entryCount; i += 1) {
+        cmap.glyphIndexMap[cmap.firstCode + i] = p.parseUShort();
+    }
+}
+
 function parseCmapTableFormat14(cmap, p) {
     const varSelectorList = {};
 
@@ -216,6 +229,8 @@ function parseCmapTable(data, start) {
         parseCmapTableFormat12or13(cmap, p, cmap.format);
     } else if (cmap.format === 4) {
         parseCmapTableFormat4(cmap, p, data, start, offset);
+    } else if (cmap.format === 6) {
+        parseCmapTableFormat6(cmap, p);
     } else {
         throw new Error(
             'Only format 0 (platformId 1, encodingId 0), 4, 12 and 14 cmap tables are supported ' +
@@ -410,4 +425,4 @@ function makeCmapTable(glyphs) {
 
 export default { parse: parseCmapTable, make: makeCmapTable };
 
-export { parseCmapTableFormat0, parseCmapTableFormat14 };
+export { parseCmapTableFormat0, parseCmapTableFormat6, parseCmapTableFormat14 };
