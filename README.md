@@ -111,7 +111,8 @@ But this compression is also more complex, and would result in a much heavier (&
 
 To solve this: Decompress the font beforehand (for example with [itskyedo/woff2-encoder](https://github.com/itskyedo/woff2-encoder)).
 
-```jsimport { parse } from 'opentype.js';
+```js
+import { parse } from 'opentype.js';
 import decompress from 'woff2-encoder/decompress';
 
 const woff2Buffer = await fetch('/fonts/my.woff2').then(r => r.arrayBuffer());
