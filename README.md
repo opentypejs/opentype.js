@@ -118,7 +118,6 @@ import decompress from 'woff2-encoder/decompress';
 const woff2Buffer = await fetch('/fonts/my.woff2').then(r => r.arrayBuffer());
 const { buffer } = await decompress(woff2Buffer);
 const font = parse(buffer);
-//    👆🏼 { supported: true ,glyphs: {…} ,encoding: {…} ,position: {…} ,substitution: {…} , … }
 ```
 </details>
 
