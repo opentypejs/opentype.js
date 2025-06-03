@@ -109,24 +109,15 @@ buffer.then(data => {
 WOFF2 Brotli compression perform [29% better](https://www.w3.org/TR/WOFF20ER/#appendixB) than it WOFF predecessor.
 But this compression is also more complex, and would result in a much heavier (&gt;10×!) opentype.js library (≈120KB => ≈1400KB).
 
-To solve this: Decompress the font beforehand (for example with [fontello/wawoff2](https://github.com/fontello/wawoff2)).
+To solve this: Decompress the font beforehand (for example with [itskyedo/woff2-encoder](https://github.com/itskyedo/woff2-encoder)).
 
-```js
-// promise-based utility to load libraries using the good old <script> tag
-const loadScript = (src) => new Promise((onload) => document.documentElement.append(
-  Object.assign(document.createElement('script'), {src, onload})
-));
+```jsimport { parse } from 'opentype.js';
+import decompress from 'woff2-encoder/decompress';
 
-const buffer = //...same as previous example...
-
-// load wawoff2 if needed, and wait (!) for it to be ready
-if (!window.Module) {
-  const path = 'https://unpkg.com/wawoff2@2.0.1/build/decompress_binding.js'
-  const init = new Promise((done) => window.Module = { onRuntimeInitialized: done});
-  await loadScript(path).then(() => init);
-}
-// decompress before parsing
-const font = opentype.parse(Module.decompress(await buffer));
+const woff2Buffer = await fetch('/fonts/my.woff2').then(r => r.arrayBuffer());
+const { buffer } = await decompress(woff2Buffer);
+const font = parse(buffer);
+//    👆🏼 { supported: true ,glyphs: {…} ,encoding: {…} ,position: {…} ,substitution: {…} , … }
 ```
 </details>
 
