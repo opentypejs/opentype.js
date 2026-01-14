@@ -14,6 +14,8 @@ export * from './make-os2-table.mjs';
 export * from './make-post-table.mjs';
 export * from './name-table-names.mjs';
 export * from './parse-fvar-table.mjs';
+export * from './parse-gpos-table.mjs';
+export * from './parse-gsub-table.mjs';
 export * from './parse-head-table.mjs';
 export * from './parse-ltag-table.mjs';
 export * from './parse-name-table.mjs';
