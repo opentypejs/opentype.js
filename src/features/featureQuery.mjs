@@ -101,118 +101,148 @@ function lookupCoverageList(coverageList, contextParams) {
 }
 
 /**
+ * Prepare backtrack context by reversing and skipping tashkeel
+ * @param {ContextParams} contextParams context params
+ * @returns {Array} prepared backtrack context
+ */
+function prepareBacktrackContext(contextParams) {
+    const backtrackContext = [].concat(contextParams.backtrack);
+    backtrackContext.reverse();
+    while (backtrackContext.length && isTashkeelArabicChar(backtrackContext[0].char)) {
+        backtrackContext.shift();
+    }
+    return backtrackContext;
+}
+
+/**
+ * Prepare lookahead context by slicing from offset and skipping tashkeel
+ * @param {ContextParams} contextParams context params
+ * @param {number} offset starting offset
+ * @returns {Array} prepared lookahead context
+ */
+function prepareLookaheadContext(contextParams, offset) {
+    const lookaheadContext = contextParams.lookahead.slice(offset);
+    while (lookaheadContext.length && isTashkeelArabicChar(lookaheadContext[0].char)) {
+        lookaheadContext.shift();
+    }
+    return lookaheadContext;
+}
+
+/**
+ * Match a sequence against expected values using a value getter function
+ * @param {Array} context the context to match against
+ * @param {Array} expected expected values to match
+ * @param {Function} getValue function to get comparison value from context item (returns the item by default)
+ * @returns {boolean} true if sequence matches
+ */
+function matchSequence(context, expected, getValue = (item) => item) {
+    if (context.length < expected.length) return false;
+    for (let i = 0; i < expected.length; i++) {
+        if (getValue(context[i]) !== expected[i]) return false;
+    }
+    return true;
+}
+
+/**
+ * Get the current glyph index from context params
+ * @param {ContextParams} contextParams context params
+ */
+function getCurrentGlyphIndex(contextParams) {
+    let glyphIndex = contextParams.current;
+    return Array.isArray(glyphIndex) ? glyphIndex[0] : glyphIndex;
+}
+
+/**
+ * Apply lookup records and return substitutions (shared by all chaining formats)
+ * @param {Array} lookupRecords the lookup records to apply
+ * @param {number} glyphIndex the current glyph index
+ * @param {ContextParams} contextParams context params
+ * @param {object} options optional handlers
+ * @returns {Array} substitutions
+ */
+function applyLookupRecords(lookupRecords, glyphIndex, contextParams, options = {}) {
+    const getTargets = options.getTargets || (
+        (lookupRecord, glyphIndex, contextParams) => {
+            const seqIndex = lookupRecord.sequenceIndex;
+            const targetGlyph = (
+                seqIndex === 0 ? glyphIndex : contextParams.lookahead[seqIndex - 1]
+            );
+            return [targetGlyph];
+        }
+    );
+    const allowedTypes = options.allowedTypes || ['11', '12'];
+    const throwOnUnsupported = options.throwOnUnsupported || false;
+    const substitutions = [];
+    for (let i = 0; i < lookupRecords.length; i++) {
+        const lookupRecord = lookupRecords[i];
+        const lookupListIndex = lookupRecord.lookupListIndex;
+        const lookupTable = this.getLookupByIndex(lookupListIndex);
+
+        for (let s = 0; s < lookupTable.subtables.length; s++) {
+            let lookupSubtable = lookupTable.subtables[s];
+            let lookup;
+            let substitutionType = this.getSubstitutionType(lookupTable, lookupSubtable);
+
+            if (substitutionType === '71') {
+                // Extension subtable
+                substitutionType = this.getSubstitutionType(lookupSubtable, lookupSubtable.extension);
+                lookup = this.getLookupMethod(lookupSubtable, lookupSubtable.extension);
+                lookupSubtable = lookupSubtable.extension;
+            } else {
+                lookup = this.getLookupMethod(lookupTable, lookupSubtable);
+            }
+
+            if (allowedTypes.indexOf(substitutionType) === -1) {
+                if (throwOnUnsupported) {
+                    throw new Error(
+                        `Substitution type ${substitutionType} is not supported in chaining substitution`,
+                    );
+                }
+                continue;
+            }
+
+            const targets = getTargets(lookupRecord, glyphIndex, contextParams);
+            if (!targets || !targets.length) continue;
+
+            for (let t = 0; t < targets.length; t++) {
+                const substitution = lookup(targets[t]);
+                if (substitution) substitutions.push(substitution);
+            }
+        }
+    }
+    return substitutions;
+}
+
+/**
  * Handle chaining context substitution - format 1 (glyph-based)
  * @param {ContextParams} contextParams context params to lookup
  * @param {object} subtable the subtable containing chain rule sets
  */
 function chainingSubstitutionFormat1(contextParams, subtable) {
-    // Get the current glyph and check if it's in the coverage
-    let glyphIndex = contextParams.current;
-    glyphIndex = Array.isArray(glyphIndex) ? glyphIndex[0] : glyphIndex;
+    const glyphIndex = getCurrentGlyphIndex(contextParams);
     const coverageIndex = lookupCoverage(glyphIndex, subtable.coverage);
     if (coverageIndex === -1) return [];
 
-    // Get the chain rule set for this coverage index
     const chainRuleSet = subtable.chainRuleSets[coverageIndex];
     if (!chainRuleSet) return [];
 
-    // Try each rule in the set
+    const backtrackContext = prepareBacktrackContext(contextParams);
+
     for (let r = 0; r < chainRuleSet.length; r++) {
         const rule = chainRuleSet[r];
 
-        // Check backtrack glyphs (in reverse order)
-        let backtrackMatch = true;
-        const backtrackContext = [].concat(contextParams.backtrack);
-        backtrackContext.reverse();
-        // Skip tashkeel (Arabic diacritics)
-        while (backtrackContext.length && isTashkeelArabicChar(backtrackContext[0].char)) {
-            backtrackContext.shift();
-        }
-        if (backtrackContext.length < rule.backtrack.length) {
-            backtrackMatch = false;
-        } else {
-            for (let b = 0; b < rule.backtrack.length; b++) {
-                const backGlyphIndex = backtrackContext[b];
-                if (backGlyphIndex !== rule.backtrack[b]) {
-                    backtrackMatch = false;
-                    break;
-                }
-            }
-        }
-        if (!backtrackMatch) continue;
+        // Check backtrack glyphs
+        if (!matchSequence(backtrackContext, rule.backtrack)) continue;
 
-        // Check input glyphs (starting from second glyph, first is already matched via coverage)
-        let inputMatch = true;
-        for (let i = 0; i < rule.input.length; i++) {
-            const inputGlyphIndex = contextParams.lookahead[i];
-            if (inputGlyphIndex === undefined || inputGlyphIndex !== rule.input[i]) {
-                inputMatch = false;
-                break;
-            }
-        }
-        if (!inputMatch) continue;
+        // Check input glyphs (starting from second glyph)
+        if (!matchSequence(contextParams.lookahead, rule.input)) continue;
 
         // Check lookahead glyphs
-        let lookaheadMatch = true;
-        const lookaheadOffset = rule.input.length;
-        let lookaheadContext = contextParams.lookahead.slice(lookaheadOffset);
-        // Skip tashkeel in lookahead
-        while (lookaheadContext.length && isTashkeelArabicChar(lookaheadContext[0].char)) {
-            lookaheadContext.shift();
-        }
-        if (lookaheadContext.length < rule.lookahead.length) {
-            lookaheadMatch = false;
-        } else {
-            for (let l = 0; l < rule.lookahead.length; l++) {
-                if (lookaheadContext[l] !== rule.lookahead[l]) {
-                    lookaheadMatch = false;
-                    break;
-                }
-            }
-        }
-        if (!lookaheadMatch) continue;
+        const lookaheadContext = prepareLookaheadContext(contextParams, rule.input.length);
+        if (!matchSequence(lookaheadContext, rule.lookahead)) continue;
 
         // All context matches! Apply the lookup records
-        let substitutions = [];
-        for (let i = 0; i < rule.lookupRecords.length; i++) {
-            const lookupRecord = rule.lookupRecords[i];
-            const lookupListIndex = lookupRecord.lookupListIndex;
-            const lookupTable = this.getLookupByIndex(lookupListIndex);
-
-            for (let s = 0; s < lookupTable.subtables.length; s++) {
-                let lookupSubtable = lookupTable.subtables[s];
-                let lookup;
-                let substitutionType = this.getSubstitutionType(
-                    lookupTable,
-                    lookupSubtable,
-                );
-
-                if (substitutionType === '71') {
-                    // Extension subtable
-                    substitutionType = this.getSubstitutionType(
-                        lookupSubtable,
-                        lookupSubtable.extension,
-                    );
-                    lookup = this.getLookupMethod(
-                        lookupSubtable,
-                        lookupSubtable.extension,
-                    );
-                    lookupSubtable = lookupSubtable.extension;
-                } else {
-                    lookup = this.getLookupMethod(lookupTable, lookupSubtable);
-                }
-
-                // Get the glyph at the sequence index
-                const seqIndex = lookupRecord.sequenceIndex;
-                const targetGlyph = seqIndex === 0 ? glyphIndex : contextParams.lookahead[seqIndex - 1];
-
-                if (substitutionType === '11' || substitutionType === '12') {
-                    const substitution = lookup(targetGlyph);
-                    if (substitution) substitutions.push(substitution);
-                }
-            }
-        }
-        return substitutions;
+        return applyLookupRecords.call(this, rule.lookupRecords, glyphIndex, contextParams);
     }
 
     return [];
@@ -224,136 +254,34 @@ function chainingSubstitutionFormat1(contextParams, subtable) {
  * @param {object} subtable the subtable containing class definitions
  */
 function chainingSubstitutionFormat2(contextParams, subtable) {
-    // Get the current glyph and check if it's in the coverage
-    let glyphIndex = contextParams.current;
-    glyphIndex = Array.isArray(glyphIndex) ? glyphIndex[0] : glyphIndex;
+    const glyphIndex = getCurrentGlyphIndex(contextParams);
     const coverageIndex = lookupCoverage(glyphIndex, subtable.coverage);
     if (coverageIndex === -1) return [];
 
-    // Get the class of the current glyph using the input class definition
-    const inputClass = this.font.substitution.getGlyphClass(
-        subtable.inputClassDef,
-        glyphIndex,
-    );
-
-    // Get the chain class set for this class (may be null for unused classes)
+    const inputClass = this.font.substitution.getGlyphClass(subtable.inputClassDef, glyphIndex);
     const chainClassSet = subtable.chainClassSet[inputClass];
     if (!chainClassSet) return [];
 
-    // Try each rule in the class set
+    const backtrackContext = prepareBacktrackContext(contextParams);
+    const getBacktrackClass = (glyph) => this.font.substitution.getGlyphClass(subtable.backtrackClassDef, glyph);
+    const getInputClass = (glyph) => this.font.substitution.getGlyphClass(subtable.inputClassDef, glyph);
+    const getLookaheadClass = (glyph) => this.font.substitution.getGlyphClass(subtable.lookaheadClassDef, glyph);
+
     for (let r = 0; r < chainClassSet.length; r++) {
         const rule = chainClassSet[r];
 
-        // Check backtrack classes (in reverse order)
-        let backtrackMatch = true;
-        const backtrackContext = [].concat(contextParams.backtrack);
-        backtrackContext.reverse();
-        // Skip tashkeel (Arabic diacritics)
-        while (backtrackContext.length && isTashkeelArabicChar(backtrackContext[0].char)) {
-            backtrackContext.shift();
-        }
-        if (backtrackContext.length < rule.backtrack.length) {
-            backtrackMatch = false;
-        } else {
-            for (let b = 0; b < rule.backtrack.length; b++) {
-                const backGlyphIndex = backtrackContext[b];
-                const backClass = this.font.substitution.getGlyphClass(
-                    subtable.backtrackClassDef,
-                    backGlyphIndex,
-                );
-                if (backClass !== rule.backtrack[b]) {
-                    backtrackMatch = false;
-                    break;
-                }
-            }
-        }
-        if (!backtrackMatch) continue;
+        // Check backtrack classes
+        if (!matchSequence(backtrackContext, rule.backtrack, getBacktrackClass)) continue;
 
-        // Check input classes (starting from second glyph, first is already matched via coverage)
-        let inputMatch = true;
-        for (let i = 0; i < rule.input.length; i++) {
-            const inputGlyphIndex = contextParams.lookahead[i];
-            if (inputGlyphIndex === undefined) {
-                inputMatch = false;
-                break;
-            }
-            const inClass = this.font.substitution.getGlyphClass(
-                subtable.inputClassDef,
-                inputGlyphIndex,
-            );
-            if (inClass !== rule.input[i]) {
-                inputMatch = false;
-                break;
-            }
-        }
-        if (!inputMatch) continue;
+        // Check input classes (starting from second glyph)
+        if (!matchSequence(contextParams.lookahead, rule.input, getInputClass)) continue;
 
         // Check lookahead classes
-        let lookaheadMatch = true;
-        const lookaheadOffset = rule.input.length;
-        // Skip tashkeel in lookahead
-        let lookaheadContext = contextParams.lookahead.slice(lookaheadOffset);
-        while (lookaheadContext.length && isTashkeelArabicChar(lookaheadContext[0].char)) {
-            lookaheadContext.shift();
-        }
-        if (lookaheadContext.length < rule.lookahead.length) {
-            lookaheadMatch = false;
-        } else {
-            for (let l = 0; l < rule.lookahead.length; l++) {
-                const lookGlyphIndex = lookaheadContext[l];
-                const lookClass = this.font.substitution.getGlyphClass(
-                    subtable.lookaheadClassDef,
-                    lookGlyphIndex,
-                );
-                if (lookClass !== rule.lookahead[l]) {
-                    lookaheadMatch = false;
-                    break;
-                }
-            }
-        }
-        if (!lookaheadMatch) continue;
+        const lookaheadContext = prepareLookaheadContext(contextParams, rule.input.length);
+        if (!matchSequence(lookaheadContext, rule.lookahead, getLookaheadClass)) continue;
 
         // All context matches! Apply the lookup records
-        let substitutions = [];
-        for (let i = 0; i < rule.lookupRecords.length; i++) {
-            const lookupRecord = rule.lookupRecords[i];
-            const lookupListIndex = lookupRecord.lookupListIndex;
-            const lookupTable = this.getLookupByIndex(lookupListIndex);
-
-            for (let s = 0; s < lookupTable.subtables.length; s++) {
-                let lookupSubtable = lookupTable.subtables[s];
-                let lookup;
-                let substitutionType = this.getSubstitutionType(
-                    lookupTable,
-                    lookupSubtable,
-                );
-
-                if (substitutionType === '71') {
-                    // Extension subtable
-                    substitutionType = this.getSubstitutionType(
-                        lookupSubtable,
-                        lookupSubtable.extension,
-                    );
-                    lookup = this.getLookupMethod(
-                        lookupSubtable,
-                        lookupSubtable.extension,
-                    );
-                    lookupSubtable = lookupSubtable.extension;
-                } else {
-                    lookup = this.getLookupMethod(lookupTable, lookupSubtable);
-                }
-
-                // Get the glyph at the sequence index
-                const seqIndex = lookupRecord.sequenceIndex;
-                const targetGlyph = seqIndex === 0 ? glyphIndex : contextParams.lookahead[seqIndex - 1];
-
-                if (substitutionType === '11' || substitutionType === '12') {
-                    const substitution = lookup(targetGlyph);
-                    if (substitution) substitutions.push(substitution);
-                }
-            }
-        }
-        return substitutions;
+        return applyLookupRecords.call(this, rule.lookupRecords, glyphIndex, contextParams);
     }
 
     return [];
@@ -378,20 +306,13 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
     // LOOKAHEAD LOOKUP //
     const lookaheadOffset = subtable.inputCoverage.length - 1;
     if (contextParams.lookahead.length < subtable.lookaheadCoverage.length) return [];
-    let lookaheadContext = contextParams.lookahead.slice(lookaheadOffset);
-    while (lookaheadContext.length && isTashkeelArabicChar(lookaheadContext[0].char)) {
-        lookaheadContext.shift();
-    }
+    const lookaheadContext = prepareLookaheadContext(contextParams, lookaheadOffset);
     const lookaheadParams = new ContextParams(lookaheadContext, 0);
     let lookaheadLookups = lookupCoverageList(
         subtable.lookaheadCoverage, lookaheadParams
     );
     // BACKTRACK LOOKUP //
-    let backtrackContext = [].concat(contextParams.backtrack);
-    backtrackContext.reverse();
-    while (backtrackContext.length && isTashkeelArabicChar(backtrackContext[0].char)) {
-        backtrackContext.shift();
-    }
+    const backtrackContext = prepareBacktrackContext(contextParams);
     if (backtrackContext.length < subtable.backtrackCoverage.length) return [];
     const backtrackParams = new ContextParams(backtrackContext, 0);
     let backtrackLookups = lookupCoverageList(
@@ -402,39 +323,18 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
         lookaheadLookups.length === subtable.lookaheadCoverage.length &&
         backtrackLookups.length === subtable.backtrackCoverage.length
     );
-    let substitutions = [];
-    if (contextRulesMatch) {
-        for (let i = 0; i < subtable.lookupRecords.length; i++) {
-            const lookupRecord = subtable.lookupRecords[i];
-            const lookupListIndex = lookupRecord.lookupListIndex;
-            const lookupTable = this.getLookupByIndex(lookupListIndex);
-            for (let s = 0; s < lookupTable.subtables.length; s++) {
-                let subtable = lookupTable.subtables[s];
-                let lookup;
-                let substitutionType = this.getSubstitutionType(lookupTable, subtable);
-
-                if (substitutionType === '71') {
-                    // This is an extension subtable, so lookup the target subtable
-                    substitutionType = this.getSubstitutionType(subtable, subtable.extension);
-                    lookup = this.getLookupMethod(subtable, subtable.extension);
-                    subtable = subtable.extension;
-                } else {
-                    lookup = this.getLookupMethod(lookupTable, subtable);
-                }
-
-                if (substitutionType === '12') {
-                    for (let n = 0; n < inputLookups.length; n++) {
-                        const glyphIndex = contextParams.get(n);
-                        const substitution = lookup(glyphIndex);
-                        if (substitution) substitutions.push(substitution);
-                    }
-                } else {
-                    throw new Error(`Substitution type ${substitutionType} is not supported in chaining substitution`);
-                }
+    if (!contextRulesMatch) return [];
+    return applyLookupRecords.call(this, subtable.lookupRecords, null, contextParams, {
+        allowedTypes: ['12'],
+        throwOnUnsupported: true,
+        getTargets: () => {
+            let targets = [];
+            for (let n = 0; n < inputLookups.length; n++) {
+                targets.push(contextParams.get(n));
             }
-        }
-    }
-    return substitutions;
+            return targets;
+        },
+    });
 }
 
 /**
