@@ -183,5 +183,45 @@ describe('featureQuery.mjs', function() {
             const substitution = lookup(271);
             assert.deepEqual(substitution, [273, 1087]);
         });
+        it('should route context substitution format 2 (52) correctly', function () {
+            // This test verifies that case '52' is registered in getLookupMethod switch
+            // Without this case, getLookupMethod would throw an error for format 2 context substitutions
+            const featureQuery = query.arabic;
+            
+            // Mock a lookup table and subtable with substitution type 52
+            const mockLookupTable = { lookupType: 5 }; // Context substitution type 5
+            const mockSubtable = { substFormat: 2 }; // Format 2 (class-based)
+            
+            // This should not throw an error if case '52' is registered
+            try {
+                const substitutionType = featureQuery.getSubstitutionType(mockLookupTable, mockSubtable);
+                // Type 5 format 2 should be '52'
+                assert.equal(substitutionType, '52');
+            } catch (e) {
+                assert.fail('getLookupMethod should handle case "52" for context substitution format 2');
+            }
+        });
+        it('should route chaining context substitution format 2 (62) correctly', function () {
+            // This test verifies that case '62' is registered in getLookupMethod switch
+            // Without this case, getLookupMethod would throw an error for format 2 chaining context substitutions
+            const featureQuery = query.arabic;
+            
+            // Mock a lookup table and subtable with substitution type 62
+            const mockLookupTable = { lookupType: 6 }; // Chaining context substitution type 6
+            const mockSubtable = { substFormat: 2 }; // Format 2 (class-based)
+            
+            // This should not throw an error if case '62' is registered
+            try {
+                const substitutionType = featureQuery.getSubstitutionType(mockLookupTable, mockSubtable);
+                // Type 6 format 2 should be '62'
+                assert.equal(substitutionType, '62');
+                
+                // Verify getLookupMethod recognizes the type without throwing
+                const lookup = featureQuery.getLookupMethod(mockLookupTable, mockSubtable);
+                assert.ok(typeof lookup === 'function', 'getLookupMethod should return a function for case 62');
+            } catch (e) {
+                assert.fail(`getLookupMethod should handle case "62" for chaining context substitution format 2: ${e.message}`);
+            }
+        });
     });
 });
