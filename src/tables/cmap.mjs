@@ -250,6 +250,25 @@ function addTerminatorSegment(t) {
     });
 }
 
+function mergeSegments(segments) {
+    if (segments.length === 0) return segments;
+    const merged = [segments[0]];
+    for (let i = 1; i < segments.length; i++) {
+        const prev = merged[merged.length - 1];
+        const curr = segments[i];
+        if (
+            prev.end + 1 === curr.start &&
+            prev.delta === curr.delta &&
+            curr.end !== 0xFFFF
+        ) {
+            prev.end = curr.end;
+        } else {
+            merged.push(curr);
+        }
+    }
+    return merged;
+}
+
 // Make cmap table, format 4 by default, 12 if needed only
 function makeCmapTable(glyphs) {
     // Plan 0 is the base Unicode Plan but emojis, for example are on another plan, and needs cmap 12 format (with 32bit)
@@ -260,7 +279,6 @@ function makeCmapTable(glyphs) {
     for (i = glyphs.length - 1; i > 0; i -= 1) {
         const g = glyphs.get(i);
         if (g.unicode > 65535) {
-            console.log('Adding CMAP format 12 (needed!)');
             isPlan0Only = false;
             break;
         }
@@ -308,6 +326,8 @@ function makeCmapTable(glyphs) {
         return a.start - b.start;
     });
 
+    t.segments = mergeSegments(t.segments);
+
     addTerminatorSegment(t);
 
     const segCount = t.segments.length;
@@ -324,10 +344,6 @@ function makeCmapTable(glyphs) {
     // CMAP 12
     let cmap12Groups = [];
 
-    // Reminder this loop is not following the specification at 100%
-    // The specification -> find suites of characters and make a group
-    // Here we're doing one group for each letter
-    // Doing as the spec can save 8 times (or more) space
     for (i = 0; i < segCount; i += 1) {
         const segment = t.segments[i];
 
@@ -410,4 +426,4 @@ function makeCmapTable(glyphs) {
 
 export default { parse: parseCmapTable, make: makeCmapTable };
 
-export { parseCmapTableFormat0, parseCmapTableFormat14 };
+export { parseCmapTableFormat0, parseCmapTableFormat14, makeCmapTable };
