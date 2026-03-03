@@ -56,7 +56,7 @@ function optimizeCommands(commands) {
         if (cmd.type === 'M') {
             startX = cmd.x;
             startY = cmd.y;
-        } else if (cmd.type === 'L' && (!nextCommand || nextCommand.command === 'Z')) {
+        } else if (cmd.type === 'L' && (!nextCommand || nextCommand.type === 'Z')) {
             if(!(Math.abs(cmd.x - startX) > 1 || Math.abs(cmd.y - startY) > 1)) {
                 subpath.pop();
             }
@@ -687,7 +687,7 @@ Path.prototype.toSVG = function(options, pathData) {
 /**
  * Convert the path to a DOM element.
  * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
- * @param  {string} - will be calculated automatically, but can be provided from Glyph's wrapper functionions object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {string} [pathData] - will be calculated automatically, but can be provided from Glyph's wrapper functions
  * @return {SVGPathElement}
  */
 Path.prototype.toDOMElement = function(options, pathData) {
@@ -701,10 +701,9 @@ Path.prototype.toDOMElement = function(options, pathData) {
     if (!pathData) {
         pathData = this.toPathData(options);
     }
-    const temporaryPath = pathData;
     const newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
-    newPath.setAttribute('d', temporaryPath);
+    newPath.setAttribute('d', pathData);
 
     if (this.fill !== undefined && this.fill !== 'black') {
         if (this.fill === null) {
