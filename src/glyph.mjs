@@ -489,8 +489,8 @@ Glyph.prototype.toPathData = function(options, font) {
     }
 
     let usePath = useGlyph.points && options.pointsTransform ? options.pointsTransform(useGlyph.points) : useGlyph.path;
-    if(options.pathTramsform) {
-        usePath = options.pathTramsform(usePath);
+    if(options.pathTransform) {
+        usePath = options.pathTransform(usePath);
     }
 
     return usePath.toPathData(options);

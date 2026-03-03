@@ -146,6 +146,21 @@ describe('glyph.mjs', function() {
         });
     });
 
+    describe('toPathData options', function() {
+        it('should invoke pathTransform callback', function() {
+            const font = loadSync('./test/fonts/FiraSansMedium.woff');
+            const glyph = font.charToGlyph('A');
+            let called = false;
+            glyph.toPathData({
+                pathTransform: function(path) {
+                    called = true;
+                    return path;
+                }
+            }, font);
+            assert.equal(called, true);
+        });
+    });
+
     describe('component transformation', function() {
         // @TODO test components more thoroughly,
         // maybe move to a separate glyf test file
