@@ -687,7 +687,7 @@ Path.prototype.toSVG = function(options, pathData) {
 /**
  * Convert the path to a DOM element.
  * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
- * @param  {string} - will be calculated automatically, but can be provided from Glyph's wrapper functionions object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {string} [pathData] - will be calculated automatically, but can be provided from Glyph's wrapper functions
  * @return {SVGPathElement}
  */
 Path.prototype.toDOMElement = function(options, pathData) {
