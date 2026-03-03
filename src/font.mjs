@@ -107,7 +107,7 @@ function Font(options) {
             if (this.weightClass >= 600) {
                 selection |= this.fsSelectionValues.BOLD;
             }
-            if (selection == 0) {
+            if (selection === 0) {
                 selection = this.fsSelectionValues.REGULAR;
             }
         }
