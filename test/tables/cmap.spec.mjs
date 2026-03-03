@@ -88,7 +88,10 @@ describe('tables/cmap.mjs', function() {
         // glyphDefs: array of { unicodes: [number, ...] }
         return {
             length: glyphDefs.length,
-            get(i) { return glyphDefs[i]; }
+            get(i) {
+                const def = glyphDefs[i];
+                return { ...def, unicode: def.unicodes[0] };
+            }
         };
     }
 
@@ -170,7 +173,6 @@ describe('tables/cmap.mjs', function() {
         it('round-trips A-Z through toArrayBuffer and parse', function() {
             const notdefGlyph = new Glyph({
                 name: '.notdef',
-                unicode: 0,
                 advanceWidth: 650,
                 path: new Path()
             });
@@ -211,6 +213,7 @@ describe('tables/cmap.mjs', function() {
             ]);
 
             const t = makeCmapTable(glyphs);
+            assert.equal(t.numTables, 2); // Format 4 + Format 12
             // Non-BMP: segments above 0xFFFF are not subject to 0xFFFF guard
             // Should merge into 1 segment + terminator = 2
             assert.equal(t.segments.length, 2);
