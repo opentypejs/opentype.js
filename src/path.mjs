@@ -701,10 +701,9 @@ Path.prototype.toDOMElement = function(options, pathData) {
     if (!pathData) {
         pathData = this.toPathData(options);
     }
-    const temporaryPath = pathData;
     const newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
-    newPath.setAttribute('d', temporaryPath);
+    newPath.setAttribute('d', pathData);
 
     if (this.fill !== undefined && this.fill !== 'black') {
         if (this.fill === null) {
