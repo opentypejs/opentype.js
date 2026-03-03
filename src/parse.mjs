@@ -773,7 +773,7 @@ Parser.prototype.parseDeltaSetIndexMap = function() {
         } else if (entrySize === 3) {
             entry = this.parseUInt24();
         } else if (entrySize === 4) {
-            entry = this.getULong();
+            entry = this.parseULong();
         } else {
             throw new Error(`Invalid entry size of ${entrySize}`);
         }
