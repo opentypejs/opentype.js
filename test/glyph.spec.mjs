@@ -154,7 +154,7 @@ describe('glyph.mjs', function() {
 
         it('handles 2x2 transform correctly',function() {
             const glyph = changaVarFont.charToGlyph('+');
-            assert.deepEqual(glyph.toPathData(), 'M91 284L440 284L440 342L91 342ZM236 487L236 138L294 138L294 487Z');
+            assert.deepEqual(glyph.toPathData(), 'M91 342L91 284L440 284L440 342ZM294 487L236 487L236 138L294 138Z');
         });
     });
 

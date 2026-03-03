@@ -56,7 +56,7 @@ function optimizeCommands(commands) {
         if (cmd.type === 'M') {
             startX = cmd.x;
             startY = cmd.y;
-        } else if (cmd.type === 'L' && (!nextCommand || nextCommand.command === 'Z')) {
+        } else if (cmd.type === 'L' && (!nextCommand || nextCommand.type === 'Z')) {
             if(!(Math.abs(cmd.x - startX) > 1 || Math.abs(cmd.y - startY) > 1)) {
                 subpath.pop();
             }
