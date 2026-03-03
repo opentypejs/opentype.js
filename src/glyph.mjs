@@ -247,7 +247,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
  */
 Glyph.prototype.getLayers = function(font) {
     if(!font) {
-        throw Error('The font object is required to read the colr/cpal tables in order to get the layers.');
+        throw new Error('The font object is required to read the colr/cpal tables in order to get the layers.');
     }
     return font.layers.get(this.index);
 };
@@ -258,7 +258,7 @@ Glyph.prototype.getLayers = function(font) {
  */
 Glyph.prototype.getSvgImage = function(font) {
     if(!font) {
-        throw Error('The font object is required to read the svg table in order to get the image.');
+        throw new Error('The font object is required to read the svg table in order to get the image.');
     }
     return font.svgImages.get(this.index);
 };
