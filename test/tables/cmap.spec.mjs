@@ -141,7 +141,7 @@ describe('tables/cmap.mjs', function() {
             assert.equal(t.segments.length, 3);
         });
 
-        it('does NOT merge when result would reach 0xFFFF (BMP terminator)', function() {
+        it('merges segments near 0xFFFF as long as end does not reach the BMP terminator', function() {
             // 0xFFFD (index 1) and 0xFFFE (index 2) — contiguous with same delta
             // But merging would make end=0xFFFE which is < 0xFFFF, so it SHOULD merge
             // Only end === 0xFFFF is reserved for the terminator
