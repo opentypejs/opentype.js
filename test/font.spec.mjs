@@ -264,4 +264,38 @@ describe('glyphset.mjs', function() {
             assert.deepEqual(fillLogs, expectedColors);
         });
     });
+
+    describe('glyph mapping', function() {
+        let notoSansFont;
+
+        beforeEach(()=> {
+            notoSansFont = loadSync('./test/fonts/NotoSans-Regular.ttf');
+        });
+    
+        it('maps multiple glyphs to multiple characters in the original text source', () => {
+            let mapping = notoSansFont.stringToGlyphMapping('ff');
+            assert.equal(mapping[0].glyph.index, 1653); // ff
+            assert.deepEqual(mapping[0].replaced, [0, 1]);
+
+            mapping = notoSansFont.stringToGlyphMapping('ffi');
+            assert.equal(mapping[0].glyph.index, 1656); // ffi
+            assert.deepEqual(mapping[0].replaced, [0, 1, 2]);
+
+            mapping = notoSansFont.stringToGlyphMapping('ffiff');
+            assert.equal(mapping[0].glyph.index, 1656); // ffi
+            assert.deepEqual(mapping[0].replaced, [0, 1, 2]);
+            assert.equal(mapping[1].glyph.index, 1653); // ff
+            assert.deepEqual(mapping[1].replaced, [3, 4]);
+
+            mapping = notoSansFont.stringToGlyphMapping('fffiffif');
+            assert.equal(mapping[0].glyph.index, 1653); // ff
+            assert.deepEqual(mapping[0].replaced, [0, 1]);
+            assert.equal(mapping[1].glyph.index, 1654); // fi
+            assert.deepEqual(mapping[1].replaced, [2, 3]);
+            assert.equal(mapping[2].glyph.index, 1656); // ffi
+            assert.deepEqual(mapping[2].replaced, [4, 5, 6]);
+            assert.equal(mapping[3].glyph.index, 73); // f
+            assert.deepEqual(mapping[3].replaced, [7]);
+        });
+    });
 });
