@@ -28,15 +28,18 @@ function getPathDefinition(glyph, path) {
 /**
  * @typedef GlyphOptions
  * @type Object
+ * @property {number} [index] - The glyph index
  * @property {string} [name] - The glyph name
  * @property {number} [unicode]
- * @property {Array} [unicodes]
+ * @property {number[]} [unicodes]
  * @property {number} [xMin]
  * @property {number} [yMin]
  * @property {number} [xMax]
  * @property {number} [yMax]
  * @property {number} [advanceWidth]
  * @property {number} [leftSideBearing]
+ * @property {Path} [path]
+ * @property {Array} [points]
  */
 
 // A Glyph is an individual mark that often corresponds to a character.
@@ -47,7 +50,7 @@ function getPathDefinition(glyph, path) {
 /**
  * @exports opentype.Glyph
  * @class
- * @param {GlyphOptions}
+ * @param {GlyphOptions} options
  * @constructor
  */
 function Glyph(options) {
@@ -57,9 +60,10 @@ function Glyph(options) {
 }
 
 /**
- * @param  {GlyphOptions}
+ * @param  {GlyphOptions} options
  */
 Glyph.prototype.bindConstructorValues = function(options) {
+    /** @type {number} */
     this.index = options.index || 0;
 
     if (options.name === '.notdef') {
@@ -73,37 +77,47 @@ Glyph.prototype.bindConstructorValues = function(options) {
     }
 
     // These three values cannot be deferred for memory optimization:
+    /** @type {string|null} */
     this.name = options.name || null;
+    /** @type {number|undefined} */
     this.unicode = options.unicode;
+    /** @type {number[]} */
     this.unicodes = options.unicodes || (options.unicode !== undefined ? [options.unicode] : []);
 
     // But by binding these values only when necessary, we reduce can
     // the memory requirements by almost 3% for larger fonts.
     if ('xMin' in options) {
+        /** @type {number|undefined} */
         this.xMin = options.xMin;
     }
 
     if ('yMin' in options) {
+        /** @type {number|undefined} */
         this.yMin = options.yMin;
     }
 
     if ('xMax' in options) {
+        /** @type {number|undefined} */
         this.xMax = options.xMax;
     }
 
     if ('yMax' in options) {
+        /** @type {number|undefined} */
         this.yMax = options.yMax;
     }
 
     if ('advanceWidth' in options) {
+        /** @type {number|undefined} */
         this.advanceWidth = options.advanceWidth;
     }
 
     if ('leftSideBearing' in options) {
+        /** @type {number|undefined} */
         this.leftSideBearing = options.leftSideBearing;
     }
 
     if ('points' in options) {
+        /** @type {Array|undefined} */
         this.points = options.points;
     }
 
@@ -114,7 +128,7 @@ Glyph.prototype.bindConstructorValues = function(options) {
 };
 
 /**
- * @param {number}
+ * @param {number} unicode
  */
 Glyph.prototype.addUnicode = function(unicode) {
     if (this.unicodes.length === 0) {
@@ -126,7 +140,7 @@ Glyph.prototype.addUnicode = function(unicode) {
 
 /**
  * Calculate the minimum bounding box for this glyph.
- * @return {opentype.BoundingBox}
+ * @return {import('./bbox.mjs').default}
  */
 Glyph.prototype.getBoundingBox = function() {
     return this.path.getBoundingBox();
@@ -137,9 +151,9 @@ Glyph.prototype.getBoundingBox = function() {
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options - xScale, yScale to stretch the glyph.
- * @param  {opentype.Font} font if hinting is to be used, or CPAL/COLR / variation needs to be rendered, the font
- * @return {opentype.Path}
+ * @param  {Object} [options] - xScale, yScale to stretch the glyph.
+ * @param  {import('./font.mjs').default} [font] - if hinting is to be used, or CPAL/COLR / variation needs to be rendered, the font
+ * @return {Path}
  */
 Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     x = x !== undefined ? x : 0;
@@ -241,8 +255,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
 };
 
 /**
- * 
- * @param {opentype.Font} font 
+ * @param {import('./font.mjs').default} font
  * @returns {Array}
  */
 Glyph.prototype.getLayers = function(font) {
@@ -253,8 +266,8 @@ Glyph.prototype.getLayers = function(font) {
 };
 
 /**
- * @param {opentype.Font} font
- * @returns {import('./svgimages.mjs').SVGImage | undefined}
+ * @param {import('./font.mjs').default} font
+ * @returns {any}
  */
 Glyph.prototype.getSvgImage = function(font) {
     if(!font) {
@@ -353,8 +366,8 @@ Glyph.prototype.getMetrics = function() {
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {Object=} options - xScale, yScale to stretch the glyph.
- * @param  {opentype.Font} font - if hinting is to be used, or CPAL/COLR / variation needs to be rendered, the font
+ * @param  {Object} [options] - xScale, yScale to stretch the glyph.
+ * @param  {import('./font.mjs').default} [font] - if hinting is to be used, or CPAL/COLR / variation needs to be rendered, the font
  */
 Glyph.prototype.draw = function(ctx, x, y, fontSize, options, font) {
     options = Object.assign({}, font && font.defaultRenderOptions, options);
@@ -369,8 +382,8 @@ Glyph.prototype.draw = function(ctx, x, y, fontSize, options, font) {
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options
- * @param  {opentype.Font} font - used to get the default render options, may be needed for variable fonts in the future
+ * @param  {Object} [options]
+ * @param  {import('./font.mjs').default} [font] - used to get the default render options, may be needed for variable fonts in the future
  */
 Glyph.prototype.drawPoints = function(ctx, x, y, fontSize, options, font) {
     options = Object.assign({}, font && font.defaultRenderOptions, options);
@@ -477,7 +490,7 @@ Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {
 /**
  * Convert the Glyph's Path to a string of path data instructions
  * @param  {object|number} [options={decimalPlaces:2, optimize:true, variation:undefined}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
- * @param  {opentype.Font} font - A font object is required if variation is to be applied in order to get the variation data from the tables
+ * @param  {import('./font.mjs').default} [font] - A font object is required if variation is to be applied in order to get the variation data from the tables
  * @return {string}
  * @see Path.toPathData
  */
@@ -498,8 +511,9 @@ Glyph.prototype.toPathData = function(options, font) {
 
 /**
  * Sets the path data from an SVG path element or path notation
- * @param  {string|SVGPathElement}
- * @param  {object}
+ * @param  {string|SVGPathElement} pathData
+ * @param  {object} [options]
+ * @returns {Path}
  */
 Glyph.prototype.fromSVG = function(pathData, options = {}) {
     return this.path.fromSVG(pathData, options);
@@ -508,7 +522,7 @@ Glyph.prototype.fromSVG = function(pathData, options = {}) {
 /**
  * Convert the Glyph's Path to an SVG <path> element, as a string.
  * @param  {object|number} [options={decimalPlaces:2, optimize:true, variation:undefined}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
- * @param  {opentype.Font} font - A font object is required if variation is to be applied in order to get the variation data from the tables 
+ * @param  {import('./font.mjs').default} [font] - A font object is required if variation is to be applied in order to get the variation data from the tables
  * @return {string}
  */
 Glyph.prototype.toSVG = function(options, font) {
@@ -519,7 +533,7 @@ Glyph.prototype.toSVG = function(options, font) {
 /**
  * Convert the path to a DOM element.
  * @param  {object|number} [options={decimalPlaces:2, optimize:true, variation:undefined}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
- * @param  {opentype.Font} font - A font object is required if variation is to be applied in order to get the variation data from the tables 
+ * @param  {import('./font.mjs').default} [font] - A font object is required if variation is to be applied in order to get the variation data from the tables
  * @return {SVGPathElement}
  */
 Glyph.prototype.toDOMElement = function(options, font) {

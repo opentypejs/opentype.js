@@ -1,4 +1,4 @@
-import { tinf_uncompress as inflate } from './tiny-inflate@1.0.3.esm.mjs';
+import { tinf_uncompress as inflate } from './tiny-inflate-1.0.3.esm.mjs';
 
 // Check if 2 arrays of primitives are equal.
 function arraysEqual(ar1, ar2) {

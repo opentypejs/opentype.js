@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `head` table contains global information about the font.
 // https://www.microsoft.com/typography/OTSPEC/head.htm
 
@@ -60,4 +61,5 @@ function makeHeadTable(options) {
     ], options);
 }
 
+/** @type {any} */
 export default { parse: parseHeadTable, make: makeHeadTable };

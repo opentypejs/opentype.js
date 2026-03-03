@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `STAT` table stores information on design attributes for font-style variants
 // https://learn.microsoft.com/en-us/typography/opentype/spec/STAT
 
@@ -246,4 +247,5 @@ function makeSTATTable(STAT) {
     return result;
 }
 
+/** @type {any} */
 export default { make: makeSTATTable, parse: parseSTATTable };

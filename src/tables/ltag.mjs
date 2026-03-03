@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `ltag` table stores IETF BCP-47 language tags. It allows supporting
 // languages for which TrueType does not assign a numeric code.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6ltag.html
@@ -55,4 +56,5 @@ function parseLtagTable(data, start) {
     return tags;
 }
 
+/** @type {any} */
 export default { make: makeLtagTable, parse: parseLtagTable };

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `GSUB` table contains ligatures, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gsub.htm
 
@@ -411,4 +412,5 @@ function makeGsubTable(gsub) {
     ]);
 }
 
+/** @type {any} */
 export default { parse: parseGsubTable, make: makeGsubTable };

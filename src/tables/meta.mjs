@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `GPOS` table contains kerning pairs, among other things.
 // https://www.microsoft.com/typography/OTSPEC/gpos.htm
 
@@ -56,4 +57,5 @@ function makeMetaTable(tags) {
     return result;
 }
 
+/** @type {any} */
 export default { parse: parseMetaTable, make: makeMetaTable };

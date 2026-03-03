@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `hmtx` table contains the horizontal metrics for all glyphs.
 // https://www.microsoft.com/typography/OTSPEC/hmtx.htm
 
@@ -63,4 +64,5 @@ function makeHmtxTable(glyphs) {
     return t;
 }
 
+/** @type {any} */
 export default { parse: parseHmtxTable, make: makeHmtxTable };

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `sfnt` wrapper provides organization for the tables in the font.
 // It is the top-level data structure in a font.
 // https://www.microsoft.com/typography/OTSPEC/otff.htm
@@ -410,4 +411,5 @@ function fontToSfntTable(font) {
     return sfntTable;
 }
 
+/** @type {any} */
 export default { make: makeSfntTable, fontToTable: fontToSfntTable, computeCheckSum };

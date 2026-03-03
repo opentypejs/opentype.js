@@ -35,31 +35,33 @@ function createDefaultNamesInfo(options) {
 }
 
 /**
- * @typedef FontOptions
- * @type Object
- * @property {Boolean} empty - whether to create a new empty font
- * @property {string} familyName
- * @property {string} styleName
- * @property {string=} fullName
- * @property {string=} postScriptName
- * @property {string=} designer
- * @property {string=} designerURL
- * @property {string=} manufacturer
- * @property {string=} manufacturerURL
- * @property {string=} license
- * @property {string=} licenseURL
- * @property {string=} version
- * @property {string=} description
- * @property {string=} copyright
- * @property {string=} trademark
- * @property {Number} unitsPerEm
- * @property {Number} ascender
- * @property {Number} descender
- * @property {Number} createdTimestamp
- * @property {Number} weightClass
- * @property {Number} italicAngle
- * @property {string=} widthClass
- * @property {string=} fsSelection
+ * @typedef {Object} FontOptions
+ * @property {boolean} [empty] - whether to create a new empty font
+ * @property {string} [familyName]
+ * @property {string} [styleName]
+ * @property {string} [fullName]
+ * @property {string} [postScriptName]
+ * @property {string} [designer]
+ * @property {string} [designerURL]
+ * @property {string} [manufacturer]
+ * @property {string} [manufacturerURL]
+ * @property {string} [license]
+ * @property {string} [licenseURL]
+ * @property {string} [version]
+ * @property {string} [description]
+ * @property {string} [copyright]
+ * @property {string} [trademark]
+ * @property {number} [unitsPerEm]
+ * @property {number} [ascender]
+ * @property {number} [descender]
+ * @property {number} [createdTimestamp]
+ * @property {number} [weightClass]
+ * @property {number} [italicAngle]
+ * @property {number} [widthClass]
+ * @property {number} [fsSelection]
+ * @property {number[]} [panose]
+ * @property {Object} [tables]
+ * @property {Array} [glyphs]
  */
 
 /**
@@ -68,7 +70,7 @@ function createDefaultNamesInfo(options) {
  * or to get a path representing the text.
  * @exports opentype.Font
  * @class
- * @param {FontOptions}
+ * @param {FontOptions} options
  * @constructor
  */
 function Font(options) {
@@ -84,15 +86,22 @@ function Font(options) {
         if (options.descender > 0) throw new Error('When creating a new Font object, negative descender value is required.');
 
         // OS X will complain if the names are empty, so we put a single space everywhere by default.
+        /** @type {Object} */
         this.names = {};
         this.names.unicode = createDefaultNamesInfo(options);
         this.names.macintosh = createDefaultNamesInfo(options);
         this.names.windows = createDefaultNamesInfo(options);
+        /** @type {number} */
         this.unitsPerEm = options.unitsPerEm || 1000;
+        /** @type {number} */
         this.ascender = options.ascender;
+        /** @type {number} */
         this.descender = options.descender;
+        /** @type {number} */
         this.createdTimestamp = options.createdTimestamp;
+        /** @type {number} */
         this.italicAngle = options.italicAngle || 0;
+        /** @type {number} */
         this.weightClass = options.weightClass || 0;
 
         let selection = 0;
@@ -135,11 +144,17 @@ function Font(options) {
         });
     }
 
+    /** @type {boolean} */
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
+    /** @type {import('./glyphset.mjs').GlyphSet} */
     this.glyphs = new glyphset.GlyphSet(this, options.glyphs || []);
+    /** @type {any} */
     this.encoding = new DefaultEncoding(this);
+    /** @type {any} */
     this.position = new Position(this);
+    /** @type {any} */
     this.substitution = new Substitution(this);
+    /** @type {Object} */
     this.tables = this.tables || {};
 
     this.tables = new Proxy(this.tables, {
@@ -152,8 +167,11 @@ function Font(options) {
         }
     });
 
+    /** @type {PaletteManager} */
     this.palettes = new PaletteManager(this);
+    /** @type {any} */
     this.layers = new LayerManager(this);
+    /** @type {any} */
     this.svgImages = new SVGImageManager(this);
 
     // needed for low memory mode only.
@@ -173,8 +191,8 @@ function Font(options) {
 
 /**
  * Check if the font has a glyph for the given character.
- * @param  {string}
- * @return {Boolean}
+ * @param  {string} c
+ * @return {boolean}
  */
 Font.prototype.hasChar = function(c) {
     return this.encoding.charToGlyphIndex(c) > 0;
@@ -184,8 +202,8 @@ Font.prototype.hasChar = function(c) {
  * Convert the given character to a single glyph index.
  * Note that this function assumes that there is a one-to-one mapping between
  * the given character and a glyph; for complex scripts this might not be the case.
- * @param  {string}
- * @return {Number}
+ * @param  {string} s
+ * @return {number}
  */
 Font.prototype.charToGlyphIndex = function(s) {
     return this.encoding.charToGlyphIndex(s);
@@ -195,8 +213,8 @@ Font.prototype.charToGlyphIndex = function(s) {
  * Convert the given character to a single Glyph object.
  * Note that this function assumes that there is a one-to-one mapping between
  * the given character and a glyph; for complex scripts this might not be the case.
- * @param  {string}
- * @return {opentype.Glyph}
+ * @param  {string} c
+ * @return {import('./glyph.mjs').default}
  */
 Font.prototype.charToGlyph = function(c) {
     const glyphIndex = this.charToGlyphIndex(c);
@@ -232,7 +250,7 @@ Font.prototype.updateFeatures = function (options) {
  * Note that there is no strict one-to-one mapping between characters and
  * glyphs, so the list of returned glyph indexes can be larger or smaller than the
  * length of the given string.
- * @param  {string}
+ * @param  {string} s
  * @param  {GlyphRenderOptions} [options]
  * @return {number[]}
  */
@@ -258,9 +276,9 @@ Font.prototype.stringToGlyphIndexes = function(s, options) {
  * Note that there is no strict one-to-one mapping between characters and
  * glyphs, so the list of returned glyphs can be larger or smaller than the
  * length of the given string.
- * @param  {string}
+ * @param  {string} s
  * @param  {GlyphRenderOptions} [options]
- * @return {opentype.Glyph[]}
+ * @return {import('./glyph.mjs').default[]}
  */
 Font.prototype.stringToGlyphs = function(s, options) {
     const indexes = this.stringToGlyphIndexes(s, options);
@@ -277,16 +295,16 @@ Font.prototype.stringToGlyphs = function(s, options) {
 };
 
 /**
- * @param  {string}
- * @return {Number}
+ * @param  {string} name
+ * @return {number}
  */
 Font.prototype.nameToGlyphIndex = function(name) {
     return this.glyphNames.nameToGlyphIndex(name);
 };
 
 /**
- * @param  {string}
- * @return {opentype.Glyph}
+ * @param  {string} name
+ * @return {import('./glyph.mjs').default}
  */
 Font.prototype.nameToGlyph = function(name) {
     const glyphIndex = this.nameToGlyphIndex(name);
@@ -300,8 +318,8 @@ Font.prototype.nameToGlyph = function(name) {
 };
 
 /**
- * @param  {Number}
- * @return {String}
+ * @param  {number} gid
+ * @return {string}
  */
 Font.prototype.glyphIndexToName = function(gid) {
     if (!this.glyphNames.glyphIndexToName) {
@@ -318,9 +336,9 @@ Font.prototype.glyphIndexToName = function(gid) {
  * between glyphs.
  * For GPOS kerning, this method uses the default script and language, which covers
  * most use cases. To have greater control, use font.position.getKerningValue .
- * @param  {opentype.Glyph} leftGlyph
- * @param  {opentype.Glyph} rightGlyph
- * @return {Number}
+ * @param  {import('./glyph.mjs').default|number} leftGlyph
+ * @param  {import('./glyph.mjs').default|number} rightGlyph
+ * @return {number}
  */
 Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
     leftGlyph = leftGlyph.index || leftGlyph;
@@ -334,19 +352,20 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
 };
 
 /**
- * @typedef GlyphRenderOptions
- * @type Object
+ * @typedef {Object} GlyphRenderOptions
  * @property {string} [script] - script used to determine which features to apply. By default, 'DFLT' or 'latn' is used.
- *                               See https://www.microsoft.com/typography/otspec/scripttags.htm
- * @property {string} [language='dflt'] - language system used to determine which features to apply.
- *                                        See https://www.microsoft.com/typography/developers/opentype/languagetags.aspx
- * @property {boolean} [kerning=true] - whether to include kerning values
+ * @property {string} [language] - language system used to determine which features to apply.
+ * @property {boolean} [kerning] - whether to include kerning values
  * @property {object} [features] - OpenType Layout feature tags. Used to enable or disable the features of the given script/language system.
- *                                 See https://www.microsoft.com/typography/otspec/featuretags.htm
- * @property {boolean} [hinting=false] - whether to apply font hinting to the outlines
- * @property {integer} [usePalette=0] For COLR/CPAL fonts, the zero-based index of the color palette to use. (Use `Font.palettes.get()` to get the available palettes)
- * @property {boolean} [drawLayers=true] For COLR/CPAL fonts, this can be turned to false in order to draw the fallback glyphs instead
- * @property {boolean} [drawSVG=true] For SVG fonts, this can be turned to false in order to draw the fallback glyphs instead
+ * @property {boolean} [hinting] - whether to apply font hinting to the outlines
+ * @property {number} [usePalette] - For COLR/CPAL fonts, the zero-based index of the color palette to use.
+ * @property {boolean} [drawLayers] - For COLR/CPAL fonts, this can be turned to false in order to draw the fallback glyphs instead
+ * @property {boolean} [drawSVG] - For SVG fonts, this can be turned to false in order to draw the fallback glyphs instead
+ * @property {number} [letterSpacing] - Additional letter spacing in em units
+ * @property {number} [tracking] - Additional tracking in thousandths of an em
+ * @property {number} [xScale] - Horizontal scale factor
+ * @property {number} [yScale] - Vertical scale factor
+ * @property {string} [fill] - Fill color
  */
 Font.prototype.defaultRenderOptions = {
     kerning: true,
@@ -372,7 +391,7 @@ Font.prototype.defaultRenderOptions = {
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options
+ * @param  {GlyphRenderOptions} options
  * @param  {Function} callback
  */
 Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) {
@@ -418,8 +437,8 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options
- * @return {opentype.Path}
+ * @param  {GlyphRenderOptions} [options]
+ * @return {Path}
  */
 Font.prototype.getPath = function(text, x, y, fontSize, options) {
     options = Object.assign({}, this.defaultRenderOptions, options);
@@ -453,8 +472,8 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options
- * @return {opentype.Path[]}
+ * @param  {GlyphRenderOptions} [options]
+ * @return {Path[]}
  */
 Font.prototype.getPaths = function(text, x, y, fontSize, options) {
     options = Object.assign({}, this.defaultRenderOptions, options);
@@ -479,8 +498,8 @@ Font.prototype.getPaths = function(text, x, y, fontSize, options) {
  *
  * @param  {string} text - The text to create.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options
- * @return advance width
+ * @param  {GlyphRenderOptions} [options]
+ * @return {number}
  */
 Font.prototype.getAdvanceWidth = function(text, fontSize, options) {
     options = Object.assign({}, this.defaultRenderOptions, options);
@@ -494,7 +513,7 @@ Font.prototype.getAdvanceWidth = function(text, fontSize, options) {
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {GlyphRenderOptions=} options
+ * @param  {GlyphRenderOptions} options
  */
 Font.prototype.draw = function(ctx, text, x, y, fontSize, options) {
     const path = this.getPath(text, x, y, fontSize, options);
@@ -509,7 +528,7 @@ Font.prototype.draw = function(ctx, text, x, y, fontSize, options) {
  * @param {number} [x=0] - Horizontal position of the beginning of the text.
  * @param {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param {GlyphRenderOptions=} options
+ * @param {GlyphRenderOptions} options
  */
 Font.prototype.drawPoints = function(ctx, text, x, y, fontSize, options) {
     options = Object.assign({}, this.defaultRenderOptions, options);
@@ -528,7 +547,7 @@ Font.prototype.drawPoints = function(ctx, text, x, y, fontSize, options) {
  * @param {number} [x=0] - Horizontal position of the beginning of the text.
  * @param {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param {GlyphRenderOptions=} options
+ * @param {GlyphRenderOptions} options
  */
 Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
     options = Object.assign({}, this.defaultRenderOptions, options);
@@ -538,7 +557,7 @@ Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
 };
 
 /**
- * @param  {string}
+ * @param  {string} name
  * @return {string}
  */
 Font.prototype.getEnglishName = function(name) {
@@ -550,6 +569,7 @@ Font.prototype.getEnglishName = function(name) {
 
 /**
  * Validate
+ * @return {string[]}
  */
 Font.prototype.validate = function() {
     const warnings = [];
@@ -597,7 +617,7 @@ Font.prototype.validate = function() {
 /**
  * Convert the font object to a SFNT data structure.
  * This structure contains all the necessary tables and metadata to create a binary OTF file.
- * @return {opentype.Table}
+ * @return {any}
  */
 Font.prototype.toTables = function() {
     return sfnt.fontToTable(this);

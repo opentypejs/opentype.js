@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `avar` table stores information on how to modify a variation along a variation axis
 // https://learn.microsoft.com/en-us/typography/opentype/spec/avar
 
@@ -87,4 +88,5 @@ function parseAvarTable(data, start, fvar) {
     };
 }
 
+/** @type {any} */
 export default { make: makeAvarTable, parse: parseAvarTable };
