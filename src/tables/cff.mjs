@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `CFF` table contains the glyph outlines in PostScript format.
 // https://www.microsoft.com/typography/OTSPEC/cff.htm
 // http://download.microsoft.com/download/8/0/1/801a191c-029d-4af3-9642-555f6fe514ee/cff.pdf
@@ -1651,5 +1652,6 @@ function makeCFFTable(glyphs, options) {
     return t;
 }
 
+/** @type {any} */
 export default { parse: parseCFFTable, make: makeCFFTable };
 export { applyPaintType };

@@ -3,7 +3,7 @@
 // (c) 2015 Frederik De Bleser
 // opentype.js may be freely distributed under the MIT license.
 
-import { tinf_uncompress as inflate } from './tiny-inflate@1.0.3.esm.mjs'; // from code4fukui/tiny-inflate-es
+import { tinf_uncompress as inflate } from './tiny-inflate-1.0.3.esm.mjs'; // from code4fukui/tiny-inflate-es
 import Font from './font.mjs';
 import Glyph from './glyph.mjs';
 import { CmapEncoding, GlyphNames, addGlyphNames } from './encoding.mjs';
@@ -46,8 +46,8 @@ import { PaletteManager } from './palettes.mjs';
 // Table Directory Entries //////////////////////////////////////////////
 /**
  * Parses OpenType table entries.
- * @param  {DataView}
- * @param  {Number}
+ * @param  {DataView} data
+ * @param  {number} numTables
  * @return {Object[]}
  */
 function parseOpenTypeTableEntries(data, numTables) {
@@ -67,8 +67,8 @@ function parseOpenTypeTableEntries(data, numTables) {
 
 /**
  * Parses WOFF table entries.
- * @param  {DataView}
- * @param  {Number}
+ * @param  {DataView} data
+ * @param  {number} numTables
  * @return {Object[]}
  */
 function parseWOFFTableEntries(data, numTables) {
@@ -102,8 +102,8 @@ function parseWOFFTableEntries(data, numTables) {
  */
 
 /**
- * @param  {DataView}
- * @param  {Object}
+ * @param  {DataView} data
+ * @param  {Object} tableEntry
  * @return {TableData}
  */
 function uncompressTable(data, tableEntry) {
@@ -127,9 +127,9 @@ function uncompressTable(data, tableEntry) {
 /**
  * Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
  * Throws an error if the font could not be parsed.
- * @param  {ArrayBuffer}
- * @param  {Object} opt - options for parsing
- * @return {opentype.Font}
+ * @param  {ArrayBuffer} buffer
+ * @param  {Object} [opt] - options for parsing
+ * @return {Font}
  */
 function parseBuffer(buffer, opt={}) {
     let indexToLocFormat;
@@ -450,6 +450,7 @@ function parseBuffer(buffer, opt={}) {
  * opentype.js can integrate with frameworks like async.js.
  * @alias opentype.load
  * @deprecated
+ * @returns {void}
  */
 function load() {
     console.error('DEPRECATED! migrate to: opentype.parse(buffer, opt) See: https://github.com/opentypejs/opentype.js/issues/675');
@@ -460,6 +461,7 @@ function load() {
  * When done, returns the font object or throws an error.
  * @alias opentype.loadSync
  * @deprecated
+ * @returns {void}
  */
 function loadSync() {
     console.error('DEPRECATED! migrate to: opentype.parse(require("fs").readFileSync(url), opt)');

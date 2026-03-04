@@ -3,6 +3,15 @@
 import BoundingBox from './bbox.mjs';
 
 /**
+ * @typedef {{ type: 'M', x: number, y: number }} MoveCommand
+ * @typedef {{ type: 'L', x: number, y: number }} LineCommand
+ * @typedef {{ type: 'C', x1: number, y1: number, x2: number, y2: number, x: number, y: number }} CurveCommand
+ * @typedef {{ type: 'Q', x1: number, y1: number, x: number, y: number }} QuadCommand
+ * @typedef {{ type: 'Z' }} CloseCommand
+ * @typedef {MoveCommand | LineCommand | CurveCommand | QuadCommand | CloseCommand} PathCommand
+ */
+
+/**
  * A bézier path containing a set of path commands similar to a SVG path.
  * Paths can be drawn on a context using `draw`.
  * @exports opentype.Path
@@ -10,9 +19,13 @@ import BoundingBox from './bbox.mjs';
  * @constructor
  */
 function Path() {
+    /** @type {PathCommand[]} */
     this.commands = [];
+    /** @type {string|null} */
     this.fill = 'black';
+    /** @type {string|null} */
     this.stroke = null;
+    /** @type {number} */
     this.strokeWidth = 1;
     // the _layer property is only set on computed paths during glyph rendering
     // this._layers = [];
@@ -128,8 +141,9 @@ function createSVGOutputOptions(options) {
 
 /**
  * Sets the path data from an SVG path element or path notation
- * @param  {string|SVGPathElement}
- * @param  {object}
+ * @param  {string|SVGPathElement} pathData
+ * @param  {object} [options]
+ * @returns {Path}
  */
 Path.prototype.fromSVG = function(pathData, options = {}) {
     if (typeof SVGPathElement !== 'undefined' && pathData instanceof SVGPathElement) {
@@ -322,8 +336,9 @@ Path.prototype.fromSVG = function(pathData, options = {}) {
 
 /**
  * Generates a new Path() from an SVG path element or path notation
- * @param  {string|SVGPathElement}
- * @param  {object}
+ * @param  {string|SVGPathElement} path
+ * @param  {object} [options]
+ * @returns {Path}
  */
 Path.fromSVG = function(path, options) {
     const newPath = new Path();
@@ -462,7 +477,7 @@ Path.prototype.extend = function(pathOrCommands) {
 
 /**
  * Calculate the bounding box of the path.
- * @returns {opentype.BoundingBox}
+ * @returns {BoundingBox}
  */
 Path.prototype.getBoundingBox = function() {
     const box = new BoundingBox();
@@ -642,8 +657,8 @@ Path.prototype.toPathData = function(options) {
 
 /**
  * Convert the path to an SVG <path> element, as a string.
- * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
- * @param  {string} - will be calculated automatically, but can be provided from Glyph's wrapper function
+ * @param  {object|number} [options] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {string} [pathData] - will be calculated automatically, but can be provided from Glyph's wrapper function
  * @return {string}
  */
 Path.prototype.toSVG = function(options, pathData) {

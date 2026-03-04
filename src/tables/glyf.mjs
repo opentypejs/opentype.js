@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `glyf` table describes the glyphs in TrueType outline format.
 // http://www.microsoft.com/typography/otspec/glyf.htm
 
@@ -339,5 +340,6 @@ function parseGlyfTable(data, start, loca, font, opt) {
         return parseGlyfTableAll(data, start, loca, font);
 }
 
+/** @type {any} */
 export default { getPath, parse: parseGlyfTable};
 export { getPath, transformPoints };

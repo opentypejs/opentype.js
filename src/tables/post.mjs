@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `post` table stores additional PostScript information, such as glyph names.
 // https://www.microsoft.com/typography/OTSPEC/post.htm
 
@@ -74,4 +75,5 @@ function makePostTable(font) {
     ]);
 }
 
+/** @type {any} */
 export default { parse: parsePostTable, make: makePostTable };

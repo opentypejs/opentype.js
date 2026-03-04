@@ -17,14 +17,19 @@ function derive(v0, v1, v2, v3, t) {
  * @constructor
  */
 function BoundingBox() {
+    /** @type {number} */
     this.x1 = Number.NaN;
+    /** @type {number} */
     this.y1 = Number.NaN;
+    /** @type {number} */
     this.x2 = Number.NaN;
+    /** @type {number} */
     this.y2 = Number.NaN;
 }
 
 /**
  * Returns true if the bounding box is empty, that is, no points have been added to the box yet.
+ * @returns {boolean}
  */
 BoundingBox.prototype.isEmpty = function() {
     return isNaN(this.x1) || isNaN(this.y1) || isNaN(this.x2) || isNaN(this.y2);

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `gasp` table contains global information about the font.
 // https://learn.microsoft.com/de-de/typography/opentype/spec/gasp
 
@@ -42,5 +43,6 @@ function makeGaspTable(gasp) {
     return result;
 }
 
+/** @type {any} */
 export default { parse: parseGaspTable, make: makeGaspTable };
 
