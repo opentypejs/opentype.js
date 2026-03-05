@@ -390,6 +390,12 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     for (let i = 0; i < glyphs.length; i += 1) {
         const glyph = glyphs[i];
         callback.call(this, glyph, x, y, fontSize, options);
+        // For variable fonts with HVAR, apply variation-adjusted metrics when requested
+        // (e.g. by getAdvanceWidth). Otherwise advance width uses raw hmtx values, causing
+        // narrow advances for punctuation like hyphens at heavier weights.
+        if (options._applyVariationMetrics && this.variation && this.tables.hvar && glyph.advanceWidth !== undefined) {
+            this.variation.getTransform(glyph, options.variation);
+        }
         if (glyph.advanceWidth) {
             x += glyph.advanceWidth * fontScale;
         }
@@ -484,6 +490,7 @@ Font.prototype.getPaths = function(text, x, y, fontSize, options) {
  */
 Font.prototype.getAdvanceWidth = function(text, fontSize, options) {
     options = Object.assign({}, this.defaultRenderOptions, options);
+    options._applyVariationMetrics = true;
     return this.forEachGlyph(text, 0, 0, fontSize, options, function() {});
 };
 
