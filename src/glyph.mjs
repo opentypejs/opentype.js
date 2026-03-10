@@ -37,6 +37,8 @@ function getPathDefinition(glyph, path) {
  * @property {number} [yMax]
  * @property {number} [advanceWidth]
  * @property {number} [leftSideBearing]
+ * @property {number} [advanceHeight]
+ * @property {number} [topSideBearing]
  */
 
 // A Glyph is an individual mark that often corresponds to a character.
@@ -101,6 +103,14 @@ Glyph.prototype.bindConstructorValues = function(options) {
 
     if ('leftSideBearing' in options) {
         this.leftSideBearing = options.leftSideBearing;
+    }
+
+    if ('advanceHeight' in options) {
+        this.advanceHeight = options.advanceHeight;
+    }
+
+    if ('topSideBearing' in options) {
+        this.topSideBearing = options.topSideBearing;
     }
 
     if ('points' in options) {
@@ -324,7 +334,8 @@ Glyph.prototype.getMetrics = function() {
         yMin: Math.min.apply(null, yCoords),
         xMax: Math.max.apply(null, xCoords),
         yMax: Math.max.apply(null, yCoords),
-        leftSideBearing: this.leftSideBearing
+        leftSideBearing: this.leftSideBearing,
+        topSideBearing: this.topSideBearing
     };
 
     if (!isFinite(metrics.xMin)) {
@@ -344,6 +355,9 @@ Glyph.prototype.getMetrics = function() {
     }
 
     metrics.rightSideBearing = this.advanceWidth - metrics.leftSideBearing - (metrics.xMax - metrics.xMin);
+    metrics.bottomSideBearing = metrics.topSideBearing != null
+        ? this.advanceHeight - metrics.topSideBearing - (metrics.yMax - metrics.yMin)
+        : undefined;
     return metrics;
 };
 
