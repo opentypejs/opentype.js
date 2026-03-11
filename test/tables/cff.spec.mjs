@@ -93,17 +93,17 @@ describe('tables/cff.mjs', function () {
         assert.equal(topDict.vstore, 16);
         assert.equal(topDict.fdSelect, null);
 
-        assert.deepEqual(privateDict1.blueValues, [-20, 20, 472, 18, 35, 15, 105, 15, 10, 20, 40, 20]);
-        assert.deepEqual(privateDict1.otherBlues, [-250, 10]);
-        assert.deepEqual(privateDict1.familyBlues, [-20, 20, 473, 18, 34, 15, 104, 15, 10, 20, 40, 20]);
-        assert.deepEqual(privateDict1.familyOtherBlues, [ -249, 10 ]);
+        assert.deepEqual(privateDict1.blueValues, [-20, 0, 472, 490, 525, 540, 645, 660, 670, 690, 730, 750]);
+        assert.deepEqual(privateDict1.otherBlues, [-250, -240]);
+        assert.deepEqual(privateDict1.familyBlues, [-20, 0, 473, 491, 525, 540, 644, 659, 669, 689, 729, 749]);
+        assert.deepEqual(privateDict1.familyOtherBlues, [ -249, -239 ]);
         assert.equal(privateDict1.blueScale, 0.0375);
         assert.equal(privateDict1.blueShift, 7);
         assert.equal(privateDict1.blueFuzz, 0);
         assert.equal(privateDict1.stdHW, 55);
         assert.equal(privateDict1.stdVW, 80);
-        assert.deepEqual(privateDict1.stemSnapH, [40, 15]);
-        assert.deepEqual(privateDict1.stemSnapV, [80, 10]);
+        assert.deepEqual(privateDict1.stemSnapH, [40, 55]);
+        assert.deepEqual(privateDict1.stemSnapV, [80, 90]);
         assert.equal(privateDict1.languageGroup, 0);
         assert.equal(privateDict1.expansionFactor, 0.06);
         assert.deepEqual(privateDict1.vsindex, 0);
@@ -214,5 +214,33 @@ describe('tables/cff.mjs', function () {
                 .flat(),
             transformedPoints
         );
+    });
+
+    it('does round trip CFF private DICT', function() {
+        const font = loadSync('./test/fonts/AbrilFatface-Regular.otf');
+        const checkerFunktion = function(inputFont) {
+        // from ttx:
+        //     <Private>
+        //        <BlueValues value="-10 0 476 486 700 711"/>
+        //        <OtherBlues value="-250 -238"/>
+        //        <BlueScale value="0.039625"/>
+        //        <BlueShift value="7"/>
+        //        <BlueFuzz value="1"/>
+        //        <StdHW value="18"/>
+        //        <StdVW value="186"/>
+        //        <StemSnapH value="16 18 21"/>
+        //        <StemSnapV value="120 186 205"/>
+        //        <ForceBold value="0"/>
+            const privateDict = inputFont.tables.cff.topDict._privateDict;
+            assert.deepEqual(privateDict.blueValues, [-10, 0, 476, 486, 700, 711]);
+            assert.deepEqual(privateDict.otherBlues, [-250, -238]);
+            assert.equal(privateDict.stdHW, 18);
+            assert.deepEqual(privateDict.stemSnapH, [16, 18, 21]);
+            assert.equal(privateDict.nominalWidthX, 590);
+        };
+        checkerFunktion(font);
+        let buffer = font.toArrayBuffer()
+        let font2 = parse(buffer);
+        checkerFunktion(font2);
     });
 });
