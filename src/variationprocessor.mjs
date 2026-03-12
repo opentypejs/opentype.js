@@ -386,7 +386,12 @@ export class VariationProcessor {
                 if(variationData) {
                     const glyphPoints = glyph.points;
                     let transformedPoints = this.applyTupleVariationStore(variationData, glyphPoints, coords, 'gvar', { glyph });
-                    transformedGlyph = new Glyph(Object.assign({}, glyph, {points: transformedPoints, path: getPath(transformedPoints)}));
+                    // unitsPerEm is propagated through the path so that glyph.getPath() can derive the
+                    // correct scale after transformation (variable fonts may produce a transformed path
+                    // whose unitsPerEm differs from the font default if the path object is replaced).
+                    const path = getPath(transformedPoints);
+                    path.unitsPerEm = this.font.unitsPerEm;
+                    transformedGlyph = new Glyph(Object.assign({}, glyph, {points: transformedPoints, path}));
                 }
             } else if (hasBlend) {
                 const blendPath = glyph.getBlendPath(coords);
@@ -407,10 +412,14 @@ export class VariationProcessor {
                 const deltaAdvance = this.font.tables.hvar ?
                     this.getVariableAdjustment(componentGlyph.index, 'hvar', 'advanceWidth', coords) :
                     0;
+                const deltaLsb = this.font.tables.hvar ?
+                    this.getVariableAdjustment(componentGlyph.index, 'hvar', 'lsb', coords) :
+                    0;
                 componentInfos.push({
                     pointOffset,
                     pointCount,
-                    deltaAdvanceWidth: deltaAdvance
+                    deltaAdvanceWidth: deltaAdvance,
+                    deltaLsb
                 });
                 pointOffset += pointCount;
             }
@@ -418,13 +427,17 @@ export class VariationProcessor {
             const shiftedPoints = transformedGlyph.points.map(copyPoint);
             for (let i = 0; i < componentInfos.length; i++) {
                 const info = componentInfos[i];
-                // Each component shifts by the sum of prior component width deltas.
+                // Each component shifts by the sum of prior component width deltas, plus this component's LSB delta.
                 for (let p = info.pointOffset; p < info.pointOffset + info.pointCount; p++) {
-                    shiftedPoints[p].x = Math.round(shiftedPoints[p].x + cumulativeShift);
+                    shiftedPoints[p].x = Math.round(shiftedPoints[p].x + cumulativeShift + info.deltaLsb);
                 }
                 cumulativeShift += info.deltaAdvanceWidth;
             }
-            transformedGlyph = new Glyph(Object.assign({}, transformedGlyph, {points: shiftedPoints, path: getPath(shiftedPoints)}));
+            transformedGlyph = new Glyph(Object.assign({}, transformedGlyph, {points: shiftedPoints, path: (() => {
+                const p = getPath(shiftedPoints);
+                p.unitsPerEm = this.font.unitsPerEm;
+                return p;
+            })()}));
         }
 
         if(this.font.tables.hvar) {

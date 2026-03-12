@@ -366,6 +366,138 @@ Font.prototype.defaultRenderOptions = {
 };
 
 /**
+ * Return the bounding box of a glyph's path, resolving lazy paths as needed.
+ * Returns null if the glyph has no path or the path provides no bounding box.
+ * @param {opentype.Glyph} glyph
+ * @returns {opentype.BoundingBox|null}
+ */
+function getGlyphBBox(glyph) {
+    if (!glyph) return null;
+    const path = typeof glyph.path === 'function' ? glyph.path() : glyph.path;
+    if (!path || typeof path.getBoundingBox !== 'function') return null;
+    return path.getBoundingBox();
+}
+
+/**
+ * Return true if the glyph is a Unicode combining character (based on Unicode block ranges).
+ * Used as a fallback when GDEF is not available to identify marks.
+ * @param {opentype.Glyph} glyph
+ * @returns {boolean}
+ */
+function isCombiningByUnicode(glyph) {
+    if (!glyph || !glyph.unicodes || !glyph.unicodes.length) return false;
+    return glyph.unicodes.some((u) =>
+        (u >= 0x0300 && u <= 0x036F) || (u >= 0x1AB0 && u <= 0x1AFF) ||
+        (u >= 0x1DC0 && u <= 0x1DFF) || (u >= 0x20D0 && u <= 0x20FF) ||
+        (u >= 0xFE20 && u <= 0xFE2F));
+}
+
+/**
+ * Compute a heuristic position for a combining mark over its base glyph.
+ * Used when GPOS mark-to-base data is unavailable or produces no match.
+ * Implements horizontal centering and vertical clearance per Unicode Technical Note #2 (UTN #2).
+ *
+ * @param {opentype.Font} font
+ * @param {number} gX - Current pen X (pixels), already advanced past the base.
+ * @param {number} gY - Current pen Y (pixels, canvas baseline).
+ * @param {number} baseAdvance - Advance width of the base glyph (font units).
+ * @param {opentype.Glyph} markGlyph
+ * @param {number} scale - Font units → pixels scale factor (fontSize / unitsPerEm).
+ * @param {opentype.Glyph} baseGlyph
+ * @returns {{ gX: number, gY: number }}
+ */
+function heuristicMarkPosition(font, gX, gY, baseAdvance, markGlyph, scale, baseGlyph) {
+    const s = scale;
+    // UTN #2: "Most combining marks are centered horizontally with respect to the character they are
+    // placed upon." Use the base's bbox center when available so asymmetric glyphs (e.g. "s") center
+    // correctly; otherwise fall back to advance width / 2.
+    let baseCenterX = baseAdvance / 2;
+    const baseBbox = getGlyphBBox(baseGlyph);
+    if (baseBbox && Number.isFinite(baseBbox.x1) && Number.isFinite(baseBbox.x2)) {
+        baseCenterX = (baseBbox.x1 + baseBbox.x2) / 2;
+    }
+    // The mark bounding box reflects the full visual extent including composite component offsets,
+    // so no separate dx/dy handling is needed for composite marks.
+    const markBbox = getGlyphBBox(markGlyph);
+    // UTN #2 horizontal: center the mark's bounding box over the base's bounding box center.
+    // gX_new + markBboxCenterX * s = base_origin + baseCenterX * s
+    //   where gX = base_origin + baseAdvance * s  =>  xOffset = (baseCenterX - baseAdvance - markBboxCenterX) * s
+    let markBboxCenterX = 0;
+    if (markBbox && Number.isFinite(markBbox.x1) && Number.isFinite(markBbox.x2)) {
+        markBboxCenterX = (markBbox.x1 + markBbox.x2) / 2;
+    } else if (markGlyph && markGlyph.advanceWidth > 0) {
+        markBboxCenterX = markGlyph.advanceWidth / 2;
+    }
+    const xOffset = (baseCenterX - baseAdvance - markBboxCenterX) * s;
+    // UTN #2 vertical: place above or below base based on the mark's vertical center in font units
+    // (positive y = up from baseline). Above marks (e.g. diaeresis) have center ≥ 0; below (e.g. cedilla) < 0.
+    let yOffset = 0;
+    const isAboveMark = markBbox && Number.isFinite(markBbox.y1) && Number.isFinite(markBbox.y2)
+        ? (markBbox.y1 + markBbox.y2) / 2 >= 0
+        : null;
+    if (baseBbox && markBbox && Number.isFinite(baseBbox.y1) && Number.isFinite(baseBbox.y2) &&
+        Number.isFinite(markBbox.y1) && Number.isFinite(markBbox.y2) && isAboveMark !== null) {
+        const capHeight = (font.tables.os2 && font.tables.os2.sCapHeight)
+            ? font.tables.os2.sCapHeight
+            : (font.unitsPerEm || 1000) * 0.7;
+        const gapPx = (capHeight / 8) * s;
+        if (isAboveMark) {
+            // Ensure the mark's bottom clears the base's top with a minimum gap.
+            // Only apply when negative (mark needs moving up); positive means the mark already clears naturally.
+            const desiredYOffset = (markBbox.y1 - baseBbox.y2) * s - gapPx;
+            if (desiredYOffset < 0) {
+                yOffset = desiredYOffset;
+            }
+        } else {
+            // Place mark below base: mark's top at base bottom, hanging downward.
+            yOffset = (markBbox.y2 - baseBbox.y1) * s - gapPx;
+        }
+    }
+    return { gX: gX + xOffset, gY: gY + yOffset };
+}
+
+/**
+ * Compute the rendered position of a combining mark glyph relative to its preceding base glyph.
+ * Tries GPOS mark-to-base anchors first; falls back to heuristic centering if unavailable.
+ * Returns the adjusted { gX, gY } pen position for the mark; or the original if it is not a mark.
+ *
+ * @param {opentype.Font} font
+ * @param {opentype.Glyph} glyph - The current (mark) glyph.
+ * @param {opentype.Glyph} prevGlyph - The immediately preceding glyph (the base candidate).
+ * @param {number} gX - Current pen X (pixels).
+ * @param {number} gY - Current pen Y (pixels).
+ * @param {boolean} applyMarkPositioning - Whether GPOS+GDEF mark data is available.
+ * @param {object|null} classDef - GDEF glyph class definition table.
+ * @param {number} fontScale - fontSize / unitsPerEm.
+ * @param {number} fontSize - Font size in pixels.
+ * @param {string} script - OpenType script tag.
+ * @param {string} language - OpenType language tag.
+ * @returns {{ gX: number, gY: number }}
+ */
+function positionMarkGlyph(font, glyph, prevGlyph, gX, gY, applyMarkPositioning, classDef, fontScale, fontSize, script, language) {
+    const baseAdvance = prevGlyph.advanceWidth !== undefined ? prevGlyph.advanceWidth : 0;
+    if (applyMarkPositioning) {
+        const markClass = font.position.getGlyphClass(classDef, glyph.index);
+        const baseClass = font.position.getGlyphClass(classDef, prevGlyph.index);
+        // GPOS class 3 = mark. Only handle mark-to-base (base class != 3) here.
+        // TODO: implement mark-to-mark (GPOS type 6) for stacked marks (e.g. base + mark1 + mark2),
+        // which requires looking back past preceding marks to find the actual base glyph.
+        if (markClass === 3 && baseClass !== 3) {
+            const offset = font.position.getMarkToBaseOffset(glyph.index, prevGlyph.index, baseAdvance, script, language);
+            if (offset) {
+                // GPOS offsets are in font units; positive Y = up (font space), so subtract for canvas (Y-down).
+                const fontScaleForOffset = fontSize / font.unitsPerEm;
+                return { gX: gX + offset.xOffset * fontScaleForOffset, gY: gY - offset.yOffset * fontScaleForOffset };
+            }
+            return heuristicMarkPosition(font, gX, gY, baseAdvance, glyph, fontScale, prevGlyph);
+        }
+    } else if (isCombiningByUnicode(glyph) && !isCombiningByUnicode(prevGlyph)) {
+        return heuristicMarkPosition(font, gX, gY, baseAdvance, glyph, fontScale, prevGlyph);
+    }
+    return { gX, gY };
+}
+
+/**
  * Helper function that invokes the given callback for each glyph in the given text.
  * The callback gets `(glyph, x, y, fontSize, options)`.
  * @param {string} text - The text to apply.
@@ -383,13 +515,32 @@ Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) 
     const fontScale = 1 / this.unitsPerEm * fontSize;
     const glyphs = this.stringToGlyphs(text, options);
     let kerningLookups;
+    let script;
+    let language;
     if (options.kerning) {
-        const script = options.script || this.position.getDefaultScriptName();
-        kerningLookups = this.position.getKerningTables(script, options.language);
+        script = options.script || this.position.getDefaultScriptName();
+        language = options.language;
+        kerningLookups = this.position.getKerningTables(script, language);
+    }
+    const gdef = this.tables.gdef;
+    const classDef = gdef && gdef.classDef;
+    const applyMarkPositioning = this.tables.gpos && classDef;
+    if (applyMarkPositioning && !script) {
+        script = options.script || this.position.getDefaultScriptName();
+        language = options.language;
     }
     for (let i = 0; i < glyphs.length; i += 1) {
         const glyph = glyphs[i];
-        callback.call(this, glyph, x, y, fontSize, options);
+        const { gX, gY } = i > 0
+            ? positionMarkGlyph(this, glyph, glyphs[i - 1], x, y, applyMarkPositioning, classDef, fontScale, fontSize, script, language)
+            : { gX: x, gY: y };
+        callback.call(this, glyph, gX, gY, fontSize, options);
+        // For variable fonts with HVAR, apply variation-adjusted metrics when requested
+        // (e.g. by getAdvanceWidth). Otherwise advance width uses raw hmtx values, causing
+        // narrow advances for punctuation like hyphens at heavier weights.
+        if (options._applyVariationMetrics && this.variation && this.tables.hvar && glyph.advanceWidth !== undefined) {
+            this.variation.getTransform(glyph, options.variation);
+        }
         if (glyph.advanceWidth) {
             x += glyph.advanceWidth * fontScale;
         }
@@ -484,6 +635,7 @@ Font.prototype.getPaths = function(text, x, y, fontSize, options) {
  */
 Font.prototype.getAdvanceWidth = function(text, fontSize, options) {
     options = Object.assign({}, this.defaultRenderOptions, options);
+    options._applyVariationMetrics = true;
     return this.forEachGlyph(text, 0, 0, fontSize, options, function() {});
 };
 

@@ -77,7 +77,61 @@ subtableParsers[2] = function parseLookup2() {
 };
 
 subtableParsers[3] = function parseLookup3() { return { error: 'GPOS Lookup 3 not supported' }; };
-subtableParsers[4] = function parseLookup4() { return { error: 'GPOS Lookup 4 not supported' }; };
+
+// https://learn.microsoft.com/en-us/typography/opentype/spec/gpos#lookup-type-4-mark-to-base-attachment-positioning-subtable
+// MarkBasePosFormat1: positions combining marks relative to base glyphs via anchor points.
+subtableParsers[4] = function parseLookup4() {
+    const subtableStart = this.offset + this.relativeOffset;
+    const format = this.parseUShort();
+    check.argument(format === 1, '0x' + subtableStart.toString(16) + ': GPOS Lookup type 4 (MarkBasePos) only format 1 is supported.');
+    const markCoverageOffset = this.parseOffset16();
+    const baseCoverageOffset = this.parseOffset16();
+    const markClassCount = this.parseUShort();
+    const markArrayOffset = this.parseOffset16();
+    const baseArrayOffset = this.parseOffset16();
+
+    const markCoverage = markCoverageOffset ? new Parser(this.data, subtableStart + markCoverageOffset).parseCoverage() : undefined;
+    const baseCoverage = baseCoverageOffset ? new Parser(this.data, subtableStart + baseCoverageOffset).parseCoverage() : undefined;
+
+    let markArray = [];
+    if (markArrayOffset && markCoverage) {
+        const markArrayStart = subtableStart + markArrayOffset;
+        const p = new Parser(this.data, markArrayStart);
+        const markCount = p.parseUShort();
+        for (let i = 0; i < markCount; i++) {
+            const markClass = p.parseUShort();
+            const markAnchorOffset = p.parseOffset16();
+            const anchor = markAnchorOffset ? new Parser(this.data, markArrayStart + markAnchorOffset).parseAnchor() : null;
+            markArray.push({ markClass, anchor });
+        }
+    }
+
+    let baseArray = [];
+    if (baseArrayOffset && baseCoverage) {
+        const baseArrayStart = subtableStart + baseArrayOffset;
+        const p = new Parser(this.data, baseArrayStart);
+        const baseCount = p.parseUShort();
+        for (let i = 0; i < baseCount; i++) {
+            const baseAnchors = [];
+            for (let j = 0; j < markClassCount; j++) {
+                const anchorOffset = p.parseOffset16();
+                const anchor = anchorOffset ? new Parser(this.data, baseArrayStart + anchorOffset).parseAnchor() : null;
+                baseAnchors.push(anchor);
+            }
+            baseArray.push(baseAnchors);
+        }
+    }
+
+    return {
+        posFormat: 1,
+        markCoverage,
+        baseCoverage,
+        markClassCount,
+        markArray,
+        baseArray
+    };
+};
+
 subtableParsers[5] = function parseLookup5() { return { error: 'GPOS Lookup 5 not supported' }; };
 subtableParsers[6] = function parseLookup6() { return { error: 'GPOS Lookup 6 not supported' }; };
 subtableParsers[7] = function parseLookup7() { return { error: 'GPOS Lookup 7 not supported' }; };

@@ -448,6 +448,50 @@ Parser.prototype.parseValueRecordList = function() {
     return values;
 };
 
+/**
+ * Parse a GPOS Anchor table (format 1, 2, or 3).
+ * https://learn.microsoft.com/en-us/typography/opentype/spec/gpos#anchor-table
+ * AnchorFormat1: format (uint16), then xCoordinate (int16), then yCoordinate (int16) — design units.
+ * Format 3: Device table (non-variable) / VariationIndex table (variable) offsets are parsed;
+ * VariationIndex (deltaFormat 0x8000) is read and stored for variable-font anchor adjustment.
+ */
+Parser.prototype.parseAnchor = function() {
+    const anchorStart = this.offset;
+    const format = this.parseUShort();
+    const anchor = {
+        format: format,
+        xCoordinate: this.parseShort(),
+        yCoordinate: this.parseShort()
+    };
+    if (format === 2) {
+        anchor.anchorPoint = this.parseUShort();
+    } else if (format === 3) {
+        const xDeviceOffset = this.parseOffset16();
+        const yDeviceOffset = this.parseOffset16();
+        // Parse Device / VariationIndex tables per OpenType ch.2 § Device and VariationIndex tables.
+        // VariationIndex (deltaFormat 0x8000) gives delta-set outer/inner index for ItemVariationStore.
+        if (xDeviceOffset) {
+            const p = new Parser(this.data, anchorStart + xDeviceOffset);
+            const word0 = p.parseUShort();
+            const word1 = p.parseUShort();
+            const deltaFormat = p.parseUShort();
+            if (deltaFormat === 0x8000) {
+                anchor.xVariationIndex = { outer: word0, inner: word1 };
+            }
+        }
+        if (yDeviceOffset) {
+            const p = new Parser(this.data, anchorStart + yDeviceOffset);
+            const word0 = p.parseUShort();
+            const word1 = p.parseUShort();
+            const deltaFormat = p.parseUShort();
+            if (deltaFormat === 0x8000) {
+                anchor.yVariationIndex = { outer: word0, inner: word1 };
+            }
+        }
+    }
+    return anchor;
+};
+
 Parser.prototype.parsePointer = function(description) {
     const structOffset = this.parseOffset16();
     if (structOffset > 0) {
