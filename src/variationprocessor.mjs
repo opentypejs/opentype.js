@@ -402,7 +402,7 @@ export class VariationProcessor {
             for (let c = 0; c < glyph.components.length; c++) {
                 const component = glyph.components[c];
                 const componentGlyph = this.font.glyphs.get(component.glyphIndex);
-                componentGlyph.getPath();
+                // Note that .points is a getter that will lazy-load the path.
                 const pointCount = componentGlyph.points.length;
                 const deltaAdvance = this.font.tables.hvar ?
                     this.getVariableAdjustment(componentGlyph.index, 'hvar', 'advanceWidth', coords) :
