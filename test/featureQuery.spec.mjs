@@ -6,6 +6,7 @@ import { readFileSync } from 'fs';
 
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
 
+// Extracted from layout.mjs for testing
 const getGlyphClass = function(classDefTable, glyphIndex) {
     switch (classDefTable.format) {
         case 1: {
@@ -192,7 +193,7 @@ describe('featureQuery.mjs', function() {
             const lookupSubtables = query.sub5.getLookupSubtables(featureLookups[1]);
             const substitutionType = query.sub5.getSubstitutionType(featureLookups[1], lookupSubtables[0]);
             assert.equal(substitutionType, 53);
-            const lookup = query.sub5.getLookupMethod(featureLookups[0], lookupSubtables[0]);
+            const lookup = query.sub5.getLookupMethod(featureLookups[1], lookupSubtables[0]);
             let contextParams = new ContextParams([2, 3], 0);
             const substitutions = lookup(contextParams);
             assert.deepEqual(substitutions, [54, 54]);
@@ -209,21 +210,48 @@ describe('featureQuery.mjs', function() {
         });
         it('should route context substitution format 2 (52) correctly', function () {
             // This test verifies that case '52' is registered in getLookupMethod switch
-            // Without this case, getLookupMethod would throw an error for format 2 context substitutions
             const featureQuery = query.arabic;
-            
-            // Mock a lookup table and subtable with substitution type 52
             const mockLookupTable = { lookupType: 5 }; // Context substitution type 5
             const mockSubtable = { substFormat: 2 }; // Format 2 (class-based)
-            
-            // This should not throw an error if case '52' is registered
-            try {
-                const substitutionType = featureQuery.getSubstitutionType(mockLookupTable, mockSubtable);
-                // Type 5 format 2 should be '52'
-                assert.equal(substitutionType, '52');
-            } catch (e) {
-                assert.fail('getLookupMethod should handle case "52" for context substitution format 2');
-            }
+
+            const substitutionType = featureQuery.getSubstitutionType(mockLookupTable, mockSubtable);
+            assert.equal(substitutionType, '52');
+
+            const lookup = featureQuery.getLookupMethod(mockLookupTable, mockSubtable);
+            assert.ok(typeof lookup === 'function', 'getLookupMethod should return a function for case 52');
+        });
+        it('should apply context substitution format 2 (52) using lookup records', function () {
+            const singleSubtable = {
+                substFormat: 1,
+                coverage: { format: 1, glyphs: [10] },
+                deltaGlyphId: 5
+            };
+            const singleLookupTable = { lookupType: 1, subtables: [singleSubtable] };
+            const contextSubtable = {
+                substFormat: 2,
+                coverage: { format: 1, glyphs: [10] },
+                classDef: {
+                    format: 2,
+                    ranges: [
+                        { start: 10, end: 10, classId: 1 },
+                        { start: 20, end: 20, classId: 2 }
+                    ]
+                },
+                classSets: [
+                    null,
+                    [{ classes: [2], lookupRecords: [{ sequenceIndex: 0, lookupListIndex: 0 }] }]
+                ]
+            };
+            const contextLookupTable = { lookupType: 5, subtables: [contextSubtable] };
+            const mockFont = {
+                tables: { gsub: { lookups: [singleLookupTable] } },
+                substitution: { getGlyphClass }
+            };
+            const featureQuery = new FeatureQuery(mockFont);
+            const lookup = featureQuery.getLookupMethod(contextLookupTable, contextSubtable);
+            const contextParams = new ContextParams([10, 20], 0);
+            const substitutions = lookup(contextParams);
+            assert.deepEqual(substitutions, [15]);
         });
         it('should route chaining context substitution format 2 (62) correctly', function () {
             // This test verifies that case '62' is registered in getLookupMethod switch
