@@ -171,7 +171,6 @@ function applyLookupRecords(lookupRecords, glyphIndex, contextParams, options = 
         }
     );
     const allowedTypes = options.allowedTypes || ['11', '12'];
-    const throwOnUnsupported = options.throwOnUnsupported || false;
     const substitutions = [];
     for (let i = 0; i < lookupRecords.length; i++) {
         const lookupRecord = lookupRecords[i];
@@ -193,12 +192,9 @@ function applyLookupRecords(lookupRecords, glyphIndex, contextParams, options = 
             }
 
             if (allowedTypes.indexOf(substitutionType) === -1) {
-                if (throwOnUnsupported) {
-                    throw new Error(
-                        `Substitution type ${substitutionType} is not supported in chaining substitution`,
-                    );
-                }
-                continue;
+                throw new Error(
+                    `Substitution type ${substitutionType} is not supported in chaining substitution`,
+                );
             }
 
             const targets = getTargets(lookupRecord, glyphIndex, contextParams);
@@ -326,7 +322,6 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
     if (!contextRulesMatch) return [];
     return applyLookupRecords.call(this, subtable.lookupRecords, null, contextParams, {
         allowedTypes: ['12'],
-        throwOnUnsupported: true,
         getTargets: () => {
             let targets = [];
             for (let n = 0; n < inputLookups.length; n++) {
