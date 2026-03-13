@@ -107,7 +107,7 @@ function parseGlyph(glyph, data, start) {
         } else {
             glyph.points = [];
         }
-    } else if (glyph.numberOfContours === 0) {
+    } else if (glyph._numberOfContours === 0) {
         glyph.points = [];
     } else {
         glyph.isComposite = true;

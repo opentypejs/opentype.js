@@ -88,8 +88,20 @@ describe('path.mjs', function() {
         assert.equal(testPath2.toPathData({optimize: false, flipY: false}), unoptimizedResult);
     });
     
+    it('should remove redundant lineTo before close when coordinates match start', function() {
+        const path = new Path();
+        path.moveTo(100, 200);
+        path.lineTo(300, 200);
+        path.lineTo(300, 400);
+        path.lineTo(100, 200); // redundant: same as start
+        path.close();
+        const result = path.toPathData({optimize: true, flipY: false});
+        // The redundant L100 200 before Z should be removed
+        assert.equal(result, 'M100 200L300 200L300 400Z');
+    });
+
     it('should optimize SVG paths if path closing point matches starting point', function() {
-        const optimizedResult = 'M0 250L50 250L100 250L150 250L200 250L200 50L0 50ZM250 250L300 250L350 250L400 250L450 250L450 50L250 50Z';
+        const optimizedResult = 'M0 50L0 250L50 250L100 250L150 250L200 250L200 50ZM250 50L250 250L300 250L350 250L400 250L450 250L450 50Z';
         assert.equal(testPath2.toPathData({flipY: false}), optimizedResult);
         assert.equal(testPath2.toPathData({optimize: true, flipY: false}), optimizedResult);
     });
