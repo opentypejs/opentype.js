@@ -34,19 +34,16 @@ function log2(v) {
 }
 
 function computeCheckSum(bytes) {
-    while (bytes.length % 4 !== 0) {
-        bytes.push(0);
-    }
-
     let sum = 0;
-    for (let i = 0; i < bytes.length; i += 4) {
-        sum += (bytes[i] << 24) +
-            (bytes[i + 1] << 16) +
-            (bytes[i + 2] << 8) +
-            (bytes[i + 3]);
+    const padded = (bytes.length + 3) & ~3;
+    for (let i = 0; i < padded; i += 4) {
+        sum = (sum + (
+            ((bytes[i]     || 0) << 24 |
+             (bytes[i + 1] || 0) << 16 |
+             (bytes[i + 2] || 0) << 8  |
+             (bytes[i + 3] || 0)) >>> 0
+        )) >>> 0;
     }
-
-    sum %= Math.pow(2, 32);
     return sum;
 }
 
