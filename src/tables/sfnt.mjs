@@ -394,7 +394,7 @@ function fontToSfntTable(font) {
     let checkSumAdjusted = false;
     for (let i = 0; i < tableFields.length; i += 1) {
         if (tableFields[i].name === 'head table') {
-            tableFields[i].value.checkSumAdjustment = 0xB1B0AFBA - checkSum;
+            tableFields[i].value.checkSumAdjustment = (0xB1B0AFBA - checkSum) >>> 0;
             checkSumAdjusted = true;
             break;
         }
