@@ -37,12 +37,16 @@ function computeCheckSum(bytes) {
     let sum = 0;
     const padded = (bytes.length + 3) & ~3;
     for (let i = 0; i < padded; i += 4) {
+        // Mask each byte to 0xFF: the byte array may contain values > 255 due to
+        // M.CHARARRAY encoding non-ASCII strings with full Unicode codepoints.
+        // Uint8Array (used for file output) truncates to 8 bits, so we must do the
+        // same here to produce a checksum that matches the actual file bytes.
         sum = (sum + (
-            ((bytes[i]     || 0) << 24 |
-             (bytes[i + 1] || 0) << 16 |
-             (bytes[i + 2] || 0) << 8  |
-             (bytes[i + 3] || 0)) >>> 0
-        )) >>> 0;
+            ((bytes[i]     || 0) & 0xFF) << 24 |
+            ((bytes[i + 1] || 0) & 0xFF) << 16 |
+            ((bytes[i + 2] || 0) & 0xFF) << 8  |
+            ((bytes[i + 3] || 0) & 0xFF)
+        ) >>> 0) >>> 0;
     }
     return sum;
 }
