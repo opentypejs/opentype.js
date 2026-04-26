@@ -269,6 +269,12 @@ function mergeSegments(segments) {
     return merged;
 }
 
+// The Format 4 length field is a USHORT, capping the subtable at 65535 bytes.
+// Each segment contributes 8 bytes (one entry in each of the four parallel arrays),
+// plus the 14-byte header and the 2-byte reservedPad, leaving room for at most
+// floor((65535 - 16) / 8) = 8189 segments before overflow.
+const CMAP4_MAX_SEGMENTS = Math.floor((0xFFFF - 16) / 8);
+
 // Make cmap table, format 4 by default, 12 if needed only
 function makeCmapTable(glyphs) {
     // Plan 0 is the base Unicode Plan but emojis, for example are on another plan, and needs cmap 12 format (with 32bit)
@@ -282,6 +288,29 @@ function makeCmapTable(glyphs) {
             isPlan0Only = false;
             break;
         }
+    }
+
+    // Build and merge segments up front so we can measure the true segment count
+    // before committing to a table layout.
+    const allSegments = [];
+    for (i = 0; i < glyphs.length; i += 1) {
+        const glyph = glyphs.get(i);
+        for (let j = 0; j < glyph.unicodes.length; j += 1) {
+            addSegment({ segments: allSegments }, glyph.unicodes[j], i);
+        }
+    }
+    allSegments.sort(function(a, b) { return a.start - b.start; });
+    const mergedSegments = mergeSegments(allSegments);
+
+    // Count BMP segments (those that fit in Format 4).  If after merging the
+    // count still exceeds what a USHORT length field can encode, Format 4 cannot
+    // represent the full mapping without silent truncation.  In that case we fall
+    // back to emitting Format 12 for all glyphs, keeping a minimal Format 4
+    // subtable (terminator only) for parsers that require its presence.
+    const bmpSegmentCount = mergedSegments.filter(s => s.start <= 0xFFFF).length;
+    const cmap4Overflows = bmpSegmentCount > CMAP4_MAX_SEGMENTS;
+    if (cmap4Overflows) {
+        isPlan0Only = false;
     }
 
     let cmapTable = [
@@ -315,18 +344,7 @@ function makeCmapTable(glyphs) {
 
     const t = new table.Table('cmap', cmapTable);
 
-    t.segments = [];
-    for (i = 0; i < glyphs.length; i += 1) {
-        const glyph = glyphs.get(i);
-        for (let j = 0; j < glyph.unicodes.length; j += 1) {
-            addSegment(t, glyph.unicodes[j], i);
-        }
-    }
-    t.segments.sort(function (a, b) {
-        return a.start - b.start;
-    });
-
-    t.segments = mergeSegments(t.segments);
+    t.segments = mergedSegments;
 
     addTerminatorSegment(t);
 
@@ -347,8 +365,12 @@ function makeCmapTable(glyphs) {
     for (i = 0; i < segCount; i += 1) {
         const segment = t.segments[i];
 
-        // CMAP 4
-        if (segment.end <= 65535 && segment.start <= 65535) {
+        // CMAP 4: when the table would overflow, emit only the terminator segment
+        // so that Format 4 remains structurally valid.  All actual mappings are
+        // carried by the Format 12 subtable in that case.
+        const includeInCmap4 = segment.end <= 65535 && segment.start <= 65535 && !cmap4Overflows ||
+            (cmap4Overflows && segment.end === 0xFFFF && segment.start === 0xFFFF);
+        if (includeInCmap4) {
             endCounts.push({name: 'end_' + i, type: 'USHORT', value: segment.end});
             startCounts.push({name: 'start_' + i, type: 'USHORT', value: segment.start});
             idDeltas.push({name: 'idDelta_' + i, type: 'SHORT', value: segment.delta});
