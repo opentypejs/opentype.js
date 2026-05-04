@@ -76,6 +76,17 @@ If you plan on improving or debugging opentype.js, you can:
 - check if all still works fine with `npm run test`
 - commit and open a Pull Request with your changes. Thank you!
 
+## Maintainer Releases
+
+Releases are published from the manual [Publish package to npm](https://github.com/opentypejs/opentype.js/actions/workflows/release.yml) workflow.
+
+1. Confirm the target version, for example `1.3.5`, and make sure `master` is green.
+2. Run the workflow from `master` with `dryRun: true` and `npmDistTag: latest`.
+3. Inspect the dry-run output, especially the package version and packed files.
+4. Re-run the workflow with the same version and `dryRun: false`.
+
+The release workflow runs preflight checks, publishes to npm, then creates the matching git tag and GitHub release.
+
 ## Usage
 
 ### Loading a WOFF/OTF/TTF font
