@@ -21,9 +21,8 @@ function Path() {
 const decimalRoundingCache = {};
 
 function decimalShift(num, exp) {
-    const parts = String(num).split(/e/i);
-    const exponent = parts[1] ? +parts[1] : 0;
-    return +(parts[0] + 'e' + (exponent + exp));
+    const [base, exponent = 0] = String(num).split(/e/i);
+    return +(base + 'e' + (+exponent + exp));
 }
 
 function roundDecimal(float, places) {
