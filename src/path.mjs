@@ -34,9 +34,11 @@ function roundDecimal(float, places) {
     }
     
     const decimalExponentParts = String(decimalPart).split('e');
-    const scaledDecimalValue = Math.round(+(decimalExponentParts[0] + 'e' + (decimalExponentParts[1] ? +decimalExponentParts[1] + places : places)));
+    const decimalExponent = decimalExponentParts[1] ? +decimalExponentParts[1] : 0;
+    const scaledDecimalValue = Math.round(+(decimalExponentParts[0] + 'e' + (decimalExponent + places)));
     const roundedExponentParts = String(scaledDecimalValue).split('e');
-    const unscaledRoundedValue = +(roundedExponentParts[0] + 'e' + (roundedExponentParts[1] ? +roundedExponentParts[1] - places : -places));
+    const roundedExponent = roundedExponentParts[1] ? +roundedExponentParts[1] : 0;
+    const unscaledRoundedValue = +(roundedExponentParts[0] + 'e' + (roundedExponent - places));
     decimalRoundingCache[places][decimalPart] = unscaledRoundedValue;
 
     return integerPart + unscaledRoundedValue;
