@@ -33,7 +33,10 @@ function roundDecimal(float, places) {
         return integerPart + roundedDecimalPart;
     }
     
-    const roundedDecimalPart = +(Math.round(decimalPart + 'e+' + places) + 'e-' + places);
+    const shiftedParts = String(decimalPart).split('e');
+    const shiftedDecimalPart = Math.round(+(shiftedParts[0] + 'e' + (shiftedParts[1] ? +shiftedParts[1] + places : places)));
+    const roundedParts = String(shiftedDecimalPart).split('e');
+    const roundedDecimalPart = +(roundedParts[0] + 'e' + (roundedParts[1] ? +roundedParts[1] - places : -places));
     decimalRoundingCache[places][decimalPart] = roundedDecimalPart;
 
     return integerPart + roundedDecimalPart;
