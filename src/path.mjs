@@ -20,6 +20,12 @@ function Path() {
 
 const decimalRoundingCache = {};
 
+function decimalShift(num, exp) {
+    const parts = String(num).split(/e/i);
+    const exponent = parts[1] ? +parts[1] : 0;
+    return +(parts[0] + 'e' + (exponent + exp));
+}
+
 function roundDecimal(float, places) {
     const integerPart = Math.floor(float);
     const decimalPart = float - integerPart;
@@ -33,15 +39,10 @@ function roundDecimal(float, places) {
         return integerPart + roundedDecimalPart;
     }
     
-    const decimalExponentParts = String(decimalPart).split('e');
-    const decimalExponent = decimalExponentParts[1] ? +decimalExponentParts[1] : 0;
-    const scaledDecimalValue = Math.round(+(decimalExponentParts[0] + 'e' + (decimalExponent + places)));
-    const roundedExponentParts = String(scaledDecimalValue).split('e');
-    const roundedExponent = roundedExponentParts[1] ? +roundedExponentParts[1] : 0;
-    const unscaledRoundedValue = +(roundedExponentParts[0] + 'e' + (roundedExponent - places));
-    decimalRoundingCache[places][decimalPart] = unscaledRoundedValue;
+    const roundedDecimalPart = decimalShift(Math.round(decimalShift(decimalPart, places)), -places);
+    decimalRoundingCache[places][decimalPart] = roundedDecimalPart;
 
-    return integerPart + unscaledRoundedValue;
+    return integerPart + roundedDecimalPart;
 }
 
 function optimizeCommands(commands) {
