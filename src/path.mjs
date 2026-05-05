@@ -33,13 +33,13 @@ function roundDecimal(float, places) {
         return integerPart + roundedDecimalPart;
     }
     
-    const shiftedParts = String(decimalPart).split('e');
-    const shiftedDecimalPart = Math.round(+(shiftedParts[0] + 'e' + (shiftedParts[1] ? +shiftedParts[1] + places : places)));
-    const roundedParts = String(shiftedDecimalPart).split('e');
-    const roundedDecimalPart = +(roundedParts[0] + 'e' + (roundedParts[1] ? +roundedParts[1] - places : -places));
-    decimalRoundingCache[places][decimalPart] = roundedDecimalPart;
+    const decimalExponentParts = String(decimalPart).split('e');
+    const scaledDecimalValue = Math.round(+(decimalExponentParts[0] + 'e' + (decimalExponentParts[1] ? +decimalExponentParts[1] + places : places)));
+    const roundedExponentParts = String(scaledDecimalValue).split('e');
+    const unscaledRoundedValue = +(roundedExponentParts[0] + 'e' + (roundedExponentParts[1] ? +roundedExponentParts[1] - places : -places));
+    decimalRoundingCache[places][decimalPart] = unscaledRoundedValue;
 
-    return integerPart + roundedDecimalPart;
+    return integerPart + unscaledRoundedValue;
 }
 
 function optimizeCommands(commands) {
