@@ -88,11 +88,10 @@ describe('path.mjs', function() {
         path.moveTo(-172.78799999998984, 1.4210854715202004e-14);
         path.lineTo(1.4210854715202004e-14, -172.78799999998984);
         const expectedPathData = 'M-172.7880000000 0L0-172.7880000000';
-        const pathData = path.toPathData(10);
         const unoptimizedPathData = path.toPathData({ decimalPlaces: 10, flipY: false, optimize: false });
-        assert.equal(pathData.includes('NaN'), false);
+        assert.equal(path.toPathData(10).includes('NaN'), false);
         assert.equal(unoptimizedPathData.includes('NaN'), false);
-        assert.equal(pathData, expectedPathData);
+        assert.equal(path.toPathData(10), expectedPathData);
         assert.equal(unoptimizedPathData, expectedPathData);
     });
     
