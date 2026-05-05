@@ -86,8 +86,9 @@ describe('path.mjs', function() {
     it('should round finite exponential notation coordinates without NaN', function() {
         const path = new Path();
         path.moveTo(-172.78799999998984, 1.4210854715202004e-14);
-        assert.equal(path.toPathData(10), 'M-172.7880000000 0');
-        assert.equal(path.toPathData({ decimalPlaces: 10, flipY: false, optimize: false }), 'M-172.7880000000 0');
+        path.lineTo(1.4210854715202004e-14, -172.78799999998984);
+        assert.equal(path.toPathData(10), 'M-172.7880000000 0L0-172.7880000000');
+        assert.equal(path.toPathData({ decimalPlaces: 10, flipY: false, optimize: false }), 'M-172.7880000000 0L0-172.7880000000');
     });
     
     it('should not optimize SVG paths if parameter is set falsy', function() {
