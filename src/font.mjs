@@ -392,6 +392,26 @@ function isCombiningByUnicode(glyph) {
         (u >= 0xFE20 && u <= 0xFE2F));
 }
 
+function isAttached(glyph) {
+    if (!glyph || !glyph.unicodes || !glyph.unicodes.length) return false;
+
+    // Canonical Combining Class 204, Attached above
+    // U+036A: ◌ͪ COMBINING LATIN SMALL LETTER O
+    if (glyph.unicodes.some((u) => u === 0x036A))
+        return true;
+
+    // Canonical Combining Class 202, Attached below
+    if (glyph.unicodes.some((u) =>
+        u == 0x0327 /* Cedilla (◌̧) */ ||
+        u === 0x0328 /* Ogonek (◌̨)*/||
+        u === 0x0321 /* Palatalized Hook Below (◌̡)*/||
+        u === 0x0322 /* Retroflex Hook Below (◌̢)*/||
+        u === 0x0489/* Cyrillic Ten Thousands Sign (◌҉)*/))
+        return true;
+
+    return false;
+}
+
 /**
  * Compute a heuristic position for a combining mark over its base glyph.
  * Used when GPOS mark-to-base data is unavailable or produces no match.
@@ -437,10 +457,14 @@ function heuristicMarkPosition(font, gX, gY, baseAdvance, markGlyph, scale, base
         : null;
     if (baseBbox && markBbox && Number.isFinite(baseBbox.y1) && Number.isFinite(baseBbox.y2) &&
         Number.isFinite(markBbox.y1) && Number.isFinite(markBbox.y2) && isAboveMark !== null) {
+        // The gap is a heuristic measurement following the suggestion of 1/8 cap height from
+        // UTN #2, but only applied if the mark has a Canonical Combining Class that indicates
+        // that it is detached from the base glyph.
         const capHeight = (font.tables.os2 && font.tables.os2.sCapHeight)
             ? font.tables.os2.sCapHeight
             : (font.unitsPerEm || 1000) * 0.7;
-        const gapPx = (capHeight / 8) * s;
+        const gapPx = isAttached(markGlyph) ? 0 : (capHeight / 8) * s;
+
         if (isAboveMark) {
             // Ensure the mark's bottom clears the base's top with a minimum gap.
             // Only apply when negative (mark needs moving up); positive means the mark already clears naturally.
