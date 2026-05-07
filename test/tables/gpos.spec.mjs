@@ -100,6 +100,37 @@ describe('tables/gpos.mjs', function() {
         });
     });
 
+    //// Lookup type 9 ////////////////////////////////////////////////////////
+    it('can parse lookup9 Extension wrapping type 1', function() {
+        // Extension subtable: posFormat=1, extensionLookupType=1, extensionOffset=8 (points past 8-byte header)
+        // Followed immediately by a SinglePosFormat1 subtable identical to the lookup1 test above.
+        const data = '0001 0001 00000008' +               // extension header (8 bytes)
+                     '0001 0008 0002 FFB0' +               // type-1: posFormat=1, covOffset=8, valFmt=2, yPlacement=-80
+                     '0002 0001 01B3 01BC 0000';            // coverage: format=2, 1 range [0x1B3..0x1BC]
+        assert.deepEqual(parseLookup(9, data), {
+            posFormat: 1,
+            lookupType: 1,
+            extension: {
+                posFormat: 1,
+                coverage: { format: 2, ranges: [{ start: 0x1b3, end: 0x1bc, index: 0 }] },
+                value: { yPlacement: -80 }
+            }
+        });
+    });
+
+    it('can parse lookup9 Extension wrapping type 2 (pair kerning)', function() {
+        // Inner type-2 PairPosFormat1 data from the lookup2 test above, wrapped in a type-9 extension.
+        const innerType2 = '0001 001E 0004 0001 0002 000E 0016' +
+                           '0001 0059 FFE2 FFEC 0001 0059 FFD8 FFE7' +
+                           '0001 0002 002D 0031';
+        const data = '0001 0002 00000008' + innerType2;    // extension: posFormat=1, innerType=2, offset=8
+        const result = parseLookup(9, data);
+        assert.equal(result.posFormat, 1);
+        assert.equal(result.lookupType, 2);
+        assert.equal(result.extension.posFormat, 1);
+        assert.deepEqual(result.extension.coverage, { format: 1, glyphs: [0x2d, 0x31] });
+    });
+
     it('can parse lookup2 PairPosFormat2', function() {
         // https://docs.microsoft.com/en-us/typography/opentype/spec/gpos#example-5-pairposformat2-subtable
         const data = '0002 0018 0004 0000 0022 0032 0002 0002 0000 0000 0000 FFCE   0001 0003 0046 0047 0049   0002 0002 0046 0047 0001 0049 0049 0001   0002 0001 006A 006B 0001';

@@ -138,7 +138,11 @@ Position.prototype.getMarkToBaseTables = function(script, language) {
             const lookupListIndexes = featureRecord.feature.lookupListIndexes || [];
             for (let i = 0; i < lookupListIndexes.length; i++) {
                 const lookup = allLookups[lookupListIndexes[i]];
-                if (lookup && lookup.lookupType === 4 && !seen.has(lookup)) {
+                if (!lookup) continue;
+                // Type 9 (Extension Positioning) returns inner subtables transparently via parseLookup9,
+                // so its lookup.subtables already contain the wrapped type's data (e.g. mark-to-base).
+                if (lookup.lookupType !== 4 && lookup.lookupType !== 9) continue;
+                if (!seen.has(lookup)) {
                     seen.add(lookup);
                     result.push({ lookup, featureTag: tag });
                 }
@@ -177,7 +181,7 @@ Position.prototype.getMarkToBaseOffset = function(markGlyphIndex, baseGlyphIndex
         if (lookup.error) continue;
         const subtables = lookup.subtables || [];
         for (let j = 0; j < subtables.length; j++) {
-            const sub = subtables[j];
+            const sub = subtables[j].extension !== undefined ? subtables[j].extension : subtables[j];
             if (sub.error) continue;
             if (sub.posFormat !== 1) continue;
             const markCov = sub.markCoverage;

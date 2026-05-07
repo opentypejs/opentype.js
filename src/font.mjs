@@ -392,12 +392,18 @@ function isCombiningByUnicode(glyph) {
         (u >= 0xFE20 && u <= 0xFE2F));
 }
 
-function isAttached(glyph) {
+/**
+ * Return true if the glyph is a Unicode combining character that is attached to the base glyph.
+ * Since only a small subset of Unicode combining characters are attached, it is reasonable to just
+ * test for them explicitly. See the Unicode Technical Note #2 (UTN #2) for more details.
+ * @param {opentype.Glyph} glyph
+ * @returns {boolean}
+ */
+function isAttachedByUnicode(glyph) {
     if (!glyph || !glyph.unicodes || !glyph.unicodes.length) return false;
 
     // Canonical Combining Class 204, Attached above
-    // U+036A: ◌ͪ COMBINING LATIN SMALL LETTER O
-    if (glyph.unicodes.some((u) => u === 0x036A))
+    if (glyph.unicodes.some((u) => u === 0x036A /* ◌ͪ COMBINING LATIN SMALL LETTER O */))
         return true;
 
     // Canonical Combining Class 202, Attached below
@@ -413,9 +419,10 @@ function isAttached(glyph) {
 }
 
 /**
- * Compute a heuristic position for a combining mark over its base glyph.
- * Used when GPOS mark-to-base data is unavailable or produces no match.
- * Implements horizontal centering and vertical clearance per Unicode Technical Note #2 (UTN #2).
+ * Compute a heuristic position for a combining mark over its base glyph. Used when GPOS
+ * mark-to-base data is unavailable or produces no match.  Implements horizontal centering
+ * and vertical clearance per Unicode Technical Note #2 (UTN #2). This code path is not
+ * expected to be executed for most fonts, but is included for completeness.
  *
  * @param {opentype.Font} font
  * @param {number} gX - Current pen X (pixels), already advanced past the base.
@@ -440,8 +447,6 @@ function heuristicMarkPosition(font, gX, gY, baseAdvance, markGlyph, scale, base
     // so no separate dx/dy handling is needed for composite marks.
     const markBbox = getGlyphBBox(markGlyph);
     // UTN #2 horizontal: center the mark's bounding box over the base's bounding box center.
-    // gX_new + markBboxCenterX * s = base_origin + baseCenterX * s
-    //   where gX = base_origin + baseAdvance * s  =>  xOffset = (baseCenterX - baseAdvance - markBboxCenterX) * s
     let markBboxCenterX = 0;
     if (markBbox && Number.isFinite(markBbox.x1) && Number.isFinite(markBbox.x2)) {
         markBboxCenterX = (markBbox.x1 + markBbox.x2) / 2;
@@ -460,14 +465,21 @@ function heuristicMarkPosition(font, gX, gY, baseAdvance, markGlyph, scale, base
         // The gap is a heuristic measurement following the suggestion of 1/8 cap height from
         // UTN #2, but only applied if the mark has a Canonical Combining Class that indicates
         // that it is detached from the base glyph.
-        const capHeight = (font.tables.os2 && font.tables.os2.sCapHeight)
+        const capHeightBase = (font.tables.os2 && font.tables.os2.sCapHeight)
             ? font.tables.os2.sCapHeight
             : (font.unitsPerEm || 1000) * 0.7;
-        const gapPx = isAttached(markGlyph) ? 0 : (capHeight / 8) * s;
+        const mvar = font.tables && font.tables.mvar;
+        const cphtRecord = mvar && mvar.valueRecords['cpht'];
+        const cphtDelta = cphtRecord && font.variation && font.variation.process
+            ? Math.round(font.variation.process.getDelta(mvar.itemVariationStore, cphtRecord.outer, cphtRecord.inner, font.variation.get()))
+            : 0;
+        const capHeight = capHeightBase + cphtDelta;
+        const gapPx = isAttachedByUnicode(markGlyph) ? 0 : (capHeight / 8) * s;
 
         if (isAboveMark) {
             // Ensure the mark's bottom clears the base's top with a minimum gap.
-            // Only apply when negative (mark needs moving up); positive means the mark already clears naturally.
+            // Only apply when negative (mark needs moving up); positive means the mark already
+            // clears naturally.
             const desiredYOffset = (markBbox.y1 - baseBbox.y2) * s - gapPx;
             if (desiredYOffset < 0) {
                 yOffset = desiredYOffset;
@@ -714,9 +726,52 @@ Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
 };
 
 /**
- * @param  {string}
- * @return {string}
+ * Return the variation axes defined by this font's fvar table.
+ * Each entry has the axis tag, human-readable name, and min/default/max values
+ * in the units defined by the OpenType spec for that axis (e.g. wght = 100–900,
+ * wdth = percentage of normal width where 100 is default).
+ * Returns an empty array for non-variable fonts.
+ *
+ * @returns {Array<{ tag: string, name: string, min: number, default: number, max: number }>}
  */
+Font.prototype.getVariationAxes = function() {
+    const axes = this.tables.fvar && this.tables.fvar.axes;
+    if (!axes) return [];
+    return axes.map(axis => ({
+        tag: axis.tag,
+        name: axis.name,
+        min: axis.minValue,
+        default: axis.defaultValue,
+        max: axis.maxValue,
+    }));
+};
+
+/**
+ * Get caret positions within a ligature glyph, in font units.
+ * Returns an array of x-coordinates (one per internal boundary, so a 3-component ligature
+ * returns 2 values). Uses GDEF LigCaretList data, which is already parsed.
+ * Format 1/3 carets return the stored coordinate directly; format 2 carets resolve the
+ * coordinate from the glyph's contour point at the given index (TrueType only).
+ *
+ * @param {number} glyphIndex - Glyph ID of the ligature glyph
+ * @returns {number[]} Array of caret x-coordinates in font units, or [] if none defined
+ */
+Font.prototype.getLigatureCarets = function(glyphIndex) {
+    const ligCaretList = this.tables.gdef && this.tables.gdef.ligCaretList;
+    if (!ligCaretList) return [];
+    const covIndex = this.position.getCoverageIndex(ligCaretList.coverage, glyphIndex);
+    if (covIndex < 0) return [];
+    const caretValues = ligCaretList.ligGlyphs[covIndex] || [];
+    const glyph = this.glyphs.get(glyphIndex);
+    return caretValues.map(cv => {
+        if (cv.pointindex !== undefined) {
+            const points = glyph && glyph.points;
+            return (points && points[cv.pointindex]) ? points[cv.pointindex].x : 0;
+        }
+        return cv.coordinate;
+    });
+};
+
 Font.prototype.getEnglishName = function(name) {
     const translations = (this.names.unicode || this.names.macintosh || this.names.windows)[name];
     if (translations) {
