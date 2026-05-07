@@ -726,52 +726,9 @@ Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
 };
 
 /**
- * Return the variation axes defined by this font's fvar table.
- * Each entry has the axis tag, human-readable name, and min/default/max values
- * in the units defined by the OpenType spec for that axis (e.g. wght = 100–900,
- * wdth = percentage of normal width where 100 is default).
- * Returns an empty array for non-variable fonts.
- *
- * @returns {Array<{ tag: string, name: string, min: number, default: number, max: number }>}
+ * @param  {string}
+ * @return {string}
  */
-Font.prototype.getVariationAxes = function() {
-    const axes = this.tables.fvar && this.tables.fvar.axes;
-    if (!axes) return [];
-    return axes.map(axis => ({
-        tag: axis.tag,
-        name: axis.name,
-        min: axis.minValue,
-        default: axis.defaultValue,
-        max: axis.maxValue,
-    }));
-};
-
-/**
- * Get caret positions within a ligature glyph, in font units.
- * Returns an array of x-coordinates (one per internal boundary, so a 3-component ligature
- * returns 2 values). Uses GDEF LigCaretList data, which is already parsed.
- * Format 1/3 carets return the stored coordinate directly; format 2 carets resolve the
- * coordinate from the glyph's contour point at the given index (TrueType only).
- *
- * @param {number} glyphIndex - Glyph ID of the ligature glyph
- * @returns {number[]} Array of caret x-coordinates in font units, or [] if none defined
- */
-Font.prototype.getLigatureCarets = function(glyphIndex) {
-    const ligCaretList = this.tables.gdef && this.tables.gdef.ligCaretList;
-    if (!ligCaretList) return [];
-    const covIndex = this.position.getCoverageIndex(ligCaretList.coverage, glyphIndex);
-    if (covIndex < 0) return [];
-    const caretValues = ligCaretList.ligGlyphs[covIndex] || [];
-    const glyph = this.glyphs.get(glyphIndex);
-    return caretValues.map(cv => {
-        if (cv.pointindex !== undefined) {
-            const points = glyph && glyph.points;
-            return (points && points[cv.pointindex]) ? points[cv.pointindex].x : 0;
-        }
-        return cv.coordinate;
-    });
-};
-
 Font.prototype.getEnglishName = function(name) {
     const translations = (this.names.unicode || this.names.macintosh || this.names.windows)[name];
     if (translations) {
