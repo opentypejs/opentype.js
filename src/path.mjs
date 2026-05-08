@@ -33,6 +33,11 @@ function Path() {
 
 const decimalRoundingCache = {};
 
+function decimalShift(num, exp) {
+    const [base, exponent = 0] = String(num).split(/e/i);
+    return +(base + 'e' + (+exponent + exp));
+}
+
 function roundDecimal(float, places) {
     const integerPart = Math.floor(float);
     const decimalPart = float - integerPart;
@@ -46,7 +51,7 @@ function roundDecimal(float, places) {
         return integerPart + roundedDecimalPart;
     }
     
-    const roundedDecimalPart = +(Math.round(decimalPart + 'e+' + places) + 'e-' + places);
+    const roundedDecimalPart = decimalShift(Math.round(decimalShift(decimalPart, places)), -places);
     decimalRoundingCache[places][decimalPart] = roundedDecimalPart;
 
     return integerPart + roundedDecimalPart;

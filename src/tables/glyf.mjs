@@ -7,6 +7,12 @@ import glyphset from '../glyphset.mjs';
 import parse from '../parse.mjs';
 import Path from '../path.mjs';
 
+// Track glyph indices currently being resolved to detect circular references
+// in composite glyphs. Keyed by GlyphSet to avoid cross-font collisions.
+// Module-scoped because the recursion crosses through the lazy glyph loader
+// (glyphset.mjs), so a parameter can't be threaded through.
+const _resolving = new WeakMap();
+
 // Parse the coordinate data for a glyph.
 function parseGlyphCoordinate(p, flag, previousValue, shortVectorBitMask, sameBitMask) {
     let v;
@@ -263,36 +269,48 @@ function getPath(points) {
 
 function buildPath(glyphs, glyph) {
     if (glyph.isComposite) {
-        for (let j = 0; j < glyph.components.length; j += 1) {
-            const component = glyph.components[j];
-            const componentGlyph = glyphs.get(component.glyphIndex);
-            // Force the ttfGlyphLoader to parse the glyph.
-            componentGlyph.getPath();
-            if (componentGlyph.points) {
-                let transformedPoints;
-                if (component.matchedPoints === undefined) {
-                    // component positioned by offset
-                    transformedPoints = transformPoints(componentGlyph.points, component);
-                } else {
-                    // component positioned by matched points
-                    if ((component.matchedPoints[0] > glyph.points.length - 1) ||
-                        (component.matchedPoints[1] > componentGlyph.points.length - 1)) {
-                        throw Error('Matched points out of range in ' + glyph.name);
-                    }
-                    const firstPt = glyph.points[component.matchedPoints[0]];
-                    let secondPt = componentGlyph.points[component.matchedPoints[1]];
-                    const transform = {
-                        xScale: component.xScale, scale01: component.scale01,
-                        scale10: component.scale10, yScale: component.yScale,
-                        dx: 0, dy: 0
-                    };
-                    secondPt = transformPoints([secondPt], transform)[0];
-                    transform.dx = firstPt.x - secondPt.x;
-                    transform.dy = firstPt.y - secondPt.y;
-                    transformedPoints = transformPoints(componentGlyph.points, transform);
+        if (!_resolving.has(glyphs)) {
+            _resolving.set(glyphs, new Set());
+        }
+        const resolving = _resolving.get(glyphs);
+        resolving.add(glyph.index);
+        try {
+            for (let j = 0; j < glyph.components.length; j += 1) {
+                const component = glyph.components[j];
+                if (resolving.has(component.glyphIndex)) {
+                    continue; // skip circular reference
                 }
-                glyph.points = glyph.points.concat(transformedPoints);
+                const componentGlyph = glyphs.get(component.glyphIndex);
+                // Force the ttfGlyphLoader to parse the glyph.
+                componentGlyph.getPath();
+                if (componentGlyph.points) {
+                    let transformedPoints;
+                    if (component.matchedPoints === undefined) {
+                        // component positioned by offset
+                        transformedPoints = transformPoints(componentGlyph.points, component);
+                    } else {
+                        // component positioned by matched points
+                        if ((component.matchedPoints[0] > glyph.points.length - 1) ||
+                            (component.matchedPoints[1] > componentGlyph.points.length - 1)) {
+                            throw Error('Matched points out of range in ' + glyph.name);
+                        }
+                        const firstPt = glyph.points[component.matchedPoints[0]];
+                        let secondPt = componentGlyph.points[component.matchedPoints[1]];
+                        const transform = {
+                            xScale: component.xScale, scale01: component.scale01,
+                            scale10: component.scale10, yScale: component.yScale,
+                            dx: 0, dy: 0
+                        };
+                        secondPt = transformPoints([secondPt], transform)[0];
+                        transform.dx = firstPt.x - secondPt.x;
+                        transform.dy = firstPt.y - secondPt.y;
+                        transformedPoints = transformPoints(componentGlyph.points, transform);
+                    }
+                    glyph.points = glyph.points.concat(transformedPoints);
+                }
             }
+        } finally {
+            resolving.delete(glyph.index);
         }
     }
 

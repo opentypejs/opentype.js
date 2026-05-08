@@ -40,6 +40,10 @@ function equals(a, b) {
     }
 }
 
+// Maximum subroutine call depth as defined by the CFF/Type 2 specification (section 4.7).
+// FreeType and other conforming implementations also enforce this limit.
+const MAX_CALL_DEPTH = 10;
+
 // Subroutines are encoded using the negative half of the number space.
 // See type 2 chapter 4.7 "Subroutine operators".
 function calcCFFSubroutineBias(subrs) {
@@ -637,6 +641,7 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
     let vsindex = 0;
     let vstore = [];
     let blendVector;
+    let callDepth = 0;
     const cffTable = font.tables.cff2 || font.tables.cff;
     defaultWidthX = cffTable.topDict._defaultWidthX;
     nominalWidthX = cffTable.topDict._nominalWidthX;
@@ -776,7 +781,13 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                     codeIndex = stack.pop() + subrsBias;
                     subrCode = subrs[codeIndex];
                     if (subrCode) {
+                        if (callDepth >= MAX_CALL_DEPTH) {
+                            console.warn('CFF charstring subroutine call depth exceeded, skipping callsubr');
+                            break;
+                        }
+                        callDepth++;
                         parse(subrCode);
+                        callDepth--;
                     }
 
                     break;
@@ -1069,7 +1080,13 @@ function parseCFFCharstring(font, glyph, code, version, coords) {
                     codeIndex = stack.pop() + font.gsubrsBias;
                     subrCode = font.gsubrs[codeIndex];
                     if (subrCode) {
+                        if (callDepth >= MAX_CALL_DEPTH) {
+                            console.warn('CFF charstring subroutine call depth exceeded, skipping callgsubr');
+                            break;
+                        }
+                        callDepth++;
                         parse(subrCode);
+                        callDepth--;
                     }
 
                     break;
