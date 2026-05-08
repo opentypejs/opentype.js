@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `GPOS` table contains kerning pairs, among other things.
 // https://docs.microsoft.com/en-us/typography/opentype/spec/gpos
 
@@ -123,4 +124,5 @@ function makeGposTable(gpos) {
     ]);
 }
 
+/** @type {any} */
 export default { parse: parseGposTable, make: makeGposTable };

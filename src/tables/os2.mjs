@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `OS/2` table contains metrics required in OpenType fonts.
 // https://www.microsoft.com/typography/OTSPEC/os2.htm
 
@@ -246,4 +247,5 @@ function makeOS2Table(options) {
     ], options);
 }
 
+/** @type {any} */
 export default { parse: parseOS2Table, make: makeOS2Table, unicodeRanges, getUnicodeRange };

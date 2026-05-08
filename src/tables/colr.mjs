@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `COLR` table adds support for multi-colored glyphs
 // https://www.microsoft.com/typography/OTSPEC/colr.htm
 
@@ -59,4 +60,5 @@ function makeColrTable({ version = 0x0000, baseGlyphRecords = [], layerRecords =
     ]);
 }
 
+/** @type {any} */
 export default { parse: parseColrTable, make: makeColrTable };

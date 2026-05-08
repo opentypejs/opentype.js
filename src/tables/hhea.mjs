@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `hhea` table contains information for horizontal layout.
 // https://www.microsoft.com/typography/OTSPEC/hhea.htm
 
@@ -47,4 +48,5 @@ function makeHheaTable(options) {
     ], options);
 }
 
+/** @type {any} */
 export default { parse: parseHheaTable, make: makeHheaTable };

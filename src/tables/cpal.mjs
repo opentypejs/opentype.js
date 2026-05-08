@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `CPAL` define a contiguous list of colors (colorRecords)
 // Theses colors must be index by at least one default (0) palette (colorRecordIndices)
 // every palettes share the same size (numPaletteEntries) and can overlap to refere the same colors
@@ -32,6 +33,7 @@ function parseCpalTable(data, start) {
     };
 }
 
+/** @returns {any} */
 function makeCpalTable({ version = 0, numPaletteEntries = 0, colorRecords = [], colorRecordIndices = [0] }) {
     check.argument(version === 0, 'Only CPALv0 are supported.');
     check.argument(colorRecords.length, 'No colorRecords given.');
@@ -307,6 +309,7 @@ function formatColor(bgra, format = 'hexa') {
     }
 }
 
+/** @type {any} */
 export default { parse: parseCpalTable, make: makeCpalTable, getPaletteColor, parseColor, formatColor };
 export { parseCpalTable, makeCpalTable, getPaletteColor, parseColor, formatColor };
 

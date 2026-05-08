@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ES2018",
+    "skipLibCheck": true,
+    "esModuleInterop": true
+  },
+  "include": ["test-types.ts"]
+}

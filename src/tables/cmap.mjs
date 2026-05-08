@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `cmap` table stores the mappings from characters to glyphs.
 // https://www.microsoft.com/typography/OTSPEC/cmap.htm
 
@@ -270,6 +271,7 @@ function mergeSegments(segments) {
 }
 
 // Make cmap table, format 4 by default, 12 if needed only
+/** @returns {any} */
 function makeCmapTable(glyphs) {
     // Plan 0 is the base Unicode Plan but emojis, for example are on another plan, and needs cmap 12 format (with 32bit)
     let isPlan0Only = true;
@@ -424,6 +426,7 @@ function makeCmapTable(glyphs) {
     return t;
 }
 
+/** @type {any} */
 export default { parse: parseCmapTable, make: makeCmapTable };
 
 export { parseCmapTableFormat0, parseCmapTableFormat14, makeCmapTable };

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `fvar` table stores font variation axes and instances.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6fvar.html
 
@@ -150,4 +151,5 @@ function parseFvarTable(data, start, names) {
     return {axes: axes, instances: instances};
 }
 
+/** @type {any} */
 export default { make: makeFvarTable, parse: parseFvarTable };

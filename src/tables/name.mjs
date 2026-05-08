@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The `name` naming table.
 // https://www.microsoft.com/typography/OTSPEC/name.htm
 
@@ -873,4 +874,5 @@ export function getNameByID(names, nameID, allowedStandardIDs = []) {
     return undefined;
 }
 
+/** @type {any} */
 export default { parse: parseNameTable, make: makeNameTable, getNameByID };
