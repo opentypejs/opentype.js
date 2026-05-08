@@ -77,11 +77,11 @@ function Font(options) {
 
     if (!options.empty) {
         // Check that we've provided the minimum set of names.
-        if (!options.familyName) throw 'When creating a new Font object, familyName is required.';
-        if (!options.styleName) throw 'When creating a new Font object, styleName is required.';
-        if (!options.unitsPerEm) throw 'When creating a new Font object, unitsPerEm is required.';
-        if (!options.ascender) throw 'When creating a new Font object, ascender is required.';
-        if (options.descender > 0) throw 'When creating a new Font object, negative descender value is required.';
+        if (!options.familyName) throw new Error('When creating a new Font object, familyName is required.');
+        if (!options.styleName) throw new Error('When creating a new Font object, styleName is required.');
+        if (!options.unitsPerEm) throw new Error('When creating a new Font object, unitsPerEm is required.');
+        if (!options.ascender) throw new Error('When creating a new Font object, ascender is required.');
+        if (options.descender > 0) throw new Error('When creating a new Font object, negative descender value is required.');
 
         // OS X will complain if the names are empty, so we put a single space everywhere by default.
         this.names = {};
@@ -107,7 +107,7 @@ function Font(options) {
             if (this.weightClass >= 600) {
                 selection |= this.fsSelectionValues.BOLD;
             }
-            if (selection == 0) {
+            if (selection === 0) {
                 selection = this.fsSelectionValues.REGULAR;
             }
         }
@@ -367,7 +367,7 @@ Font.prototype.defaultRenderOptions = {
 
 /**
  * Helper function that invokes the given callback for each glyph in the given text.
- * The callback gets `(glyph, x, y, fontSize, options)`.* @param  {string} text
+ * The callback gets `(glyph, x, y, fontSize, options)`.
  * @param {string} text - The text to apply.
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.

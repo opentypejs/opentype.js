@@ -35,6 +35,13 @@ describe('font.mjs', function() {
     });
 
     describe('Font constructor', function() {
+        it('should throw Error objects (not strings) for missing required options', function() {
+            assert.throws(
+                () => new Font({ styleName: 'Medium', unitsPerEm: 1000, ascender: 800, descender: -200 }),
+                (err) => err instanceof Error
+            );
+        });
+
         it('accept 0 as descender value', function() {
             assert.equal(font.descender, 0);
         });

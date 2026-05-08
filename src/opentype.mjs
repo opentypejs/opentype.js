@@ -170,7 +170,7 @@ function parseBuffer(buffer, opt={}) {
         numTables = parse.getUShort(data, 12);
         tableEntries = parseWOFFTableEntries(data, numTables);
     } else if (signature === 'wOF2') {
-        var issue = 'https://github.com/opentypejs/opentype.js/issues/183#issuecomment-1147228025';
+        const issue = 'https://github.com/opentypejs/opentype.js/issues/183#issuecomment-1147228025';
         throw new Error('WOFF2 require an external decompressor library, see examples at: ' + issue);
     } else {
         throw new Error('Unsupported OpenType signature ' + signature);
@@ -310,8 +310,13 @@ function parseBuffer(buffer, opt={}) {
                 metaTableEntry = tableEntry;
                 break;
             case 'gasp':
-                table = uncompressTable(data, tableEntry);
-                font.tables.gasp = gasp.parse(table.data, table.offset);
+                try {
+                    table = uncompressTable(data, tableEntry);
+                    font.tables.gasp = gasp.parse(table.data, table.offset);
+                } catch (e) {
+                    console.warn('Failed to parse gasp table, skipping.');
+                    console.warn(e);
+                }
                 break;
             case 'SVG ':
                 table = uncompressTable(data, tableEntry);

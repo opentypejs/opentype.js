@@ -176,6 +176,17 @@ describe('tables/cff.mjs', function () {
         assert.equal(path.toSVG(), svg2);
     });
 
+    it('should not crash on CFF fonts with recursive subroutine calls', function () {
+        // Regression test for CVE: CFF Charstring VM Unbounded Subroutine Recursion (CWE-674)
+        // The test font has a local subroutine that calls itself, creating infinite recursion.
+        const font = loadSync('./test/fonts/CFFRecursionTest.otf');
+        // Accessing the glyph path triggers charstring parsing, which would
+        // overflow the call stack without a recursion depth limit.
+        assert.doesNotThrow(() => {
+            font.glyphs.get(1).path;
+        });
+    });
+
     it('correctly transforms CFF2 variable font glyphs using blend operations', function() {
         const font = loadSync('./test/fonts/TestRVRN-CFF2.otf');
         const untransformedPoints = [
