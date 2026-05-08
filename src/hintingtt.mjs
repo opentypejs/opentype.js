@@ -27,6 +27,11 @@
 */
 import glyf from './tables/glyf.mjs';
 
+// Safety limits to prevent denial-of-service from crafted fonts.
+const MAX_INSTRUCTIONS = 1000000;   // max instructions per hinting session
+const MAX_CALL_DEPTH = 64;          // max nested CALL/LOOPCALL depth
+const MAX_LOOP_COUNT = 10000;       // max LOOPCALL iterations & SLOOP value
+
 /*
 * turn on for intensive debugging.
 */
@@ -593,6 +598,8 @@ Hinting.prototype.exec = function(glyph, ppem) {
 
             fpgmState.funcs = [ ];
             fpgmState.font = font;
+            fpgmState.instructionCount = 0;
+            fpgmState.callDepth = 0;
 
             if (DEBUG) {
                 console.log('---EXEC FPGM---');
@@ -618,6 +625,8 @@ Hinting.prototype.exec = function(glyph, ppem) {
             new State('prep', font.tables.prep);
 
         prepState.ppem = ppem;
+        prepState.instructionCount = 0;
+        prepState.callDepth = 0;
 
         // Creates a copy of the cvt table
         // and scales it to the current ppem setting.
@@ -676,6 +685,8 @@ execGlyph = function(glyph, prepState) {
     State.prototype = prepState;
     if (!components) {
         state = new State('glyf', glyph.instructions);
+        state.instructionCount = 0;
+        state.callDepth = 0;
         if (DEBUG) {
             console.log('---EXEC GLYPH---');
             state.step = -1;
@@ -691,6 +702,8 @@ execGlyph = function(glyph, prepState) {
             const cg = font.glyphs.get(c.glyphIndex);
 
             state = new State('glyf', cg.instructions);
+            state.instructionCount = 0;
+            state.callDepth = 0;
 
             if (DEBUG) {
                 console.log('---EXEC COMP ' + i + '---');
@@ -834,6 +847,11 @@ exec = function(state) {
     let ins;
 
     for (state.ip = 0; state.ip < pLen; state.ip++) {
+        if (++state.instructionCount > MAX_INSTRUCTIONS) {
+            throw new Error(
+                'Hinting instructions exceeded maximum of ' + MAX_INSTRUCTIONS
+            );
+        }
         if (DEBUG) state.step++;
         ins = instructionTable[prog[state.ip]];
 
@@ -1230,6 +1248,10 @@ function SZPS(state) {
 function SLOOP(state) {
     state.loop = state.stack.pop();
 
+    if (state.loop > MAX_LOOP_COUNT) {
+        state.loop = MAX_LOOP_COUNT;
+    }
+
     if (DEBUG) console.log(state.step, 'SLOOP[]', state.loop);
 }
 
@@ -1349,9 +1371,15 @@ function DEPTH(state) {
 function LOOPCALL(state) {
     const stack = state.stack;
     const fn = stack.pop();
-    const c = stack.pop();
+    let c = stack.pop();
+
+    if (c > MAX_LOOP_COUNT) c = MAX_LOOP_COUNT;
 
     if (DEBUG) console.log(state.step, 'LOOPCALL[]', fn, c);
+
+    if (++state.callDepth > MAX_CALL_DEPTH) {
+        throw new Error('Hinting call depth exceeded maximum of ' + MAX_CALL_DEPTH);
+    }
 
     // saves callers program
     const cip = state.ip;
@@ -1373,6 +1401,7 @@ function LOOPCALL(state) {
     // restores the callers program
     state.ip = cip;
     state.prog = cprog;
+    state.callDepth--;
 }
 
 // CALL[] CALL function
@@ -1381,6 +1410,10 @@ function CALL(state) {
     const fn = state.stack.pop();
 
     if (DEBUG) console.log(state.step, 'CALL[]', fn);
+
+    if (++state.callDepth > MAX_CALL_DEPTH) {
+        throw new Error('Hinting call depth exceeded maximum of ' + MAX_CALL_DEPTH);
+    }
 
     // saves callers program
     const cip = state.ip;
@@ -1394,6 +1427,7 @@ function CALL(state) {
     // restores the callers program
     state.ip = cip;
     state.prog = cprog;
+    state.callDepth--;
 
     if (DEBUG) console.log(++state.step, 'returning from', fn);
 }

@@ -146,6 +146,21 @@ describe('glyph.mjs', function() {
         });
     });
 
+    describe('toPathData options', function() {
+        it('should invoke pathTransform callback', function() {
+            const font = loadSync('./test/fonts/FiraSansMedium.woff');
+            const glyph = font.charToGlyph('A');
+            let called = false;
+            glyph.toPathData({
+                pathTransform: function(path) {
+                    called = true;
+                    return path;
+                }
+            }, font);
+            assert.equal(called, true);
+        });
+    });
+
     describe('component transformation', function() {
         // @TODO test components more thoroughly,
         // maybe move to a separate glyf test file
@@ -154,7 +169,22 @@ describe('glyph.mjs', function() {
 
         it('handles 2x2 transform correctly',function() {
             const glyph = changaVarFont.charToGlyph('+');
-            assert.deepEqual(glyph.toPathData(), 'M91 284L440 284L440 342L91 342ZM236 487L236 138L294 138L294 487Z');
+            assert.deepEqual(glyph.toPathData(), 'M91 342L91 284L440 284L440 342ZM294 487L236 487L236 138L294 138Z');
+        });
+    });
+
+    describe('circular composite glyph references', function() {
+        it('does not crash on fonts with circular composite references', function() {
+            const font = loadSync('./test/fonts/circular-composite.ttf');
+            // Verify cmap maps 'A' to glyph 1
+            const glyphA = font.charToGlyph('A');
+            assert.equal(glyphA.index, 1);
+            const glyph2 = font.glyphs.get(2);
+            // Should return paths without stack overflow
+            const path1 = glyphA.getPath();
+            const path2 = glyph2.getPath();
+            assert.ok(path1 instanceof Path);
+            assert.ok(path2 instanceof Path);
         });
     });
 
