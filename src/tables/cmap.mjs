@@ -231,8 +231,8 @@ function parseCmapTable(data, start) {
     return cmap;
 }
 
-function addSegment(t, code, glyphIndex) {
-    t.segments.push({
+function addSegment(segments, code, glyphIndex) {
+    segments.push({
         end: code,
         start: code,
         delta: -(code - glyphIndex),
@@ -273,7 +273,7 @@ function mergeSegments(segments) {
 // Each segment contributes 8 bytes (one entry in each of the four parallel arrays),
 // plus the 14-byte header and the 2-byte reservedPad, leaving room for at most
 // floor((65535 - 16) / 8) = 8189 segments before overflow.
-const CMAP4_MAX_SEGMENTS = Math.floor((0xFFFF - 16) / 8);
+const CMAP4_MAX_SEGMENTS = 8189;
 
 // Make cmap table, format 4 by default, 12 if needed only
 function makeCmapTable(glyphs) {
@@ -296,7 +296,7 @@ function makeCmapTable(glyphs) {
     for (i = 0; i < glyphs.length; i += 1) {
         const glyph = glyphs.get(i);
         for (let j = 0; j < glyph.unicodes.length; j += 1) {
-            addSegment({ segments: allSegments }, glyph.unicodes[j], i);
+            addSegment(allSegments, glyph.unicodes[j], i);
         }
     }
     allSegments.sort(function(a, b) { return a.start - b.start; });
@@ -309,9 +309,7 @@ function makeCmapTable(glyphs) {
     // subtable (terminator only) for parsers that require its presence.
     const bmpSegmentCount = mergedSegments.filter(s => s.start <= 0xFFFF).length;
     const cmap4Overflows = bmpSegmentCount > CMAP4_MAX_SEGMENTS;
-    if (cmap4Overflows) {
-        isPlan0Only = false;
-    }
+    isPlan0Only &&= !cmap4Overflows;
 
     let cmapTable = [
         {name: 'version', type: 'USHORT', value: 0},
@@ -366,11 +364,10 @@ function makeCmapTable(glyphs) {
         const segment = t.segments[i];
 
         // CMAP 4: when the table would overflow, emit only the terminator segment
-        // so that Format 4 remains structurally valid.  All actual mappings are
+        // so that Format 4 remains structurally valid. All actual mappings are
         // carried by the Format 12 subtable in that case.
-        const includeInCmap4 = segment.end <= 65535 && segment.start <= 65535 && !cmap4Overflows ||
-            (cmap4Overflows && segment.end === 0xFFFF && segment.start === 0xFFFF);
-        if (includeInCmap4) {
+        if (segment.end <= 65535 && segment.start <= 65535 && !cmap4Overflows ||
+            (cmap4Overflows && segment.end === 0xFFFF && segment.start === 0xFFFF)) {
             endCounts.push({name: 'end_' + i, type: 'USHORT', value: segment.end});
             startCounts.push({name: 'start_' + i, type: 'USHORT', value: segment.start});
             idDeltas.push({name: 'idDelta_' + i, type: 'SHORT', value: segment.delta});

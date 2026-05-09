@@ -42,10 +42,10 @@ function computeCheckSum(bytes) {
         // Uint8Array (used for file output) truncates to 8 bits, so we must do the
         // same here to produce a checksum that matches the actual file bytes.
         sum = (sum + (
-            ((bytes[i]     || 0) & 0xFF) << 24 |
-            ((bytes[i + 1] || 0) & 0xFF) << 16 |
-            ((bytes[i + 2] || 0) & 0xFF) << 8  |
-            ((bytes[i + 3] || 0) & 0xFF)
+            ((bytes[i]     ?? 0) & 0xFF) << 24 |
+            ((bytes[i + 1] ?? 0) & 0xFF) << 16 |
+            ((bytes[i + 2] ?? 0) & 0xFF) << 8  |
+            ((bytes[i + 3] ?? 0) & 0xFF)
         ) >>> 0) >>> 0;
     }
     return sum;
