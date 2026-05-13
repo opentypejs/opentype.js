@@ -76,7 +76,25 @@ subtableParsers[2] = function parseLookup2() {
     }
 };
 
-subtableParsers[3] = function parseLookup3() { return { error: 'GPOS Lookup 3 not supported' }; };
+// https://learn.microsoft.com/en-us/typography/opentype/spec/gpos#lookup-type-3-cursive-attachment-positioning-subtable
+subtableParsers[3] = function parseLookup3() {
+    const start = this.offset + this.relativeOffset;
+    const posFormat = this.parseUShort();
+    check.argument(posFormat === 1, 'GPOS CursivePos subtable format must be 1');
+    const coverageOffset = this.parseOffset16();
+    const entryExitCount = this.parseUShort();
+    // Read all offsets first — they are relative to the start of this subtable
+    const offsets = [];
+    for (let i = 0; i < entryExitCount; i++) {
+        offsets.push({ entry: this.parseOffset16(), exit: this.parseOffset16() });
+    }
+    const coverage = coverageOffset ? new Parser(this.data, start + coverageOffset).parseCoverage() : null;
+    const entryExitRecords = offsets.map(r => ({
+        entryAnchor: r.entry ? new Parser(this.data, start + r.entry).parseAnchor() : null,
+        exitAnchor:  r.exit  ? new Parser(this.data, start + r.exit).parseAnchor()  : null,
+    }));
+    return { posFormat: 1, coverage, entryExitRecords };
+};
 
 // https://learn.microsoft.com/en-us/typography/opentype/spec/gpos#lookup-type-4-mark-to-base-attachment-positioning-subtable
 // MarkBasePosFormat1: positions combining marks relative to base glyphs via anchor points.
