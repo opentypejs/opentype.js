@@ -170,7 +170,7 @@ function applyLookupRecords(lookupRecords, glyphIndex, contextParams, options = 
             return [targetGlyph];
         }
     );
-    const allowedTypes = options.allowedTypes || ['11', '12'];
+    const allowedTypes = options.allowedTypes || ['11', '12', '21'];
     const substitutions = [];
     for (let i = 0; i < lookupRecords.length; i++) {
         const lookupRecord = lookupRecords[i];
@@ -237,7 +237,6 @@ function chainingSubstitutionFormat1(contextParams, subtable) {
         const lookaheadContext = prepareLookaheadContext(contextParams, rule.input.length);
         if (!matchSequence(lookaheadContext, rule.lookahead)) continue;
 
-        // All context matches! Apply the lookup records
         return applyLookupRecords.call(this, rule.lookupRecords, glyphIndex, contextParams);
     }
 
@@ -276,7 +275,6 @@ function chainingSubstitutionFormat2(contextParams, subtable) {
         const lookaheadContext = prepareLookaheadContext(contextParams, rule.input.length);
         if (!matchSequence(lookaheadContext, rule.lookahead, getLookaheadClass)) continue;
 
-        // All context matches! Apply the lookup records
         return applyLookupRecords.call(this, rule.lookupRecords, glyphIndex, contextParams);
     }
 
@@ -321,7 +319,7 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
     );
     if (!contextRulesMatch) return [];
     return applyLookupRecords.call(this, subtable.lookupRecords, null, contextParams, {
-        allowedTypes: ['12', '21'],
+        allowedTypes: ['11', '12', '21'],
         getTargets: () => {
             let targets = [];
             for (let n = 0; n < inputLookups.length; n++) {
@@ -740,84 +738,123 @@ FeatureQuery.prototype.lookupFeature = function (query) {
     const substitutions = [].concat(contextParams.context);
     for (let l = 0; l < lookups.length; l++) {
         const lookupTable = lookups[l];
-        const subtables = this.getLookupSubtables(lookupTable);
-        for (let s = 0; s < subtables.length; s++) {
-            let subtable = subtables[s];
-            let substType = this.getSubstitutionType(lookupTable, subtable);
-            let lookup;
-
-            if (substType === '71') {
-                // This is an extension subtable, so lookup the target subtable
-                substType = this.getSubstitutionType(subtable, subtable.extension);
-                lookup = this.getLookupMethod(subtable, subtable.extension);
-                subtable = subtable.extension;
-            } else {
-                lookup = this.getLookupMethod(lookupTable, subtable);
-            }
-
-            let substitution;
-            switch (substType) {
-                case '11':
-                    substitution = lookup(contextParams.current);
-                    if (substitution) {
-                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
-                            id: 11, tag: query.tag, substitution
-                        }));
-                    }
-                    break;
-                case '12':
-                    substitution = lookup(contextParams.current);
-                    if (substitution) {
-                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
-                            id: 12, tag: query.tag, substitution
-                        }));
-                    }
-                    break;
-                case '61':
-                case '62':
-                case '63':
-                    substitution = lookup(contextParams);
-                    if (Array.isArray(substitution) && substitution.length) {
-                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
-                            id: parseInt(substType), tag: query.tag, substitution
-                        }));
-                    }
-                    break;
-                case '41':
-                    substitution = lookup(contextParams);
-                    if (substitution) {
-                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
-                            id: 41, tag: query.tag, substitution
-                        }));
-                    }
-                    break;
-                case '21':
-                    substitution = lookup(contextParams.current);
-                    if (substitution) {
-                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
-                            id: 21, tag: query.tag, substitution
-                        }));
-                    }
-                    break;
-                case '51':
-                case '52':
-                case '53':
-                    substitution = lookup(contextParams);
-                    if (Array.isArray(substitution) && substitution.length) {
-                        substitutions.splice(currentIndex, 1, new SubstitutionAction({
-                            id: parseInt(substType),
-                            tag: query.tag,
-                            substitution
-                        }));
-                    }
-                    break;
-            }
-            contextParams = new ContextParams(substitutions, currentIndex);
-            if (Array.isArray(substitution) && !substitution.length) continue;
-            substitution = null;
-        }
+        contextParams = processLookupSubtablesAtIndex(
+            this,
+            lookupTable,
+            query.tag,
+            currentIndex,
+            substitutions,
+            contextParams
+        );
     }
     return substitutions.length ? substitutions : null;
+};
+
+/**
+ * Run every subtable of one GSUB lookup at a fixed glyph index.
+ * Mutates `substitutions`; refreshes context after each subtable.
+ *
+ * @param {FeatureQuery} featureQuery
+ * @param {object} lookupTable
+ * @param {string} tag
+ * @param {number} currentIndex
+ * @param {Array} substitutions
+ * @param {ContextParams} contextParams
+ * @returns {ContextParams}
+ */
+function processLookupSubtablesAtIndex(
+    featureQuery,
+    lookupTable,
+    tag,
+    currentIndex,
+    substitutions,
+    contextParams
+) {
+    const subtables = featureQuery.getLookupSubtables(lookupTable);
+    for (let s = 0; s < subtables.length; s++) {
+        let subtable = subtables[s];
+        let substType = featureQuery.getSubstitutionType(lookupTable, subtable);
+        let lookup;
+
+        if (substType === '71') {
+            // This is an extension subtable, so lookup the target subtable
+            substType = featureQuery.getSubstitutionType(subtable, subtable.extension);
+            lookup = featureQuery.getLookupMethod(subtable, subtable.extension);
+            subtable = subtable.extension;
+        } else {
+            lookup = featureQuery.getLookupMethod(lookupTable, subtable);
+        }
+
+        const id = parseInt(substType);
+        let substitution;
+        switch (substType) {
+            case '11':
+            case '12':
+            case '21':
+                substitution = lookup(contextParams.current);
+                if (substitution) {
+                    substitutions.splice(currentIndex, 1, new SubstitutionAction({
+                        id, tag, substitution
+                    }));
+                }
+                break;
+            case '41':
+                substitution = lookup(contextParams);
+                if (substitution) {
+                    substitutions.splice(currentIndex, 1, new SubstitutionAction({
+                        id, tag, substitution
+                    }));
+                }
+                break;
+            case '51':
+            case '52':
+            case '53':
+            case '61':
+            case '62':
+            case '63':
+                substitution = lookup(contextParams);
+                if (Array.isArray(substitution) && substitution.length) {
+                    substitutions.splice(currentIndex, 1, new SubstitutionAction({
+                        id, tag, substitution
+                    }));
+                }
+                break;
+        }
+
+        contextParams = new ContextParams(substitutions, currentIndex);
+        if (Array.isArray(substitution) && !substitution.length) continue;
+        substitution = null;
+    }
+    return contextParams;
+}
+
+
+/**
+ * Apply a single GSUB lookup table at the current position in contextParams.
+ *
+ * Used by features that must apply lookups one-at-a-time over the entire
+ * glyph string (OpenType spec ordering: each lookup runs over all positions
+ * before the next lookup starts). This lets later lookups see the substituted
+ * forms produced by earlier ones.
+ *
+ * @param {object} lookupTable - a parsed GSUB lookup table
+ * @param {string} tag - the feature tag (e.g. 'calt')
+ * @param {ContextParams} contextParams - context built from the full glyph string
+ * @returns {SubstitutionAction|null}
+ */
+FeatureQuery.prototype.applyLookupTableAtPosition = function(lookupTable, tag, contextParams) {
+    const currentIndex = contextParams.index;
+    const substitutions = [].concat(contextParams.context);
+    processLookupSubtablesAtIndex(
+        this,
+        lookupTable,
+        tag,
+        currentIndex,
+        substitutions,
+        contextParams
+    );
+    const result = substitutions[currentIndex];
+    return result instanceof SubstitutionAction ? result : null;
 };
 
 /**

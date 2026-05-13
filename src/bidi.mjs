@@ -13,6 +13,7 @@ import ccmpReplacementCheck from './features/ccmp/contextCheck/ccmpReplacement.m
 import ccmpReplacement from './features/ccmp/ccmpReplacementLigatures.mjs';
 import latinWordCheck from './features/latn/contextCheck/latinWord.mjs';
 import latinLigature from './features/latn/latinLigatures.mjs';
+import latinContextualAlternates from './features/latn/latinContextualAlternates.mjs';
 import thaiWordCheck from './features/thai/contextCheck/thaiWord.mjs';
 import thaiGlyphComposition from './features/thai/thaiGlyphComposition.mjs';
 import thaiLigatures from './features/thai/thaiLigatures.mjs';
@@ -202,6 +203,16 @@ function applyLatinLigatures() {
     }
 }
 
+function applyLatinContextualAlternates() {
+    if (!this.hasFeatureEnabled('latn', 'calt')) return;
+    checkGlyphIndexStatus.call(this);
+    const ranges = this.tokenizer.getContextRanges('latinWord');
+    for (let i = 0; i < ranges.length; i++) {
+        const range = ranges[i];
+        latinContextualAlternates.call(this, range);
+    }
+}
+
 function applyUnicodeVariationSequences() {
     const ranges = this.tokenizer.getContextRanges('unicodeVariationSequence');
     for(let i = 0; i < ranges.length; i++) {
@@ -248,6 +259,7 @@ Bidi.prototype.applyFeaturesToContexts = function () {
     }
     if (this.checkContextReady('latinWord')) {
         applyLatinLigatures.call(this);
+        applyLatinContextualAlternates.call(this);
     }
     if (this.checkContextReady('arabicSentence')) {
         reverseArabicSentences.call(this);
@@ -303,7 +315,11 @@ Bidi.prototype.getTextGlyphs = function (text) {
         const token = this.tokenizer.tokens[i];
         if (token.state.deleted) continue;
         const index = token.activeState.value;
-        indexes.push(Array.isArray(index) ? index[0] : index);
+        if (Array.isArray(index)) {
+            for (const g of index) indexes.push(g);
+        } else {
+            indexes.push(index);
+        }
     }
     return indexes;
 };
