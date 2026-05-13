@@ -206,7 +206,7 @@ Options is an optional _{GlyphRenderOptions}_ object containing:
 * `language`: language system used to determine which features to apply (default: `"dflt"`)
 * `kerning`: if true takes kerning information into account (default: `true`)
 * `features`: an object with [OpenType feature tags](https://docs.microsoft.com/en-us/typography/opentype/spec/featuretags) as keys, and a boolean value to enable each feature.
-Currently only ligature features `"liga"` and `"rlig"` are supported (default: `true`).
+Currently only ligature features `"liga"`, `"rlig"` and `"calt"`  are supported (default: `true`).
 * `hinting`: if true uses TrueType font hinting if available (default: `false`).
 * `colorFormat`: the format colors are converted to for rendering (default: `"hexa"`). Can be `"rgb"`/`"rgba"` for `rgb()`/`rgba()` output, `"hex"`/`"hexa"` for 6/8 digit hex colors, or `"hsl"`/`"hsla"` for `hsl()`/`hsla()` output. `"bgra"` outputs an object with r, g, b, a keys (r/g/b from 0-255, a from 0-1). `"raw"` outputs an integer as used in the CPAL table.
 * `fill`: font color, the color used to render each glyph (default: `"black"`)
