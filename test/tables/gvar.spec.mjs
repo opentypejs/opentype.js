@@ -9,6 +9,7 @@ describe('tables/gvar.mjs', function() {
         gvarTest2: loadSync('./test/fonts/TestGVARTwo.ttf'),
         gvarTest3: loadSync('./test/fonts/TestGVARThree.ttf'),
         gvarTest4: loadSync('./test/fonts/TestGVARFour.ttf'),
+        interVariable: loadSync('./test/fonts/InterVariable.ttf'),
         // Licensing for TestGVAREight and TestGVARNine is not clear,
         // so we can't include them
         // gvarTest8: loadSync('./test/fonts/TestGVAREight.ttf'),
@@ -152,5 +153,50 @@ describe('tables/gvar.mjs', function() {
             font.variation.set({slnt: -9});
             assert.equal(font.glyphs.get(6).toPathData({}, font), transformedPathData);
         });
+    });
+
+    it('correctly transforms glyphs with private point list flag and empty point list (all-points tuple)', function() {
+        // InterVariable glyphs D and J have gvar tuples where PRIVATE_POINT_NUMBERS flag is set
+        // but the packed point list is empty, which means "all glyph points" in the OpenType spec.
+        // before the fix, this was treated as "use shared points" which caused wrong deltas to be
+        // read and wrong glyph coordinates.
+        // reference coordinates verified with fontTools at wght=900.
+        const font = fonts.interVariable;
+
+        const testCases = [
+            {
+                name: 'D',
+                expectedPoints: [
+                    670, 0, 262, 0, 262, 344, 654, 344, 765, 344, 922, 414, 1004, 589, 1004, 744,
+                    1004, 900, 920, 1075, 759, 1146, 642, 1146, 256, 1146, 256, 1490, 664, 1490,
+                    894, 1490, 1228, 1311, 1410, 977, 1410, 744, 1410, 512, 1229, 178, 897, 0,
+                    500, 1490, 500, 0, 96, 0, 96, 1490
+                ],
+            },
+            {
+                name: 'J',
+                expectedPoints: [
+                    586, -20, 324, -20, 40, 232, 40, 466, 40, 559, 444, 559, 444, 458, 444, 376,
+                    518, 294, 586, 294, 654, 294, 726, 376, 726, 460, 726, 1490, 1124, 1490,
+                    1124, 468, 1124, 233, 845, -20
+                ],
+            },
+        ];
+
+        font.variation.set({ wght: 900 });
+
+        for (const { name, expectedPoints } of testCases) {
+            let glyphIndex = -1;
+            for (let i = 0; i < font.glyphs.length; i++) {
+                if (font.glyphs.get(i).name === name) { glyphIndex = i; break; }
+            }
+            const glyph = font.glyphs.get(glyphIndex);
+            const transformed = font.variation.getTransform(glyph).points;
+            assert.deepEqual(
+                transformed.map(p => [Math.round(p.x), Math.round(p.y)]).flat(),
+                expectedPoints,
+                `glyph ${name} at wght=900`
+            );
+        }
     });
 });
