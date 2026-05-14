@@ -897,6 +897,10 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
         if(header.flags.privatePointNumbers) {
             header.privatePoints = this.parsePackedPointNumbers();
         }
+        // remember if this tuple had the private points flag set.
+        // an empty list (length 0) means "all glyph points", which is
+        // different from no flag at all (= use shared points).
+        header.hasPrivatePoints = !!header.flags.privatePointNumbers;
         delete header.flags; // we don't need to expose this
         
         const deltasOffset = this.offset;
@@ -909,7 +913,9 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
             const parseDeltas = () => {
                 let pointsCount = 0;
                 if(flavor === 'gvar') {
-                    pointsCount = header.privatePoints.length || sharedPoints.length;
+                    // if the tuple had private points flag, use that list length (even if empty = all points).
+                    // if no flag, fall back to shared points length.
+                    pointsCount = header.hasPrivatePoints ? header.privatePoints.length : sharedPoints.length;
                     if(!pointsCount) {
                         const glyph = glyphs.get(glyphIndex);
                         // make sure the path is available

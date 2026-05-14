@@ -301,7 +301,10 @@ export class VariationProcessor {
                 continue;
             }
 
-            const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
+            // an empty privatePoints list means "all glyph points" (flag set, packed count = 0).
+            // we use hasPrivatePoints to know if the flag was set, so we don't confuse it
+            // with "no flag" where we should use sharedPoints instead.
+            const tuplePoints = header.hasPrivatePoints ? header.privatePoints : sharedPoints;
 
             if(flavor === 'gvar' && args.glyph && args.glyph.isComposite) {
                 /** @TODO: composite glyphs that are not explicitly targeted in the gvar table
