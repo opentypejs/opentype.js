@@ -290,6 +290,17 @@ function makeCmapTable(glyphs) {
         }
     }
 
+    // Create the CMAP table with some values that still need calculation missing.
+    let cmapTable = [
+        {name: 'version', type: 'USHORT', value: 0},
+        {name: 'numTables', type: 'USHORT', value: null},
+
+        // CMAP 4 header
+        {name: 'platformID', type: 'USHORT', value: 3},
+        {name: 'encodingID', type: 'USHORT', value: 1},
+        {name: 'offset', type: 'ULONG', value: null}
+    ];
+
     // Build and merge segments up front so we can measure the true segment count
     // before committing to a table layout.
     const allSegments = [];
@@ -307,19 +318,16 @@ function makeCmapTable(glyphs) {
     // represent the full mapping without silent truncation.  In that case we fall
     // back to emitting Format 12 for all glyphs, keeping a minimal Format 4
     // subtable (terminator only) for parsers that require its presence.
-    const bmpSegmentCount = mergedSegments.filter(s => s.start <= 0xFFFF).length;
+    let bmpSegmentCount = 0;
+    for (let i = 0; i < mergedSegments.length; i++)
+        if(mergedSegments[i].start <= 0xFFFF)
+            bmpSegmentCount++;
     const cmap4Overflows = bmpSegmentCount > CMAP4_MAX_SEGMENTS;
     isPlan0Only &&= !cmap4Overflows;
 
-    let cmapTable = [
-        {name: 'version', type: 'USHORT', value: 0},
-        {name: 'numTables', type: 'USHORT', value: isPlan0Only ? 1 : 2},
-
-        // CMAP 4 header
-        {name: 'platformID', type: 'USHORT', value: 3},
-        {name: 'encodingID', type: 'USHORT', value: 1},
-        {name: 'offset', type: 'ULONG', value: isPlan0Only ? 12 : (12 + 8)}
-    ];
+    // Fill in missing values in CMAP table
+    cmapTable[1].value = isPlan0Only ? 1 : 2;
+    cmapTable[4].value = isPlan0Only ? 12 : 20;
 
     if (!isPlan0Only)
         cmapTable.push(...[
