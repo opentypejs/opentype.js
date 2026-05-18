@@ -323,7 +323,7 @@ function makeCmapTable(glyphs) {
         if(mergedSegments[i].start <= 0xFFFF)
             bmpSegmentCount++;
     const cmap4Overflows = bmpSegmentCount > CMAP4_MAX_SEGMENTS;
-    isPlan0Only &&= !cmap4Overflows;
+    isPlan0Only = isPlan0Only && !cmap4Overflows;
 
     // Fill in missing values in CMAP table
     cmapTable[1].value = isPlan0Only ? 1 : 2;
