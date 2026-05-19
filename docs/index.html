@@ -1,304 +1,873 @@
 <!DOCTYPE html>
 <html lang="en">
-<title>opentype.js – JavaScript parser/writer for OpenType and TrueType fonts.</title>
-<meta name="description" content="A JavaScript library to manipulate the letterforms of text from the browser or node.js.">
-<meta charset="utf-8">
-<link rel="stylesheet" href="site.css">
-<script src="site.js"></script>
+<head>
+    <title>OpenType.js – JavaScript parser/writer for OpenType and TrueType fonts.</title>
+    <meta name="description" content="A JavaScript library to read, write, and manipulate OpenType fonts from the browser or node.js.">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="intro.css">
+    <link rel="icon" href="favicon.ico">
+</head>
+<body>
 
 <div class="header">
     <div class="container">
-        <h1><a href="./">opentype.js</a></h1>
+        <h1><a href="./">OpenType.js</a></h1>
         <nav>
             <a href="font-inspector.html">Font Inspector</a>
             <a href="glyph-inspector.html">Glyph Inspector</a>
         </nav>
         <nav class="right">
-            <a class="github" href="https://github.com/opentypejs/opentype.js">Fork me on GitHub</a>
+            <a href="https://github.com/opentypejs/opentype.js" target="_blank">GitHub</a>
         </nav>
     </div>
 </div>
 
-<form class="container" name="demo">
-
-    <div class="explain">
-        opentype.js is an OpenType and TrueType font parser and writer.
-        It allows you to access the <strong>letterforms</strong> of text from the browser or node.js.
+<!-- Hero: Undulating Wave of Letterforms -->
+<section class="hero">
+    <canvas id="wave-canvas"></canvas>
+    <div class="hero-tagline container">
+        <p>A JavaScript library to read, write, and manipulate OpenType fonts.</p>
     </div>
+</section>
 
-    <input id="file" type="file">
-    <output class="info" name="fontname"></output>
-    <canvas id="preview" width="940" height="300" class="text"></canvas>
-    <output id="message"></output>
-    <input class="text-input" value="Hello, World!" autofocus name="textField">
-    <label>Font Size<input type="range" min="6" max="500" step="2" value="150" name="fontsize" autocomplete="off" oninput="nextElementSibling.innerText=value"><output>150</output></label>
-    <label><input type="checkbox" name="drawPoints" checked="checked">Draw Points</label>
-    <label><input type="checkbox" name="drawMetrics">Draw Metrics</label>
-    <label><input type="checkbox" name="kerning" checked="checked">Kerning</label>
-    <label><input type="checkbox" name="ligatures" checked="checked">Ligatures</label>
-    <label class="disabled"><input name="hinting" type="checkbox" disabled="true">Hinting</label>
-
-    <div id="variation-options"></div>
-
-    <hr>
-
-    <div class="explain">
-        Once you have the shapes, you can modify them, for example by <strong>snapping</strong> them to a virtual grid:
+<!-- Section 1: Load & Measure -->
+<section class="section container" id="loading">
+    <h2>Load &amp; Measure</h2>
+    <p class="section-intro">Parse any OpenType or TrueType font and access glyph metrics, kerning, and layout features.</p>
+    <div class="demo-area">
+        <canvas id="measure-canvas" width="960" height="200"></canvas>
+        <input class="text-input" value="Hello, World!" id="measure-text">
+        <div class="demo-controls">
+            <label>Font Size <input type="range" min="24" max="300" step="2" value="120" id="measure-size"><output id="measure-size-val">120</output></label>
+            <label><input type="checkbox" id="draw-points" checked> Draw Points</label>
+            <label><input type="checkbox" id="draw-metrics" checked> Draw Metrics</label>
+        </div>
+        <div class="measure-output" id="measure-output"></div>
     </div>
+    <div class="code-block">
+        <pre><code><span class="cm">// Load and measure a font with opentype.js</span>
+<span class="kw">import</span> opentype <span class="kw">from</span> <span class="str">'opentype.js'</span>;
 
-    <canvas id="snap" width="940" height="300" class="text"></canvas>
-    <label>Strength <input type="range" min="0" max="100" value="80" name="snapStrength" oninput="nextElementSibling.innerText=value"/><output>80</output></label>
-    <label>Distance<input type="range" min="1" max="100" value="53" name="snapDistance" oninput="nextElementSibling.innerText=value"/><output>53</output></label>
-    <label>X<input type="range" min="-100" max="100" value="0" name="snapX" oninput="nextElementSibling.innerText=value"/><output>0</output></label>
-    <label>Y<input type="range" min="-100" max="100" value="0" name="snapY" oninput="nextElementSibling.innerText=value"/><output>0</output></label>
+<span class="kw">const</span> buffer = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'fonts/MyFont.ttf'</span>).<span class="fn">then</span>(r => r.<span class="fn">arrayBuffer</span>());
+<span class="kw">const</span> font = opentype.<span class="fn">parse</span>(buffer);
 
-    <hr>
+<span class="cm">// Draw text on a canvas</span>
+<span class="kw">const</span> ctx = canvas.<span class="fn">getContext</span>(<span class="str">'2d'</span>);
+font.<span class="fn">draw</span>(ctx, <span class="str">'Hello'</span>, <span class="num">0</span>, <span class="num">120</span>, <span class="num">72</span>);
 
-    <div class="explain">
-        <h1>Glyphs</h1>
-        opentype.js provides you with <strong>raw access</strong> to the glyphs so you can modify them as you please.
+<span class="cm">// Measure advance width</span>
+<span class="kw">const</span> width = font.<span class="fn">getAdvanceWidth</span>(<span class="str">'Hello'</span>, <span class="num">72</span>);
+
+<span class="cm">// Access individual glyphs</span>
+<span class="kw">const</span> glyph = font.<span class="fn">charToGlyph</span>(<span class="str">'A'</span>);
+console.<span class="fn">log</span>(glyph.name, glyph.advanceWidth);</code></pre>
+        <button class="copy-btn" aria-label="Copy code">
+            <svg class="icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="icon-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
     </div>
+</section>
 
-    <div id="glyphs">
+<!-- Section 2: Manipulate Outlines -->
+<section class="section container" id="manipulate">
+    <h2>Manipulate Outlines</h2>
+    <p class="section-intro">Access raw path commands and transform letterforms programmatically.</p>
+    <div class="demo-area">
+        <canvas id="snap-canvas" width="960" height="250"></canvas>
+        <input class="text-input" value="OpenType.js" id="snap-text">
+        <div class="demo-controls">
+            <label>Strength <input type="range" min="0" max="100" value="0" id="snap-strength"><output id="snap-strength-val">0</output></label>
+            <label>Grid Size <input type="range" min="1" max="100" value="20" id="snap-distance"><output id="snap-distance-val">20</output></label>
+        </div>
     </div>
-    <div class="message">Only the first 100 glyphs are shown.</div>
+    <div class="code-block">
+        <pre><code><span class="cm">// Manipulate glyph outlines with opentype.js</span>
+<span class="kw">import</span> opentype <span class="kw">from</span> <span class="str">'opentype.js'</span>;
 
-    <hr>
+<span class="kw">const</span> buffer = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'fonts/MyFont.ttf'</span>).<span class="fn">then</span>(r => r.<span class="fn">arrayBuffer</span>());
+<span class="kw">const</span> font = opentype.<span class="fn">parse</span>(buffer);
+<span class="kw">const</span> path = font.<span class="fn">getPath</span>(<span class="str">'Hello'</span>, <span class="num">0</span>, <span class="num">150</span>, <span class="num">72</span>);
 
-    <div class="explain">
-        <h1>Free Software</h1>
-        <p>opentype.js is available on <a href="https://github.com/opentypejs/opentype.js">GitHub</a> under the <a href="https://raw.github.com/opentypejs/opentype.js/master/LICENSE">MIT License</a>.</p>
-        <p>Copyright &copy; 2020 Frederik De Bleser.</p>
+<span class="cm">// Snap all points to a grid</span>
+<span class="kw">const</span> <span class="fn">snap</span> = (v, grid, strength) =>
+    v * (<span class="num">1</span> - strength) + strength * Math.<span class="fn">round</span>(v / grid) * grid;
+
+<span class="kw">for</span> (<span class="kw">const</span> cmd <span class="kw">of</span> path.commands) {
+    <span class="kw">if</span> (cmd.type !== <span class="str">'Z'</span>) {
+        cmd.x = <span class="fn">snap</span>(cmd.x, <span class="num">50</span>, <span class="num">0.8</span>);
+        cmd.y = <span class="fn">snap</span>(cmd.y, <span class="num">50</span>, <span class="num">0.8</span>);
+    }
+}
+
+path.<span class="fn">draw</span>(ctx); <span class="cm">// Draw the modified path</span></code></pre>
+        <button class="copy-btn" aria-label="Copy code">
+            <svg class="icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="icon-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
     </div>
+</section>
 
-    <hr>
-</form>
+<!-- Section 3: Create Fonts -->
+<section class="section container" id="create">
+    <h2>Create Fonts</h2>
+    <p class="section-intro">Build OpenType fonts from scratch in the browser or Node.js.</p>
+    <div class="demo-area">
+        <canvas id="create-canvas" width="960" height="300"></canvas>
+        <div style="margin-top: 0.75rem;">
+            <a id="download-font" class="btn" download="generated.otf">Download Generated Font</a>
+        </div>
+    </div>
+    <div class="code-block">
+        <pre><code id="create-code"></code></pre>
+        <button class="copy-btn" aria-label="Copy code">
+            <svg class="icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="icon-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+    </div>
+</section>
 
+<footer class="footer container">
+    <p>
+        OpenType.js is free software under the <a href="https://github.com/opentypejs/opentype.js/blob/master/LICENSE">MIT License</a>.
+        Copyright &copy; <script>document.write(new Date().getFullYear())</script> Frederik De Bleser.
+    </p>
+</footer>
 
 <script type="module">
 import * as opentype from "/dist/opentype.mjs";
 
-const form = document.forms.demo;
-form.oninput = renderText;
-let font = null;
+// ── Utilities ──────────────────────────────────────────────
 
-let options = {};
-
-function doSnap(path) {
-    const layers = path._layers;
-    if ( layers && layers.length ) {
-        for( let l = 0; l < layers.length; l++ ) {
-            doSnap(layers[l]);
-        }
-        return;
-    }
-    // Round a value to the nearest "step".
-    const snap = (v, distance, strength) => (v * (1.0 - strength)) + (strength * Math.round(v / distance) * distance);
-    const strength = +form.snapStrength.value / 100.0;
-    const snapDistance = +form.snapDistance.value;
-    const snapX = +form.snapX.value;
-    const snapY = +form.snapY.value;
-    for (let i = 0; i < path.commands.length; i++) {
-        var cmd = path.commands[i];
-        if (cmd.type !== 'Z') {
-            cmd.x = snap(cmd.x + snapX, snapDistance, strength) - snapX;
-            cmd.y = snap(cmd.y + snapY, snapDistance, strength) - snapY;
-        }
-        if (cmd.type === 'Q' || cmd.type === 'C') {
-            cmd.x1 = snap(cmd.x1 + snapX, snapDistance, strength) - snapX;
-            cmd.y1 = snap(cmd.y1 + snapY, snapDistance, strength) - snapY;
-        }
-        if (cmd.type === 'C') {
-            cmd.x2 = snap(cmd.x2 + snapX, snapDistance, strength) - snapX;
-            cmd.y2 = snap(cmd.y2 + snapY, snapDistance, strength) - snapY;
-        }
-    }
+function enableHighDPI(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    if (dpr === 1) return;
+    const w = canvas.width, h = canvas.height;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    canvas.getContext('2d').scale(dpr, dpr);
 }
 
-function renderText() {
-    const font = window.font;
-    if (!font) return;
-    const textToRender = conditionalSampleText(font, form.textField.value);
+// Resolved sRGB color for canvas (OKLCH not universally supported in canvas)
+const GREEN = '#3a9a5c';
+const TEXT_COLOR = '#1a1a2a';
 
-    var previewCtx = document.getElementById('preview').getContext('2d');
-    var options = Object.assign({}, font.defaultRenderOptions, getDrawOptions());
-    previewCtx.clearRect(0, 0, 940, 300);
-    const fontSize = +form.fontsize.value;
-    font.draw(previewCtx, textToRender, 0, 200, fontSize, options);
-    if (form.drawPoints.checked) {
-        font.drawPoints(previewCtx, textToRender, 0, 200, fontSize, options);
-    }
-    if (form.drawMetrics.checked) {
-        font.drawMetrics(previewCtx, textToRender, 0, 200, fontSize, options);
-    }
+// ── Load Font ──────────────────────────────────────────────
 
-    const snapPath = font.getPath(textToRender, 0, 200, fontSize, options);
-    doSnap(snapPath);
-    var snapCtx = document.getElementById('snap').getContext('2d');
-    snapCtx.clearRect(0, 0, 940, 300);
-    snapPath.draw(snapCtx);
-}
+const response = await fetch('fonts/IBMPlexSans.ttf');
+const buffer = await response.arrayBuffer();
+const font = opentype.parse(buffer);
 
-function getDrawOptions() {
-    const options = {
-        kerning: form.kerning.checked,
-        hinting: form.hinting.checked,
-        features: {
-            liga: form.ligatures.checked,
-            rlig: form.ligatures.checked
-        }
-    };
-    window.fontOptions = Object.assign({}, window.font.defaultRenderOptions, window.fontOptions, options);
-    return window.fontOptions;
-}
+// ── Seeded PRNG (mulberry32) ───────────────────────────────
 
-window.redraw = function(options = { withColors: true, withVariations: true }) {
-    if ( options.withVariations ) {
-        updateVariationOptions();
-    }
-};
-
-window.throttledRedraw = throttleDebounce((...args) => {
-    window.redraw(...args);
-}, 50);
-
-function enableHighDPICanvas(canvas) {
-    if (typeof canvas === 'string') {
-        canvas = document.getElementById(canvas);
-    }
-    var pixelRatio = window.devicePixelRatio || 1;
-    if (pixelRatio === 1) return;
-    var oldWidth = canvas.width;
-    var oldHeight = canvas.height;
-    canvas.width = oldWidth * pixelRatio;
-    canvas.height = oldHeight * pixelRatio;
-    canvas.style.width = oldWidth + 'px';
-    canvas.style.height = oldHeight + 'px';
-    canvas.getContext('2d').scale(pixelRatio, pixelRatio);
-}
-
-// Create a canvas and adds it to the document.
-// Returns the 2d drawing context.
-function createGlyphCanvas(glyph, size) {
-    var canvasId, html, glyphsDiv, wrap, canvas, ctx, pixelRatio;
-    canvasId = 'c' + glyph.index;
-    html = '<div class="wrapper" style="width:' + size + 'px"><canvas id="' + canvasId + '" width="' + size + '" height="' + size + '"></canvas><span>' + glyph.index + '</span></div>';
-    glyphsDiv = document.getElementById('glyphs');
-    wrap = document.createElement('div');
-    wrap.innerHTML = html;
-    glyphsDiv.appendChild(wrap);
-    canvas = document.getElementById(canvasId);
-    ctx = canvas.getContext('2d');
-    enableHighDPICanvas(canvas, ctx);
-    return ctx;
-}
-
-function showErrorMessage(message) {
-    var el = document.getElementById('message');
-    if (!message || message.trim().length === 0) {
-        el.style.display = 'none';
-    } else {
-        el.style.display = 'block';
-    }
-    el.innerHTML = message;
-}
-
-function onFontLoaded(font) {
-    if (window.font) {
-        window.font.onGlyphUpdated = null
-    }
-    window.font = font;
-    options = Object.assign({}, window.font.defaultRenderOptions);
-    window.fontOptions = options;
-    
-    updateVariationOptions();
-
-    // Show the first 100 glyphs.
-    const glyphsDiv = document.getElementById('glyphs');
-    glyphsDiv.innerHTML = '';
-
-    const amount = Math.min(100, font.glyphs.length);
-    const x = 50;
-    const y = 120;
-    const fontSize = 72;
-    const ctxs = new Array(amount);
-    for (let i = 0; i < amount; i++) {
-        const glyph = font.glyphs.get(i);
-        const ctx = createGlyphCanvas(glyph, 150);
-        ctxs[i] = ctx;
-        glyph.draw(ctx, x, y, fontSize, {}, font);
-        glyph.drawPoints(ctx, x, y, fontSize);
-        glyph.drawMetrics(ctx, x, y, fontSize);
-    }
-
-    const hintingCheckbox = form.hinting;
-    const hintingLabel = form.hinting.parentElement;
-    if (font.hinting) {
-        hintingCheckbox.disabled = false;
-        hintingLabel.className = '';
-    } else {
-        hintingCheckbox.disabled = true;
-        hintingCheckbox.checked = false;
-        hintingLabel.className = 'disabled';
-    }
-
-    renderText();
-
-    font.onGlyphUpdated = (glyphId) => {
-        if (0 <= glyphId && glyphId < amount) {
-            const glyph = font.glyphs.get(glyphId);
-            const ctx = ctxs[glyphId];
-            glyph.draw(ctx, x, y, fontSize, {}, font);
-            glyph.drawPoints(ctx, x, y, fontSize);
-            glyph.drawMetrics(ctx, x, y, fontSize);
-        }
-
-        const textToRender = form.textField.value;
-        const glyphIds = font.stringToGlyphIndexes(textToRender, getDrawOptions());
-        if (glyphIds.includes(glyphId)) {
-            renderText();
-        }
+function mulberry32(seed) {
+    return function() {
+        seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
     };
 }
-const loadScript = (src) => new Promise((onload) => document.head.append(Object.assign(document.createElement('script'), {src, onload})));
-async function display(file, name) {
-    form.fontname.innerText = name;
-    const isWoff2 = name.endsWith('.woff2');
-    if (isWoff2 && !window.Module) {
-        const wasmReady = new Promise((onRuntimeInitialized) => window.Module = { onRuntimeInitialized });
-        await loadScript('https://unpkg.com/wawoff2@2.0.1/build/decompress_binding.js').then(() => wasmReady);
+
+// ── Wave Hero ──────────────────────────────────────────────
+//
+// "OpenType.js" repeated in a grid with per-character weight waves
+// flowing diagonally. Rows shift with horizontal wave displacement.
+// Hovering over characters toggles between original and mutated glyphs.
+
+(function initWaveHero() {
+    const canvas = document.getElementById('wave-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const BASE_TEXT = 'OpenType.js ';
+    const WGHT_MIN = 100, WGHT_MAX = 700;
+    const SEED = 42;
+    const rng = mulberry32(SEED);
+
+    // Collect printable glyphs with their advance widths for width-matched mutations
+    const glyphData = [];
+    for (let i = 0; i < font.glyphs.length; i++) {
+        const g = font.glyphs.get(i);
+        if (g.unicode && g.unicode >= 33 && g.advanceWidth > 0) {
+            glyphData.push({ char: String.fromCodePoint(g.unicode), aw: g.advanceWidth });
+        }
     }
-    try {
-        const data = await file.arrayBuffer();
-        let error;
+
+    // Sort by advance width for efficient width-matched lookup
+    glyphData.sort((a, b) => a.aw - b.aw);
+    const glyphAWs = glyphData.map(g => g.aw);
+
+    // Find a random glyph with similar advance width (within 20% tolerance)
+    function widthMatchedGlyph(originalChar) {
+        const origGlyph = font.charToGlyph(originalChar);
+        const targetAW = origGlyph.advanceWidth;
+        const tolerance = targetAW * 0.2;
+
+        let lo = 0, hi = glyphAWs.length - 1;
+        while (lo < hi) {
+            const mid = (lo + hi) >> 1;
+            if (glyphAWs[mid] < targetAW - tolerance) lo = mid + 1;
+            else hi = mid;
+        }
+        const start = lo;
+        hi = glyphAWs.length - 1;
+        while (lo < hi) {
+            const mid = (lo + hi + 1) >> 1;
+            if (glyphAWs[mid] > targetAW + tolerance) hi = mid - 1;
+            else lo = mid;
+        }
+        const end = hi;
+
+        if (start > end) return glyphData[Math.floor(rng() * glyphData.length)].char;
+        return glyphData[start + Math.floor(rng() * (end - start + 1))].char;
+    }
+
+    const COLS = BASE_TEXT.length;
+    const REPEATS = 8;
+    const TOTAL_COLS = COLS * REPEATS;
+    const ROW_COUNT = 12;
+
+    // Two-state grid: each cell has an original char and a mutated alternative.
+    // `showMutated[row][col]` toggles which one is displayed.
+    const origGrid = [];
+    const altGrid = [];
+    const showMutated = [];
+    for (let r = 0; r < ROW_COUNT; r++) {
+        const origRow = [], altRow = [], stateRow = [];
+        for (let c = 0; c < TOTAL_COLS; c++) {
+            const ch = BASE_TEXT[c % COLS];
+            origRow.push(ch);
+            altRow.push(widthMatchedGlyph(ch));
+            stateRow.push(false);
+        }
+        origGrid.push(origRow);
+        altGrid.push(altRow);
+        showMutated.push(stateRow);
+    }
+
+    let width, height, dpr;
+    let mouseX = -1, mouseY = -1;
+    let charPositions = [];
+    // Track which cells the cursor has already toggled this hover pass
+    // Reset when mouse leaves and re-enters, or when a cell leaves the cursor radius
+    const recentlyToggled = new Set();
+
+    // Cached layout values — only recomputed on resize
+    let cachedFontSize = 0;
+    let cachedColAdvances = [];
+    let cachedWordWidth = 0;
+    let cachedRowHeight = 0;
+
+    function recomputeLayout() {
+        cachedRowHeight = height / ROW_COUNT;
+        cachedFontSize = cachedRowHeight * 0.88;
+        const midOpts = { variation: { wght: 400 } };
+        cachedColAdvances = [];
+        for (let c = 0; c < COLS; c++) {
+            cachedColAdvances.push(font.getAdvanceWidth(BASE_TEXT[c], cachedFontSize, midOpts));
+        }
+        cachedWordWidth = cachedColAdvances.reduce((a, b) => a + b, 0);
+    }
+
+    function resize() {
+        dpr = window.devicePixelRatio || 1;
+        canvas.style.width = '100%';
+        width = canvas.clientWidth;
+        height = Math.min(width * 0.65, 620);
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        recomputeLayout();
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+    });
+    canvas.addEventListener('mouseleave', () => {
+        mouseX = -1; mouseY = -1;
+        recentlyToggled.clear();
+    });
+
+    new ResizeObserver(resize).observe(canvas.parentElement);
+    resize();
+
+    function draw(time) {
+        const t = time / 1000;
+
+        const fontSize = cachedFontSize;
+        const colAdvances = cachedColAdvances;
+        const wordWidth = cachedWordWidth;
+        const rowHeight = cachedRowHeight;
+
+        // Toggle characters under the cursor (with debounce)
+        if (mouseX >= 0 && mouseY >= 0) {
+            const currentHover = new Set();
+            for (const pos of charPositions) {
+                const dx = mouseX - (pos.x + pos.w / 2);
+                const dy = mouseY - (pos.y + pos.h / 2);
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const key = pos.row * TOTAL_COLS + pos.col;
+                if (dist < pos.h * 0.45) {
+                    currentHover.add(key);
+                    if (!recentlyToggled.has(key)) {
+                        // New cell entered cursor — toggle it
+                        showMutated[pos.row][pos.col] = !showMutated[pos.row][pos.col];
+                        recentlyToggled.add(key);
+                    }
+                }
+            }
+            // Cells that left the cursor radius can be toggled again next time
+            for (const key of recentlyToggled) {
+                if (!currentHover.has(key)) recentlyToggled.delete(key);
+            }
+        }
+
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, width, height);
+
+        const newPositions = [];
+
+        for (let row = 0; row < ROW_COUNT; row++) {
+            const baseY = rowHeight * (row + 0.78);
+
+            // Horizontal wave displacement per row
+            const waveAmplitude = fontSize * 1.5;
+            const waveOffset = waveAmplitude * Math.sin(row * 0.5 + t * 0.4);
+
+            let x = waveOffset - wordWidth * 2;
+
+            for (let c = 0; c < TOTAL_COLS; c++) {
+                const ch = showMutated[row][c] ? altGrid[row][c] : origGrid[row][c];
+                const colIdx = c % COLS;
+                const colAdv = colAdvances[colIdx];
+
+                // Weight wave based on grid position (not screen position)
+                // This prevents jitter: weight is stable for a given cell
+                const gridX = c * (wordWidth / COLS);
+                const wavePhase = gridX * 0.003 + row * 0.6 + t * 1.0;
+                let wght = WGHT_MIN + (WGHT_MAX - WGHT_MIN) * (Math.sin(wavePhase) * 0.5 + 0.5);
+
+                // Mouse proximity: push weight toward bold near cursor
+                const drawX = x;
+                if (mouseX >= 0) {
+                    const charApproxY = baseY - fontSize * 0.35;
+                    const dx2 = (drawX + colAdv / 2) - mouseX;
+                    const dy2 = charApproxY - mouseY;
+                    const dist = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                    const influence = Math.max(0, 1 - dist / 160);
+                    wght = wght + (WGHT_MAX - wght) * influence * 0.85;
+                }
+
+                wght = Math.round(Math.min(WGHT_MAX, Math.max(WGHT_MIN, wght)));
+
+                if (drawX > width + fontSize) break;
+
+                if (drawX + colAdv > -fontSize) {
+                    const opts = { variation: { wght } };
+                    const path = font.getPath(ch, drawX, baseY, fontSize, opts);
+                    ctx.fillStyle = TEXT_COLOR;
+                    path.fill = TEXT_COLOR;
+                    path.draw(ctx);
+
+                    // Store position for hover hit-testing
+                    if (drawX >= -colAdv && drawX < width + colAdv) {
+                        newPositions.push({
+                            row, col: c,
+                            x: drawX, y: baseY - fontSize * 0.8,
+                            w: colAdv, h: fontSize
+                        });
+                    }
+                }
+
+                x += colAdv;
+            }
+        }
+
+        charPositions = newPositions;
+
+        ctx.restore();
+        requestAnimationFrame(draw);
+    }
+
+    requestAnimationFrame(draw);
+})();
+
+// ── Load & Measure Demo ────────────────────────────────────
+
+(function initMeasureDemo() {
+    const canvas = document.getElementById('measure-canvas');
+    const ctx = canvas.getContext('2d');
+    enableHighDPI(canvas);
+
+    const textInput = document.getElementById('measure-text');
+    const sizeInput = document.getElementById('measure-size');
+    const sizeVal = document.getElementById('measure-size-val');
+    const pointsCheck = document.getElementById('draw-points');
+    const metricsCheck = document.getElementById('draw-metrics');
+    const output = document.getElementById('measure-output');
+
+    function render() {
+        const text = textInput.value || 'Hello, World!';
+        const fontSize = +sizeInput.value;
+        sizeVal.textContent = fontSize;
+
+        ctx.clearRect(0, 0, 960, 200);
+        const x = 10, y = 150;
+        const fontScale = fontSize / font.unitsPerEm;
+
+        // Lock to an explicit variation so the wave hero's mutations on the
+        // shared glyph objects don't bleed through into our layout. See:
+        // experiments/font-variation-pure.md for the underlying library bug.
+        const opts = Object.assign({}, font.defaultRenderOptions, {
+            variation: Object.assign({}, font.defaultRenderOptions.variation)
+        });
+
+        // Single layout pass: collect glyph positions + paths
+        const glyphs = [];
+        font.forEachGlyph(text, x, y, fontSize, opts, (glyph, gX, gY, gFontSize) => {
+            // Force transform to our variation BEFORE reading advanceWidth —
+            // otherwise forEachGlyph (and we) would read whatever the wave hero
+            // last wrote via its own getTransform calls.
+            if (font.variation) font.variation.getTransform(glyph, opts.variation);
+            const scale = 1 / font.unitsPerEm * gFontSize;
+            glyphs.push({
+                glyph, x: gX, y: gY, fontSize: gFontSize,
+                advance: glyph.advanceWidth * scale
+            });
+        });
+        const advanceWidth = glyphs.reduce((sum, g) => g.x + g.advance, x) - x;
+
+        if (metricsCheck.checked) {
+            const asc = y - font.ascender * fontScale;
+            const desc = y - font.descender * fontScale;
+            const totalAdv = glyphs.length ? glyphs[glyphs.length - 1].x + glyphs[glyphs.length - 1].advance : x;
+
+            // Per-glyph advance width boxes
+            for (let i = 0; i < glyphs.length; i++) {
+                const g = glyphs[i];
+                ctx.fillStyle = i % 2 === 0
+                    ? 'oklch(0.62 0.17 155 / 0.08)'
+                    : 'oklch(0.62 0.17 155 / 0.16)';
+                ctx.fillRect(g.x, asc, g.advance, desc - asc);
+                ctx.strokeStyle = 'oklch(0.62 0.17 155 / 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(g.x + g.advance, asc);
+                ctx.lineTo(g.x + g.advance, desc);
+                ctx.stroke();
+            }
+
+            // Baseline — muted
+            ctx.strokeStyle = 'oklch(0.75 0.01 260 / 0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(totalAdv, y); ctx.stroke();
+
+            // Ascender / descender — very muted dashed
+            ctx.strokeStyle = 'oklch(0.75 0.01 260 / 0.25)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(x, asc); ctx.lineTo(totalAdv, asc); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x, desc); ctx.lineTo(totalAdv, desc); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // Draw text and points using the same layout positions
+        for (const g of glyphs) {
+            const path = g.glyph.getPath(g.x, g.y, g.fontSize, opts, font);
+            path.fill = TEXT_COLOR;
+            path.draw(ctx);
+        }
+
+        if (pointsCheck.checked) {
+            for (const g of glyphs) {
+                g.glyph.drawPoints(ctx, g.x, g.y, g.fontSize, opts, font);
+            }
+        }
+
+        const totalAdv = glyphs.length ? glyphs[glyphs.length - 1].x + glyphs[glyphs.length - 1].advance - x : 0;
+        const bbox = font.getPath(text, x, y, fontSize, opts).getBoundingBox();
+        output.textContent =
+            `Advance width: ${totalAdv.toFixed(1)}px` +
+            `  ·  Bounding box: ${(bbox.x2 - bbox.x1).toFixed(1)} × ${(bbox.y2 - bbox.y1).toFixed(1)}px`;
+    }
+
+    textInput.addEventListener('input', render);
+    sizeInput.addEventListener('input', render);
+    pointsCheck.addEventListener('change', render);
+    metricsCheck.addEventListener('change', render);
+    render();
+})();
+
+// ── Manipulate Outlines Demo ───────────────────────────────
+
+(function initSnapDemo() {
+    const canvas = document.getElementById('snap-canvas');
+    const ctx = canvas.getContext('2d');
+    enableHighDPI(canvas);
+
+    const textInput = document.getElementById('snap-text');
+    const strengthInput = document.getElementById('snap-strength');
+    const strengthVal = document.getElementById('snap-strength-val');
+    const distanceInput = document.getElementById('snap-distance');
+    const distanceVal = document.getElementById('snap-distance-val');
+
+    function doSnap(path) {
+        const layers = path._layers;
+        if (layers && layers.length) {
+            for (let l = 0; l < layers.length; l++) doSnap(layers[l]);
+            return;
+        }
+        const snap = (v, distance, strength) =>
+            v * (1 - strength) + strength * Math.round(v / distance) * distance;
+        const strength = +strengthInput.value / 100;
+        const distance = +distanceInput.value;
+        for (const cmd of path.commands) {
+            if (cmd.type !== 'Z') {
+                cmd.x = snap(cmd.x, distance, strength);
+                cmd.y = snap(cmd.y, distance, strength);
+            }
+            if (cmd.type === 'Q' || cmd.type === 'C') {
+                cmd.x1 = snap(cmd.x1, distance, strength);
+                cmd.y1 = snap(cmd.y1, distance, strength);
+            }
+            if (cmd.type === 'C') {
+                cmd.x2 = snap(cmd.x2, distance, strength);
+                cmd.y2 = snap(cmd.y2, distance, strength);
+            }
+        }
+    }
+
+    function render() {
+        const text = textInput.value || 'OpenType.js';
+        strengthVal.textContent = strengthInput.value;
+        distanceVal.textContent = distanceInput.value;
+
+        ctx.clearRect(0, 0, 960, 250);
+        const path = font.getPath(text, 10, 180, 140);
+        doSnap(path);
+        path.draw(ctx);
+    }
+
+    textInput.addEventListener('input', render);
+    strengthInput.addEventListener('input', render);
+    distanceInput.addEventListener('input', render);
+    render();
+})();
+
+// ── Create Font Demo ───────────────────────────────────────
+
+(function initCreateDemo() {
+    const canvas = document.getElementById('create-canvas');
+    const ctx = canvas.getContext('2d');
+    enableHighDPI(canvas);
+
+    const codeEl = document.getElementById('create-code');
+    const downloadLink = document.getElementById('download-font');
+
+    // All editable points for both glyphs (font units, 1000 unitsPerEm)
+    // A glyph: points[0..10], B glyph: bPoints[0..N]
+    const aPoints = [
+        // Outer: A shape
+        { x: 0, y: 0 }, { x: 200, y: 700 }, { x: 400, y: 700 }, { x: 600, y: 0 },
+        { x: 480, y: 0 }, { x: 410, y: 230 }, { x: 190, y: 230 }, { x: 120, y: 0 },
+        // Inner: counter (triangle hole)
+        { x: 230, y: 330 }, { x: 370, y: 330 }, { x: 300, y: 580 },
+    ];
+
+    const bPoints = [
+        // Outer contour
+        { x: 80, y: 0 }, { x: 80, y: 700 }, { x: 380, y: 700 },
+        { x: 520, y: 700 }, { x: 520, y: 550 },  // Q control + end (top bump outer)
+        { x: 520, y: 400 }, { x: 380, y: 380 },   // Q control + end
+        { x: 400, y: 380 },
+        { x: 560, y: 380 }, { x: 560, y: 200 },   // Q control + end (bottom bump outer)
+        { x: 560, y: 0 }, { x: 400, y: 0 },       // Q control + end
+        // Upper counter
+        { x: 200, y: 400 }, { x: 360, y: 400 },
+        { x: 430, y: 400 }, { x: 430, y: 540 },   // Q
+        { x: 430, y: 620 }, { x: 360, y: 620 },   // Q
+        { x: 200, y: 620 },
+        // Lower counter
+        { x: 200, y: 80 }, { x: 380, y: 80 },
+        { x: 450, y: 80 }, { x: 450, y: 200 },    // Q
+        { x: 450, y: 300 }, { x: 380, y: 300 },   // Q
+        { x: 200, y: 300 },
+    ];
+
+    const A_ADV = 600, B_ADV = 620;
+    const SCALE = 0.28;
+    const GAP = 20;
+    const A_ORIGIN_X = 40;
+    const B_ORIGIN_X = A_ORIGIN_X + A_ADV * SCALE + GAP;
+    const B2_ORIGIN_X = B_ORIGIN_X + B_ADV * SCALE + GAP;
+    const A2_ORIGIN_X = B2_ORIGIN_X + B_ADV * SCALE + GAP;
+    const ORIGIN_Y = 250;
+    const POINT_RADIUS = 3;
+    let dragGlyph = null; // 'a' or 'b'
+    let dragIndex = -1;
+    let hoverGlyph = null;
+    let hoverIndex = -1;
+
+    function toCanvas(p, originX) {
+        return { x: originX + p.x * SCALE, y: ORIGIN_Y - p.y * SCALE };
+    }
+    function toFont(cx, cy, originX) {
+        return { x: Math.round((cx - originX) / SCALE), y: Math.round((ORIGIN_Y - cy) / SCALE) };
+    }
+
+    function buildAPath() {
+        const p = new opentype.Path();
+        p.moveTo(aPoints[0].x, aPoints[0].y);
+        for (let i = 1; i <= 7; i++) p.lineTo(aPoints[i].x, aPoints[i].y);
+        p.close();
+        p.moveTo(aPoints[8].x, aPoints[8].y);
+        p.lineTo(aPoints[9].x, aPoints[9].y);
+        p.lineTo(aPoints[10].x, aPoints[10].y);
+        p.close();
+        return p;
+    }
+
+    function buildBPath() {
+        const b = bPoints;
+        const p = new opentype.Path();
+        // Outer
+        p.moveTo(b[0].x, b[0].y);
+        p.lineTo(b[1].x, b[1].y);
+        p.lineTo(b[2].x, b[2].y);
+        p.quadraticCurveTo(b[3].x, b[3].y, b[4].x, b[4].y);
+        p.quadraticCurveTo(b[5].x, b[5].y, b[6].x, b[6].y);
+        p.lineTo(b[7].x, b[7].y);
+        p.quadraticCurveTo(b[8].x, b[8].y, b[9].x, b[9].y);
+        p.quadraticCurveTo(b[10].x, b[10].y, b[11].x, b[11].y);
+        p.close();
+        // Upper counter
+        p.moveTo(b[12].x, b[12].y);
+        p.lineTo(b[13].x, b[13].y);
+        p.quadraticCurveTo(b[14].x, b[14].y, b[15].x, b[15].y);
+        p.quadraticCurveTo(b[16].x, b[16].y, b[17].x, b[17].y);
+        p.lineTo(b[18].x, b[18].y);
+        p.close();
+        // Lower counter
+        p.moveTo(b[19].x, b[19].y);
+        p.lineTo(b[20].x, b[20].y);
+        p.quadraticCurveTo(b[21].x, b[21].y, b[22].x, b[22].y);
+        p.quadraticCurveTo(b[23].x, b[23].y, b[24].x, b[24].y);
+        p.lineTo(b[25].x, b[25].y);
+        p.close();
+        return p;
+    }
+
+    function buildFont() {
+        const notdefPath = new opentype.Path();
+        notdefPath.moveTo(100, 0); notdefPath.lineTo(100, 700);
+        notdefPath.lineTo(600, 700); notdefPath.lineTo(600, 0); notdefPath.close();
+        notdefPath.moveTo(200, 100); notdefPath.lineTo(500, 100);
+        notdefPath.lineTo(500, 600); notdefPath.lineTo(200, 600); notdefPath.close();
+
+        return new opentype.Font({
+            familyName: 'MyFont', styleName: 'Regular',
+            unitsPerEm: 1000, ascender: 800, descender: -200,
+            glyphs: [
+                new opentype.Glyph({ name: '.notdef', unicode: 0, advanceWidth: 650, path: notdefPath }),
+                new opentype.Glyph({ name: 'space', unicode: 32, advanceWidth: 300, path: new opentype.Path() }),
+                new opentype.Glyph({ name: 'A', unicode: 65, advanceWidth: A_ADV, path: buildAPath() }),
+                new opentype.Glyph({ name: 'B', unicode: 66, advanceWidth: B_ADV, path: buildBPath() }),
+            ]
+        });
+    }
+
+    function updateCode() {
+        const kw = (s) => `<span class="kw">${s}</span>`;
+        const str = (s) => `<span class="str">${s}</span>`;
+        const cm = (s) => `<span class="cm">${s}</span>`;
+        const fn = (s) => `<span class="fn">${s}</span>`;
+        const num = (n) => `<span class="num">${n}</span>`;
+
+        const pathCall = (name, method, args) =>
+            `${name}.${fn(method)}(${args.map(num).join(', ')});`;
+
+        const lines = [
+            cm('// Create a font from scratch with opentype.js'),
+            `${kw('import')} opentype ${kw('from')} ${str("'opentype.js'")};`,
+            '',
+            cm('// Define the "A" glyph path'),
+            `${kw('const')} aPath = ${kw('new')} opentype.${fn('Path')}();`,
+            pathCall('aPath', 'moveTo', [aPoints[0].x, aPoints[0].y]),
+        ];
+        for (let i = 1; i <= 7; i++) {
+            lines.push(pathCall('aPath', 'lineTo', [aPoints[i].x, aPoints[i].y]));
+        }
+        lines.push(`aPath.${fn('close')}();`);
+        lines.push(pathCall('aPath', 'moveTo', [aPoints[8].x, aPoints[8].y]));
+        lines.push(pathCall('aPath', 'lineTo', [aPoints[9].x, aPoints[9].y]));
+        lines.push(pathCall('aPath', 'lineTo', [aPoints[10].x, aPoints[10].y]));
+        lines.push(`aPath.${fn('close')}();`);
+        lines.push('');
+        lines.push(cm('// Define the "B" glyph path (with curves)'));
+        lines.push(`${kw('const')} bPath = ${kw('new')} opentype.${fn('Path')}();`);
+        lines.push(cm('// ... define B glyph here as well'));
+        lines.push('');
+        lines.push(`${kw('const')} font = ${kw('new')} opentype.${fn('Font')}({`);
+        lines.push(`    familyName: ${str("'MyFont'")}, styleName: ${str("'Regular'")},`);
+        lines.push(`    unitsPerEm: ${num(1000)}, ascender: ${num(800)}, descender: ${num(-200)},`);
+        lines.push(`    glyphs: [notdefGlyph,`);
+        lines.push(`        ${kw('new')} opentype.${fn('Glyph')}({ name: ${str("'A'")}, unicode: ${num(65)}, advanceWidth: ${num(600)}, path: aPath }),`);
+        lines.push(`        ${kw('new')} opentype.${fn('Glyph')}({ name: ${str("'B'")}, unicode: ${num(66)}, advanceWidth: ${num(620)}, path: bPath }),`);
+        lines.push(`    ]`);
+        lines.push(`});`);
+        lines.push('');
+        lines.push(`font.${fn('download')}(); ${cm('// triggers browser download')}`);
+        codeEl.innerHTML = lines.join('\n');
+    }
+
+    function drawGlyph(path, originX) {
+        const drawPath = new opentype.Path();
+        for (const cmd of path.commands) {
+            const tx = (v) => originX + v * SCALE;
+            const ty = (v) => ORIGIN_Y - v * SCALE;
+            if (cmd.type === 'M') drawPath.moveTo(tx(cmd.x), ty(cmd.y));
+            else if (cmd.type === 'L') drawPath.lineTo(tx(cmd.x), ty(cmd.y));
+            else if (cmd.type === 'Q') drawPath.quadraticCurveTo(tx(cmd.x1), ty(cmd.y1), tx(cmd.x), ty(cmd.y));
+            else if (cmd.type === 'Z') drawPath.close();
+        }
+        ctx.fillStyle = 'oklch(0.18 0.02 260 / 0.85)';
+        drawPath.fill = 'oklch(0.18 0.02 260 / 0.85)';
+        drawPath.draw(ctx);
+    }
+
+    function drawPoints(pts, originX, glyphId) {
+        for (let i = 0; i < pts.length; i++) {
+            const cp = toCanvas(pts[i], originX);
+            const isHover = hoverGlyph === glyphId && i === hoverIndex;
+            const isDrag = dragGlyph === glyphId && i === dragIndex;
+            ctx.beginPath();
+            ctx.arc(cp.x, cp.y, isDrag ? POINT_RADIUS + 1 : POINT_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = (isDrag || isHover) ? GREEN : 'oklch(0.55 0.15 260)';
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+    }
+
+    function drawMetricLines(originX, advWidth) {
+        const rightX = originX + advWidth * SCALE;
+        const ascY = ORIGIN_Y - 700 * SCALE;
+        ctx.strokeStyle = 'oklch(0.75 0.01 260 / 0.3)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(originX, ORIGIN_Y); ctx.lineTo(rightX, ORIGIN_Y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(originX, ascY); ctx.lineTo(rightX, ascY); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = 'oklch(0.62 0.17 155 / 0.4)';
+        ctx.beginPath(); ctx.moveTo(rightX, ascY); ctx.lineTo(rightX, ORIGIN_Y); ctx.stroke();
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, 960, 300);
+
+        const aPath = buildAPath();
+        const bPath = buildBPath();
+
+        // A (editable)
+        drawMetricLines(A_ORIGIN_X, A_ADV);
+        drawGlyph(aPath, A_ORIGIN_X);
+        drawPoints(aPoints, A_ORIGIN_X, 'a');
+
+        // B (editable)
+        drawMetricLines(B_ORIGIN_X, B_ADV);
+        drawGlyph(bPath, B_ORIGIN_X);
+        drawPoints(bPoints, B_ORIGIN_X, 'b');
+
+        // B (instance, no points)
+        drawGlyph(bPath, B2_ORIGIN_X);
+
+        // A (instance, no points)
+        drawGlyph(aPath, A2_ORIGIN_X);
+
+        const createdFont = buildFont();
+        const blob = new Blob([createdFont.toArrayBuffer()], { type: 'font/otf' });
+        downloadLink.href = URL.createObjectURL(blob);
+        updateCode();
+    }
+
+    // Mouse interaction
+    function getMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
+    function findPoint(mx, my) {
+        const hitR = POINT_RADIUS + 4;
+        // Check A points
+        for (let i = 0; i < aPoints.length; i++) {
+            const cp = toCanvas(aPoints[i], A_ORIGIN_X);
+            if ((mx - cp.x) ** 2 + (my - cp.y) ** 2 < hitR * hitR) return { glyph: 'a', index: i };
+        }
+        // Check B points
+        for (let i = 0; i < bPoints.length; i++) {
+            const cp = toCanvas(bPoints[i], B_ORIGIN_X);
+            if ((mx - cp.x) ** 2 + (my - cp.y) ** 2 < hitR * hitR) return { glyph: 'b', index: i };
+        }
+        return null;
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        const { x, y } = getMousePos(e);
+        const hit = findPoint(x, y);
+        if (hit) { dragGlyph = hit.glyph; dragIndex = hit.index; }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        const { x, y } = getMousePos(e);
+        if (dragGlyph) {
+            const originX = dragGlyph === 'a' ? A_ORIGIN_X : B_ORIGIN_X;
+            const pts = dragGlyph === 'a' ? aPoints : bPoints;
+            const fp = toFont(x, y, originX);
+            pts[dragIndex].x = fp.x;
+            pts[dragIndex].y = fp.y;
+            render();
+        } else {
+            const hit = findPoint(x, y);
+            hoverGlyph = hit ? hit.glyph : null;
+            hoverIndex = hit ? hit.index : -1;
+            render();
+        }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        if (dragGlyph) { dragGlyph = null; dragIndex = -1; render(); }
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        dragGlyph = null; dragIndex = -1; hoverGlyph = null; hoverIndex = -1;
+        render();
+    });
+
+    render();
+})();
+
+// ── Code Download Buttons ──────────────────────────────────
+
+document.querySelectorAll('.code-block .copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const block = btn.closest('.code-block');
+        const code = block.querySelector('code').textContent;
         try {
-            const base64String = arrayBufferToBase64(data);
-            sessionStorage.setItem('fontData', base64String);
-        } catch (err) {
-            showErrorMessage('Error loading font from localStorage');
-            error = err;
-        }     
+            await navigator.clipboard.writeText(code);
+            btn.classList.add('copied');
+            setTimeout(() => btn.classList.remove('copied'), 1500);
+        } catch (e) {
+            console.error('Copy failed:', e);
+        }
+    });
+});
 
-        onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data, { lowMemory: true }));
-        if ( !error ) showErrorMessage('');
-    } catch (err) {
-        showErrorMessage(err.toString());
-    }
-}
-
-form.file.onchange = function(e) {
-    display(e.target.files[0], e.target.files[0].name);
-};
-
-enableHighDPICanvas('preview');
-enableHighDPICanvas('snap');
-
-const fontData = sessionStorage.getItem('fontData');
-if ( fontData ) {
-    const arrayBuffer = base64ToArrayBuffer(fontData);
-    onFontLoaded(opentype.parse(arrayBuffer));
-} else {
-    const fontFileName = 'fonts/FiraSansMedium.woff';
-    display(await fetch(fontFileName), fontFileName);
-}
 </script>
+</body>
+</html>

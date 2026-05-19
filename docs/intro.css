@@ -1,0 +1,288 @@
+/* ============================================================
+   opentype.js — Intro Page Styles
+   ============================================================ */
+
+/* --- Custom Properties --- */
+:root {
+    --green: oklch(0.62 0.17 155);
+    --green-hover: oklch(0.55 0.17 155);
+    --bg: oklch(0.97 0.005 90);
+    --text: oklch(0.18 0.02 260);
+    --text-secondary: oklch(0.40 0.02 260);
+    --code-bg: oklch(0.20 0.02 260);
+    --code-text: oklch(0.90 0.005 90);
+    --surface: oklch(0.94 0.008 90);
+    --border: oklch(0.85 0.01 90);
+    --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+    --container: 960px;
+    --section-gap: clamp(3rem, 8vw, 6rem);
+    --radius: 6px;
+}
+
+/* --- Font Face --- */
+@font-face {
+    font-family: 'IBM Plex Sans';
+    src: url('fonts/IBMPlexSans.woff2') format('woff2');
+    font-display: swap;
+}
+
+/* --- Reset & Base --- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+    background: var(--green);
+}
+
+body {
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg);
+    margin: 0;
+    padding: 0;
+}
+
+a { color: var(--green); text-decoration: none; }
+a:hover { color: var(--green-hover); }
+
+/* --- Layout --- */
+.container {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+/* --- Header --- */
+.header {
+    background: var(--green);
+    color: var(--bg);
+    height: 48px;
+}
+
+.header .container {
+    max-width: 100%;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    height: 48px;
+    gap: 0;
+}
+
+.header h1 {
+    margin: 0 1.5rem 0 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.header h1 a { color: var(--bg); }
+
+.header nav {
+    display: flex;
+    align-items: center;
+}
+
+.header nav a {
+    padding: 0 0.5rem;
+    margin-right: 0.5rem;
+    color: var(--bg);
+    opacity: 0.85;
+    font-size: 14px;
+}
+.header nav a:hover { opacity: 1; color: var(--bg); }
+
+.header nav.right {
+    margin-left: auto;
+}
+
+.header nav.right a {
+    margin: 0;
+    padding: 0 1rem;
+}
+
+/* --- Hero --- */
+.hero {
+    background: var(--green);
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.hero-tagline {
+    position: relative;
+    z-index: 1;
+    padding: 1.5rem 0 2rem;
+}
+
+.hero-tagline p {
+    font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+    color: var(--text);
+    margin: 0;
+    max-width: 36ch;
+    line-height: 1.4;
+}
+
+/* --- Sections --- */
+.section {
+    padding: var(--section-gap) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.section:last-of-type { border-bottom: none; }
+
+.section h2 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    margin: 0 0 0.5rem;
+    font-weight: 700;
+}
+
+.section-intro {
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem;
+    max-width: 60ch;
+}
+
+/* --- Demo Areas --- */
+.demo-area {
+    margin-bottom: 1.5rem;
+}
+
+.demo-area canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: white;
+    margin-bottom: 0.75rem;
+}
+
+.text-input {
+    font-family: var(--font-body);
+    font-size: 1.25rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: white;
+    color: var(--text);
+    outline: none;
+}
+.text-input:focus { border-color: var(--green); }
+
+.demo-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    margin-top: 0.75rem;
+}
+
+.demo-controls label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.demo-controls input[type="range"] {
+    accent-color: var(--green);
+    width: 140px;
+}
+
+.demo-controls output {
+    min-width: 3ch;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.measure-output {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+/* --- Code Blocks --- */
+.code-block {
+    position: relative;
+    background: var(--code-bg);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.code-block pre {
+    margin: 0;
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--code-text);
+    -webkit-text-size-adjust: none;
+}
+
+.code-block .copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: oklch(0.30 0.02 260);
+    color: var(--code-text);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.code-block .copy-btn:hover { opacity: 1; }
+.code-block .copy-btn .icon-check { display: none; }
+.code-block .copy-btn.copied {
+    opacity: 1;
+    color: var(--green);
+}
+.code-block .copy-btn.copied .icon-copy { display: none; }
+.code-block .copy-btn.copied .icon-check { display: block; }
+
+/* Syntax highlighting (minimal) */
+.code-block .kw { color: oklch(0.75 0.15 300); }  /* keywords */
+.code-block .str { color: oklch(0.75 0.15 155); }  /* strings */
+.code-block .cm { color: oklch(0.55 0.02 260); }   /* comments */
+.code-block .fn { color: oklch(0.80 0.12 80); }    /* function names */
+.code-block .num { color: oklch(0.75 0.12 55); }   /* numbers */
+
+/* --- Buttons --- */
+.btn {
+    display: inline-block;
+    background: var(--green);
+    color: var(--bg);
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn:hover { background: var(--green-hover); color: var(--bg); }
+
+/* --- Footer --- */
+.footer {
+    padding: 2rem 0 3rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.footer a { color: var(--text-secondary); text-decoration: underline; }

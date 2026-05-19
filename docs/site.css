@@ -1,68 +1,86 @@
+:root {
+    --green: oklch(0.62 0.17 155);
+    --green-hover: oklch(0.55 0.17 155);
+    --bg: oklch(0.97 0.005 90);
+    --text: oklch(0.18 0.02 260);
+    --text-secondary: oklch(0.40 0.02 260);
+    --border: oklch(0.85 0.01 90);
+    --surface: oklch(0.94 0.008 90);
+}
+
+@font-face {
+    font-family: 'IBM Plex Sans';
+    src: url('fonts/IBMPlexSans.woff2') format('woff2');
+    font-display: swap;
+}
+
 body {
-    font: 13px Helvetica, arial, freesans, sans-serif;
-    line-height: 1.4;
+    font: 14px 'IBM Plex Sans', system-ui, sans-serif;
+    line-height: 1.5;
     min-width: 1020px;
-    color: #333;
-    background-color: #fff;
+    color: var(--text);
+    background-color: var(--bg);
     margin: 0 0 50px 0;
     padding: 0;
 }
 
 .header {
-    background: #eee;
-    color: #555;
-    border-bottom: 1px solid #ddd;
-    height: 40px;
+    background: var(--green);
+    color: var(--bg);
+    height: 48px;
     margin-bottom: 20px;
-    line-height: 40px;
+}
+
+.header .container {
+    display: flex;
+    align-items: center;
+    height: 48px;
+    width: auto;
+    max-width: none;
+    padding: 0 1.5rem;
 }
 
 .header h1 {
-    line-height: 40px;
     display: inline-block;
-    margin: 0 20px 0 0;
+    margin: 0 1.5rem 0 0;
     padding: 0;
     font-size: 18px;
+    font-weight: 700;
 }
 
 .header nav {
-    display: inline-block;
-    line-height: 40px;
+    display: flex;
+    align-items: center;
     margin: 0;
     padding: 0;
 }
 
 .header nav a {
     display: inline-block;
-    margin: 0 10px 0 0;
-    padding: 0 5px;
-    color: #44d;
-    font-weight: bold;
+    margin: 0 0.5rem 0 0;
+    padding: 0 0.5rem;
+    color: var(--bg);
+    opacity: 0.85;
+    font-weight: 600;
+    font-size: 14px;
 }
 
 .header nav a:hover {
-    background: #ddd;
+    opacity: 1;
 }
 
 .header nav.right {
-    float: right;
-    position: relative;
-    line-height: 40px;
-    text-decoration: none;
-    color: #44d;
+    margin-left: auto;
 }
 
 .header nav.right a {
     display: inline-block;
-    padding: 0 10px;
+    padding: 0 1rem;
     font-weight: 500;
-    border-left: 1px solid #ccc;
     margin: 0;
 }
 
-.header nav.right a:first-child {
-    border-left: none;
-}
+.header h1 a { color: var(--bg); text-decoration: none; }
 
 .container {
     width: 940px;
@@ -71,7 +89,7 @@ body {
 }
 
 .explain {
-    color: #222;
+    color: var(--text);
     font-size: 16px;
     margin-bottom: 20px;
 }
@@ -84,13 +102,12 @@ body {
 }
 
 canvas.text {
-    border: 1px solid #ddd;
-    box-shadow: 1px 0 5px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border);
     margin-bottom: 5px;
 }
 
 .wrapper {
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     margin: 0 5px 10px 0;
     float: left;
 }
@@ -101,7 +118,7 @@ canvas.text {
 
 .wrapper span {
     text-align: center;
-    background: #ddd;
+    background: var(--surface);
     display: block;
 }
 
@@ -129,13 +146,13 @@ canvas.text {
 #file {
     float: left;
     font-size: 11px;
-    color: #999;
+    color: var(--text-secondary);
 }
 
 .info {
     float: right;
     font-size: 11px;
-    color: #999;
+    color: var(--text-secondary);
 }
 
 h1 {
@@ -145,7 +162,7 @@ h1 {
 hr {
     clear: both;
     border: none;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid var(--border);
     margin: 20px 0 20px 0;
     padding: 0;
 }
@@ -163,7 +180,7 @@ label input[type="range"] {
 
 a {
     text-decoration: none;
-    color: #44d;
+    color: var(--green);
 }
 
 /* Font Inspector */
@@ -172,7 +189,7 @@ a {
     font-weight: normal;
     margin: 0;
     cursor: pointer;
-    background-color: #f8f8f8;
+    background-color: var(--surface);
     clear: both;
 }
 
@@ -198,7 +215,7 @@ a {
 #font-data dl {
     margin-top: 0;
     padding-left: 2em;
-    color: #707070;
+    color: var(--text-secondary);
 }
 
 #font-data dt {
@@ -216,7 +233,7 @@ a {
 
 #font-data .langtag {
     font-size: 85%;
-    color: #999;
+    color: var(--text-secondary);
     white-space: nowrap;
 }
 
@@ -239,26 +256,26 @@ a {
 
 #pagination span {
     margin: 0 0.3em;
-    color: #505050;
+    color: var(--text-secondary);
     cursor: pointer;
     white-space: nowrap;
 }
 
 #pagination span.page-selected {
     font-weight: bold;
-    color: black;
+    color: var(--text);
 }
 
 canvas.item {
     float: left;
-    border: solid 1px #a0a0a0;
+    border: solid 1px var(--border);
     margin-right: -1px;
     margin-bottom: -1px;
     cursor: pointer;
 }
 
 canvas.item:hover {
-    background-color: #e0e0e0;
+    background-color: var(--surface);
 }
 
 #glyph-list-end {
@@ -268,7 +285,7 @@ canvas.item:hover {
 
 #glyph-display {
     float: left;
-    border: solid 1px #a0a0a0;
+    border: solid 1px var(--border);
     position: relative;
     width: 500px;
     height: 500px;
@@ -295,12 +312,12 @@ canvas.item:hover {
 
 #glyph-data pre { font-size: 11px; }
 pre:not(.contour) { margin: 0; }
-pre.contour { margin: 0 0 1em 2em; border-bottom: solid 1px #a0a0a0; }
-span.oncurve { color: blue; }
-span.offcurve { color: red; }
+pre.contour { margin: 0 0 1em 2em; border-bottom: solid 1px var(--border); }
+span.oncurve { color: oklch(0.55 0.15 260); }
+span.offcurve { color: oklch(0.55 0.15 25); }
 
 .disabled {
-	color: gray;
+	color: var(--text-secondary);
 }
 
 .color-swatches {
