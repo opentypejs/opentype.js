@@ -254,6 +254,46 @@ Font.prototype.stringToGlyphIndexes = function(s, options) {
 };
 
 /**
+ * Convert the given text to an array of Glyphs and associated mapping of
+ * which characters in the original text were replaced by each Glyph index.
+ * @param  {string}
+ * @param  {GlyphRenderOptions} [options]
+ * @return {Array} example:
+ *     Input: "fla"
+ *     Output: `[ { glyph: opentype.Glyph, replaced: [0, 1] }, { glyph: opentype.Glyph, replaced: [2] } ]`
+ */
+Font.prototype.stringToGlyphMapping = function(s, options) {
+    const bidi = new Bidi();
+
+    // Create and register 'glyphIndex' state modifier
+    const charToGlyphIndexMod = token => this.charToGlyphIndex(token.char);
+    bidi.registerModifier('glyphIndex', null, charToGlyphIndexMod);
+
+    // roll-back to default features
+    let features = options ?
+        this.updateFeatures(options.features) :
+        this.defaultRenderOptions.features;
+
+    bidi.applyFeatures(this, features);
+
+    const indexMapping = bidi.getTextGlyphMapping(s);
+
+    let length = indexMapping.length;
+
+    // convert glyph indices to glyph objects
+    const glyphMapping = new Array(length);
+    const notdef = this.glyphs.get(0);
+    for (let i = 0; i < length; i += 1) {
+        glyphMapping[i] = {
+            glyph: this.glyphs.get(indexMapping[i].index) || notdef,
+            replaced: indexMapping[i].replaced,
+        };
+    }
+
+    return glyphMapping;
+};
+
+/**
  * Convert the given text to a list of Glyph objects.
  * Note that there is no strict one-to-one mapping between characters and
  * glyphs, so the list of returned glyphs can be larger or smaller than the

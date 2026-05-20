@@ -294,7 +294,7 @@ Bidi.prototype.getBidiText = function (text) {
 
 /**
  * Get the current state index of each token
- * @param {text} text an input text
+ * @param {string} text an input text
  */
 Bidi.prototype.getTextGlyphs = function (text) {
     this.processText(text);
@@ -306,6 +306,48 @@ Bidi.prototype.getTextGlyphs = function (text) {
         indexes.push(Array.isArray(index) ? index[0] : index);
     }
     return indexes;
+};
+
+/**
+ * Gets an array of glyph indices, as well as mapping information for
+ * which characters in the original text each glyph replaced.
+ * @param {string} text an input text
+ * @return {Array} example:
+ *     Input: "fla"
+ *     Output: `[ { index: 1655, replaced: [0, 1] }, { index: 68, replaced: [2] } ]`
+ */
+Bidi.prototype.getTextGlyphMapping = function (text) {
+    this.processText(text);
+    let mapping = [];
+    let lastIndex = null;
+    let replaced = [];
+    for (let i = 0; i < this.tokenizer.tokens.length; i++) {
+        const token = this.tokenizer.tokens[i];
+        if (token.state.deleted) {
+            replaced.push(i);
+            continue;
+        }
+        if (lastIndex != null) {
+            mapping.push({
+                index: lastIndex,
+                replaced,
+            });
+            lastIndex = null;
+            replaced = [];
+        }
+        const index = token.activeState.value;
+        lastIndex = Array.isArray(index) ? index[0] : index;
+        replaced.push(i);
+    }
+    if (lastIndex != null) {
+        mapping.push({
+            index: lastIndex,
+            replaced,
+        });
+        lastIndex = null;
+        replaced = [];
+    }
+    return mapping;
 };
 
 export default Bidi;

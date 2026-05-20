@@ -177,4 +177,45 @@ describe('bidi.mjs', function() {
             });
         });
     });
+
+    describe('glyph mapping', function () {
+        let notoSansFont;
+        let bidi;
+
+        const features = [{
+            script: 'latn',
+            tags: ['liga', 'rlig']
+        }];
+
+        beforeEach(()=> {
+            notoSansFont = loadSync('./test/fonts/NotoSans-Regular.ttf');
+        });
+
+        it('maps multiple glyphs to multiple characters in the original text source', () => {
+            bidi = new Bidi();
+            bidi.applyFeatures(notoSansFont, features);
+
+            bidi.registerModifier(
+                'glyphIndex', null, token => notoSansFont.charToGlyphIndex(token.char)
+            );
+
+            let glyphMap = bidi.getTextGlyphMapping('fla');
+            assert.deepEqual(glyphMap, [
+                { index: 1655, replaced: [0, 1] },
+                { index: 68, replaced: [2] }
+            ]);
+
+            glyphMap = bidi.getTextGlyphMapping('flafl');
+            assert.deepEqual(glyphMap, [
+                { index: 1655, replaced: [0, 1] },
+                { index: 68, replaced: [2] },
+                { index: 1655, replaced: [3, 4] },
+            ]);
+
+            glyphMap = bidi.getTextGlyphMapping('ff');
+            assert.deepEqual(glyphMap, [
+                { index: 1653, replaced: [0, 1] },
+            ]);
+        });
+    });
 });
