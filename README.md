@@ -241,6 +241,10 @@ Convert the string to a list of glyph objects.
 Note that there is no strict 1-to-1 correspondence between the string and glyph list due to
 possible substitutions such as ligatures. The list of returned glyphs can be larger or smaller than the length of the given string.
 
+#### `Font.stringToGlyphMapping()`
+Convert the given text to an array of Glyphs and associated mapping of which characters in the original text were replaced by each Glyph index.
+For example, if the font contains a ligature for "fl", `stringToGlyphMapping('fla')` would return ``[ { glyph: opentype.Glyph, replaced: [0, 1] }, { glyph: opentype.Glyph, replaced: [2] } ]`
+
 #### `Font.charToGlyph(char)`
 Convert the character to a Glyph object. Returns `null` if the glyph could not be found. Note that this function assumes that there is a one-to-one mapping between the given character and a glyph; for complex scripts, this might not be the case.
 
