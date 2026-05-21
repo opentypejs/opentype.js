@@ -34,20 +34,22 @@ function log2(v) {
 }
 
 function computeCheckSum(bytes) {
-    while (bytes.length % 4 !== 0) {
-        bytes.push(0);
-    }
-
     let sum = 0;
-    for (let i = 0; i < bytes.length; i += 4) {
-        sum += (bytes[i] << 24) +
-            (bytes[i + 1] << 16) +
-            (bytes[i + 2] << 8) +
-            (bytes[i + 3]);
+    // This rounds to integer multiples of 4.
+    const padded = (bytes.length + 3) & ~3;
+    for (let i = 0; i < padded; i += 4) {
+        // Mask each byte to 0xFF: the byte array may contain values > 255 due to
+        // M.CHARARRAY encoding non-ASCII strings with full Unicode codepoints.
+        // Uint8Array (used for file output) truncates to 8 bits, so we must do the
+        // same here to produce a checksum that matches the actual file bytes.
+        sum += (
+            ((bytes[i]     || 0) & 0xFF) << 24 |
+            ((bytes[i + 1] || 0) & 0xFF) << 16 |
+            ((bytes[i + 2] || 0) & 0xFF) << 8  |
+            ((bytes[i + 3] || 0) & 0xFF)
+        ) >>> 0;
     }
-
-    sum %= Math.pow(2, 32);
-    return sum;
+    return sum >>> 0;
 }
 
 function makeTableRecord(tag, checkSum, offset, length) {
@@ -397,7 +399,7 @@ function fontToSfntTable(font) {
     let checkSumAdjusted = false;
     for (let i = 0; i < tableFields.length; i += 1) {
         if (tableFields[i].name === 'head table') {
-            tableFields[i].value.checkSumAdjustment = 0xB1B0AFBA - checkSum;
+            tableFields[i].value.checkSumAdjustment = (0xB1B0AFBA - checkSum) >>> 0;
             checkSumAdjusted = true;
             break;
         }
