@@ -17,6 +17,7 @@ import maxp from './maxp.mjs';
 import _name from './name.mjs';
 import os2 from './os2.mjs';
 import post from './post.mjs';
+import gpos from './gpos.mjs';
 import gsub from './gsub.mjs';
 import meta from './meta.mjs';
 import colr from './colr.mjs';
@@ -359,6 +360,7 @@ function fontToSfntTable(font) {
 
     // Optional tables
     const optionalTables = {
+        gpos,
         gsub,
         cpal,
         colr,
@@ -374,11 +376,13 @@ function fontToSfntTable(font) {
     const optionalTableArgs = {
         avar: [font.tables.fvar],
         fvar: [font.names],
+        gpos: [font.kerningPairs],
     };
 
     for (let tableName in optionalTables) {
         const table = font.tables[tableName];
-        if (table) {
+        // The GPOS table can also be made using `kerningPairs` from the `kern` table as input.
+        if (table || tableName === 'gpos') {
             const tableData = optionalTables[tableName].make.call(font, table, ...(optionalTableArgs[tableName] || []));
             if (tableData) {
                 tables.push(tableData);
