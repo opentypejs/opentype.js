@@ -165,6 +165,16 @@ function parseOS2Table(data, start) {
     for (let i = 0; i < 10; i++) {
         os2.panose[i] = p.parseByte();
     }
+    os2.bFamilyType = os2.panose[0];
+    os2.bSerifStyle = os2.panose[1];
+    os2.bWeight = os2.panose[2];
+    os2.bProportion = os2.panose[3];
+    os2.bContrast = os2.panose[4];
+    os2.bStrokeVariation = os2.panose[5];
+    os2.bArmStyle = os2.panose[6];
+    os2.bLetterform = os2.panose[7];
+    os2.bMidline = os2.panose[8];
+    os2.bXHeight = os2.panose[9];
 
     os2.ulUnicodeRange1 = p.parseULong();
     os2.ulUnicodeRange2 = p.parseULong();
