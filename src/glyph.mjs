@@ -237,6 +237,12 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
         }
     }
 
+    /**
+     * mark Path object as flipped for 
+     * subsequent SVG pathData methods
+     */
+    p.isFlipped = true;
+
     return p;
 };
 

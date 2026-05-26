@@ -600,7 +600,7 @@ Path.prototype.toPathData = function(options) {
         commandsCopy = optimizeCommands(commandsCopy);
     }
 
-    const flipY = options.flipY;
+    const flipY = (this.isFlipped===undefined && options.flipY) || (!options.flipY && this.isFlipped );
     let flipYBase = options.flipYBase;
     if (flipY === true && flipYBase === undefined) {
         const tempPath = new Path();

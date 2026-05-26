@@ -444,6 +444,8 @@ Font.prototype.getPath = function(text, x, y, fontSize, options) {
         }
         fullPath.extend(glyphPath);
     });
+    // mark as y-coordinates as flipped
+    fullPath.isFlipped = true;
     return fullPath;
 };
 
