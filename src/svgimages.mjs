@@ -1,4 +1,4 @@
-import { isGzip, unGzip } from './util.mjs';
+import { getGlobalScope, isGzip, unGzip } from './util.mjs';
 
 /**
  * @typedef {object} SVGDocCacheEntry
@@ -126,7 +126,7 @@ function createSvgImageCacheEntry(font, svgTemplatePromise, glyphIndex) {
 * @param {Uint8Array} buf
 * @returns {Promise<string>}
 */
-export const decodeSvgDocument = typeof DecompressionStream === 'function'
+export const decodeSvgDocument = typeof getGlobalScope().DecompressionStream === 'function'
     ? decodeSvgDocumentWithDecompressionStream
     : decodeSvgDocumentWithTinyInflate;
 
