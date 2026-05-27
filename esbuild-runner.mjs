@@ -2,6 +2,7 @@ import * as esbuild from 'esbuild'
 import Path from 'node:path';
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import semver from 'semver';
 
@@ -14,7 +15,7 @@ import swcPlugin from './buildLib/esbuild-plugin-swc.mjs';
 
 function getScriptPath(){
     try{
-        return import.meta.url;
+        return fileURLToPath(import.meta.url);
     }catch(e){
         return __filename||null;
     }
@@ -22,39 +23,51 @@ function getScriptPath(){
 
 function getScriptDirectory(){
     try{
-        return Path.dirname(import.meta.url);
+        return Path.dirname(fileURLToPath(import.meta.url));
     }catch(e){
         return __dirname||null;
     }
 }
 
 const resolveFileFromPackage = (function(){
-    return ((new Function("try{return import.meta.resolve;}catch(e){return null}"))()||createRequire(getScriptPath()).resolve);
+    const rawResolve = ((function(){try{return import.meta.resolve;}catch(e){return null}})()||createRequire(getScriptPath()).resolve);
+    return function(fileToResolve){
+        const result = rawResolve(fileToResolve);
+        if(result.startsWith("file:")){
+            return fileURLToPath(result);
+        }
+        return result;
+    };
 })();
+
+function getOwnPackageJsonPath(){
+    let currentDir = getScriptDirectory();
+    let relativePath = "package.json";
+    let resolvedPath = Path.resolve(currentDir, relativePath);
+
+    function countSeparators(str) {
+        let count = 0;
+        for(let i = 0; i < str.length; i++) {
+            if(str[i] == Path.sep)
+                count++;
+        }
+        return count;
+    }
+
+    while(!existsSync(resolvedPath)){
+        if(countSeparators(resolvedPath) <= 1){
+            throw new Error("Could not find package.json file");
+        }
+        relativePath = Path.join("..", relativePath);
+        resolvedPath = Path.resolve(currentDir, relativePath);
+    }
+    return resolvedPath;
+}
 
 function readKeyFromPackageJson(key,pkg) {
     let resolvedPath;
     if(typeof pkg == "undefined" || pkg == null){
-        let currentDir = getScriptDirectory;
-        let relativePath = "package.json";
-        resolvedPath = Path.resolve(currentDir, relativePath);
-
-        function countSeparators(str) {
-            let count = 0;
-            for(let i = 0; i < str.length; i++) {
-                if(str[i] == Path.sep)
-                    count++;
-            }
-            return count;
-        }
-
-        while(!existsSync(resolvedPath)){
-            if(countSeparators(resolvedPath) <= 1){
-                throw new Error("Could not find package.json file");
-            }
-            relativePath = Path.join("..", relativePath);
-            resolvedPath = Path.resolve(currentDir, relativePath);
-        }
+        resolvedPath = getOwnPackageJsonPath();
     }else{
         resolvedPath = resolveFileFromPackage(Path.join(pkg,"package.json"));
         if(!resolvedPath||!existsSync(resolvedPath)){
@@ -233,19 +246,36 @@ async function build(params) {
         if(!semver.satisfies(installedCoreJsVersion, readKeyFromPackageJson("devDependencies.core-js"))){
             throw new Error("Please update your dependencies, the core-js version installed does not match the version specified in the package.json file.");
         }
+
+        const swcTargets = {
+            "es2015": {
+                "chrome": "49",
+                "firefox": "44",
+                "safari": "10",
+                "edge": "13",
+                "opera": "36",
+                "node": "13.2.0"
+            },
+            "compat": compatTargets
+        };
+
         swcConfig.env = {
             "bugfixes": true,
             "mode": "usage",
             "coreJs": installedCoreJsVersion
         };
+        swcConfig.env.targets = swcTargets[params.options.target??'es2015']||swcTargets["es2015"];
         if(params.options.target == "compat") {
-            swcConfig.env.targets = compatTargets;
             swcConfig.jsc.minify.compress.ecma = 3;
             esbuildTarget = convertToEsbuildTarget(compatTargets);
             //esbuild does not officialy support es3 but outputs es3 compatable code when you specifiy es5 as the target.
             esbuildTarget.push("es5");
         }else{
-            swcConfig.jsc.target = params.options.target??'es2015';
+            const ecmaVersion = parseInt((params.options.target??'es2015').slice(2));
+            if(isNaN(ecmaVersion)){
+                ecmaVersion = 2015;
+            }
+            swcConfig.jsc.minify.compress.ecma = ecmaVersion;
             esbuildTarget = params.options.target??'es2015';
         }
     }

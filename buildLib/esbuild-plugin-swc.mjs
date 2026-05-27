@@ -30,8 +30,31 @@ SOFTWARE.
 
 import { transform, transformSync } from '@swc/core';
 import path from 'node:path';
-import process from 'node:process';
 import fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+
+function getNodeModulesDirectoryForPath(currentDir){
+    let relativePath = "node_modules";
+    let resolvedPath = path.resolve(currentDir, relativePath);
+
+    function countSeparators(str) {
+        let count = 0;
+        for(let i = 0; i < str.length; i++) {
+            if(str[i] == path.sep)
+                count++;
+        }
+        return count;
+    }
+
+    while(!existsSync(resolvedPath)){
+        if(countSeparators(resolvedPath) <= 1){
+            throw new Error("Could not find node_modules directory");
+        }
+        relativePath = path.join("..", relativePath);
+        resolvedPath = path.resolve(currentDir, relativePath);
+    }
+    return resolvedPath;
+}
 
 function assignDeep(target, source) {
     for (const key in source) {
@@ -54,7 +77,18 @@ export default function swcPlugin(options, isAsync) {
         name: 'esbuild:swc',
         setup(builder) {
             builder.onResolve({ filter: /\.(m?[tj]s)$/ }, (args) => {
-                const fullPath = path.resolve(args.resolveDir, args.path);
+                let fullPath;
+                let defaultPath = path.resolve(args.resolveDir, args.path);
+                if(args.kind == 'import-statement'){
+                    if(existsSync(defaultPath)){
+                        fullPath = defaultPath;
+                    }else{
+                        let nodeModulesPath = getNodeModulesDirectoryForPath(args.resolveDir);
+                        fullPath = path.join(nodeModulesPath, args.path);
+                    }
+                }else{
+                    fullPath = defaultPath;
+                }
                 return {
                     path: fullPath,
                 };
@@ -62,6 +96,7 @@ export default function swcPlugin(options, isAsync) {
             builder.onLoad({ filter: /\.(m?[tj]s)$/ }, async (args) => {
                 const code = await fs.readFile(args.path, 'utf-8');
                 const isTS = args.path.endsWith('.ts');
+                const isCoreJs = args.path.indexOf('core-js') !== -1;
                 const initialOptions = {
                     jsc: {
                         parser: {
@@ -73,6 +108,9 @@ export default function swcPlugin(options, isAsync) {
                     sourceFileName: path.relative(options.root,args.path)
                 };
                 const finalOptions = assignDeep(assignDeep({}, initialOptions), options);
+                if(isCoreJs){
+                    delete finalOptions.env.mode;
+                }
                 let result;
                 if (isAsync) {
                     result = await transform(code, finalOptions);

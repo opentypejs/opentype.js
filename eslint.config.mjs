@@ -8,6 +8,8 @@ export default [
       sourceType: "module",
       globals: {
         console: "readonly",
+        globalThis: "readonly", // this is to get eslint to stop complaining about globalThis, it's pollyfilled in the code.
+        self: "readonly", // this is to get eslint to stop complaining about self, it's only used if globalThis is not available.
         // ugly platform-dependant classes and objects
         DecompressionStream: "readonly",
         Response: "readonly",
