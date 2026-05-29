@@ -470,6 +470,10 @@ export {
     Glyph,
     Path,
     BoundingBox,
+    /**
+     * Low-level parse utilities.
+     * @alias opentype._parse
+     */
     parse as _parse,
     parseBuffer as parse,
     load,

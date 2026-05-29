@@ -374,16 +374,16 @@ Path.prototype.lineTo = function(x, y) {
 
 /**
  * Draws cubic curve
- * @function
- * bezierCurveTo
+ * @function curveTo
  * @memberof opentype.Path.prototype
+ * @alias opentype.Path.prototype.bezierCurveTo
  * @param  {number} x1 - x of control 1
  * @param  {number} y1 - y of control 1
  * @param  {number} x2 - x of control 2
  * @param  {number} y2 - y of control 2
  * @param  {number} x - x of path point
  * @param  {number} y - y of path point
- * @see curveTo
+ * @see bezierCurveTo
  */
 Path.prototype.curveTo = Path.prototype.bezierCurveTo = function(x1, y1, x2, y2, x, y) {
     this.commands.push({
@@ -399,20 +399,9 @@ Path.prototype.curveTo = Path.prototype.bezierCurveTo = function(x1, y1, x2, y2,
 
 /**
  * Draws quadratic curve
- * @function
- * quadraticCurveTo
+ * @function quadTo
  * @memberof opentype.Path.prototype
- * @param  {number} x1 - x of control
- * @param  {number} y1 - y of control
- * @param  {number} x - x of path point
- * @param  {number} y - y of path point
- */
-
-/**
- * Draws quadratic curve
- * @function
- * quadTo
- * @memberof opentype.Path.prototype
+ * @alias opentype.Path.prototype.quadraticCurveTo
  * @param  {number} x1 - x of control
  * @param  {number} y1 - y of control
  * @param  {number} x - x of path point

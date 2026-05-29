@@ -24,7 +24,7 @@
   "browser": "./dist/opentype.js",
   "module": "./dist/opentype.mjs",
   "scripts": {
-    "build": "npm run b:umd && npm run b:esm",
+    "build": "npm run b:umd && npm run b:esm && npm run b:externs",
     "dist": " npm run d:umd && npm run d:esm",
     "test": "npm run build && npm run dist && mocha --recursive && npm run lint",
     "lint": "eslint src",

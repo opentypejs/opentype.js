@@ -46,7 +46,10 @@ opentype.Path = function() {};
  */
 opentype.BoundingBox = function() {};
 
-/** @type {?} */
+/**
+     * Low-level parse utilities.
+     * @alias opentype._parse
+     */
 opentype._parse = function() {};
 
 /**
@@ -478,108 +481,219 @@ opentype.Glyph.prototype.toSVG = function() {};
  */
 opentype.Glyph.prototype.toDOMElement = function() {};
 
-/** @type {?} */
+/**
+ * Parse an unsigned 8-bit integer.
+ * @return {number}
+ */
 opentype._parse.prototype.parseByte = function() {};
 
-/** @type {?} */
+/**
+ * Parse a signed 8-bit integer.
+ * @return {number}
+ */
 opentype._parse.prototype.parseChar = function() {};
 
-/** @type {?} */
+/**
+ * Parse an unsigned 8-bit integer.
+ * @return {number}
+ */
 opentype._parse.prototype.parseCard8 = function() {};
 
-/** @type {?} */
+/**
+ * Parse an unsigned 16-bit integer.
+ * @return {number}
+ */
 opentype._parse.prototype.parseUShort = function() {};
 
-/** @type {?} */
+/**
+ * Parse an unsigned 16-bit integer.
+ * @return {number}
+ */
 opentype._parse.prototype.parseCard16 = function() {};
 
-/** @type {?} */
+/**
+ * Parse a string identifier.
+ * @return {number}
+ */
 opentype._parse.prototype.parseSID = function() {};
 
-/** @type {?} */
+/**
+ * Parse an offset16 value.
+ * @return {number}
+ */
 opentype._parse.prototype.parseOffset16 = function() {};
 
-/** @type {?} */
+/**
+ * Parse a signed 16-bit integer.
+ * @return {number}
+ */
 opentype._parse.prototype.parseShort = function() {};
 
-/** @type {?} */
+/**
+ * Parse a 2.14 fixed point number.
+ * @return {number}
+ */
 opentype._parse.prototype.parseF2Dot14 = function() {};
 
-/** @type {?} */
+/**
+ * Parse a 24-bit unsigned integer.
+ * @return {number}
+ */
 opentype._parse.prototype.parseUInt24 = function() {};
 
-/** @type {?} */
+/**
+ * Parse a 32-bit unsigned integer.
+ * @return {number}
+ */
 opentype._parse.prototype.parseULong = function() {};
 
-/** @type {?} */
+/**
+ * Parse a 32-bit signed integer.
+ * @return {number}
+ */
 opentype._parse.prototype.parseLong = function() {};
 
-/** @type {?} */
+/**
+ * Parse a 32-bit unsigned integer offset.
+ * @return {number}
+ */
 opentype._parse.prototype.parseOffset32 = function() {};
 
-/** @type {?} */
+/**
+ * Parse a 16.16 fixed point number.
+ * @return {number}
+ */
 opentype._parse.prototype.parseFixed = function() {};
 
-/** @type {?} */
+/**
+ * Parse a string of the given byte length.
+ * @param {number} length
+ * @return {string}
+ */
 opentype._parse.prototype.parseString = function() {};
 
-/** @type {?} */
+/**
+ * Parse a 4-character tag.
+ * @return {string}
+ */
 opentype._parse.prototype.parseTag = function() {};
 
-/** @type {?} */
+/**
+ * Parse a LONGDATETIME (Mac epoch) and convert to Unix seconds.
+ * @return {number}
+ */
 opentype._parse.prototype.parseLongDateTime = function() {};
 
-/** @type {?} */
+/**
+ * Parse a fixed-point version number.
+ * @param {number=} minorBase
+ * @return {number}
+ */
 opentype._parse.prototype.parseVersion = function() {};
 
-/** @type {?} */
+/**
+ * Skip a number of items of the given type.
+ * @param {string} type
+ * @param {number=} amount
+ * @return {undefined}
+ */
 opentype._parse.prototype.skip = function() {};
 
-/** @type {?} */
+/**
+ * Parse a list of 32-bit unsigned integers.
+ * @param {number=} count
+ * @return {number[]}
+ */
 opentype._parse.prototype.parseULongList = function() {};
 
-/** @type {?} */
-opentype._parse.prototype.parseUShortList = function() {};
-
-/** @type {?} */
+/**
+ * Parse a list of 16-bit unsigned integers.
+ * @param {number=} count
+ * @return {number[]}
+ */
 opentype._parse.prototype.parseOffset16List = function() {};
 
-/** @type {?} */
+/**
+ * Parse a list of 16-bit unsigned integers.
+ * @param {number=} count
+ * @return {number[]}
+ */
+opentype._parse.prototype.parseUShortList = function() {};
+
+/**
+ * Parse a list of 16-bit signed integers.
+ * @param {number} count
+ * @return {number[]}
+ */
 opentype._parse.prototype.parseShortList = function() {};
 
-/** @type {?} */
+/**
+ * Parse a list of bytes.
+ * @param {number} count
+ * @return {number[]}
+ */
 opentype._parse.prototype.parseByteList = function() {};
 
 /**
  * Parse a list of items.
  * Record count is optional, if omitted it is read from the stream.
  * itemCallback is one of the Parser methods.
+ * @template T
+ * @param {number|function()} [count]
+ * @param {function():T} [itemCallback]
+ * @return {Array<T>}
  */
 opentype._parse.prototype.parseList = function() {};
 
-/** @type {?} */
+/**
+ * Parse a list of items using a 32-bit count.
+ * @template T
+ * @param {number|function()} [count]
+ * @param {function():T} [itemCallback]
+ * @return {Array<T>}
+ */
 opentype._parse.prototype.parseList32 = function() {};
 
 /**
  * Parse a list of records.
  * Record count is optional, if omitted it is read from the stream.
  * Example of recordDescription: { sequenceIndex: Parser.uShort, lookupListIndex: Parser.uShort }
+ * @param {number|Object} [count]
+ * @param {Object} [recordDescription]
+ * @return {Array<Object>}
  */
 opentype._parse.prototype.parseRecordList = function() {};
 
-/** @type {?} */
+/**
+ * Parse a list of records using a 32-bit count.
+ * @param {number|Object} [count]
+ * @param {Object} [recordDescription]
+ * @return {Array<Object>}
+ */
 opentype._parse.prototype.parseRecordList32 = function() {};
 
-/** @type {?} */
+/**
+ * Parse N tuples of F2.14 values.
+ * @param {number} tupleCount
+ * @param {number} axisCount
+ * @return {Array<Array<number>>}
+ */
 opentype._parse.prototype.parseTupleRecords = function() {};
 
-/** @type {?} */
+/**
+ * Parse a data structure into an object.
+ * Example of description: { sequenceIndex: Parser.uShort, lookupListIndex: Parser.uShort }
+ * @param {Object|function()} description
+ * @return {Object}
+ */
 opentype._parse.prototype.parseStruct = function() {};
 
 /**
  * Parse a GPOS valueRecord
  * https://docs.microsoft.com/en-us/typography/opentype/spec/gpos#value-record
  * valueFormat is optional, if omitted it is read from the stream.
+ * @param {number=} valueFormat
+ * @return {Object|undefined}
  */
 opentype._parse.prototype.parseValueRecord = function() {};
 
@@ -590,70 +704,144 @@ opentype._parse.prototype.parseValueRecord = function() {};
  */
 opentype._parse.prototype.parseValueRecordList = function() {};
 
-/** @type {?} */
+/**
+ * Parse a pointer to another offset-based structure.
+ * @param {Object|function()} description
+ * @return {Object|undefined}
+ */
 opentype._parse.prototype.parsePointer = function() {};
 
-/** @type {?} */
+/**
+ * Parse a 32-bit pointer to another offset-based structure.
+ * @param {Object|function()} description
+ * @return {Object|undefined}
+ */
 opentype._parse.prototype.parsePointer32 = function() {};
 
 /**
- * Parse a list of offsets to lists of 16-bit integers,
- * or a list of offsets to lists of offsets to any kind of items.
- * If itemCallback is not provided, a list of list of UShort is assumed.
- * If provided, itemCallback is called on each item and must parse the item.
- * See examples in tables/gsub.mjs
+ * Parse a list of lists of values from the stream.
+ * If no itemCallback is provided, it parses a list of UShort lists.
+ * @template T
+ * @param {function():T} [itemCallback]
+ * @return {Array<T|undefined>}
  */
 opentype._parse.prototype.parseListOfLists = function() {};
 
-/** @type {?} */
+/**
+ * Parse a coverage table in a GSUB, GPOS or GDEF table.
+ * @return {Object}
+ */
 opentype._parse.prototype.parseCoverage = function() {};
 
-/** @type {?} */
+/**
+ * Parse a class definition table in a GSUB, GPOS or GDEF table.
+ * @return {Object}
+ */
 opentype._parse.prototype.parseClassDef = function() {};
 
-/** @type {?} */
+/**
+ * Parse a ScriptList and return an array of `ScriptRecord`.
+ * @return {ScriptRecord[]}
+ */
 opentype._parse.prototype.parseScriptList = function() {};
 
-/** @type {?} */
+/**
+ * Parse a FeatureList and return an array of `FeatureRecord`.
+ * @return {FeatureRecord[]}
+ */
 opentype._parse.prototype.parseFeatureList = function() {};
 
-/** @type {?} */
+/**
+ * Parse a LookupList using provided parsers and return an array of `Lookup` objects.
+ * @param {Object} lookupTableParsers - map of lookupType to parser function
+ * @return {Lookup[]}
+ */
 opentype._parse.prototype.parseLookupList = function() {};
 
-/** @type {?} */
+/**
+ * Parse a FeatureVariationsList.
+ * @return {Object[]}
+ */
 opentype._parse.prototype.parseFeatureVariationsList = function() {};
 
-/** @type {?} */
+/**
+ * Parse a VariationStore structure.
+ * @return {VariationStore}
+ */
 opentype._parse.prototype.parseVariationStore = function() {};
 
-/** @type {?} */
+/**
+ * Parse an ItemVariationStore.
+ * @return {ItemVariationStore}
+ */
 opentype._parse.prototype.parseItemVariationStore = function() {};
 
-/** @type {?} */
+/**
+ * Parse a VariationRegionList.
+ * @return {Array<Object>}
+ */
 opentype._parse.prototype.parseVariationRegionList = function() {};
 
-/** @type {?} */
+/**
+ * Parse an ItemVariationSubtable.
+ * @return {ItemVariationSubtable}
+ */
 opentype._parse.prototype.parseItemVariationSubtable = function() {};
 
-/** @type {?} */
+/**
+ * Parse a DeltaSetIndexMap.
+ * @return {DeltaSetIndexMap}
+ */
 opentype._parse.prototype.parseDeltaSetIndexMap = function() {};
 
-/** @type {?} */
+/**
+ * Parse delta sets for item variation subtables.
+ * @param {number} itemCount
+ * @param {number} wordDeltaCount
+ * @param {number} regionIndexCount
+ * @return {number[][]}
+ */
 opentype._parse.prototype.parseDeltaSets = function() {};
 
-/** @type {?} */
+/**
+ * Parse a TupleVariationStoreList and return a glyph-indexed map of variation stores.
+ * @param {number} axisCount
+ * @param {string} flavor
+ * @param {Map<number, Object>|Array} glyphs
+ * @return {Object.<number, (Object|undefined)>}
+ */
 opentype._parse.prototype.parseTupleVariationStoreList = function() {};
 
-/** @type {?} */
+/**
+ * Parse a TupleVariationStore at the given offset.
+ * @param {number} tableOffset
+ * @param {number} axisCount
+ * @param {string} flavor
+ * @param {Map<number, Object>|Array} glyphs
+ * @param {number} glyphIndex
+ * @return {Object}
+ */
 opentype._parse.prototype.parseTupleVariationStore = function() {};
 
-/** @type {?} */
+/**
+ * Parse a TupleVariationHeader.
+ * @param {number} axisCount
+ * @param {string} flavor
+ * @return {TupleVariationHeader}
+ */
 opentype._parse.prototype.parseTupleVariationHeader = function() {};
 
-/** @type {?} */
+/**
+ * Parse packed point numbers and return an array of point indices.
+ * @return {number[]}
+ */
 opentype._parse.prototype.parsePackedPointNumbers = function() {};
 
-/** @type {?} */
+/**
+ * Parse packed delta values and return an array of deltas.
+ * @param {number} expectedCount
+ * @return {number[]}
+ */
 opentype._parse.prototype.parsePackedDeltas = function() {};
 
 /**
@@ -676,6 +864,7 @@ curveTo = function() {};
  * @function
  * bezierCurveTo
  * @memberof opentype.Path.prototype
+ * @alias opentype.Path.prototype.bezierCurveTo
  * @param  {number} x1 - x of control 1
  * @param  {number} y1 - y of control 1
  * @param  {number} x2 - x of control 2
@@ -684,21 +873,20 @@ curveTo = function() {};
  * @param  {number} y - y of path point
  * @see curveTo
  */
-opentype.Path.prototype.
-bezierCurveTo = function() {};
+opentype.Path.prototype.bezierCurveTo = function() {};
 
 /**
  * Draws quadratic curve
  * @function
  * quadraticCurveTo
  * @memberof opentype.Path.prototype
+ * @alias opentype.Path.prototype.quadraticCurveTo
  * @param  {number} x1 - x of control
  * @param  {number} y1 - y of control
  * @param  {number} x - x of path point
  * @param  {number} y - y of path point
  */
-opentype.Path.prototype.
-quadraticCurveTo = function() {};
+opentype.Path.prototype.quadraticCurveTo = function() {};
 
 /**
  * Draws quadratic curve
@@ -746,14 +934,12 @@ opentype.Path.prototype.moveTo = function() {};
  */
 opentype.Path.prototype.lineTo = function() {};
 
-/** @type {?} */
-opentype.Path.prototype.bezierCurveTo = function() {};
-
 /**
  * Draws cubic curve
  * @function
  * bezierCurveTo
  * @memberof opentype.Path.prototype
+ * @alias opentype.Path.prototype.bezierCurveTo
  * @param  {number} x1 - x of control 1
  * @param  {number} y1 - y of control 1
  * @param  {number} x2 - x of control 2
@@ -763,9 +949,6 @@ opentype.Path.prototype.bezierCurveTo = function() {};
  * @see curveTo
  */
 opentype.Path.prototype.curveTo = function() {};
-
-/** @type {?} */
-opentype.Path.prototype.quadraticCurveTo = function() {};
 
 /**
  * Draws quadratic curve
@@ -821,41 +1004,120 @@ opentype.Path.prototype.toSVG = function() {};
  */
 opentype.Path.prototype.toDOMElement = function() {};
 
-/** @type {?} */
+/**
+     * Parse an unsigned 8-bit integer.
+     * @alias opentype._parse.getByte
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
 opentype._parse.getByte = function() {};
 
-/** @type {?} */
+/**
+     * Parse an unsigned 8-bit integer.
+     * @alias opentype._parse.getCard8
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
 opentype._parse.getCard8 = function() {};
 
-/** @type {?} */
+/**
+     * Parse an unsigned 16-bit integer.
+     * @alias opentype._parse.getUShort
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
 opentype._parse.getUShort = function() {};
 
-/** @type {?} */
+/**
+     * Parse an unsigned 16-bit integer.
+     * @alias opentype._parse.getCard16
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
 opentype._parse.getCard16 = function() {};
 
-/** @type {?} */
+/**
+     * Parse a signed 16-bit integer.
+     * @alias opentype._parse.getShort
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
 opentype._parse.getShort = function() {};
 
-/** @type {?} */
+/**
+     * Parse a 24-bit unsigned integer.
+     * @alias opentype._parse.getUInt24
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
 opentype._parse.getUInt24 = function() {};
 
-/** @type {?} */
+/**
+     * Parse a 32-bit unsigned integer.
+     * @alias opentype._parse.getULong
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
 opentype._parse.getULong = function() {};
 
-/** @type {?} */
+/**
+     * Parse a 16.16 fixed point number.
+     * @alias opentype._parse.getFixed
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
 opentype._parse.getFixed = function() {};
 
-/** @type {?} */
+/**
+     * Parse a 4-character tag.
+     * @alias opentype._parse.getTag
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {string}
+     */
 opentype._parse.getTag = function() {};
 
-/** @type {?} */
+/**
+     * Parse an offset from the DataView.
+     * @alias opentype._parse.getOffset
+     * @param {DataView} data
+     * @param {number} offset
+     * @param {number} offSize
+     * @return {number}
+     */
 opentype._parse.getOffset = function() {};
 
-/** @type {?} */
+/**
+     * Retrieve a number of bytes from start offset to the end offset.
+     * @alias opentype._parse.getBytes
+     * @param {DataView} dataView
+     * @param {number} startOffset
+     * @param {number} endOffset
+     * @return {number[]}
+     */
 opentype._parse.getBytes = function() {};
 
-/** @type {?} */
+/**
+     * Convert bytes to a string.
+     * @alias opentype._parse.bytesToString
+     * @param {number[]} bytes
+     * @return {string}
+     */
 opentype._parse.bytesToString = function() {};
 
-/** @type {?} */
+/**
+     * Parser constructor.
+     * @alias opentype._parse.Parser
+     * @constructor
+     * @param {DataView} data
+     * @param {number=} offset
+     */
 opentype._parse.Parser = function() {};
