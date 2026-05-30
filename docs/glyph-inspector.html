@@ -5,7 +5,8 @@
 <meta charset="utf-8">
 <link rel="stylesheet" href="site.css">
 <script src="site.js"></script>
-
+<!-- This style tag used for dynamically loading uploaded fonts. -->
+<style id="OpentypeCustomFontTag"></style>
 <div class="header">
     <div class="container">
         <h1><a href="./">opentype.js</a></h1>
@@ -143,9 +144,13 @@ function displayGlyphData(glyphIndex) {
     }
     var glyph = font.glyphs.get(glyphIndex),
         html = '<dl>';
-    html += '<dt>name</dt><dd>'+glyph.name+'</dd>';
-
+    html += '<dt>glyphName</dt><dd>'+glyph.name+'</dd>';
     if (glyph.unicodes.length > 0) {
+        const char = String.fromCodePoint.apply(null, glyph.unicodes);
+        html += '<dt>glyph</dt><dd style="font-family:\'OpentypeCustomFont\'">'+char+'</dd>';
+        const hex = char.codePointAt(0).toString(16);
+        html += '<dt>htmlCode</dt><dd>&amp;#x'+hex+';</dd>';
+        html += '<dt>cssCode</dt><dd>content: \'\\'+hex+'\';</dd>';
         html += '<dt>unicode</dt><dd>'+ glyph.unicodes.map(formatUnicode).join(', ') +'</dd>';
     }
     html += '<dt>index</dt><dd>'+glyph.index+'</dd>';
@@ -338,7 +343,7 @@ function renderGlyphItem(canvas, glyphIndex, prefix = '', paletteIndex) {
         options,
         { fill: typeof paletteIndex !== 'undefined' ? window.font.palettes.getColor(paletteIndex, window.fontOptions.usePalette) : '#000000' }
     );
-    
+
     if (/(^#ffffff)|(00$)/.test(overwriteOptions.fill)) {
         overwriteOptions.fill = '#000000';
     }
@@ -399,7 +404,7 @@ window.redraw = function(options = { withColors: true, withVariations: true }) {
         updateVariationOptions();
     }
     const selectedPage = document.querySelector('.page-selected');
-    const pageIndex = Array.from(selectedPage.parentElement.children).indexOf(selectedPage);    
+    const pageIndex = Array.from(selectedPage.parentElement.children).indexOf(selectedPage);
     displayGlyphPage(pageIndex);
     const glyphIndex = document.querySelector('[data-glyph-index]')?.dataset.glyphIndex;
     if(glyphIndex) {
@@ -558,10 +563,19 @@ async function display(file, name) {
         } catch (err) {
             showErrorMessage('Error loading font from localStorage');
             error = err;
-        }     
+        }
 
         onFontLoaded(opentype.parse(isWoff2 ? Module.decompress(data) : data, { lowMemory: true }));
         if ( !error ) showErrorMessage('');
+        const styleTag = document.getElementById("OpentypeCustomFontTag");
+        const blob = new Blob([data], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        styleTag.innerHTML = `
+          @font-face {
+            font-family: 'OpentypeCustomFont';
+            src: url(${url});
+          }
+        `.trim();
     } catch (err) {
         showErrorMessage(err.toString());
         throw err;
