@@ -17,9 +17,25 @@ function derive(v0, v1, v2, v3, t) {
  * @constructor
  */
 function BoundingBox() {
+    /**
+     * The minimum X coordinate of the bounding box.
+     * @type {number}
+     */
     this.x1 = Number.NaN;
+    /**
+     * The minimum Y coordinate of the bounding box.
+     * @type {number}
+     */
     this.y1 = Number.NaN;
+    /**
+     * The maximum X coordinate of the bounding box.
+     * @type {number}
+     */
     this.x2 = Number.NaN;
+    /**
+     * The maximum Y coordinate of the bounding box.
+     * @type {number}
+     */
     this.y2 = Number.NaN;
 }
 

@@ -117,44 +117,168 @@ const masks = {
     MAP_ENTRY_SIZE_MASK: 0x30,
 };
 
-// A stateful parser that changes the offset whenever a value is retrieved.
-// The data is a DataView.
+/**
+ * @typedef {Object} LangSysTable
+ * @property {number} reserved
+ * @property {number} reqFeatureIndex
+ * @property {number[]} featureIndexes
+ */
+
+/**
+ * @typedef {Object} LangSysRecord
+ * @property {string} tag
+ * @property {LangSysTable} langSys
+ */
+
+/**
+ * @typedef {Object} ScriptRecord
+ * @property {string} tag
+ * @property {{defaultLangSys?: LangSysTable, langSysRecords: LangSysRecord[]}} script
+ */
+
+/**
+ * @typedef {Object} FeatureRecord
+ * @property {string} tag
+ * @property {{featureParams?: number, lookupListIndexes: number[]}} feature
+ */
+
+/**
+ * @typedef {Object} Lookup
+ * @property {number} lookupType
+ * @property {number} lookupFlag
+ * @property {Array} subtables
+ * @property {number=} markFilteringSet
+ */
+
+/**
+ * @typedef {Object} ItemVariationSubtable
+ * @property {number[]} regionIndexes
+ * @property {number[][]} deltaSets
+ */
+
+/**
+ * @typedef {Object} ItemVariationStore
+ * @property {number} format
+ * @property {Array} variationRegions
+ * @property {ItemVariationSubtable[]} itemVariationSubtables
+ */
+
+/**
+ * @typedef {Object} VariationStore
+ * @property {ItemVariationStore} itemVariationStore
+ */
+
+/**
+ * @typedef {Object} DeltaSetIndexMap
+ * @property {number} format
+ * @property {number} entryFormat
+ * @property {{outerIndex:number,innerIndex:number}[]=} map
+ */
+
+/**
+ * @typedef {Object} TupleVariationHeader
+ * @property {number} variationDataSize
+ * @property {Array<number>=} peakTuple
+ * @property {Array<number>=} intermediateStartTuple
+ * @property {Array<number>=} intermediateEndTuple
+ * @property {Object} flags
+ * @property {number=} sharedTupleRecordsIndex
+ */
+
+
+/**
+ * A stateful parser that changes the offset whenever a value is retrieved.
+ * The data is a DataView.
+ * @constructor
+ * @param {DataView} data
+ * @param {number=} offset
+ */
 function Parser(data, offset) {
+    /**
+     * The binary data to parse.
+     * @type {DataView}
+     */
     this.data = data;
+    /**
+     * The current absolute offset in the data.
+     * @type {number}
+     */
     this.offset = offset;
+    /**
+     * Offset relative to the current offset, used for reading nested structures.
+     * @type {number}
+     */
     this.relativeOffset = 0;
 }
 
+/**
+ * Parse an unsigned 8-bit integer.
+ * @return {number}
+ */
 Parser.prototype.parseByte = function() {
     const v = this.data.getUint8(this.offset + this.relativeOffset);
     this.relativeOffset += 1;
     return v;
 };
 
+/**
+ * Parse a signed 8-bit integer.
+ * @return {number}
+ */
 Parser.prototype.parseChar = function() {
     const v = this.data.getInt8(this.offset + this.relativeOffset);
     this.relativeOffset += 1;
     return v;
 };
 
+/**
+ * Parse an unsigned 8-bit integer.
+ * @return {number}
+ */
 Parser.prototype.parseCard8 = Parser.prototype.parseByte;
 
+/**
+ * Parse an unsigned 16-bit integer.
+ * @return {number}
+ */
 Parser.prototype.parseUShort = function() {
     const v = this.data.getUint16(this.offset + this.relativeOffset);
     this.relativeOffset += 2;
     return v;
 };
 
+/**
+ * Parse an unsigned 16-bit integer.
+ * @return {number}
+ */
 Parser.prototype.parseCard16 = Parser.prototype.parseUShort;
+
+/**
+ * Parse a string identifier.
+ * @return {number}
+ */
 Parser.prototype.parseSID = Parser.prototype.parseUShort;
+
+/**
+ * Parse an offset16 value.
+ * @return {number}
+ */
 Parser.prototype.parseOffset16 = Parser.prototype.parseUShort;
 
+/**
+ * Parse a signed 16-bit integer.
+ * @return {number}
+ */
 Parser.prototype.parseShort = function() {
     const v = this.data.getInt16(this.offset + this.relativeOffset);
     this.relativeOffset += 2;
     return v;
 };
 
+/**
+ * Parse a 2.14 fixed point number.
+ * @return {number}
+ */
 Parser.prototype.parseF2Dot14 = function() {
     const v = this.data.getInt16(this.offset + this.relativeOffset) / 16384;
     this.relativeOffset += 2;
@@ -162,32 +286,57 @@ Parser.prototype.parseF2Dot14 = function() {
 };
 
 
+/**
+ * Parse a 24-bit unsigned integer.
+ * @return {number}
+ */
 Parser.prototype.parseUInt24 = function() {
     const v = getUInt24(this.data, this.offset + this.relativeOffset);
     this.relativeOffset += 3;
     return v;
 };
 
+/**
+ * Parse a 32-bit unsigned integer.
+ * @return {number}
+ */
 Parser.prototype.parseULong = function() {
     const v = getULong(this.data, this.offset + this.relativeOffset);
     this.relativeOffset += 4;
     return v;
 };
 
+/**
+ * Parse a 32-bit signed integer.
+ * @return {number}
+ */
 Parser.prototype.parseLong = function() {
     const v = getLong(this.data, this.offset + this.relativeOffset);
     this.relativeOffset += 4;
     return v;
 };
 
+/**
+ * Parse a 32-bit unsigned integer offset.
+ * @return {number}
+ */
 Parser.prototype.parseOffset32 = Parser.prototype.parseULong;
 
+/**
+ * Parse a 16.16 fixed point number.
+ * @return {number}
+ */
 Parser.prototype.parseFixed = function() {
     const v = getFixed(this.data, this.offset + this.relativeOffset);
     this.relativeOffset += 4;
     return v;
 };
 
+/**
+ * Parse a string of the given byte length.
+ * @param {number} length
+ * @return {string}
+ */
 Parser.prototype.parseString = function(length) {
     const dataView = this.data;
     const offset = this.offset + this.relativeOffset;
@@ -200,6 +349,10 @@ Parser.prototype.parseString = function(length) {
     return string;
 };
 
+/**
+ * Parse a 4-character tag.
+ * @return {string}
+ */
 Parser.prototype.parseTag = function() {
     return this.parseString(4);
 };
@@ -209,6 +362,10 @@ Parser.prototype.parseTag = function() {
 // only take the last 32 bits.
 // + Since until 2038 those bits will be filled by zeros we can ignore them.
 // FIXME: at some point we need to support dates >2038 using the full 64bit
+/**
+ * Parse a LONGDATETIME (Mac epoch) and convert to Unix seconds.
+ * @return {number}
+ */
 Parser.prototype.parseLongDateTime = function() {
     let v = getULong(this.data, this.offset + this.relativeOffset + 4);
     // Subtract seconds between 01/01/1904 and 01/01/1970
@@ -218,6 +375,11 @@ Parser.prototype.parseLongDateTime = function() {
     return v;
 };
 
+/**
+ * Parse a fixed-point version number.
+ * @param {number=} minorBase
+ * @return {number}
+ */
 Parser.prototype.parseVersion = function(minorBase) {
     const major = getUShort(this.data, this.offset + this.relativeOffset);
 
@@ -230,6 +392,12 @@ Parser.prototype.parseVersion = function(minorBase) {
     return major + minor / minorBase / 10;
 };
 
+/**
+ * Skip a number of items of the given type.
+ * @param {string} type
+ * @param {number=} amount
+ * @return {undefined}
+ */
 Parser.prototype.skip = function(type, amount) {
     if (amount === undefined) {
         amount = 1;
@@ -241,6 +409,11 @@ Parser.prototype.skip = function(type, amount) {
 ///// Parsing lists and records ///////////////////////////////
 
 // Parse a list of 32 bit unsigned integers.
+/**
+ * Parse a list of 32-bit unsigned integers.
+ * @param {number=} count
+ * @return {number[]}
+ */
 Parser.prototype.parseULongList = function(count) {
     if (count === undefined) { count = this.parseULong(); }
     const offsets = new Array(count);
@@ -257,8 +430,17 @@ Parser.prototype.parseULongList = function(count) {
 
 // Parse a list of 16 bit unsigned integers. The length of the list can be read on the stream
 // or provided as an argument.
-Parser.prototype.parseOffset16List =
-Parser.prototype.parseUShortList = function(count) {
+/**
+ * Parse a list of 16-bit unsigned integers.
+ * @param {number=} count
+ * @return {number[]}
+ */
+/**
+ * Parse a list of 16-bit unsigned integers.
+ * @param {number=} count
+ * @return {number[]}
+ */
+Parser.prototype.parseOffset16List = function(count) {
     if (count === undefined) { count = this.parseUShort(); }
     const offsets = new Array(count);
     const dataView = this.data;
@@ -272,7 +454,19 @@ Parser.prototype.parseUShortList = function(count) {
     return offsets;
 };
 
+/**
+ * Parse a list of 16-bit unsigned integers.
+ * @param {number=} count
+ * @return {number[]}
+ */
+Parser.prototype.parseUShortList = Parser.prototype.parseOffset16List;
+
 // Parses a list of 16 bit signed integers.
+/**
+ * Parse a list of 16-bit signed integers.
+ * @param {number} count
+ * @return {number[]}
+ */
 Parser.prototype.parseShortList = function(count) {
     const list = new Array(count);
     const dataView = this.data;
@@ -287,6 +481,11 @@ Parser.prototype.parseShortList = function(count) {
 };
 
 // Parses a list of bytes.
+/**
+ * Parse a list of bytes.
+ * @param {number} count
+ * @return {number[]}
+ */
 Parser.prototype.parseByteList = function(count) {
     const list = new Array(count);
     const dataView = this.data;
@@ -303,6 +502,10 @@ Parser.prototype.parseByteList = function(count) {
  * Parse a list of items.
  * Record count is optional, if omitted it is read from the stream.
  * itemCallback is one of the Parser methods.
+ * @template T
+ * @param {number|function()} [count]
+ * @param {function():T} [itemCallback]
+ * @return {Array<T>}
  */
 Parser.prototype.parseList = function(count, itemCallback) {
     if (!itemCallback) {
@@ -316,6 +519,13 @@ Parser.prototype.parseList = function(count, itemCallback) {
     return list;
 };
 
+/**
+ * Parse a list of items using a 32-bit count.
+ * @template T
+ * @param {number|function()} [count]
+ * @param {function():T} [itemCallback]
+ * @return {Array<T>}
+ */
 Parser.prototype.parseList32 = function(count, itemCallback) {
     if (!itemCallback) {
         itemCallback = count;
@@ -332,6 +542,9 @@ Parser.prototype.parseList32 = function(count, itemCallback) {
  * Parse a list of records.
  * Record count is optional, if omitted it is read from the stream.
  * Example of recordDescription: { sequenceIndex: Parser.uShort, lookupListIndex: Parser.uShort }
+ * @param {number|Object} [count]
+ * @param {Object} [recordDescription]
+ * @return {Array<Object>}
  */
 Parser.prototype.parseRecordList = function(count, recordDescription) {
     // If the count argument is absent, read it in the stream.
@@ -353,6 +566,12 @@ Parser.prototype.parseRecordList = function(count, recordDescription) {
     return records;
 };
 
+/**
+ * Parse a list of records using a 32-bit count.
+ * @param {number|Object} [count]
+ * @param {Object} [recordDescription]
+ * @return {Array<Object>}
+ */
 Parser.prototype.parseRecordList32 = function(count, recordDescription) {
     // If the count argument is absent, read it in the stream.
     if (!recordDescription) {
@@ -373,6 +592,12 @@ Parser.prototype.parseRecordList32 = function(count, recordDescription) {
     return records;
 };
 
+/**
+ * Parse N tuples of F2.14 values.
+ * @param {number} tupleCount
+ * @param {number} axisCount
+ * @return {Array<Array<number>>}
+ */
 Parser.prototype.parseTupleRecords = function(tupleCount, axisCount) {
     let tuples = [];
     for (let i = 0; i < tupleCount; i++) {
@@ -385,8 +610,12 @@ Parser.prototype.parseTupleRecords = function(tupleCount, axisCount) {
     return tuples;
 };
 
-// Parse a data structure into an object
-// Example of description: { sequenceIndex: Parser.uShort, lookupListIndex: Parser.uShort }
+/**
+ * Parse a data structure into an object.
+ * Example of description: { sequenceIndex: Parser.uShort, lookupListIndex: Parser.uShort }
+ * @param {Object|function()} description
+ * @return {Object}
+ */
 Parser.prototype.parseStruct = function(description) {
     if (typeof description === 'function') {
         return description.call(this);
@@ -406,6 +635,8 @@ Parser.prototype.parseStruct = function(description) {
  * Parse a GPOS valueRecord
  * https://docs.microsoft.com/en-us/typography/opentype/spec/gpos#value-record
  * valueFormat is optional, if omitted it is read from the stream.
+ * @param {number=} valueFormat
+ * @return {Object|undefined}
  */
 Parser.prototype.parseValueRecord = function(valueFormat) {
     if (valueFormat === undefined) {
@@ -448,6 +679,11 @@ Parser.prototype.parseValueRecordList = function() {
     return values;
 };
 
+/**
+ * Parse a pointer to another offset-based structure.
+ * @param {Object|function()} description
+ * @return {Object|undefined}
+ */
 Parser.prototype.parsePointer = function(description) {
     const structOffset = this.parseOffset16();
     if (structOffset > 0) {
@@ -457,6 +693,11 @@ Parser.prototype.parsePointer = function(description) {
     return undefined;
 };
 
+/**
+ * Parse a 32-bit pointer to another offset-based structure.
+ * @param {Object|function()} description
+ * @return {Object|undefined}
+ */
 Parser.prototype.parsePointer32 = function(description) {
     const structOffset = this.parseOffset32();
     if (structOffset > 0) {
@@ -472,6 +713,13 @@ Parser.prototype.parsePointer32 = function(description) {
  * If itemCallback is not provided, a list of list of UShort is assumed.
  * If provided, itemCallback is called on each item and must parse the item.
  * See examples in tables/gsub.mjs
+ */
+/**
+ * Parse a list of lists of values from the stream.
+ * If no itemCallback is provided, it parses a list of UShort lists.
+ * @template T
+ * @param {function():T} [itemCallback]
+ * @return {Array<T|undefined>}
  */
 Parser.prototype.parseListOfLists = function(itemCallback) {
     const offsets = this.parseOffset16List();
@@ -503,11 +751,10 @@ Parser.prototype.parseListOfLists = function(itemCallback) {
     return list;
 };
 
-///// Complex tables parsing //////////////////////////////////
-
-// Parse a coverage table in a GSUB, GPOS or GDEF table.
-// https://www.microsoft.com/typography/OTSPEC/chapter2.htm
-// parser.offset must point to the start of the table containing the coverage.
+/**
+ * Parse a coverage table in a GSUB, GPOS or GDEF table.
+ * @return {Object}
+ */
 Parser.prototype.parseCoverage = function() {
     const startOffset = this.offset + this.relativeOffset;
     const format = this.parseUShort();
@@ -534,8 +781,10 @@ Parser.prototype.parseCoverage = function() {
     throw new Error('0x' + startOffset.toString(16) + ': Coverage format must be 1 or 2.');
 };
 
-// Parse a Class Definition Table in a GSUB, GPOS or GDEF table.
-// https://www.microsoft.com/typography/OTSPEC/chapter2.htm
+/**
+ * Parse a class definition table in a GSUB, GPOS or GDEF table.
+ * @return {Object}
+ */
 Parser.prototype.parseClassDef = function() {
     const startOffset = this.offset + this.relativeOffset;
     const format = this.parseUShort();
@@ -601,17 +850,91 @@ Parser.pointer32 = function(description) {
     };
 };
 
+/**
+ * Parse a 4-character tag.
+ * @return {string}
+ */
 Parser.tag = Parser.prototype.parseTag;
+
+/**
+ * Parse an unsigned 8-bit integer.
+ * @return {number}
+ */
 Parser.byte = Parser.prototype.parseByte;
-Parser.uShort = Parser.offset16 = Parser.prototype.parseUShort;
+
+/**
+ * Parse an unsigned 16-bit integer.
+ * @return {number}
+ */
+Parser.uShort = Parser.prototype.parseUShort;
+
+/**
+ * Parse an offset16 value.
+ * @return {number}
+ */
+Parser.offset16 = Parser.prototype.parseUShort;
+
+/**
+ * Parse a list of 16-bit unsigned integers.
+ * @param {number=} count
+ * @return {number[]}
+ */
 Parser.uShortList = Parser.prototype.parseUShortList;
+
+/**
+ * Parse a 24-bit unsigned integer.
+ * @return {number}
+ */
 Parser.uInt24 = Parser.prototype.parseUInt24;
-Parser.uLong = Parser.offset32 = Parser.prototype.parseULong;
+
+/**
+ * Parse a 32-bit unsigned integer.
+ * @return {number}
+ */
+Parser.uLong = Parser.prototype.parseULong;
+
+/**
+ * Parse a 32-bit unsigned integer offset.
+ * @return {number}
+ */
+Parser.offset32 = Parser.prototype.parseULong;
+
+/**
+ * Parse a list of 32-bit unsigned integers.
+ * @param {number=} count
+ * @return {number[]}
+ */
 Parser.uLongList = Parser.prototype.parseULongList;
+
+/**
+ * Parse a 16.16 fixed point number.
+ * @return {number}
+ */
 Parser.fixed = Parser.prototype.parseFixed;
+
+/**
+ * Parse a 2.14 fixed point number.
+ * @return {number}
+ */
 Parser.f2Dot14 = Parser.prototype.parseF2Dot14;
+
+/**
+ * Parse a structure based on a description or callback.
+ * @param {Object|function()} description
+ * @return {Object}
+ */
 Parser.struct = Parser.prototype.parseStruct;
+
+/**
+ * Parse a coverage table.
+ * @return {Object}
+ */
 Parser.coverage = Parser.prototype.parseCoverage;
+
+/**
+ * Parse a class definition table.
+ * @return {Object}
+ */
 Parser.classDef = Parser.prototype.parseClassDef;
 
 ///// Script, Feature, Lookup lists ///////////////////////////////////////////////
@@ -623,6 +946,10 @@ const langSysTable = {
     featureIndexes: Parser.uShortList
 };
 
+/**
+ * Parse a ScriptList and return an array of `ScriptRecord`.
+ * @return {ScriptRecord[]}
+ */
 Parser.prototype.parseScriptList = function() {
     return this.parsePointer(Parser.recordList({
         tag: Parser.tag,
@@ -636,6 +963,10 @@ Parser.prototype.parseScriptList = function() {
     })) || [];
 };
 
+/**
+ * Parse a FeatureList and return an array of `FeatureRecord`.
+ * @return {FeatureRecord[]}
+ */
 Parser.prototype.parseFeatureList = function() {
     return this.parsePointer(Parser.recordList({
         tag: Parser.tag,
@@ -646,6 +977,11 @@ Parser.prototype.parseFeatureList = function() {
     })) || [];
 };
 
+/**
+ * Parse a LookupList using provided parsers and return an array of `Lookup` objects.
+ * @param {Object} lookupTableParsers - map of lookupType to parser function
+ * @return {Lookup[]}
+ */
 Parser.prototype.parseLookupList = function(lookupTableParsers) {
     return this.parsePointer(Parser.list(Parser.pointer(function() {
         const lookupType = this.parseUShort();
@@ -661,6 +997,10 @@ Parser.prototype.parseLookupList = function(lookupTableParsers) {
     }))) || [];
 };
 
+/**
+ * Parse a FeatureVariationsList.
+ * @return {Object[]}
+ */
 Parser.prototype.parseFeatureVariationsList = function() {
     return this.parsePointer32(function() {
         const majorVersion = this.parseUShort();
@@ -678,6 +1018,10 @@ Parser.prototype.parseFeatureVariationsList = function() {
 // https://learn.microsoft.com/en-us/typography/opentype/spec/otvarcommonformats
 // https://learn.microsoft.com/en-us/typography/opentype/spec/otvarcommonformats#item-variation-store-header-and-item-variation-data-subtables
 
+/**
+ * Parse a VariationStore structure.
+ * @return {VariationStore}
+ */
 Parser.prototype.parseVariationStore = function() {
     const vsOffset = this.relativeOffset;
     const length = this.parseUShort();
@@ -688,6 +1032,10 @@ Parser.prototype.parseVariationStore = function() {
     return variationStore;
 };
 
+/**
+ * Parse an ItemVariationStore.
+ * @return {ItemVariationStore}
+ */
 Parser.prototype.parseItemVariationStore = function() {
     const itemStoreOffset = this.relativeOffset;
     const iVStore = {
@@ -712,6 +1060,10 @@ Parser.prototype.parseItemVariationStore = function() {
     return iVStore;
 };
 
+/**
+ * Parse a VariationRegionList.
+ * @return {Array<Object>}
+ */
 Parser.prototype.parseVariationRegionList = function() {
     const axisCount = this.parseUShort();
     const regionCount = this.parseUShort();
@@ -724,6 +1076,10 @@ Parser.prototype.parseVariationRegionList = function() {
     });
 };
 
+/**
+ * Parse an ItemVariationSubtable.
+ * @return {ItemVariationSubtable}
+ */
 Parser.prototype.parseItemVariationSubtable = function() {
     const itemCount = this.parseUShort();
     const wordDeltaCount = this.parseUShort();
@@ -739,6 +1095,10 @@ Parser.prototype.parseItemVariationSubtable = function() {
     return subtable;
 };
 
+/**
+ * Parse a DeltaSetIndexMap.
+ * @return {DeltaSetIndexMap}
+ */
 Parser.prototype.parseDeltaSetIndexMap = function() {
     const format = this.parseByte();
     const entryFormat = this.parseByte();
@@ -790,6 +1150,13 @@ Parser.prototype.parseDeltaSetIndexMap = function() {
     };
 };
 
+/**
+ * Parse delta sets for item variation subtables.
+ * @param {number} itemCount
+ * @param {number} wordDeltaCount
+ * @param {number} regionIndexCount
+ * @return {number[][]}
+ */
 Parser.prototype.parseDeltaSets = function(itemCount, wordDeltaCount, regionIndexCount) {
     const deltas = Array.from({length: itemCount},()=>[]); // two-dimensional array with empty rows and columns
 
@@ -816,6 +1183,13 @@ Parser.prototype.parseDeltaSets = function(itemCount, wordDeltaCount, regionInde
     return deltas;
 };
 
+/**
+ * Parse a TupleVariationStoreList and return a glyph-indexed map of variation stores.
+ * @param {number} axisCount
+ * @param {string} flavor
+ * @param {Map<number, Object>|Array} glyphs
+ * @return {Object.<number, (Object|undefined)>}
+ */
 Parser.prototype.parseTupleVariationStoreList = function(axisCount, flavor, glyphs) {
     const glyphCount = this.parseUShort();
     const flags = this.parseUShort();
@@ -852,6 +1226,15 @@ Parser.prototype.parseTupleVariationStoreList = function(axisCount, flavor, glyp
     return glyphVariations;
 };
 
+/**
+ * Parse a TupleVariationStore at the given offset.
+ * @param {number} tableOffset
+ * @param {number} axisCount
+ * @param {string} flavor
+ * @param {Map<number, Object>|Array} glyphs
+ * @param {number} glyphIndex
+ * @return {Object}
+ */
 Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, flavor, glyphs, glyphIndex) {
     const relativeOffset = this.relativeOffset;
     
@@ -971,6 +1354,12 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
     return result;
 };
 
+/**
+ * Parse a TupleVariationHeader.
+ * @param {number} axisCount
+ * @param {string} flavor
+ * @return {TupleVariationHeader}
+ */
 Parser.prototype.parseTupleVariationHeader = function(axisCount, flavor) {
     const variationDataSize = this.parseUShort();
     const tupleIndex = this.parseUShort();
@@ -1004,6 +1393,10 @@ Parser.prototype.parseTupleVariationHeader = function(axisCount, flavor) {
     return result;
 };
 
+/**
+ * Parse packed point numbers and return an array of point indices.
+ * @return {number[]}
+ */
 Parser.prototype.parsePackedPointNumbers = function() {
     const countByte1 = this.parseByte();
     const points = [];
@@ -1040,6 +1433,11 @@ Parser.prototype.parsePackedPointNumbers = function() {
     return points;
 };
 
+/**
+ * Parse packed delta values and return an array of deltas.
+ * @param {number} expectedCount
+ * @return {number[]}
+ */
 Parser.prototype.parsePackedDeltas = function(expectedCount) {
     const deltas = [];
     
@@ -1064,18 +1462,110 @@ Parser.prototype.parsePackedDeltas = function(expectedCount) {
 };
 
 export default {
+    /**
+     * Parse an unsigned 8-bit integer.
+     * @alias opentype._parse.getByte
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
     getByte,
+    /**
+     * Parse an unsigned 8-bit integer.
+     * @alias opentype._parse.getCard8
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
     getCard8: getByte,
+    /**
+     * Parse an unsigned 16-bit integer.
+     * @alias opentype._parse.getUShort
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
     getUShort,
+    /**
+     * Parse an unsigned 16-bit integer.
+     * @alias opentype._parse.getCard16
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
     getCard16: getUShort,
+    /**
+     * Parse a signed 16-bit integer.
+     * @alias opentype._parse.getShort
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
     getShort,
+    /**
+     * Parse a 24-bit unsigned integer.
+     * @alias opentype._parse.getUInt24
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
     getUInt24,
+    /**
+     * Parse a 32-bit unsigned integer.
+     * @alias opentype._parse.getULong
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
     getULong,
+    /**
+     * Parse a 16.16 fixed point number.
+     * @alias opentype._parse.getFixed
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {number}
+     */
     getFixed,
+    /**
+     * Parse a 4-character tag.
+     * @alias opentype._parse.getTag
+     * @param {DataView} data
+     * @param {number} offset
+     * @return {string}
+     */
     getTag,
+    /**
+     * Parse an offset from the DataView.
+     * @alias opentype._parse.getOffset
+     * @param {DataView} data
+     * @param {number} offset
+     * @param {number} offSize
+     * @return {number}
+     */
     getOffset,
+    /**
+     * Retrieve a number of bytes from start offset to the end offset.
+     * @alias opentype._parse.getBytes
+     * @param {DataView} dataView
+     * @param {number} startOffset
+     * @param {number} endOffset
+     * @return {number[]}
+     */
     getBytes,
+    /**
+     * Convert bytes to a string.
+     * @alias opentype._parse.bytesToString
+     * @param {number[]} bytes
+     * @return {string}
+     */
     bytesToString,
+    /**
+     * Parser constructor.
+     * @alias opentype._parse.Parser
+     * @constructor
+     * @param {DataView} data
+     * @param {number=} offset
+     */
     Parser,
 };
 

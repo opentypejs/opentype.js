@@ -1,26 +1,357 @@
 /**
- * @fileoverview Closure Compiler externs for opentype.js version.
- * @see http://opentype.js.org/
+ * @fileoverview Closure Compiler externs for opentype.js generated from source JSDoc.
  * @externs
  */
 
 /** @const */
 var opentype = {};
+
+/**
+ * @typedef NamePlatform
+ * @type {{
+ *      fontFamily: Object<string,string>,
+ *      fontSubfamily: Object<string,string>,
+ *      fullName: Object<string,string>,
+ *      postScriptName: Object<string,string>,
+ *      designer: Object<string,string>,
+ *      designerURL: Object<string,string>,
+ *      manufacturer: Object<string,string>,
+ *      manufacturerURL: Object<string,string>,
+ *      license: Object<string,string>,
+ *      licenseURL: Object<string,string>,
+ *      version: Object<string,string>,
+ *      description: Object<string,string>,
+ *      copyright: Object<string,string>,
+ *      trademark: Object<string,string>
+ * }}
+ */
+var NamePlatform;
+
+/**
+ * @typedef FontOptions
+ * @type Object
+ * @property {Boolean} empty - whether to create a new empty font
+ * @property {string} familyName
+ * @property {string} styleName
+ * @property {string=} fullName
+ * @property {string=} postScriptName
+ * @property {string=} designer
+ * @property {string=} designerURL
+ * @property {string=} manufacturer
+ * @property {string=} manufacturerURL
+ * @property {string=} license
+ * @property {string=} licenseURL
+ * @property {string=} version
+ * @property {string=} description
+ * @property {string=} copyright
+ * @property {string=} trademark
+ * @property {Number} unitsPerEm
+ * @property {Number} ascender
+ * @property {Number} descender
+ * @property {Number} createdTimestamp
+ * @property {Number} weightClass
+ * @property {Number} italicAngle
+ * @property {string=} widthClass
+ * @property {string=} fsSelection
+ */
+var FontOptions;
+
+/**
+ * @typedef GlyphRenderOptions
+ * @type Object
+ * @property {string} [script] - script used to determine which features to apply. By default, 'DFLT' or 'latn' is used.
+ *                               See https://www.microsoft.com/typography/otspec/scripttags.htm
+ * @property {string} [language='dflt'] - language system used to determine which features to apply.
+ *                                        See https://www.microsoft.com/typography/developers/opentype/languagetags.aspx
+ * @property {boolean} [kerning=true] - whether to include kerning values
+ * @property {object} [features] - OpenType Layout feature tags. Used to enable or disable the features of the given script/language system.
+ *                                 See https://www.microsoft.com/typography/otspec/featuretags.htm
+ * @property {boolean} [hinting=false] - whether to apply font hinting to the outlines
+ * @property {integer} [usePalette=0] For COLR/CPAL fonts, the zero-based index of the color palette to use. (Use `Font.palettes.get()` to get the available palettes)
+ * @property {boolean} [drawLayers=true] For COLR/CPAL fonts, this can be turned to false in order to draw the fallback glyphs instead
+ * @property {boolean} [drawSVG=true] For SVG fonts, this can be turned to false in order to draw the fallback glyphs instead
+ */
+var GlyphRenderOptions;
+
+/**
+ * @typedef GlyphOptions
+ * @type Object
+ * @property {string} [name] - The glyph name
+ * @property {number} [unicode]
+ * @property {Array} [unicodes]
+ * @property {number} [xMin]
+ * @property {number} [yMin]
+ * @property {number} [xMax]
+ * @property {number} [yMax]
+ * @property {number} [advanceWidth]
+ * @property {number} [leftSideBearing]
+ */
+var GlyphOptions;
+
+/**
+ * @typedef {Object} SVGImage
+ * @prop {number} leftSideBearing
+ * @prop {number} baseline
+ * @prop {HTMLImageElement} image
+ */
+var SVGImage;
+
 /**
  * A Font represents a loaded OpenType font file.
  * It contains a set of glyphs and methods to draw text on a drawing context,
  * or to get a path representing the text.
+ * @exports opentype.Font
+ * @class
  * @param {FontOptions}
  * @constructor
  */
-opentype.Font = function(options) {};
+opentype.Font = function() {};
+
+/**
+ * @exports opentype.Glyph
+ * @class
+ * @param {GlyphOptions}
+ * @constructor
+ */
+opentype.Glyph = function() {};
+
+/**
+ * A bézier path containing a set of path commands similar to a SVG path.
+ * Paths can be drawn on a context using `draw`.
+ * @exports opentype.Path
+ * @class
+ * @constructor
+ */
+opentype.Path = function() {};
+
+/**
+ * A bounding box is an enclosing box that describes the smallest measure within which all the points lie.
+ * It is used to calculate the bounding box of a glyph or text path.
+ *
+ * On initialization, x1/y1/x2/y2 will be NaN. Check if the bounding box is empty using `isEmpty()`.
+ *
+ * @exports opentype.BoundingBox
+ * @class
+ * @constructor
+ */
+opentype.BoundingBox = function() {};
+
+/**
+ * Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
+ * Throws an error if the font could not be parsed.
+ * @param  {ArrayBuffer}
+ * @param  {Object} opt - options for parsing
+ * @return {opentype.Font}
+ */
+opentype.parse = function() {};
+
+/**
+ * Asynchronously load the font from a URL or a filesystem. When done, call the callback
+ * with two arguments `(err, font)`. The `err` will be null on success,
+ * the `font` is a Font object.
+ * We use the node.js callback convention so that
+ * opentype.js can integrate with frameworks like async.js.
+ * @alias opentype.load
+ * @deprecated
+ */
+opentype.load = function() {};
+
+/**
+ * Synchronously load the font from a URL or file.
+ * When done, returns the font object or throws an error.
+ * @alias opentype.loadSync
+ * @deprecated
+ */
+opentype.loadSync = function() {};
+
+/**
+     * The minimum X coordinate of the bounding box.
+     * @type {number}
+     */
+opentype.BoundingBox.prototype.x1 = function() {};
+
+/**
+     * The minimum Y coordinate of the bounding box.
+     * @type {number}
+     */
+opentype.BoundingBox.prototype.y1 = function() {};
+
+/**
+     * The maximum X coordinate of the bounding box.
+     * @type {number}
+     */
+opentype.BoundingBox.prototype.x2 = function() {};
+
+/**
+     * The maximum Y coordinate of the bounding box.
+     * @type {number}
+     */
+opentype.BoundingBox.prototype.y2 = function() {};
+
+/**
+ * Returns true if the bounding box is empty, that is, no points have been added to the box yet.
+ */
+opentype.BoundingBox.prototype.isEmpty = function() {};
+
+/**
+ * Add the point to the bounding box.
+ * The x1/y1/x2/y2 coordinates of the bounding box will now encompass the given point.
+ * @param {number} x - The X coordinate of the point.
+ * @param {number} y - The Y coordinate of the point.
+ */
+opentype.BoundingBox.prototype.addPoint = function() {};
+
+/**
+ * Add a X coordinate to the bounding box.
+ * This extends the bounding box to include the X coordinate.
+ * This function is used internally inside of addBezier.
+ * @param {number} x - The X coordinate of the point.
+ */
+opentype.BoundingBox.prototype.addX = function() {};
+
+/**
+ * Add a Y coordinate to the bounding box.
+ * This extends the bounding box to include the Y coordinate.
+ * This function is used internally inside of addBezier.
+ * @param {number} y - The Y coordinate of the point.
+ */
+opentype.BoundingBox.prototype.addY = function() {};
+
+/**
+ * Add a Bézier curve to the bounding box.
+ * This extends the bounding box to include the entire Bézier.
+ * @param {number} x0 - The starting X coordinate.
+ * @param {number} y0 - The starting Y coordinate.
+ * @param {number} x1 - The X coordinate of the first control point.
+ * @param {number} y1 - The Y coordinate of the first control point.
+ * @param {number} x2 - The X coordinate of the second control point.
+ * @param {number} y2 - The Y coordinate of the second control point.
+ * @param {number} x - The ending X coordinate.
+ * @param {number} y - The ending Y coordinate.
+ */
+opentype.BoundingBox.prototype.addBezier = function() {};
+
+/**
+ * Add a quadratic curve to the bounding box.
+ * This extends the bounding box to include the entire quadratic curve.
+ * @param {number} x0 - The starting X coordinate.
+ * @param {number} y0 - The starting Y coordinate.
+ * @param {number} x1 - The X coordinate of the control point.
+ * @param {number} y1 - The Y coordinate of the control point.
+ * @param {number} x - The ending X coordinate.
+ * @param {number} y - The ending Y coordinate.
+ */
+opentype.BoundingBox.prototype.addQuad = function() {};
+
+/**
+     * Variable font variation data, available if the font has variable axes (gvar or cff2 tables).
+     * @type {VariationManager|undefined}
+     * @alias opentype.Font.prototype.variation
+     */
+opentype.Font.prototype.variation = function() {};
+
+/**
+         * Font name information in multiple languages and platforms.
+         * @type {{unicode: ?NamePlatform, macintosh: ?NamePlatform, windows: ?NamePlatform}}
+         */
+opentype.Font.prototype.names = function() {};
+
+/**
+         * Units per em (the font design grid size).
+         * @type {number}
+         */
+opentype.Font.prototype.unitsPerEm = function() {};
+
+/**
+         * The ascender value of the font.
+         * @type {number}
+         */
+opentype.Font.prototype.ascender = function() {};
+
+/**
+         * The descender value of the font (typically negative).
+         * @type {number}
+         */
+opentype.Font.prototype.descender = function() {};
+
+/**
+         * Unix timestamp when the font was created.
+         * @type {number}
+         */
+opentype.Font.prototype.createdTimestamp = function() {};
+
+/**
+         * The italic angle of the font in degrees.
+         * @type {number}
+         */
+opentype.Font.prototype.italicAngle = function() {};
+
+/**
+         * The weight class of the font (100-900).
+         * @type {number}
+         */
+opentype.Font.prototype.weightClass = function() {};
+
+/**
+         * Font table objects containing raw table data.
+         * @type {Object}
+         */
+opentype.Font.prototype.tables = function() {};
+
+/**
+     * Indicates if the font is supported. Deprecated - errors are thrown during parsing if font is unsupported.
+     * @type {boolean}
+     */
+opentype.Font.prototype.supported = function() {};
+
+/**
+     * The set of glyphs in this font.
+     * @type {glyphset.GlyphSet}
+     */
+opentype.Font.prototype.glyphs = function() {};
+
+/**
+     * Character encoding table for the font.
+     * @type {Object}
+     */
+opentype.Font.prototype.encoding = function() {};
+
+/**
+     * Glyph positioning information for OpenType layout features.
+     * @type {Object}
+     */
+opentype.Font.prototype.position = function() {};
+
+/**
+     * Glyph substitution information for OpenType layout features.
+     * @type {Object}
+     */
+opentype.Font.prototype.substitution = function() {};
+
+/**
+     * Color palette manager for COLR/CPAL color fonts.
+     * @type {Object}
+     */
+opentype.Font.prototype.palettes = function() {};
+
+/**
+     * Layer manager for COLR layered color fonts.
+     * @type {Object}
+     */
+opentype.Font.prototype.layers = function() {};
+
+/**
+     * SVG image manager for SVG table color fonts.
+     * @type {Object}
+     */
+opentype.Font.prototype.svgImages = function() {};
 
 /**
  * Check if the font has a glyph for the given character.
  * @param  {string}
  * @return {Boolean}
  */
-opentype.Font.prototype.hasChar = function(c) {};
+opentype.Font.prototype.hasChar = function() {};
 
 /**
  * Convert the given character to a single glyph index.
@@ -29,67 +360,104 @@ opentype.Font.prototype.hasChar = function(c) {};
  * @param  {string}
  * @return {Number}
  */
-opentype.Font.prototype.charToGlyphIndex = function(s) {};
+opentype.Font.prototype.charToGlyphIndex = function() {};
 
 /**
  * Convert the given character to a single Glyph object.
  * Note that this function assumes that there is a one-to-one mapping between
  * the given character and a glyph; for complex scripts this might not be the case.
- * @param  {string} c
+ * @param  {string}
  * @return {opentype.Glyph}
  */
-opentype.Font.prototype.charToGlyph = function(c) {};
+opentype.Font.prototype.charToGlyph = function() {};
+
+/**
+ * Update features
+ * @param {any} options features options
+ */
+opentype.Font.prototype.updateFeatures = function() {};
+
+/**
+ * Convert the given text to a list of Glyph indexes.
+ * Note that there is no strict one-to-one mapping between characters and
+ * glyphs, so the list of returned glyph indexes can be larger or smaller than the
+ * length of the given string.
+ * @param  {string}
+ * @param  {GlyphRenderOptions} [options]
+ * @return {number[]}
+ */
+opentype.Font.prototype.stringToGlyphIndexes = function() {};
 
 /**
  * Convert the given text to a list of Glyph objects.
  * Note that there is no strict one-to-one mapping between characters and
  * glyphs, so the list of returned glyphs can be larger or smaller than the
  * length of the given string.
- * @param  {string} s
- * @param  {Object=} options
+ * @param  {string}
+ * @param  {GlyphRenderOptions} [options]
  * @return {opentype.Glyph[]}
  */
-opentype.Font.prototype.stringToGlyphs = function(s, options) {};
+opentype.Font.prototype.stringToGlyphs = function() {};
 
 /**
  * @param  {string}
  * @return {Number}
  */
-opentype.Font.prototype.nameToGlyphIndex = function(name) {};
+opentype.Font.prototype.nameToGlyphIndex = function() {};
 
 /**
  * @param  {string}
  * @return {opentype.Glyph}
  */
-opentype.Font.prototype.nameToGlyph = function(name) {};
+opentype.Font.prototype.nameToGlyph = function() {};
 
 /**
  * @param  {Number}
  * @return {String}
  */
-opentype.Font.prototype.glyphIndexToName = function(gid) {};
+opentype.Font.prototype.glyphIndexToName = function() {};
 
 /**
  * Retrieve the value of the kerning pair between the left glyph (or its index)
  * and the right glyph (or its index). If no kerning pair is found, return 0.
  * The kerning value gets added to the advance width when calculating the spacing
  * between glyphs.
+ * For GPOS kerning, this method uses the default script and language, which covers
+ * most use cases. To have greater control, use font.position.getKerningValue .
  * @param  {opentype.Glyph} leftGlyph
  * @param  {opentype.Glyph} rightGlyph
  * @return {Number}
  */
-opentype.Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {};
+opentype.Font.prototype.getKerningValue = function() {};
+
+/**
+ * @typedef GlyphRenderOptions
+ * @type Object
+ * @property {string} [script] - script used to determine which features to apply. By default, 'DFLT' or 'latn' is used.
+ *                               See https://www.microsoft.com/typography/otspec/scripttags.htm
+ * @property {string} [language='dflt'] - language system used to determine which features to apply.
+ *                                        See https://www.microsoft.com/typography/developers/opentype/languagetags.aspx
+ * @property {boolean} [kerning=true] - whether to include kerning values
+ * @property {object} [features] - OpenType Layout feature tags. Used to enable or disable the features of the given script/language system.
+ *                                 See https://www.microsoft.com/typography/otspec/featuretags.htm
+ * @property {boolean} [hinting=false] - whether to apply font hinting to the outlines
+ * @property {integer} [usePalette=0] For COLR/CPAL fonts, the zero-based index of the color palette to use. (Use `Font.palettes.get()` to get the available palettes)
+ * @property {boolean} [drawLayers=true] For COLR/CPAL fonts, this can be turned to false in order to draw the fallback glyphs instead
+ * @property {boolean} [drawSVG=true] For SVG fonts, this can be turned to false in order to draw the fallback glyphs instead
+ */
+opentype.Font.prototype.defaultRenderOptions = function() {};
 
 /**
  * Helper function that invokes the given callback for each glyph in the given text.
- * The callback gets `(glyph, x, y, fontSize, options)`.* @param  {string} text
- * @param  {number} x - Horizontal position of the beginning of the text.
- * @param  {number} y - Vertical position of the *baseline* of the text.
- * @param  {number} fontSize - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {Object} options
+ * The callback gets `(glyph, x, y, fontSize, options)`.
+ * @param {string} text - The text to apply.
+ * @param  {number} [x=0] - Horizontal position of the beginning of the text.
+ * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
+ * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+ * @param  {GlyphRenderOptions=} options
  * @param  {Function} callback
  */
-opentype.Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, callback) {};
+opentype.Font.prototype.forEachGlyph = function() {};
 
 /**
  * Create a Path object that represents the given text.
@@ -97,21 +465,38 @@ opentype.Font.prototype.forEachGlyph = function(text, x, y, fontSize, options, c
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {Object=} options
+ * @param  {GlyphRenderOptions=} options
  * @return {opentype.Path}
  */
-opentype.Font.prototype.getPath = function(text, x, y, fontSize, options) {};
+opentype.Font.prototype.getPath = function() {};
 
 /**
- * Create an array of Path objects that represent the glyps of a given text.
+ * Create an array of Path objects that represent the glyphs of a given text.
  * @param  {string} text - The text to create.
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {Object=} options
+ * @param  {GlyphRenderOptions=} options
  * @return {opentype.Path[]}
  */
-opentype.Font.prototype.getPaths = function(text, x, y, fontSize, options) {};
+opentype.Font.prototype.getPaths = function() {};
+
+/**
+ * Returns the advance width of a text.
+ *
+ * This is something different than Path.getBoundingBox() as for example a
+ * suffixed whitespace increases the advanceWidth but not the bounding box
+ * or an overhanging letter like a calligraphic 'f' might have a quite larger
+ * bounding box than its advance width.
+ *
+ * This corresponds to canvas2dContext.measureText(text).width
+ *
+ * @param  {string} text - The text to create.
+ * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+ * @param  {GlyphRenderOptions=} options
+ * @return advance width
+ */
+opentype.Font.prototype.getAdvanceWidth = function() {};
 
 /**
  * Draw the text on the given drawing context.
@@ -120,9 +505,9 @@ opentype.Font.prototype.getPaths = function(text, x, y, fontSize, options) {};
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {Object=} options
+ * @param  {GlyphRenderOptions=} options
  */
-opentype.Font.prototype.draw = function(ctx, text, x, y, fontSize, options) {};
+opentype.Font.prototype.draw = function() {};
 
 /**
  * Draw the points of all glyphs in the text.
@@ -132,9 +517,9 @@ opentype.Font.prototype.draw = function(ctx, text, x, y, fontSize, options) {};
  * @param {number} [x=0] - Horizontal position of the beginning of the text.
  * @param {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param {Object=} options
+ * @param {GlyphRenderOptions=} options
  */
-opentype.Font.prototype.drawPoints = function(ctx, text, x, y, fontSize, options) {};
+opentype.Font.prototype.drawPoints = function() {};
 
 /**
  * Draw lines indicating important font measurements for all glyphs in the text.
@@ -146,41 +531,15 @@ opentype.Font.prototype.drawPoints = function(ctx, text, x, y, fontSize, options
  * @param {number} [x=0] - Horizontal position of the beginning of the text.
  * @param {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param {Object=} options
+ * @param {GlyphRenderOptions=} options
  */
-opentype.Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {};
+opentype.Font.prototype.drawMetrics = function() {};
 
 /**
  * @param  {string}
  * @return {string}
  */
-opentype.Font.prototype.getEnglishName = function(name) {};
-
-/**
- * @typedef {{
-        fontFamily: Object<string,string>,
-        fontSubfamily: Object<string,string>,
-        fullName: Object<string,string>,
-        // postScriptName may not contain any whitespace
-        postScriptName: Object<string,string>,
-        designer: Object<string,string>,
-        designerURL: Object<string,string>,
-        manufacturer: Object<string,string>,
-        manufacturerURL: Object<string,string>,
-        license: Object<string,string>,
-        licenseURL: Object<string,string>,
-        version: Object<string,string>,
-        description: Object<string,string>,
-        copyright: Object<string,string>,
-        trademark: Object<string,string>
-    };}
- */
-var NamePlatform;
-
-/**
- * @type {{unicode: ?NamePlatform, macintosh: ?NamePlatform, windows: ?NamePlatform}}
- */
-opentype.Font.prototype.names = {};
+opentype.Font.prototype.getEnglishName = function() {};
 
 /**
  * Validate
@@ -193,10 +552,12 @@ opentype.Font.prototype.validate = function() {};
  * @return {opentype.Table}
  */
 opentype.Font.prototype.toTables = function() {};
+
 /**
  * @deprecated Font.toBuffer is deprecated. Use Font.toArrayBuffer instead.
  */
 opentype.Font.prototype.toBuffer = function() {};
+
 /**
  * Converts a `opentype.Font` into an `ArrayBuffer`
  * @return {ArrayBuffer}
@@ -205,25 +566,19 @@ opentype.Font.prototype.toArrayBuffer = function() {};
 
 /**
  * Initiate a download of the OpenType font.
- * @param {string=} fileName
+ * @deprecated
  */
-opentype.Font.prototype.download = function(fileName) {};
+opentype.Font.prototype.download = function() {};
 
-// A Glyph is an individual mark that often corresponds to a character.
-// Some glyphs, such as ligatures, are a combination of many characters.
-// Glyphs are the basic building blocks of a font.
-//
-// The `Glyph` class contains utility methods for drawing the path and its points.
 /**
- * @param {GlyphOptions}
- * @constructor
+ * @param  {GlyphOptions}
  */
-opentype.Glyph = function(options) {};
+opentype.Glyph.prototype.bindConstructorValues = function() {};
 
 /**
  * @param {number}
  */
-opentype.Glyph.prototype.addUnicode = function(unicode) {};
+opentype.Glyph.prototype.addUnicode = function() {};
 
 /**
  * Calculate the minimum bounding box for this glyph.
@@ -236,15 +591,30 @@ opentype.Glyph.prototype.getBoundingBox = function() {};
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {Object=} options - xScale, yScale to strech the glyph.
+ * @param  {GlyphRenderOptions=} options - xScale, yScale to stretch the glyph.
+ * @param  {opentype.Font} font if hinting is to be used, or CPAL/COLR / variation needs to be rendered, the font
  * @return {opentype.Path}
  */
-opentype.Glyph.prototype.getPath = function(x, y, fontSize, options) {};
+opentype.Glyph.prototype.getPath = function() {};
+
+/**
+ * 
+ * @param {opentype.Font} font 
+ * @returns {Array}
+ */
+opentype.Glyph.prototype.getLayers = function() {};
+
+/**
+ * @param {opentype.Font} font
+ * @returns {SVGImage | undefined}
+ */
+opentype.Glyph.prototype.getSvgImage = function() {};
 
 /**
  * Split the glyph into contours.
  * This function is here for backwards compatibility, and to
  * provide raw access to the TrueType glyph outlines.
+ * @param {Array|null} [transformedPoints=null] Use the supplied transformed points from a glyph variation instead of the regular glyph points
  * @return {Array}
  */
 opentype.Glyph.prototype.getContours = function() {};
@@ -261,9 +631,10 @@ opentype.Glyph.prototype.getMetrics = function() {};
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
- * @param  {Object=} options - xScale, yScale to strech the glyph.
+ * @param  {Object=} options - xScale, yScale to stretch the glyph.
+ * @param  {opentype.Font} font - if hinting is to be used, or CPAL/COLR / variation needs to be rendered, the font
  */
-opentype.Glyph.prototype.draw = function(ctx, x, y, fontSize, options) {};
+opentype.Glyph.prototype.draw = function() {};
 
 /**
  * Draw the points of the glyph.
@@ -272,8 +643,10 @@ opentype.Glyph.prototype.draw = function(ctx, x, y, fontSize, options) {};
  * @param  {number} [x=0] - Horizontal position of the beginning of the text.
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
+ * @param  {GlyphRenderOptions=} options
+ * @param  {opentype.Font} font - used to get the default render options, may be needed for variable fonts in the future
  */
-opentype.Glyph.prototype.drawPoints = function(ctx, x, y, fontSize) {};
+opentype.Glyph.prototype.drawPoints = function() {};
 
 /**
  * Draw lines indicating important font measurements.
@@ -285,29 +658,73 @@ opentype.Glyph.prototype.drawPoints = function(ctx, x, y, fontSize) {};
  * @param  {number} [y=0] - Vertical position of the *baseline* of the text.
  * @param  {number} [fontSize=72] - Font size in pixels. We scale the glyph units by `1 / unitsPerEm * fontSize`.
  */
-opentype.Glyph.prototype.drawMetrics = function(ctx, x, y, fontSize) {};
+opentype.Glyph.prototype.drawMetrics = function() {};
 
 /**
- * A bézier path containing a set of path commands similar to a SVG path.
- * Paths can be drawn on a context using `draw`.
- * @constructor
+ * Convert the Glyph's Path to a string of path data instructions
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true, variation:undefined}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {opentype.Font} font - A font object is required if variation is to be applied in order to get the variation data from the tables
+ * @return {string}
+ * @see Path.toPathData
  */
-opentype.Path = function() {};
+opentype.Glyph.prototype.toPathData = function() {};
 
 /**
- * @param  {number} x
- * @param  {number} y
+ * Sets the path data from an SVG path element or path notation
+ * @param  {string|SVGPathElement}
+ * @param  {object}
  */
-opentype.Path.prototype.moveTo = function(x, y) {};
+opentype.Glyph.prototype.fromSVG = function() {};
 
 /**
- * @param  {number} x
- * @param  {number} y
+ * Convert the Glyph's Path to an SVG <path> element, as a string.
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true, variation:undefined}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {opentype.Font} font - A font object is required if variation is to be applied in order to get the variation data from the tables 
+ * @return {string}
  */
-opentype.Path.prototype.lineTo = function(x, y) {};
+opentype.Glyph.prototype.toSVG = function() {};
+
+/**
+ * Convert the path to a DOM element.
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true, variation:undefined}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {opentype.Font} font - A font object is required if variation is to be applied in order to get the variation data from the tables 
+ * @return {SVGPathElement}
+ */
+opentype.Glyph.prototype.toDOMElement = function() {};
+
+/**
+     * The list of drawing commands for the path.
+     * @type {Array<Object>}
+     * @alias opentype.Path.prototype.commands
+     */
+opentype.Path.prototype.commands = function() {};
+
+/**
+     * Fill color for the path. If null, the path is not filled.
+     * @type {string|null}
+     * @alias opentype.Path.prototype.fill
+     */
+opentype.Path.prototype.fill = function() {};
+
+/**
+     * Stroke color for the path. If null, the path is not stroked.
+     * @type {string|null}
+     * @alias opentype.Path.prototype.stroke
+     */
+opentype.Path.prototype.stroke = function() {};
+
+/**
+     * Stroke width for the path outline.
+     * @type {number}
+     * @alias opentype.Path.prototype.strokeWidth
+     */
+opentype.Path.prototype.strokeWidth = function() {};
 
 /**
  * Draws cubic curve
+ * @function
+ * curveTo
+ * @memberof opentype.Path.prototype
  * @param  {number} x1 - x of control 1
  * @param  {number} y1 - y of control 1
  * @param  {number} x2 - x of control 2
@@ -315,52 +732,101 @@ opentype.Path.prototype.lineTo = function(x, y) {};
  * @param  {number} x - x of path point
  * @param  {number} y - y of path point
  */
-opentype.Path.prototype.curveTo = function(x1, y1, x2, y2, x, y) {};
+opentype.Path.prototype.
+curveTo = function() {};
 
 /**
  * Draws cubic curve
+ * @function curveTo
+ * @memberof opentype.Path.prototype
+ * @alias opentype.Path.prototype.bezierCurveTo
  * @param  {number} x1 - x of control 1
  * @param  {number} y1 - y of control 1
  * @param  {number} x2 - x of control 2
  * @param  {number} y2 - y of control 2
  * @param  {number} x - x of path point
  * @param  {number} y - y of path point
+ * @see bezierCurveTo
  */
-opentype.Path.prototype.bezierCurveTo = function(x1, y1, x2, y2, x, y) {};
+opentype.Path.prototype.bezierCurveTo = function() {};
 
 /**
  * Draws quadratic curve
+ * @function quadTo
+ * @memberof opentype.Path.prototype
+ * @alias opentype.Path.prototype.quadraticCurveTo
  * @param  {number} x1 - x of control
  * @param  {number} y1 - y of control
  * @param  {number} x - x of path point
  * @param  {number} y - y of path point
  */
-opentype.Path.prototype.quadTo = function(x1, y1, x, y) {};
+opentype.Path.prototype.quadraticCurveTo = function() {};
 
 /**
- * Draws quadratic curve
- * @param  {number} x1 - x of control
- * @param  {number} y1 - y of control
- * @param  {number} x - x of path point
- * @param  {number} y - y of path point
+ * Closes the path
+ * @function closePath
+ * @memberof opentype.Path.prototype
  */
-opentype.Path.prototype.quadraticCurveTo = function(x1, y1, x, y) {};
+opentype.Path.prototype.closePath = function() {};
 
 /**
  * Close the path
+ * @function close
+ * @memberof opentype.Path.prototype
  */
 opentype.Path.prototype.close = function() {};
 
 /**
- * Closes the path
+ * Sets the path data from an SVG path element or path notation
+ * @param  {string|SVGPathElement}
+ * @param  {object}
  */
-opentype.Path.prototype.closePath = function() {};
+opentype.Path.prototype.fromSVG = function() {};
+
+/**
+ * @param  {number} x
+ * @param  {number} y
+ */
+opentype.Path.prototype.moveTo = function() {};
+
+/**
+ * @param  {number} x
+ * @param  {number} y
+ */
+opentype.Path.prototype.lineTo = function() {};
+
+/**
+ * Draws cubic curve
+ * @function curveTo
+ * @memberof opentype.Path.prototype
+ * @alias opentype.Path.prototype.bezierCurveTo
+ * @param  {number} x1 - x of control 1
+ * @param  {number} y1 - y of control 1
+ * @param  {number} x2 - x of control 2
+ * @param  {number} y2 - y of control 2
+ * @param  {number} x - x of path point
+ * @param  {number} y - y of path point
+ * @see bezierCurveTo
+ */
+opentype.Path.prototype.curveTo = function() {};
+
+/**
+ * Draws quadratic curve
+ * @function quadTo
+ * @memberof opentype.Path.prototype
+ * @alias opentype.Path.prototype.quadraticCurveTo
+ * @param  {number} x1 - x of control
+ * @param  {number} y1 - y of control
+ * @param  {number} x - x of path point
+ * @param  {number} y - y of path point
+ */
+opentype.Path.prototype.quadTo = function() {};
 
 /**
  * Add the given path or list of commands to the commands of this path.
  * @param  {Array} pathOrCommands - another opentype.Path, an opentype.BoundingBox, or an array of commands.
  */
-opentype.Path.prototype.extend = function(pathOrCommands) {};
+opentype.Path.prototype.extend = function() {};
 
 /**
  * Calculate the bounding box of the path.
@@ -369,283 +835,31 @@ opentype.Path.prototype.extend = function(pathOrCommands) {};
 opentype.Path.prototype.getBoundingBox = function() {};
 
 /**
+ * Draw the path to a 2D context.
  * @param {CanvasRenderingContext2D} ctx - A 2D drawing context.
  */
-opentype.Path.prototype.draw = function(ctx) {};
+opentype.Path.prototype.draw = function() {};
 
 /**
- * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * Convert the Path to a string of path data instructions
+ * See http://www.w3.org/TR/SVG/paths.html#PathData
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
  * @return {string}
  */
-opentype.Path.prototype.toPathData = function(decimalPlaces) {};
+opentype.Path.prototype.toPathData = function() {};
 
 /**
- * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * Convert the path to an SVG <path> element, as a string.
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {string} - will be calculated automatically, but can be provided from Glyph's wrapper function
  * @return {string}
  */
-opentype.Path.prototype.toSVG = function(decimalPlaces) {};
+opentype.Path.prototype.toSVG = function() {};
 
 /**
  * Convert the path to a DOM element.
- * @param  {number} [decimalPlaces=2] - The amount of decimal places for floating-point values
+ * @param  {object|number} [options={decimalPlaces:2, optimize:true}] - Options object (or amount of decimal places for floating-point values for backwards compatibility)
+ * @param  {string} [pathData] - will be calculated automatically, but can be provided from Glyph's wrapper functions
  * @return {SVGPathElement}
  */
-opentype.Path.prototype.toDOMElement = function(decimalPlaces) {};
-
-/**
- * @constructor
- */
-opentype.Layout = function(font, tableName) {};
-
-/**
- * Binary search an object by "tag" property
- * @param  {Array} arr
- * @param  {string} tag
- * @return {number}
- */
-opentype.Layout.prototype.searchTag = function(arr, tag) {};
-
-/**
- * Binary search in a list of numbers
- * @param  {Array} arr
- * @param  {number} value
- * @return {number}
- */
-opentype.Layout.prototype.binSearch = function (arr, value) {};
-
-/**
- * Get or create the Layout table (GSUB, GPOS etc).
- * @param  {boolean} create - Whether to create a new one.
- * @return {Object} The GSUB or GPOS table.
- */
-opentype.Layout.prototype.getTable = function(create) {};
-
-/**
- * Returns all scripts in the substitution table.
- * @instance
- * @return {Array}
- */
-opentype.Layout.prototype.getScriptNames = function() {};
-
-/**
- * Returns all LangSysRecords in the given script.
- * @instance
- * @param {string} script - Use 'DFLT' for default script
- * @param {boolean} create - forces the creation of this script table if it doesn't exist.
- * @return {Array} Array on names
- */
-opentype.Layout.prototype.getScriptTable = function(script, create) {};
-
-/**
- * Returns a language system table
- * @instance
- * @param {string} script - Use 'DFLT' for default script
- * @param {string} language - Use 'dlft' for default language
- * @param {boolean} create - forces the creation of this langSysTable if it doesn't exist.
- * @return {Object} An object with tag and script properties.
- */
-opentype.Layout.prototype.getLangSysTable = function(script, language, create) {};
-
-/**
- * Get a specific feature table.
- * @instance
- * @param {string} script - Use 'DFLT' for default script
- * @param {string} language - Use 'dlft' for default language
- * @param {string} feature - One of the codes listed at https://www.microsoft.com/typography/OTSPEC/featurelist.htm
- * @param {boolean} create - forces the creation of the feature table if it doesn't exist.
- * @return {Object}
- */
-opentype.Layout.prototype.getFeatureTable = function(script, language, feature, create) {};
-
-/**
- * Get the lookup tables of a given type for a script/language/feature.
- * @instance
- * @param {string} [script='DFLT']
- * @param {string} [language='dlft']
- * @param {string} feature - 4-letter feature code
- * @param {number} lookupType - 1 to 8
- * @param {boolean} create - forces the creation of the lookup table if it doesn't exist, with no subtables.
- * @return {Object[]}
- */
-opentype.Layout.prototype.getLookupTables = function(script, language, feature, lookupType, create) {};
-
-/**
- * Returns the list of glyph indexes of a coverage table.
- * Format 1: the list is stored raw
- * Format 2: compact list as range records.
- * @instance
- * @param  {Object} coverageTable
- * @return {Array}
- */
-opentype.Layout.prototype.expandCoverage = function(coverageTable) {};
-
-/**
- * @extends opentype.Layout
- * @constructor
- * @param {opentype.Font}
- */
-opentype.Substitution = function(font) {};
-
-/**
- * Create a default GSUB table.
- * @return {Object} gsub - The GSUB table.
- */
-opentype.Substitution.prototype.createDefaultTable = function() {};
-
-/**
- * List all single substitutions (lookup type 1) for a given script, language, and feature.
- * @param {string} script
- * @param {string} language
- * @param {string} feature - 4-character feature name ('aalt', 'salt', 'ss01'...)
- * @return {Array} substitutions - The list of substitutions.
- */
-opentype.Substitution.prototype.getSingle = function(feature, script, language) {};
-
-/**
- * List all alternates (lookup type 3) for a given script, language, and feature.
- * @param {string} feature - 4-character feature name ('aalt', 'salt'...)
- * @param {string} script
- * @param {string} language
- * @return {Array} alternates - The list of alternates
- */
-opentype.Substitution.prototype.getAlternates = function(feature, script, language) {};
-
-/**
- * List all ligatures (lookup type 4) for a given script, language, and feature.
- * The result is an array of ligature objects like { sub: [ids], by: id }
- * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
- * @param {string} script
- * @param {string} language
- * @return {Array} ligatures - The list of ligatures.
- */
-opentype.Substitution.prototype.getLigatures = function(feature, script, language) {};
-
-/**
- * Add or modify a single substitution (lookup type 1)
- * Format 2, more flexible, is always used.
- * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
- * @param {Object} substitution - { sub: id, delta: number } for format 1 or { sub: id, by: id } for format 2.
- * @param {string} [script='DFLT']
- * @param {string} [language='dflt']
- */
-opentype.Substitution.prototype.addSingle = function(feature, substitution, script, language) {};
-
-/**
- * Add or modify an alternate substitution (lookup type 1)
- * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
- * @param {Object} substitution - { sub: id, by: [ids] }
- * @param {string} [script='DFLT']
- * @param {string} [language='dflt']
- */
-opentype.Substitution.prototype.addAlternate = function(feature, substitution, script, language) {};
-
-/**
- * Add a ligature (lookup type 4)
- * Ligatures with more components must be stored ahead of those with fewer components in order to be found
- * @param {string} feature - 4-letter feature name ('liga', 'rlig', 'dlig'...)
- * @param {Object} ligature - { sub: [ids], by: id }
- * @param {string} [script='DFLT']
- * @param {string} [language='dflt']
- */
-opentype.Substitution.prototype.addLigature = function(feature, ligature, script, language) {};
-
-/**
- * List all feature data for a given script and language.
- * @param {string} feature - 4-letter feature name
- * @param {string} [script='DFLT']
- * @param {string} [language='dflt']
- * @return {[type]} [description]
- * @return {Array} substitutions - The list of substitutions.
- */
-opentype.Substitution.prototype.getFeature = function(feature, script, language) {};
-
-/**
- * Add a substitution to a feature for a given script and language.
- * @param {string} feature - 4-letter feature name
- * @param {Object} sub - the substitution to add (an Object like { sub: id or [ids], by: id or [ids] })
- * @param {string} [script='DFLT']
- * @param {string} [language='dflt']
- */
-opentype.Substitution.prototype.add = function(feature, sub, script, language) {};
-
-/**
- * @param {string} tableName
- * @param {Array} fields
- * @param {Object} options
- * @constructor
- */
-opentype.Table = function(tableName, fields, options) {};
-
-/**
- * Encodes the table and returns an array of bytes
- * @return {Array}
- */
-opentype.Table.prototype.encode = function() {};
-
-/**
- * Get the size of the table.
- * @return {number}
- */
-opentype.Table.prototype.sizeOf = function() {};
-
-/**
- * @type {string}
- */
-opentype.Table.prototype.tableName;
-
-/**
- * @type {Array}
- */
-opentype.Table.prototype.fields;
-
-/**
- * @extends {opentype.Table}
- * @param {opentype.Table} coverageTable
- * @constructor
- */
-opentype.Coverage = function(coverageTable) {};
-
-/**
- * @extends {opentype.Table}
- * @param {opentype.Table} scriptListTable
- * @constructor
- */
-opentype.ScriptList = function(scriptListTable) {};
-
-/**
- * @extends {opentype.Table}
- * @param {opentype.Table} featureListTable
- * @constructor
- */
-opentype.FeatureList = function(featureListTable) {};
-
-/**
- * @extends {opentype.Table}
- * @param {opentype.Table} lookupListTable
- * @param {Object} subtableMakers
- * @constructor
- */
-opentype.LookupList = function(lookupListTable, subtableMakers) {};
-
-/**
- * @constructor
- */
-opentype.BoundingBox = function() {};
-
-/**
- * @param  {string} url - The URL of the font to load.
- * @param  {Function} callback - The callback.
- */
-opentype.load = function(url, callback) {};
-
-/**
- * @param  {string} url - The URL of the font to load.
- * @return {opentype.Font}
- */
-opentype.loadSync = function(url) {};
-
-/**
- * @param  {ArrayBuffer}
- * @return {opentype.Font}
- */
-opentype.parse = function(buffer) {};
+opentype.Path.prototype.toDOMElement = function() {};
