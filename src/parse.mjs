@@ -194,8 +194,20 @@ const masks = {
  * @param {number=} offset
  */
 function Parser(data, offset) {
+    /**
+     * The binary data to parse.
+     * @type {DataView}
+     */
     this.data = data;
+    /**
+     * The current absolute offset in the data.
+     * @type {number}
+     */
     this.offset = offset;
+    /**
+     * Offset relative to the current offset, used for reading nested structures.
+     * @type {number}
+     */
     this.relativeOffset = 0;
 }
 

@@ -14,6 +14,25 @@ import HintingTrueType from './hintingtt.mjs';
 import Bidi from './bidi.mjs';
 import { applyPaintType } from './tables/cff.mjs';
 
+/**
+ * @typedef NamePlatform
+ * @type {{
+ *      fontFamily: Object<string,string>,
+ *      fontSubfamily: Object<string,string>,
+ *      fullName: Object<string,string>,
+ *      postScriptName: Object<string,string>,
+ *      designer: Object<string,string>,
+ *      designerURL: Object<string,string>,
+ *      manufacturer: Object<string,string>,
+ *      manufacturerURL: Object<string,string>,
+ *      license: Object<string,string>,
+ *      licenseURL: Object<string,string>,
+ *      version: Object<string,string>,
+ *      description: Object<string,string>,
+ *      copyright: Object<string,string>,
+ *      trademark: Object<string,string>
+ * }}
+ */
 function createDefaultNamesInfo(options) {
     return {
         fontFamily: {en: options.familyName || ' '},
@@ -84,15 +103,43 @@ function Font(options) {
         if (options.descender > 0) throw new Error('When creating a new Font object, negative descender value is required.');
 
         // OS X will complain if the names are empty, so we put a single space everywhere by default.
+        /**
+         * Font name information in multiple languages and platforms.
+         * @type {{unicode: ?NamePlatform, macintosh: ?NamePlatform, windows: ?NamePlatform}}
+         */
         this.names = {};
         this.names.unicode = createDefaultNamesInfo(options);
         this.names.macintosh = createDefaultNamesInfo(options);
         this.names.windows = createDefaultNamesInfo(options);
+        /**
+         * Units per em (the font design grid size).
+         * @type {number}
+         */
         this.unitsPerEm = options.unitsPerEm || 1000;
+        /**
+         * The ascender value of the font.
+         * @type {number}
+         */
         this.ascender = options.ascender;
+        /**
+         * The descender value of the font (typically negative).
+         * @type {number}
+         */
         this.descender = options.descender;
+        /**
+         * Unix timestamp when the font was created.
+         * @type {number}
+         */
         this.createdTimestamp = options.createdTimestamp;
+        /**
+         * The italic angle of the font in degrees.
+         * @type {number}
+         */
         this.italicAngle = options.italicAngle || 0;
+        /**
+         * The weight class of the font (100-900).
+         * @type {number}
+         */
         this.weightClass = options.weightClass || 0;
 
         let selection = 0;
@@ -116,6 +163,10 @@ function Font(options) {
             options.panose = [0, 0, 0, 0, 0, 0, 0, 0, 0];
         }
 
+        /**
+         * Font table objects containing raw table data.
+         * @type {Object}
+         */
         this.tables = Object.assign(options.tables, {
             os2: Object.assign({
                 usWeightClass: options.weightClass || this.usWeightClasses.MEDIUM,
@@ -135,10 +186,30 @@ function Font(options) {
         });
     }
 
+    /**
+     * Indicates if the font is supported. Deprecated - errors are thrown during parsing if font is unsupported.
+     * @type {boolean}
+     */
     this.supported = true; // Deprecated: parseBuffer will throw an error if font is not supported.
+    /**
+     * The set of glyphs in this font.
+     * @type {glyphset.GlyphSet}
+     */
     this.glyphs = new glyphset.GlyphSet(this, options.glyphs || []);
+    /**
+     * Character encoding table for the font.
+     * @type {Object}
+     */
     this.encoding = new DefaultEncoding(this);
+    /**
+     * Glyph positioning information for OpenType layout features.
+     * @type {Object}
+     */
     this.position = new Position(this);
+    /**
+     * Glyph substitution information for OpenType layout features.
+     * @type {Object}
+     */
     this.substitution = new Substitution(this);
     this.tables = this.tables || {};
 
@@ -152,8 +223,27 @@ function Font(options) {
         }
     });
 
+    /**
+     * Variable font variation data, available if the font has variable axes (gvar or cff2 tables).
+     * @type {VariationManager|undefined}
+     * @alias opentype.Font.prototype.variation
+     */
+    this.variation = undefined; // Initialized lazily through Proxy setter above
+
+    /**
+     * Color palette manager for COLR/CPAL color fonts.
+     * @type {Object}
+     */
     this.palettes = new PaletteManager(this);
+    /**
+     * Layer manager for COLR layered color fonts.
+     * @type {Object}
+     */
     this.layers = new LayerManager(this);
+    /**
+     * SVG image manager for SVG table color fonts.
+     * @type {Object}
+     */
     this.svgImages = new SVGImageManager(this);
 
     // needed for low memory mode only.

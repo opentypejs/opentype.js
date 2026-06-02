@@ -27,7 +27,7 @@ async function main() {
   const fileInfos = await Promise.all(sourceFiles.map(parseSourceFile));
   const exportedSymbols = collectExportedSymbols(fileInfos, ENTRY_FILE);
   const opentypeAssignmentsSet = new Set(
-    fileInfos.flatMap((fi) => (fi.opentypeAssignments || []).map((a) => a.memberName))
+    fileInfos.flatMap((info) => (info.opentypeAssignments || []).map((assignment) => assignment.memberName))
   );
 
   const {
@@ -48,13 +48,14 @@ async function main() {
   );
 
   const missingDocs = exportedSymbols
-    .filter((symbol) => !symbol.exportedName.startsWith('_'))
+    .filter((symbol) => !(symbol.exportedName.startsWith('_') || symbol.exportedName.startsWith('#')))
     .filter((symbol) => !localDocs.has(symbol.localName))
     .map((symbol) => `${symbol.exportedName} (local: ${symbol.localName})`);
 
   if (missingDocs.length > 0) {
     throw new Error(
-      `Missing JSDoc comments for public symbols exported by ${path.relative(ROOT, ENTRY_FILE)}:\n` +
+      `Missing JSDoc comments for public symbols exported by ${path.relative(ROOT, ENTRY_FILE)}:` +
+      '\n' +
       missingDocs.join('\n')
     );
   }
@@ -70,6 +71,11 @@ async function main() {
  *
  * @param {string} directory
  * @returns {Promise<string[]>}
+ */
+/**
+ * Recursively collect all `.mjs` source files under a directory.
+ * @param {string} directory - Directory to search.
+ * @returns {Promise<string[]>} Resolved list of absolute file paths.
  */
 async function collectSourceFiles(directory) {
   const dirents = await fs.readdir(directory, { withFileTypes: true });
@@ -92,6 +98,17 @@ async function collectSourceFiles(directory) {
  *
  * @param {string} filePath
  * @returns {Promise<object>}
+ */
+/**
+ * Parse a single source file and extract AST-derived metadata used for
+ * extern generation.
+ *
+ * The returned object contains the raw `code` and parsed `comments`, a list
+ * of `exports`, named `declarations`, prototype and `opentypeAssignments`,
+ * `imports` and properties related to default exports.
+ *
+ * @param {string} filePath - Absolute path to the source file.
+ * @returns {Promise<object>} Metadata describing the file's AST items.
  */
 async function parseSourceFile(filePath) {
   const code = await fs.readFile(filePath, 'utf8');
@@ -121,6 +138,29 @@ async function parseSourceFile(filePath) {
       node.left.property.type === 'Identifier';
   }
 
+  function isThisMemberAssignment(node) {
+    return node.type === 'AssignmentExpression' &&
+      node.left.type === 'MemberExpression' &&
+      !node.left.computed &&
+      node.left.object.type === 'ThisExpression' &&
+      node.left.property.type === 'Identifier';
+  }
+
+  function collectConstructorAssignments(body, className) {
+    if (!body || body.type !== 'BlockStatement') return;
+    walkSimple(body, {
+      AssignmentExpression(node) {
+        if (!isThisMemberAssignment(node)) return;
+        prototypeAssignments.push({
+          className,
+          memberName: node.left.property.name,
+          key: `${className}.prototype.${node.left.property.name}`,
+          node,
+        });
+      },
+    });
+  }
+
   function getOpentypeMemberPath(memberExpr) {
     const parts = [];
     let cur = memberExpr;
@@ -144,21 +184,28 @@ async function parseSourceFile(filePath) {
 
   walkSimple(ast, {
     FunctionDeclaration(node) {
-      if (node.id && node.id.name) {
+      if (node.id?.name) {
         declarations.set(node.id.name, node);
+        collectConstructorAssignments(node.body, node.id.name);
       }
     },
     ClassDeclaration(node) {
-      if (node.id && node.id.name) {
+      if (node.id?.name) {
         declarations.set(node.id.name, node);
+      }
+      for (const element of node.body.body || []) {
+        if (element.type === 'MethodDefinition' && element.kind === 'constructor') {
+          collectConstructorAssignments(element.value.body, node.id.name);
+        }
       }
     },
     VariableDeclaration(node) {
       for (const decl of node.declarations) {
-        if (decl.id && decl.id.type === 'Identifier' && decl.init) {
+        if (decl.id?.type === 'Identifier' && decl.init) {
           const name = decl.id.name;
           if (decl.init.type === 'FunctionExpression' || decl.init.type === 'ClassExpression') {
             declarations.set(name, node);
+            collectConstructorAssignments(decl.init.body, name);
           }
         }
       }
@@ -173,7 +220,7 @@ async function parseSourceFile(filePath) {
           key: `${className}.prototype.${memberName}`,
           node,
         });
-      } else if (node.left && node.left.type === 'MemberExpression') {
+      } else if (node.left?.type === 'MemberExpression') {
         const path = getOpentypeMemberPath(node.left);
         if (path) {
           opentypeAssignments.push({ memberName: path, node });
@@ -181,7 +228,7 @@ async function parseSourceFile(filePath) {
       }
     },
     ImportDeclaration(node) {
-      const src = node.source && node.source.value;
+      const src = node.source?.value;
       for (const specifier of node.specifiers || []) {
         if (specifier.type === 'ImportDefaultSpecifier') {
           imports.push({ localName: specifier.local.name, importedName: 'default', source: src });
@@ -194,9 +241,9 @@ async function parseSourceFile(filePath) {
     },
     ExportNamedDeclaration(node) {
       if (node.declaration) {
-        if (node.declaration.type === 'FunctionDeclaration' && node.declaration.id) {
+        if (node.declaration.type === 'FunctionDeclaration' && node.declaration.id?.name) {
           exports.push({ localName: node.declaration.id.name, exportedName: node.declaration.id.name });
-        } else if (node.declaration.type === 'ClassDeclaration' && node.declaration.id) {
+        } else if (node.declaration.type === 'ClassDeclaration' && node.declaration.id?.name) {
           exports.push({ localName: node.declaration.id.name, exportedName: node.declaration.id.name });
         }
       }
@@ -207,18 +254,16 @@ async function parseSourceFile(filePath) {
       }
     },
     ExportDefaultDeclaration(node) {
-      if (node.declaration && node.declaration.type === 'Identifier') {
+      if (node.declaration?.type === 'Identifier') {
         exports.push({ localName: node.declaration.name, exportedName: 'default' });
-      } else if (node.declaration && node.declaration.type === 'ObjectExpression') {
+      } else if (node.declaration?.type === 'ObjectExpression') {
         for (const prop of node.declaration.properties || []) {
           if (prop.type !== 'Property') continue;
           const key = prop.key.type === 'Identifier'
             ? prop.key.name
             : (prop.key.type === 'Literal' ? String(prop.key.value) : null);
           let localName = null;
-          if (prop.value && prop.value.type === 'Identifier') {
-            localName = prop.value.name;
-          }
+          if (prop.value?.type === 'Identifier') localName = prop.value.name;
           if (key) defaultExportProperties.push({ name: key, localName });
         }
       }
@@ -239,31 +284,49 @@ async function parseSourceFile(filePath) {
 }
 
 /**
- * Resolve a relative import source to an absolute file path.
+ * From the parsed file infos, collect the exported symbols declared by the
+ * library entry file. Filters out private exports (starting with `_`).
  *
- * @param {string} baseFilePath
- * @param {string} source
- * @returns {string}
+ * @param {Array<object>} fileInfos - Array of parsed file metadata.
+ * @param {string} entryFile - Absolute path to the entry file.
+ * @returns {Array<{localName:string, exportedName:string}>} Public exports.
  */
-function resolveImportSource(baseFilePath, source) {
-  if (source.startsWith('.')) {
-    let resolved = path.resolve(path.dirname(baseFilePath), source);
-    if (!path.extname(resolved)) {
-      resolved += '.mjs';
-    }
-    return resolved;
+function collectExportedSymbols(fileInfos, entryFile) {
+  const fileInfoByPath = new Map(fileInfos.map((info) => [path.resolve(info.filePath), info]));
+  const entry = fileInfoByPath.get(path.resolve(entryFile));
+  if (!entry) {
+    throw new Error(`Entry file not found: ${entryFile}`);
   }
-  return source;
+
+  return entry.exports.filter((symbol) => !(symbol.exportedName.startsWith('_') || symbol.exportedName.startsWith('#')));
 }
 
 /**
- * Build metadata for public symbols and their runtime namespace paths.
+ * Resolve an ES module import specifier to an absolute path when it is a
+ * local (relative) import. Non-relative imports are returned unchanged.
  *
- * @param {Array<object>} fileInfos
- * @param {Array<object>} exportedSymbols
- * @param {string} entryFile
- * @param {Set<string>} opentypeAssignmentsSet
- * @returns {object}
+ * @param {string} baseFilePath - File that contains the import.
+ * @param {string} source - The import source specifier from the AST.
+ * @returns {string} Resolved path or original module specifier.
+ */
+function resolveImportSource(baseFilePath, source) {
+  if (!source.startsWith('.')) return source;
+
+  let resolved = path.resolve(path.dirname(baseFilePath), source);
+  if (!path.extname(resolved)) resolved += '.mjs';
+  return resolved;
+}
+
+/**
+ * Build sets and maps describing which local symbols correspond to public
+ * `opentype.*` paths and which top-level names are exported.
+ *
+ * @param {Array<object>} fileInfos - Parsed file metadata.
+ * @param {Array<object>} exportedSymbols - Symbols exported by the entry.
+ * @param {string} entryFile - Entry file path.
+ * @param {Set<string>} opentypeAssignmentsSet - Set of member names assigned
+ *   on the `opentype` global in the codebase.
+ * @returns {{publicLocalNames:Set<string>,publicTopLevelNames:Set<string>,publicOpentypePaths:Set<string>,localNameToOpentypePaths:Map<string,string[]>}}
  */
 function buildPublicSymbolInfo(fileInfos, exportedSymbols, entryFile, opentypeAssignmentsSet) {
   const fileInfoByPath = new Map(fileInfos.map((info) => [path.resolve(info.filePath), info]));
@@ -272,8 +335,10 @@ function buildPublicSymbolInfo(fileInfos, exportedSymbols, entryFile, opentypeAs
     throw new Error(`Entry file not found: ${entryFile}`);
   }
 
-  const publicLocalNames = new Set((exportedSymbols || []).map((s) => s.localName));
-  const publicTopLevelNames = new Set((exportedSymbols || []).map((s) => (s.exportedName === 'default' ? 'opentype' : s.exportedName)));
+  const publicLocalNames = new Set(exportedSymbols.map((symbol) => symbol.localName));
+  const publicTopLevelNames = new Set(exportedSymbols.map((symbol) =>
+    symbol.exportedName === 'default' ? 'opentype' : symbol.exportedName
+  ));
   const publicOpentypePaths = new Set();
   const localNameToOpentypePaths = new Map();
 
@@ -294,20 +359,17 @@ function buildPublicSymbolInfo(fileInfos, exportedSymbols, entryFile, opentypeAs
 
   for (const symbol of exportedSymbols) {
     const importEntry = entry.imports.find((imp) => imp.localName === symbol.localName);
-    if (!importEntry || importEntry.importedName !== 'default') {
-      continue;
-    }
+    if (!importEntry || importEntry.importedName !== 'default') continue;
 
     const resolvedSource = resolveImportSource(entry.filePath, importEntry.source);
     const sourceInfo = fileInfoByPath.get(resolvedSource);
-    if (!sourceInfo) {
-      continue;
-    }
+    if (!sourceInfo) continue;
 
     for (const prop of sourceInfo.defaultExportProperties) {
       if (!prop.name) continue;
       const nestedPath = `opentype.${symbol.exportedName}.${prop.name}`;
       publicOpentypePaths.add(nestedPath);
+
       if (prop.localName) {
         publicLocalNames.add(prop.localName);
         addLocalPath(prop.localName, nestedPath);
@@ -323,85 +385,81 @@ function buildPublicSymbolInfo(fileInfos, exportedSymbols, entryFile, opentypeAs
   for (const memberName of opentypeAssignmentsSet) {
     const fullName = memberName.startsWith('opentype.') ? memberName : `opentype.${memberName}`;
     publicOpentypePaths.add(fullName);
-    const root = memberName.split('.')[0];
-    publicTopLevelNames.add(root);
-    const lastSegment = memberName.split('.').slice(-1)[0];
-    publicLocalNames.add(lastSegment);
+    publicTopLevelNames.add(memberName.split('.')[0]);
+    publicLocalNames.add(memberName.split('.').slice(-1)[0]);
   }
 
   return { publicLocalNames, publicTopLevelNames, publicOpentypePaths, localNameToOpentypePaths };
 }
 
 /**
- * Parse a JSDoc block comment and return the target symbol metadata.
+ * Parse a JSDoc comment block and extract a small set of tags the script
+ * uses to map docs to symbols (`@alias`, `@typedef`, `@memberof`, etc.).
  *
- * @param {string} source
+ * @param {string} source - Raw JSDoc source text (including the JSDoc delimiters).
  * @returns {{kind:string,key:string|null,private:boolean}|null}
  */
 function parseCommentDoc(source) {
   const parsed = parseComments(source, { trim: true, spacing: 'preserve' });
-  if (parsed.length === 0) {
-    return null;
-  }
+  if (parsed.length === 0) return null;
 
   const block = parsed[0];
   const aliasTag = block.tags.find((tag) => tag.tag === 'alias' || tag.tag === 'exports');
   const typedefTag = block.tags.find((tag) => tag.tag === 'typedef');
   const privateTag = block.tags.find((tag) => tag.tag === 'private');
 
-  if (typedefTag && typedefTag.name) {
-    return { kind: 'typedef', key: typedefTag.name, private: !!privateTag };
+  if (typedefTag?.name) {
+    return { kind: 'typedef', key: typedefTag.name, private: Boolean(privateTag) };
   }
 
-  if (aliasTag && aliasTag.name) {
-    return { kind: 'property', key: aliasTag.name, private: !!privateTag };
+  if (aliasTag?.name) {
+    return { kind: 'property', key: aliasTag.name, private: Boolean(privateTag) };
   }
 
   const memberofTag = block.tags.find((tag) => tag.tag === 'memberof');
   const functionTag = block.tags.find((tag) => tag.tag === 'function');
-  if (memberofTag && memberofTag.name && functionTag && functionTag.name) {
-    return { kind: 'property', key: `${memberofTag.name}.${functionTag.name}`, private: !!privateTag };
+  if (memberofTag?.name && functionTag?.name) {
+    return { kind: 'property', key: `${memberofTag.name}.${functionTag.name}`, private: Boolean(privateTag) };
   }
 
-  return { kind: 'property', key: null, private: !!privateTag };
+  return { kind: 'property', key: null, private: Boolean(privateTag) };
 }
 
 /**
- * Find the closest preceding JSDoc comment for a node.
+ * Find the nearest preceding JSDoc block comment for a node start offset.
+ * Returns the comment object from Acorn when the gap between comment end
+ * and node start contains only whitespace.
  *
- * @param {Array<object>} comments
- * @param {string} code
- * @param {number} nodeStart
- * @returns {object|null}
+ * @param {Array<object>} comments - Acorn onComment array for the file.
+ * @param {string} code - Source code text.
+ * @param {number} nodeStart - AST node `start` index.
+ * @returns {object|null} Matching comment or null.
  */
 function findJSDocComment(comments, code, nodeStart) {
   const candidates = comments
     .filter((comment) => comment.type === 'Block' && comment.end <= nodeStart && comment.value.startsWith('*'))
     .sort((a, b) => b.end - a.end);
 
-  if (candidates.length === 0) {
-    return null;
-  }
+  if (candidates.length === 0) return null;
 
   const comment = candidates[0];
   const gap = code.slice(comment.end, nodeStart);
-  if (/^[\s]*$/.test(gap)) {
-    return comment;
-  }
-
-  return null;
+  return /^[\s]*$/.test(gap) ? comment : null;
 }
 
 /**
- * Build documentation records for all public local symbols and prototype members.
+ * Build a map of local documentation blocks and prototype docs from the
+ * parsed files. This associates JSDoc comments with public/local symbol
+ * names and synthesizes prototype entries when necessary.
  *
- * @param {Array<object>} fileInfos
- * @param {Array<object>} exportedSymbols
- * @param {Set<string>} opentypeAssignmentsSet
- * @param {Set<string>} publicLocalNames
- * @param {Set<string>} publicTopLevelNames
- * @param {Set<string>} publicOpentypePaths
- * @param {Map<string,string[]>} localNameToOpentypePaths
+ * @param {Array<object>} fileInfos - Parsed file metadata.
+ * @param {Array<object>} exportedSymbols - Symbols exported by the entry.
+ * @param {Set<string>} opentypeAssignmentsSet - Names assigned to `opentype`.
+ * @param {Set<string>} publicLocalNames - Local symbol names considered public.
+ * @param {Set<string>} publicTopLevelNames - Top-level exported names.
+ * @param {Set<string>} publicOpentypePaths - Known `opentype.*` paths.
+ * @param {Map<string,string[]>} localNameToOpentypePaths - Mapping from local
+ *   names to nested `opentype.*` paths.
  * @returns {{docs:Map<string,object>,protoDocs:Array<object>}}
  */
 function buildLocalDocs(
@@ -421,7 +479,7 @@ function buildLocalDocs(
       publicLocalNames.has(name) ||
       publicTopLevelNames.has(name) ||
       publicOpentypePaths.has(name) ||
-      (opentypeAssignmentsSet && opentypeAssignmentsSet.has(name))
+      opentypeAssignmentsSet.has(name)
     );
   }
 
@@ -429,53 +487,45 @@ function buildLocalDocs(
     const { code, comments, declarations, prototypeAssignments, filePath } = fileInfo;
 
     for (const comment of comments) {
-      if (comment.type !== 'Block' || !comment.value.startsWith('*')) {
-        continue;
-      }
+      if (comment.type !== 'Block' || !comment.value.startsWith('*')) continue;
 
       const source = `/*${comment.value}*/`;
       const parsedTag = parseCommentDoc(source);
-      if (!parsedTag) continue;
+      if (!parsedTag || parsedTag.private) continue;
 
       if (parsedTag.kind === 'typedef') {
-        if (!parsedTag.private) {
-          docs.set(parsedTag.key, { source, kind: 'typedef', filePath });
-        }
+        docs.set(parsedTag.key, { source, kind: 'typedef', filePath, private: false });
         continue;
       }
 
-      if (parsedTag.private) {
-        continue;
-      }
+      if (!parsedTag.key) continue;
 
-      if (parsedTag.key) {
-        if (parsedTag.key.startsWith('opentype.')) {
-          const rest = parsedTag.key.slice('opentype.'.length);
-          if (rest.includes('.prototype.')) {
-            const cls = rest.split('.prototype.')[0];
-            if (!isNamePublic(cls)) continue;
-            docs.set(parsedTag.key, { source, filePath });
-            protoDocs.push({
-              className: cls,
-              memberName: rest.split('.prototype.')[1],
-              targetName: parsedTag.key,
-              comment: source,
-            });
-          } else {
-            const name = rest.split('.')[0];
-            if (!isNamePublic(name)) continue;
-            docs.set(parsedTag.key, { source, filePath });
-          }
+      if (parsedTag.key.startsWith('opentype.')) {
+        const rest = parsedTag.key.slice('opentype.'.length);
+        if (rest.includes('.prototype.')) {
+          const cls = rest.split('.prototype.')[0];
+          if (!isNamePublic(cls)) continue;
+          docs.set(parsedTag.key, { source, filePath, private: false });
+          protoDocs.push({
+            className: cls,
+            memberName: rest.split('.prototype.')[1],
+            targetName: parsedTag.key,
+            comment: source,
+          });
         } else {
-          docs.set(parsedTag.key, { source, filePath });
-          if (parsedTag.key.includes('.prototype.')) {
-            protoDocs.push({
-              className: parsedTag.key.split('.prototype.')[0],
-              memberName: parsedTag.key.split('.prototype.')[1],
-              targetName: parsedTag.key,
-              comment: source,
-            });
-          }
+          const name = rest.split('.')[0];
+          if (!isNamePublic(name)) continue;
+          docs.set(parsedTag.key, { source, filePath, private: false });
+        }
+      } else {
+        docs.set(parsedTag.key, { source, filePath, private: false });
+        if (parsedTag.key.includes('.prototype.')) {
+          protoDocs.push({
+            className: parsedTag.key.split('.prototype.')[0],
+            memberName: parsedTag.key.split('.prototype.')[1],
+            targetName: parsedTag.key,
+            comment: source,
+          });
         }
       }
     }
@@ -487,32 +537,28 @@ function buildLocalDocs(
 
       const source = `/*${comment.value}*/`;
       const parsedTag = parseCommentDoc(source);
-      if (parsedTag && parsedTag.private) continue;
+      if (parsedTag?.private) continue;
 
-      docs.set(name, { source, localName: name, filePath });
+      docs.set(name, { source, localName: name, filePath, private: false });
     }
 
     for (const assignment of prototypeAssignments) {
       if (!isNamePublic(assignment.className)) continue;
+      if (assignment.memberName.startsWith('_') || assignment.memberName.startsWith('#')) continue;
+
       const classPaths = [...new Set(localNameToOpentypePaths.get(assignment.className) || [])];
       const comment = findJSDocComment(comments, code, assignment.node.start);
       const source = comment ? `/*${comment.value}*/` : null;
-      let parsedTag = null;
-      if (source) {
-        parsedTag = parseCommentDoc(source);
-        if (parsedTag && parsedTag.private) continue;
-      }
+      const parsedTag = source ? parseCommentDoc(source) : null;
+      if (parsedTag?.private) continue;
 
       const targets = [];
-      if (parsedTag && parsedTag.key && parsedTag.key.includes('.prototype.')) {
+      if (parsedTag?.key?.includes('.prototype.')) {
         const targetName = parsedTag.key.startsWith('opentype.')
           ? parsedTag.key
           : `opentype.${parsedTag.key}`;
-        const rest = targetName.slice('opentype.'.length);
-        const cls = rest.split('.prototype.')[0];
-        if (isNamePublic(cls)) {
-          targets.push(targetName);
-        }
+        const cls = targetName.slice('opentype.'.length).split('.prototype.')[0];
+        if (isNamePublic(cls)) targets.push(targetName);
       }
 
       if (classPaths.length > 0) {
@@ -526,9 +572,7 @@ function buildLocalDocs(
 
       for (const targetName of targets) {
         if (docs.has(targetName)) continue;
-        if (source) {
-          docs.set(targetName, { source, filePath });
-        }
+        if (source) docs.set(targetName, { source, filePath, private: false });
         protoDocs.push({
           className: assignment.className,
           memberName: assignment.memberName,
@@ -550,6 +594,7 @@ function buildLocalDocs(
         source: localDoc.source,
         filePath: localDoc.filePath,
         kind: localDoc.kind,
+        private: localDoc.private || false,
       });
     }
   }
@@ -557,26 +602,28 @@ function buildLocalDocs(
   return { docs, protoDocs };
 }
 
-function collectExportedSymbols(fileInfos, entryFile) {
-  const entry = fileInfos.find((info) => path.resolve(info.filePath) === path.resolve(entryFile));
-  if (!entry) {
-    throw new Error(`Entry file not found: ${entryFile}`);
-  }
-  return entry.exports;
-}
-
+/**
+ * Create the ordered list of extern entries (typedefs and properties)
+ * that will be rendered into the externs file. This function also ensures
+ * the entries are deduplicated and filtered by public visibility.
+ *
+ * @param {Map<string,object>} localDocs - Map of documentation blocks.
+ * @param {Array<object>} protoDocs - Prototype member doc descriptors.
+ * @param {Array<object>} exportedSymbols - Symbols exported by the entry.
+ * @param {Set<string>} publicOpentypePaths - Known `opentype.*` paths.
+ * @returns {Array<object>} Entries describing typedefs/properties for output.
+ */
 function buildExternEntries(localDocs, protoDocs, exportedSymbols, publicOpentypePaths) {
   const entries = [];
   const seen = new Set();
 
   for (const symbol of exportedSymbols) {
     const { localName, exportedName } = symbol;
-    const doc = localDocs.get(localName) || localDocs.get(exportedName) || localDocs.get(`opentype.${exportedName}`);
+    let doc = localDocs.get(localName) || localDocs.get(exportedName) || localDocs.get(`opentype.${exportedName}`);
     const name = exportedName === 'default' ? 'opentype' : `opentype.${exportedName}`;
 
-    if (seen.has(name)) {
-      continue;
-    }
+    if (doc?.private) doc = null;
+    if (seen.has(name)) continue;
     seen.add(name);
 
     if (doc) {
@@ -591,29 +638,37 @@ function buildExternEntries(localDocs, protoDocs, exportedSymbols, publicOpentyp
   }
 
   for (const protoDoc of protoDocs) {
-    if (!documentHasPublicClass(protoDoc.className, exportedSymbols, publicOpentypePaths)) {
-      continue;
-    }
+    if (!documentHasPublicClass(protoDoc.className, exportedSymbols, publicOpentypePaths)) continue;
+    if (protoDoc.memberName.startsWith('_')||protoDoc.memberName.startsWith('#')) continue;
+
     const targetName = protoDoc.targetName.startsWith('opentype.')
       ? protoDoc.targetName
       : `opentype.${protoDoc.targetName}`;
-    if (seen.has(targetName)) {
-      continue;
-    }
+    if (seen.has(targetName)) continue;
+
     seen.add(targetName);
     entries.push({ kind: 'property', name: targetName, comment: protoDoc.comment });
   }
 
+  const usedTypedefs = collectUsedTypedefNames(localDocs, entries);
   for (const [name, doc] of localDocs) {
-    if (name.startsWith('opentype.') && !seen.has(name)) {
-      seen.add(name);
-      entries.push({ kind: 'property', name, comment: doc.source });
-    }
+    if (!doc || doc.private || doc.kind !== 'typedef' || !usedTypedefs.has(name) || seen.has(name)) continue;
+    seen.add(name);
+    entries.push({ kind: 'typedef', name, comment: doc.source });
+  }
+
+  for (const [name, doc] of localDocs) {
+    if (!doc || doc.private || !name.startsWith('opentype.') || seen.has(name)) continue;
+    const lastComponent = name.split('.').pop();
+    if (lastComponent.startsWith('_') || lastComponent.startsWith('#')) continue;
+    seen.add(name);
+    entries.push({ kind: 'property', name, comment: doc.source });
   }
 
   for (const pathName of publicOpentypePaths) {
-    if (!pathName.startsWith('opentype.')) continue;
-    if (seen.has(pathName)) continue;
+    if (!pathName.startsWith('opentype.') || seen.has(pathName)) continue;
+    const lastComponent = pathName.split('.').pop();
+    if (lastComponent.startsWith('_') || lastComponent.startsWith('#')) continue;
     seen.add(pathName);
     entries.push({ kind: 'property', name: pathName, comment: null });
   }
@@ -621,18 +676,79 @@ function buildExternEntries(localDocs, protoDocs, exportedSymbols, publicOpentyp
   return entries;
 }
 
+/**
+ * Return true if a class name is present in the exported symbols or if it
+ * appears as part of any known public `opentype.*` path.
+ *
+ * @param {string} className
+ * @param {Array<object>} exportedSymbols
+ * @param {Set<string>} publicOpentypePaths
+ * @returns {boolean}
+ */
 function documentHasPublicClass(className, exportedSymbols, publicOpentypePaths) {
   if (exportedSymbols.some((symbol) => symbol.localName === className)) {
     return true;
   }
+
   for (const pathName of publicOpentypePaths) {
     if (pathName.endsWith(`.${className}`) || pathName.includes(`.${className}.`)) {
       return true;
     }
   }
+
   return false;
 }
 
+/**
+ * Compute the set of typedef names referenced by the collected entry
+ * comments. This iteratively expands typedefs referenced by other typedefs.
+ *
+ * @param {Map<string,object>} localDocs
+ * @param {Array<object>} entries
+ * @returns {Set<string>} Names of typedefs that are used.
+ */
+function collectUsedTypedefNames(localDocs, entries) {
+  const typedefNames = [...localDocs.keys()].filter((name) => localDocs.get(name)?.kind === 'typedef');
+  const used = new Set();
+  const sources = entries
+    .filter((entry) => entry.comment && entry.kind !== 'typedef')
+    .map((entry) => entry.comment);
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const name of typedefNames) {
+      if (used.has(name)) continue;
+      const regex = new RegExp(`\\b${escapeRegExp(name)}\\b`);
+      if (sources.some((source) => regex.test(source))) {
+        used.add(name);
+        const doc = localDocs.get(name);
+        if (doc?.source) sources.push(doc.source);
+        changed = true;
+      }
+    }
+  }
+
+  return used;
+}
+
+/**
+ * Escape a string so it may be used as a literal in a RegExp constructor.
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Render the externs file content from a list of entries. Each `property`
+ * entry becomes an assignment function on the `opentype` object; `typedef`
+ * entries are emitted as `var` declarations with their original comment.
+ *
+ * @param {Array<object>} entries
+ * @returns {string} File source for externs.
+ */
 function renderExternSource(entries) {
   const lines = [
     '/**',
@@ -645,19 +761,35 @@ function renderExternSource(entries) {
     '',
   ];
 
-  for (const entry of entries) {
-    if (entry.kind === 'typedef') {
-      lines.push(entry.comment);
-      lines.push(`var ${entry.name};`);
-      lines.push('');
-      continue;
-    }
+  // Helper: strip import()/include() wrappers from type expressions so
+  // the externs contain plain type names that Closure can understand.
+  function sanitizeComment(comment) {
+    if (!comment) return comment;
+    // Replace patterns like import('...').Type or include('...').Type -> Type
+    comment = comment.replace(/\b(?:import|include)\(\s*['"][^'"]+['"]\s*\)\.([A-Za-z0-9_$\.]+)/g, '$1');
+    // Remove bare import('...') or include('...') occurrences
+    comment = comment.replace(/\b(?:import|include)\(\s*['"][^'"]+['"]\s*\)/g, '');
+    return comment;
+  }
 
+  // Emit typedefs first so they are available to subsequent property entries.
+  const typedefEntries = entries.filter((e) => e.kind === 'typedef');
+  const otherEntries = entries.filter((e) => e.kind !== 'typedef');
+
+  for (const entry of typedefEntries) {
+    const comment = sanitizeComment(entry.comment) || '/** @type {?} */';
+    lines.push(comment);
+    lines.push(`var ${entry.name};`);
+    lines.push('');
+  }
+
+  for (const entry of otherEntries) {
     if (entry.comment) {
-      lines.push(entry.comment);
+      lines.push(sanitizeComment(entry.comment));
     } else {
       lines.push('/** @type {?} */');
     }
+
     lines.push(`${entry.name} = function() {};`);
     lines.push('');
   }
@@ -672,4 +804,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   });
 }
 
+/**
+ * Default export: run the main generator when invoked programmatically.
+ * @returns {Promise<void>}
+ */
 export default main;

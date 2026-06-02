@@ -7,6 +7,96 @@
 var opentype = {};
 
 /**
+ * @typedef NamePlatform
+ * @type {{
+ *      fontFamily: Object<string,string>,
+ *      fontSubfamily: Object<string,string>,
+ *      fullName: Object<string,string>,
+ *      postScriptName: Object<string,string>,
+ *      designer: Object<string,string>,
+ *      designerURL: Object<string,string>,
+ *      manufacturer: Object<string,string>,
+ *      manufacturerURL: Object<string,string>,
+ *      license: Object<string,string>,
+ *      licenseURL: Object<string,string>,
+ *      version: Object<string,string>,
+ *      description: Object<string,string>,
+ *      copyright: Object<string,string>,
+ *      trademark: Object<string,string>
+ * }}
+ */
+var NamePlatform;
+
+/**
+ * @typedef FontOptions
+ * @type Object
+ * @property {Boolean} empty - whether to create a new empty font
+ * @property {string} familyName
+ * @property {string} styleName
+ * @property {string=} fullName
+ * @property {string=} postScriptName
+ * @property {string=} designer
+ * @property {string=} designerURL
+ * @property {string=} manufacturer
+ * @property {string=} manufacturerURL
+ * @property {string=} license
+ * @property {string=} licenseURL
+ * @property {string=} version
+ * @property {string=} description
+ * @property {string=} copyright
+ * @property {string=} trademark
+ * @property {Number} unitsPerEm
+ * @property {Number} ascender
+ * @property {Number} descender
+ * @property {Number} createdTimestamp
+ * @property {Number} weightClass
+ * @property {Number} italicAngle
+ * @property {string=} widthClass
+ * @property {string=} fsSelection
+ */
+var FontOptions;
+
+/**
+ * @typedef GlyphRenderOptions
+ * @type Object
+ * @property {string} [script] - script used to determine which features to apply. By default, 'DFLT' or 'latn' is used.
+ *                               See https://www.microsoft.com/typography/otspec/scripttags.htm
+ * @property {string} [language='dflt'] - language system used to determine which features to apply.
+ *                                        See https://www.microsoft.com/typography/developers/opentype/languagetags.aspx
+ * @property {boolean} [kerning=true] - whether to include kerning values
+ * @property {object} [features] - OpenType Layout feature tags. Used to enable or disable the features of the given script/language system.
+ *                                 See https://www.microsoft.com/typography/otspec/featuretags.htm
+ * @property {boolean} [hinting=false] - whether to apply font hinting to the outlines
+ * @property {integer} [usePalette=0] For COLR/CPAL fonts, the zero-based index of the color palette to use. (Use `Font.palettes.get()` to get the available palettes)
+ * @property {boolean} [drawLayers=true] For COLR/CPAL fonts, this can be turned to false in order to draw the fallback glyphs instead
+ * @property {boolean} [drawSVG=true] For SVG fonts, this can be turned to false in order to draw the fallback glyphs instead
+ */
+var GlyphRenderOptions;
+
+/**
+ * @typedef GlyphOptions
+ * @type Object
+ * @property {string} [name] - The glyph name
+ * @property {number} [unicode]
+ * @property {Array} [unicodes]
+ * @property {number} [xMin]
+ * @property {number} [yMin]
+ * @property {number} [xMax]
+ * @property {number} [yMax]
+ * @property {number} [advanceWidth]
+ * @property {number} [leftSideBearing]
+ */
+var GlyphOptions;
+
+/**
+ * @typedef {Object} SVGImage
+ * @prop {number} leftSideBearing
+ * @prop {number} baseline
+ * @prop {HTMLImageElement} image
+ */
+var SVGImage;
+
+/**
  * A Font represents a loaded OpenType font file.
  * It contains a set of glyphs and methods to draw text on a drawing context,
  * or to get a path representing the text.
@@ -47,12 +137,6 @@ opentype.Path = function() {};
 opentype.BoundingBox = function() {};
 
 /**
-     * Low-level parse utilities.
-     * @alias opentype._parse
-     */
-opentype._parse = function() {};
-
-/**
  * Parse the OpenType file data (as an ArrayBuffer) and return a Font object.
  * Throws an error if the font could not be parsed.
  * @param  {ArrayBuffer}
@@ -79,6 +163,30 @@ opentype.load = function() {};
  * @deprecated
  */
 opentype.loadSync = function() {};
+
+/**
+     * The minimum X coordinate of the bounding box.
+     * @type {number}
+     */
+opentype.BoundingBox.prototype.x1 = function() {};
+
+/**
+     * The minimum Y coordinate of the bounding box.
+     * @type {number}
+     */
+opentype.BoundingBox.prototype.y1 = function() {};
+
+/**
+     * The maximum X coordinate of the bounding box.
+     * @type {number}
+     */
+opentype.BoundingBox.prototype.x2 = function() {};
+
+/**
+     * The maximum Y coordinate of the bounding box.
+     * @type {number}
+     */
+opentype.BoundingBox.prototype.y2 = function() {};
 
 /**
  * Returns true if the bounding box is empty, that is, no points have been added to the box yet.
@@ -134,6 +242,109 @@ opentype.BoundingBox.prototype.addBezier = function() {};
  * @param {number} y - The ending Y coordinate.
  */
 opentype.BoundingBox.prototype.addQuad = function() {};
+
+/**
+     * Variable font variation data, available if the font has variable axes (gvar or cff2 tables).
+     * @type {VariationManager|undefined}
+     * @alias opentype.Font.prototype.variation
+     */
+opentype.Font.prototype.variation = function() {};
+
+/**
+         * Font name information in multiple languages and platforms.
+         * @type {{unicode: ?NamePlatform, macintosh: ?NamePlatform, windows: ?NamePlatform}}
+         */
+opentype.Font.prototype.names = function() {};
+
+/**
+         * Units per em (the font design grid size).
+         * @type {number}
+         */
+opentype.Font.prototype.unitsPerEm = function() {};
+
+/**
+         * The ascender value of the font.
+         * @type {number}
+         */
+opentype.Font.prototype.ascender = function() {};
+
+/**
+         * The descender value of the font (typically negative).
+         * @type {number}
+         */
+opentype.Font.prototype.descender = function() {};
+
+/**
+         * Unix timestamp when the font was created.
+         * @type {number}
+         */
+opentype.Font.prototype.createdTimestamp = function() {};
+
+/**
+         * The italic angle of the font in degrees.
+         * @type {number}
+         */
+opentype.Font.prototype.italicAngle = function() {};
+
+/**
+         * The weight class of the font (100-900).
+         * @type {number}
+         */
+opentype.Font.prototype.weightClass = function() {};
+
+/**
+         * Font table objects containing raw table data.
+         * @type {Object}
+         */
+opentype.Font.prototype.tables = function() {};
+
+/**
+     * Indicates if the font is supported. Deprecated - errors are thrown during parsing if font is unsupported.
+     * @type {boolean}
+     */
+opentype.Font.prototype.supported = function() {};
+
+/**
+     * The set of glyphs in this font.
+     * @type {glyphset.GlyphSet}
+     */
+opentype.Font.prototype.glyphs = function() {};
+
+/**
+     * Character encoding table for the font.
+     * @type {Object}
+     */
+opentype.Font.prototype.encoding = function() {};
+
+/**
+     * Glyph positioning information for OpenType layout features.
+     * @type {Object}
+     */
+opentype.Font.prototype.position = function() {};
+
+/**
+     * Glyph substitution information for OpenType layout features.
+     * @type {Object}
+     */
+opentype.Font.prototype.substitution = function() {};
+
+/**
+     * Color palette manager for COLR/CPAL color fonts.
+     * @type {Object}
+     */
+opentype.Font.prototype.palettes = function() {};
+
+/**
+     * Layer manager for COLR layered color fonts.
+     * @type {Object}
+     */
+opentype.Font.prototype.layers = function() {};
+
+/**
+     * SVG image manager for SVG table color fonts.
+     * @type {Object}
+     */
+opentype.Font.prototype.svgImages = function() {};
 
 /**
  * Check if the font has a glyph for the given character.
@@ -395,7 +606,7 @@ opentype.Glyph.prototype.getLayers = function() {};
 
 /**
  * @param {opentype.Font} font
- * @returns {import('./svgimages.mjs').SVGImage | undefined}
+ * @returns {SVGImage | undefined}
  */
 opentype.Glyph.prototype.getSvgImage = function() {};
 
@@ -482,367 +693,32 @@ opentype.Glyph.prototype.toSVG = function() {};
 opentype.Glyph.prototype.toDOMElement = function() {};
 
 /**
- * Parse an unsigned 8-bit integer.
- * @return {number}
- */
-opentype._parse.prototype.parseByte = function() {};
+     * The list of drawing commands for the path.
+     * @type {Array<Object>}
+     * @alias opentype.Path.prototype.commands
+     */
+opentype.Path.prototype.commands = function() {};
 
 /**
- * Parse a signed 8-bit integer.
- * @return {number}
- */
-opentype._parse.prototype.parseChar = function() {};
+     * Fill color for the path. If null, the path is not filled.
+     * @type {string|null}
+     * @alias opentype.Path.prototype.fill
+     */
+opentype.Path.prototype.fill = function() {};
 
 /**
- * Parse an unsigned 8-bit integer.
- * @return {number}
- */
-opentype._parse.prototype.parseCard8 = function() {};
+     * Stroke color for the path. If null, the path is not stroked.
+     * @type {string|null}
+     * @alias opentype.Path.prototype.stroke
+     */
+opentype.Path.prototype.stroke = function() {};
 
 /**
- * Parse an unsigned 16-bit integer.
- * @return {number}
- */
-opentype._parse.prototype.parseUShort = function() {};
-
-/**
- * Parse an unsigned 16-bit integer.
- * @return {number}
- */
-opentype._parse.prototype.parseCard16 = function() {};
-
-/**
- * Parse a string identifier.
- * @return {number}
- */
-opentype._parse.prototype.parseSID = function() {};
-
-/**
- * Parse an offset16 value.
- * @return {number}
- */
-opentype._parse.prototype.parseOffset16 = function() {};
-
-/**
- * Parse a signed 16-bit integer.
- * @return {number}
- */
-opentype._parse.prototype.parseShort = function() {};
-
-/**
- * Parse a 2.14 fixed point number.
- * @return {number}
- */
-opentype._parse.prototype.parseF2Dot14 = function() {};
-
-/**
- * Parse a 24-bit unsigned integer.
- * @return {number}
- */
-opentype._parse.prototype.parseUInt24 = function() {};
-
-/**
- * Parse a 32-bit unsigned integer.
- * @return {number}
- */
-opentype._parse.prototype.parseULong = function() {};
-
-/**
- * Parse a 32-bit signed integer.
- * @return {number}
- */
-opentype._parse.prototype.parseLong = function() {};
-
-/**
- * Parse a 32-bit unsigned integer offset.
- * @return {number}
- */
-opentype._parse.prototype.parseOffset32 = function() {};
-
-/**
- * Parse a 16.16 fixed point number.
- * @return {number}
- */
-opentype._parse.prototype.parseFixed = function() {};
-
-/**
- * Parse a string of the given byte length.
- * @param {number} length
- * @return {string}
- */
-opentype._parse.prototype.parseString = function() {};
-
-/**
- * Parse a 4-character tag.
- * @return {string}
- */
-opentype._parse.prototype.parseTag = function() {};
-
-/**
- * Parse a LONGDATETIME (Mac epoch) and convert to Unix seconds.
- * @return {number}
- */
-opentype._parse.prototype.parseLongDateTime = function() {};
-
-/**
- * Parse a fixed-point version number.
- * @param {number=} minorBase
- * @return {number}
- */
-opentype._parse.prototype.parseVersion = function() {};
-
-/**
- * Skip a number of items of the given type.
- * @param {string} type
- * @param {number=} amount
- * @return {undefined}
- */
-opentype._parse.prototype.skip = function() {};
-
-/**
- * Parse a list of 32-bit unsigned integers.
- * @param {number=} count
- * @return {number[]}
- */
-opentype._parse.prototype.parseULongList = function() {};
-
-/**
- * Parse a list of 16-bit unsigned integers.
- * @param {number=} count
- * @return {number[]}
- */
-opentype._parse.prototype.parseOffset16List = function() {};
-
-/**
- * Parse a list of 16-bit unsigned integers.
- * @param {number=} count
- * @return {number[]}
- */
-opentype._parse.prototype.parseUShortList = function() {};
-
-/**
- * Parse a list of 16-bit signed integers.
- * @param {number} count
- * @return {number[]}
- */
-opentype._parse.prototype.parseShortList = function() {};
-
-/**
- * Parse a list of bytes.
- * @param {number} count
- * @return {number[]}
- */
-opentype._parse.prototype.parseByteList = function() {};
-
-/**
- * Parse a list of items.
- * Record count is optional, if omitted it is read from the stream.
- * itemCallback is one of the Parser methods.
- * @template T
- * @param {number|function()} [count]
- * @param {function():T} [itemCallback]
- * @return {Array<T>}
- */
-opentype._parse.prototype.parseList = function() {};
-
-/**
- * Parse a list of items using a 32-bit count.
- * @template T
- * @param {number|function()} [count]
- * @param {function():T} [itemCallback]
- * @return {Array<T>}
- */
-opentype._parse.prototype.parseList32 = function() {};
-
-/**
- * Parse a list of records.
- * Record count is optional, if omitted it is read from the stream.
- * Example of recordDescription: { sequenceIndex: Parser.uShort, lookupListIndex: Parser.uShort }
- * @param {number|Object} [count]
- * @param {Object} [recordDescription]
- * @return {Array<Object>}
- */
-opentype._parse.prototype.parseRecordList = function() {};
-
-/**
- * Parse a list of records using a 32-bit count.
- * @param {number|Object} [count]
- * @param {Object} [recordDescription]
- * @return {Array<Object>}
- */
-opentype._parse.prototype.parseRecordList32 = function() {};
-
-/**
- * Parse N tuples of F2.14 values.
- * @param {number} tupleCount
- * @param {number} axisCount
- * @return {Array<Array<number>>}
- */
-opentype._parse.prototype.parseTupleRecords = function() {};
-
-/**
- * Parse a data structure into an object.
- * Example of description: { sequenceIndex: Parser.uShort, lookupListIndex: Parser.uShort }
- * @param {Object|function()} description
- * @return {Object}
- */
-opentype._parse.prototype.parseStruct = function() {};
-
-/**
- * Parse a GPOS valueRecord
- * https://docs.microsoft.com/en-us/typography/opentype/spec/gpos#value-record
- * valueFormat is optional, if omitted it is read from the stream.
- * @param {number=} valueFormat
- * @return {Object|undefined}
- */
-opentype._parse.prototype.parseValueRecord = function() {};
-
-/**
- * Parse a list of GPOS valueRecords
- * https://docs.microsoft.com/en-us/typography/opentype/spec/gpos#value-record
- * valueFormat and valueCount are read from the stream.
- */
-opentype._parse.prototype.parseValueRecordList = function() {};
-
-/**
- * Parse a pointer to another offset-based structure.
- * @param {Object|function()} description
- * @return {Object|undefined}
- */
-opentype._parse.prototype.parsePointer = function() {};
-
-/**
- * Parse a 32-bit pointer to another offset-based structure.
- * @param {Object|function()} description
- * @return {Object|undefined}
- */
-opentype._parse.prototype.parsePointer32 = function() {};
-
-/**
- * Parse a list of lists of values from the stream.
- * If no itemCallback is provided, it parses a list of UShort lists.
- * @template T
- * @param {function():T} [itemCallback]
- * @return {Array<T|undefined>}
- */
-opentype._parse.prototype.parseListOfLists = function() {};
-
-/**
- * Parse a coverage table in a GSUB, GPOS or GDEF table.
- * @return {Object}
- */
-opentype._parse.prototype.parseCoverage = function() {};
-
-/**
- * Parse a class definition table in a GSUB, GPOS or GDEF table.
- * @return {Object}
- */
-opentype._parse.prototype.parseClassDef = function() {};
-
-/**
- * Parse a ScriptList and return an array of `ScriptRecord`.
- * @return {ScriptRecord[]}
- */
-opentype._parse.prototype.parseScriptList = function() {};
-
-/**
- * Parse a FeatureList and return an array of `FeatureRecord`.
- * @return {FeatureRecord[]}
- */
-opentype._parse.prototype.parseFeatureList = function() {};
-
-/**
- * Parse a LookupList using provided parsers and return an array of `Lookup` objects.
- * @param {Object} lookupTableParsers - map of lookupType to parser function
- * @return {Lookup[]}
- */
-opentype._parse.prototype.parseLookupList = function() {};
-
-/**
- * Parse a FeatureVariationsList.
- * @return {Object[]}
- */
-opentype._parse.prototype.parseFeatureVariationsList = function() {};
-
-/**
- * Parse a VariationStore structure.
- * @return {VariationStore}
- */
-opentype._parse.prototype.parseVariationStore = function() {};
-
-/**
- * Parse an ItemVariationStore.
- * @return {ItemVariationStore}
- */
-opentype._parse.prototype.parseItemVariationStore = function() {};
-
-/**
- * Parse a VariationRegionList.
- * @return {Array<Object>}
- */
-opentype._parse.prototype.parseVariationRegionList = function() {};
-
-/**
- * Parse an ItemVariationSubtable.
- * @return {ItemVariationSubtable}
- */
-opentype._parse.prototype.parseItemVariationSubtable = function() {};
-
-/**
- * Parse a DeltaSetIndexMap.
- * @return {DeltaSetIndexMap}
- */
-opentype._parse.prototype.parseDeltaSetIndexMap = function() {};
-
-/**
- * Parse delta sets for item variation subtables.
- * @param {number} itemCount
- * @param {number} wordDeltaCount
- * @param {number} regionIndexCount
- * @return {number[][]}
- */
-opentype._parse.prototype.parseDeltaSets = function() {};
-
-/**
- * Parse a TupleVariationStoreList and return a glyph-indexed map of variation stores.
- * @param {number} axisCount
- * @param {string} flavor
- * @param {Map<number, Object>|Array} glyphs
- * @return {Object.<number, (Object|undefined)>}
- */
-opentype._parse.prototype.parseTupleVariationStoreList = function() {};
-
-/**
- * Parse a TupleVariationStore at the given offset.
- * @param {number} tableOffset
- * @param {number} axisCount
- * @param {string} flavor
- * @param {Map<number, Object>|Array} glyphs
- * @param {number} glyphIndex
- * @return {Object}
- */
-opentype._parse.prototype.parseTupleVariationStore = function() {};
-
-/**
- * Parse a TupleVariationHeader.
- * @param {number} axisCount
- * @param {string} flavor
- * @return {TupleVariationHeader}
- */
-opentype._parse.prototype.parseTupleVariationHeader = function() {};
-
-/**
- * Parse packed point numbers and return an array of point indices.
- * @return {number[]}
- */
-opentype._parse.prototype.parsePackedPointNumbers = function() {};
-
-/**
- * Parse packed delta values and return an array of deltas.
- * @param {number} expectedCount
- * @return {number[]}
- */
-opentype._parse.prototype.parsePackedDeltas = function() {};
+     * Stroke width for the path outline.
+     * @type {number}
+     * @alias opentype.Path.prototype.strokeWidth
+     */
+opentype.Path.prototype.strokeWidth = function() {};
 
 /**
  * Draws cubic curve
@@ -861,8 +737,7 @@ curveTo = function() {};
 
 /**
  * Draws cubic curve
- * @function
- * bezierCurveTo
+ * @function curveTo
  * @memberof opentype.Path.prototype
  * @alias opentype.Path.prototype.bezierCurveTo
  * @param  {number} x1 - x of control 1
@@ -871,14 +746,13 @@ curveTo = function() {};
  * @param  {number} y2 - y of control 2
  * @param  {number} x - x of path point
  * @param  {number} y - y of path point
- * @see curveTo
+ * @see bezierCurveTo
  */
 opentype.Path.prototype.bezierCurveTo = function() {};
 
 /**
  * Draws quadratic curve
- * @function
- * quadraticCurveTo
+ * @function quadTo
  * @memberof opentype.Path.prototype
  * @alias opentype.Path.prototype.quadraticCurveTo
  * @param  {number} x1 - x of control
@@ -887,19 +761,6 @@ opentype.Path.prototype.bezierCurveTo = function() {};
  * @param  {number} y - y of path point
  */
 opentype.Path.prototype.quadraticCurveTo = function() {};
-
-/**
- * Draws quadratic curve
- * @function
- * quadTo
- * @memberof opentype.Path.prototype
- * @param  {number} x1 - x of control
- * @param  {number} y1 - y of control
- * @param  {number} x - x of path point
- * @param  {number} y - y of path point
- */
-opentype.Path.prototype.
-quadTo = function() {};
 
 /**
  * Closes the path
@@ -936,8 +797,7 @@ opentype.Path.prototype.lineTo = function() {};
 
 /**
  * Draws cubic curve
- * @function
- * bezierCurveTo
+ * @function curveTo
  * @memberof opentype.Path.prototype
  * @alias opentype.Path.prototype.bezierCurveTo
  * @param  {number} x1 - x of control 1
@@ -946,15 +806,15 @@ opentype.Path.prototype.lineTo = function() {};
  * @param  {number} y2 - y of control 2
  * @param  {number} x - x of path point
  * @param  {number} y - y of path point
- * @see curveTo
+ * @see bezierCurveTo
  */
 opentype.Path.prototype.curveTo = function() {};
 
 /**
  * Draws quadratic curve
- * @function
- * quadTo
+ * @function quadTo
  * @memberof opentype.Path.prototype
+ * @alias opentype.Path.prototype.quadraticCurveTo
  * @param  {number} x1 - x of control
  * @param  {number} y1 - y of control
  * @param  {number} x - x of path point
@@ -1003,121 +863,3 @@ opentype.Path.prototype.toSVG = function() {};
  * @return {SVGPathElement}
  */
 opentype.Path.prototype.toDOMElement = function() {};
-
-/**
-     * Parse an unsigned 8-bit integer.
-     * @alias opentype._parse.getByte
-     * @param {DataView} data
-     * @param {number} offset
-     * @return {number}
-     */
-opentype._parse.getByte = function() {};
-
-/**
-     * Parse an unsigned 8-bit integer.
-     * @alias opentype._parse.getCard8
-     * @param {DataView} data
-     * @param {number} offset
-     * @return {number}
-     */
-opentype._parse.getCard8 = function() {};
-
-/**
-     * Parse an unsigned 16-bit integer.
-     * @alias opentype._parse.getUShort
-     * @param {DataView} data
-     * @param {number} offset
-     * @return {number}
-     */
-opentype._parse.getUShort = function() {};
-
-/**
-     * Parse an unsigned 16-bit integer.
-     * @alias opentype._parse.getCard16
-     * @param {DataView} data
-     * @param {number} offset
-     * @return {number}
-     */
-opentype._parse.getCard16 = function() {};
-
-/**
-     * Parse a signed 16-bit integer.
-     * @alias opentype._parse.getShort
-     * @param {DataView} data
-     * @param {number} offset
-     * @return {number}
-     */
-opentype._parse.getShort = function() {};
-
-/**
-     * Parse a 24-bit unsigned integer.
-     * @alias opentype._parse.getUInt24
-     * @param {DataView} data
-     * @param {number} offset
-     * @return {number}
-     */
-opentype._parse.getUInt24 = function() {};
-
-/**
-     * Parse a 32-bit unsigned integer.
-     * @alias opentype._parse.getULong
-     * @param {DataView} data
-     * @param {number} offset
-     * @return {number}
-     */
-opentype._parse.getULong = function() {};
-
-/**
-     * Parse a 16.16 fixed point number.
-     * @alias opentype._parse.getFixed
-     * @param {DataView} data
-     * @param {number} offset
-     * @return {number}
-     */
-opentype._parse.getFixed = function() {};
-
-/**
-     * Parse a 4-character tag.
-     * @alias opentype._parse.getTag
-     * @param {DataView} data
-     * @param {number} offset
-     * @return {string}
-     */
-opentype._parse.getTag = function() {};
-
-/**
-     * Parse an offset from the DataView.
-     * @alias opentype._parse.getOffset
-     * @param {DataView} data
-     * @param {number} offset
-     * @param {number} offSize
-     * @return {number}
-     */
-opentype._parse.getOffset = function() {};
-
-/**
-     * Retrieve a number of bytes from start offset to the end offset.
-     * @alias opentype._parse.getBytes
-     * @param {DataView} dataView
-     * @param {number} startOffset
-     * @param {number} endOffset
-     * @return {number[]}
-     */
-opentype._parse.getBytes = function() {};
-
-/**
-     * Convert bytes to a string.
-     * @alias opentype._parse.bytesToString
-     * @param {number[]} bytes
-     * @return {string}
-     */
-opentype._parse.bytesToString = function() {};
-
-/**
-     * Parser constructor.
-     * @alias opentype._parse.Parser
-     * @constructor
-     * @param {DataView} data
-     * @param {number=} offset
-     */
-opentype._parse.Parser = function() {};

@@ -10,9 +10,29 @@ import BoundingBox from './bbox.mjs';
  * @constructor
  */
 function Path() {
+    /**
+     * The list of drawing commands for the path.
+     * @type {Array<Object>}
+     * @alias opentype.Path.prototype.commands
+     */
     this.commands = [];
+    /**
+     * Fill color for the path. If null, the path is not filled.
+     * @type {string|null}
+     * @alias opentype.Path.prototype.fill
+     */
     this.fill = 'black';
+    /**
+     * Stroke color for the path. If null, the path is not stroked.
+     * @type {string|null}
+     * @alias opentype.Path.prototype.stroke
+     */
     this.stroke = null;
+    /**
+     * Stroke width for the path outline.
+     * @type {number}
+     * @alias opentype.Path.prototype.strokeWidth
+     */
     this.strokeWidth = 1;
     // the _layer property is only set on computed paths during glyph rendering
     // this._layers = [];
