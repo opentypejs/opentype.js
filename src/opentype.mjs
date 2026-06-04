@@ -20,6 +20,7 @@ import gvar from './tables/gvar.mjs';
 import cvar from './tables/cvar.mjs';
 import avar from './tables/avar.mjs';
 import hvar from './tables/hvar.mjs';
+import mvar from './tables/mvar.mjs';
 import glyf from './tables/glyf.mjs';
 import gdef from './tables/gdef.mjs';
 import gpos from './tables/gpos.mjs';
@@ -189,6 +190,7 @@ function parseBuffer(buffer, opt={}) {
     let gsubTableEntry;
     let hmtxTableEntry;
     let hvarTableEntry;
+    let mvarTableEntry;
     let kernTableEntry;
     let locaTableEntry;
     let nameTableEntry;
@@ -322,6 +324,9 @@ function parseBuffer(buffer, opt={}) {
                 table = uncompressTable(data, tableEntry);
                 font.tables.svg = svg.parse(table.data, table.offset);
                 break;
+            case 'MVAR':
+                mvarTableEntry = tableEntry;
+                break;
             default:
                 // console.info(`Skipping unsupported table ${tableEntry.tag}`);
                 break;
@@ -429,6 +434,14 @@ function parseBuffer(buffer, opt={}) {
 
         const hvarTable = uncompressTable(data, hvarTableEntry);
         font.tables.hvar = hvar.parse(hvarTable.data, hvarTable.offset, font.tables.fvar);
+    }
+
+    if (mvarTableEntry) {
+        if (!fvarTableEntry) {
+            console.warn('This font provides an MVAR table, but no fvar table, which is required for variable fonts.');
+        }
+        const mvarTable = uncompressTable(data, mvarTableEntry);
+        font.tables.mvar = mvar.parse(mvarTable.data, mvarTable.offset);
     }
 
     if (metaTableEntry) {

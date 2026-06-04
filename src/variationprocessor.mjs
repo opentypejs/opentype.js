@@ -386,7 +386,12 @@ export class VariationProcessor {
                 if(variationData) {
                     const glyphPoints = glyph.points;
                     let transformedPoints = this.applyTupleVariationStore(variationData, glyphPoints, coords, 'gvar', { glyph });
-                    transformedGlyph = new Glyph(Object.assign({}, glyph, {points: transformedPoints, path: getPath(transformedPoints)}));
+                    // unitsPerEm is propagated through the path so that glyph.getPath() can derive the
+                    // correct scale after transformation (variable fonts may produce a transformed path
+                    // whose unitsPerEm differs from the font default if the path object is replaced).
+                    const path = getPath(transformedPoints);
+                    path.unitsPerEm = this.font.unitsPerEm;
+                    transformedGlyph = new Glyph(Object.assign({}, glyph, {points: transformedPoints, path}));
                 }
             } else if (hasBlend) {
                 const blendPath = glyph.getBlendPath(coords);
@@ -394,12 +399,55 @@ export class VariationProcessor {
             }
         }
 
+        // Composite glyphs need component positions adjusted by per-component HVAR deltas.
+        // TODO: add VVAR support for vertical advances when available.
+        if (glyph.isComposite && glyph.components && glyph.components.length && transformedGlyph.points) {
+            const componentInfos = [];
+            let pointOffset = 0;
+            for (let c = 0; c < glyph.components.length; c++) {
+                const component = glyph.components[c];
+                const componentGlyph = this.font.glyphs.get(component.glyphIndex);
+                // Note that .points is a getter that will lazy-load the path.
+                const pointCount = componentGlyph.points.length;
+                const deltaAdvance = this.font.tables.hvar ?
+                    this.getVariableAdjustment(componentGlyph.index, 'hvar', 'advanceWidth', coords) :
+                    0;
+                const deltaLsb = this.font.tables.hvar ?
+                    this.getVariableAdjustment(componentGlyph.index, 'hvar', 'lsb', coords) :
+                    0;
+                componentInfos.push({
+                    pointOffset,
+                    pointCount,
+                    deltaAdvanceWidth: deltaAdvance,
+                    deltaLsb
+                });
+                pointOffset += pointCount;
+            }
+            let cumulativeShift = 0;
+            const shiftedPoints = transformedGlyph.points.map(copyPoint);
+            for (let i = 0; i < componentInfos.length; i++) {
+                const info = componentInfos[i];
+                // Each component shifts by the sum of prior component width deltas, plus this component's LSB delta.
+                for (let p = info.pointOffset; p < info.pointOffset + info.pointCount; p++) {
+                    shiftedPoints[p].x = Math.round(shiftedPoints[p].x + cumulativeShift + info.deltaLsb);
+                }
+                cumulativeShift += info.deltaAdvanceWidth;
+            }
+            transformedGlyph = new Glyph(Object.assign({}, transformedGlyph, {points: shiftedPoints, path: (() => {
+                const p = getPath(shiftedPoints);
+                p.unitsPerEm = this.font.unitsPerEm;
+                return p;
+            })()}));
+        }
+
         if(this.font.tables.hvar) {
             glyph._advanceWidth = typeof glyph._advanceWidth !== 'undefined' ? glyph._advanceWidth: glyph.advanceWidth;
-            glyph.advanceWidth = transformedGlyph.advanceWidth = Math.round(glyph._advanceWidth + this.getVariableAdjustment(transformedGlyph.index, 'hvar', 'advanceWidth', coords));
+            const advanceDelta = this.getVariableAdjustment(transformedGlyph.index, 'hvar', 'advanceWidth', coords);
+            glyph.advanceWidth = transformedGlyph.advanceWidth = Math.round(glyph._advanceWidth + advanceDelta);
             
             glyph._leftSideBearing = typeof glyph._leftSideBearing !== 'undefined' ? glyph._leftSideBearing: glyph.leftSideBearing;
-            glyph.leftSideBearing = transformedGlyph.leftSideBearing = Math.round(glyph._leftSideBearing + this.getVariableAdjustment(transformedGlyph.index, 'hvar', 'lsb', coords));
+            const lsbDelta = this.getVariableAdjustment(transformedGlyph.index, 'hvar', 'lsb', coords);
+            glyph.leftSideBearing = transformedGlyph.leftSideBearing = Math.round(glyph._leftSideBearing + lsbDelta);
         }
 
         return transformedGlyph;

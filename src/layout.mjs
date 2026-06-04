@@ -254,6 +254,16 @@ Layout.prototype = {
                 lookupTable = allLookups[lookupListIndexes[i]];
                 if (lookupTable.lookupType === lookupType) {
                     tables.push(lookupTable);
+                } else if (lookupTable.lookupType === 7 || lookupTable.lookupType === 9) {
+                    // Extension lookup (GSUB type 7 / GPOS type 9): the parser stores each subtable as
+                    // { lookupType: innerType, extension: <inner subtable data> }. Collect subtables whose
+                    // inner type matches and synthesize a plain lookup so consumers need no extension awareness.
+                    const innerSubtables = lookupTable.subtables
+                        .filter(sub => sub.lookupType === lookupType)
+                        .map(sub => sub.extension);
+                    if (innerSubtables.length > 0) {
+                        tables.push(Object.assign({}, lookupTable, { lookupType, subtables: innerSubtables }));
+                    }
                 }
             }
             if (tables.length === 0 && create) {

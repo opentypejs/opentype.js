@@ -150,14 +150,16 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
     let hPoints;
     let xScale = options.xScale;
     let yScale = options.yScale;
-    const scale = 1 / (this.path.unitsPerEm || 1000) * fontSize;
-
     let useGlyph = this;
-
+    // For variable fonts, the transformed path's unitsPerEm may be set explicitly (see variationprocessor.mjs).
+    // Prefer it over the original path's value so the scale is always derived from the same path object used for rendering.
+    let scaleSource = this.path;
     if(font && font.variation) {
         useGlyph = font.variation.getTransform(this, options.variation);
         commands = useGlyph.path.commands;
+        scaleSource = useGlyph.path.unitsPerEm != null ? useGlyph.path : this.path;
     }
+    const scale = 1 / (scaleSource.unitsPerEm || 1000) * fontSize;
     
     if (options.hinting && font && font.hinting) {
         // in case of hinting, the hinting engine takes care

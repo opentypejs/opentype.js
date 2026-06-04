@@ -21,6 +21,16 @@ function singleSubstitutionFormat2(action, tokens, index) {
 }
 
 /**
+ * Apply multiple substitution format 1 (one glyph → sequence of glyphs).
+ * The full sequence is stored on the token; getTextGlyphs expands it into
+ * separate glyph indices, and latinContextualAlternates uses only the first
+ * element for context matching in subsequent lookups.
+ */
+function multipleSubstitutionFormat1(action, tokens, index) {
+    tokens[index].setState(action.tag, action.substitution);
+}
+
+/**
  * Apply chaining context substitution format 3
  * @param {Array} substitutions substitutions
  * @param {any} tokens a list of tokens
@@ -32,8 +42,9 @@ function chainingSubstitutionFormat3(action, tokens, index) {
         const token = tokens[index + i];
         if (Array.isArray(subst)) {
             if (subst.length){
-                // TODO: replace one glyph with multiple glyphs
-                token.setState(action.tag, subst[0]);
+                // Store the full multi-glyph sequence on the token so all
+                // fragment glyphs reach the output stream via getTextGlyphs.
+                token.setState(action.tag, subst);
             } else {
                 token.setState('deleted', true);
             }
@@ -65,9 +76,13 @@ function ligatureSubstitutionFormat1(action, tokens, index) {
 const SUBSTITUTIONS = {
     11: singleSubstitutionFormat1,
     12: singleSubstitutionFormat2,
+    21: multipleSubstitutionFormat1,
+    61: chainingSubstitutionFormat3,
+    62: chainingSubstitutionFormat3,
     63: chainingSubstitutionFormat3,
     41: ligatureSubstitutionFormat1,
     51: chainingSubstitutionFormat3,
+    52: chainingSubstitutionFormat3,
     53: chainingSubstitutionFormat3
 };
 

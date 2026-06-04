@@ -36,6 +36,7 @@
     <label><input type="checkbox" name="drawMetrics">Draw Metrics</label>
     <label><input type="checkbox" name="kerning" checked="checked">Kerning</label>
     <label><input type="checkbox" name="ligatures" checked="checked">Ligatures</label>
+    <label><input type="checkbox" name="contextualAlternates" checked="checked">Contextual Alternates</label>
     <label class="disabled"><input name="hinting" type="checkbox" disabled="true">Hinting</label>
 
     <div id="variation-options"></div>
@@ -145,7 +146,8 @@ function getDrawOptions() {
         hinting: form.hinting.checked,
         features: {
             liga: form.ligatures.checked,
-            rlig: form.ligatures.checked
+            rlig: form.ligatures.checked,
+            calt: form.contextualAlternates.checked
         }
     };
     window.fontOptions = Object.assign({}, window.font.defaultRenderOptions, window.fontOptions, options);
