@@ -301,7 +301,7 @@ export class VariationProcessor {
                 continue;
             }
 
-            const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
+            const tuplePoints = header.privatePoints || sharedPoints;
 
             if(flavor === 'gvar' && args.glyph && args.glyph.isComposite) {
                 /** @TODO: composite glyphs that are not explicitly targeted in the gvar table
