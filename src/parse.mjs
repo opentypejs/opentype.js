@@ -41,7 +41,7 @@ function getLong(dataView, offset) {
 function getFixed(dataView, offset) {
     const decimal = dataView.getInt16(offset, false);
     const fraction = dataView.getUint16(offset + 2, false);
-    return decimal + fraction / 65535;
+    return decimal + fraction / 65536;
 }
 
 // Retrieve a 4-character tag from the DataView.
