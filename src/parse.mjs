@@ -448,6 +448,50 @@ Parser.prototype.parseValueRecordList = function() {
     return values;
 };
 
+/**
+ * Parse a GPOS Anchor table (format 1, 2, or 3).
+ * https://learn.microsoft.com/en-us/typography/opentype/spec/gpos#anchor-table
+ * AnchorFormat1: format (uint16), then xCoordinate (int16), then yCoordinate (int16) — design units.
+ * Format 3: Device table (non-variable) / VariationIndex table (variable) offsets are parsed;
+ * VariationIndex (deltaFormat 0x8000) is read and stored for variable-font anchor adjustment.
+ */
+Parser.prototype.parseAnchor = function() {
+    const anchorStart = this.offset;
+    const format = this.parseUShort();
+    const anchor = {
+        format: format,
+        xCoordinate: this.parseShort(),
+        yCoordinate: this.parseShort()
+    };
+    if (format === 2) {
+        anchor.anchorPoint = this.parseUShort();
+    } else if (format === 3) {
+        const xDeviceOffset = this.parseOffset16();
+        const yDeviceOffset = this.parseOffset16();
+        // Parse Device / VariationIndex tables per OpenType ch.2 § Device and VariationIndex tables.
+        // VariationIndex (deltaFormat 0x8000) gives delta-set outer/inner index for ItemVariationStore.
+        if (xDeviceOffset) {
+            const p = new Parser(this.data, anchorStart + xDeviceOffset);
+            const word0 = p.parseUShort();
+            const word1 = p.parseUShort();
+            const deltaFormat = p.parseUShort();
+            if (deltaFormat === 0x8000) {
+                anchor.xVariationIndex = { outer: word0, inner: word1 };
+            }
+        }
+        if (yDeviceOffset) {
+            const p = new Parser(this.data, anchorStart + yDeviceOffset);
+            const word0 = p.parseUShort();
+            const word1 = p.parseUShort();
+            const deltaFormat = p.parseUShort();
+            if (deltaFormat === 0x8000) {
+                anchor.yVariationIndex = { outer: word0, inner: word1 };
+            }
+        }
+    }
+    return anchor;
+};
+
 Parser.prototype.parsePointer = function(description) {
     const structOffset = this.parseOffset16();
     if (structOffset > 0) {
@@ -887,13 +931,15 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
 
     for(let h = 0; h < count; h++) {
         const header = headers[h];
-        header.privatePoints = [];
         this.relativeOffset = serializedDataOffset;
         
         if(flavor === 'cvar' && !header.peakTuple) {
             console.warn('An embedded peak tuple is required in TupleVariationHeaders for the cvar table.');
         }
 
+        // Note that privatePoints can be undefined, which means that we
+        // will use the shared points, an empty array, which means we will
+        // use all points, or an array of points.
         if(header.flags.privatePointNumbers) {
             header.privatePoints = this.parsePackedPointNumbers();
         }
@@ -909,7 +955,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
             const parseDeltas = () => {
                 let pointsCount = 0;
                 if(flavor === 'gvar') {
-                    pointsCount = header.privatePoints.length || sharedPoints.length;
+                    pointsCount = header.privatePoints ? header.privatePoints.length : sharedPoints.length;
                     if(!pointsCount) {
                         const glyph = glyphs.get(glyphIndex);
                         // make sure the path is available
@@ -1012,13 +1058,22 @@ Parser.prototype.parsePackedPointNumbers = function() {
     if (countByte1 >= 128) {
         // High bit is set, need to read a second byte and combine.
         const countByte2 = this.parseByte();
-    
+
         // Combine as big-endian uint16, with high bit of the first byte cleared.
         // This is done by masking the first byte with 0x7F (to clear the high bit)
         // and then shifting it left by 8 bits before adding the second byte.
         totalPointCount = ((countByte1 & masks.POINT_RUN_COUNT_MASK) << 8) | countByte2;
     }
-    
+
+    // A point count of 0 is a special signal meaning "all points in the glyph are
+    // referenced" (no point-number data follows). This is distinct from a list that
+    // happens to contain no points, so return null to let callers apply deltas to
+    // every point rather than falling back to the shared point numbers.
+    // https://learn.microsoft.com/en-us/typography/opentype/spec/otvarcommonformats#packed-point-numbers
+    // if (totalPointCount === 0) {
+    //     return null;
+    // }
+
     let lastPoint = 0;
     while (points.length < totalPointCount) {
         const controlByte = this.parseByte();

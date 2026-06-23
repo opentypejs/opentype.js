@@ -110,6 +110,57 @@ describe('layout.mjs', function() {
         });
     });
 
+    describe('getLookupTables', function() {
+        function makeTable(lookupType, subtables) {
+            return {
+                version: 1,
+                scripts: [{ tag: 'DFLT', script: {
+                    defaultLangSys: { reserved: 0, reqFeatureIndex: 0xffff, featureIndexes: [0] },
+                    langSysRecords: []
+                } }],
+                features: [{ tag: 'liga', feature: { lookupListIndexes: [0] } }],
+                lookups: [{ lookupType, lookupFlag: 0, subtables }]
+            };
+        }
+
+        it('returns a direct lookup matching the requested type', function() {
+            const subtable = { substFormat: 1 };
+            font.tables.gsub = makeTable(4, [subtable]);
+            const result = layout.getLookupTables('DFLT', 'dflt', 'liga', 4);
+            assert.equal(result.length, 1);
+            assert.deepEqual(result[0].subtables, [subtable]);
+        });
+
+        it('unwraps a GSUB type-7 extension lookup that wraps the requested type', function() {
+            const inner = { substFormat: 1, coverage: { format: 1, glyphs: [10] } };
+            font.tables.gsub = makeTable(7, [{ substFormat: 1, lookupType: 4, extension: inner }]);
+            const result = layout.getLookupTables('DFLT', 'dflt', 'liga', 4);
+            assert.equal(result.length, 1);
+            assert.equal(result[0].lookupType, 4);
+            assert.deepEqual(result[0].subtables, [inner]);
+        });
+
+        it('does not return a type-7 extension wrapping a different inner type', function() {
+            const inner = { substFormat: 2 };
+            font.tables.gsub = makeTable(7, [{ substFormat: 1, lookupType: 1, extension: inner }]);
+            const result = layout.getLookupTables('DFLT', 'dflt', 'liga', 4);
+            assert.equal(result.length, 0);
+        });
+
+        it('unwraps a GPOS type-9 extension lookup that wraps the requested type', function() {
+            const gposLayout = new Layout(font, 'gpos');
+            gposLayout.createDefaultTable = function() { return defaultLayoutTable; };
+            const inner = { posFormat: 1, pairSets: [] };
+            font.tables.gpos = makeTable(9, [{ posFormat: 1, lookupType: 2, extension: inner }]);
+            // Patch feature tag to 'kern' for this table
+            font.tables.gpos.features[0].tag = 'kern';
+            const result = gposLayout.getLookupTables('DFLT', 'dflt', 'kern', 2);
+            assert.equal(result.length, 1);
+            assert.equal(result[0].lookupType, 2);
+            assert.deepEqual(result[0].subtables, [inner]);
+        });
+    });
+
     describe('getCoverageIndex', function() {
         const cov1 = {
             format: 1,
