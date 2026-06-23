@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { parse } from '../src/opentype.mjs';
+import { VariationProcessor } from '../src/variationprocessor.mjs';
 import { readFileSync } from 'fs';
 import exp from 'constants';
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
@@ -131,6 +132,67 @@ describe('variation.mjs', function() {
     });
     
     describe('hvar', function() {
+        it('shifts composite component points by cumulative advance deltas', function() {
+            const component1 = {
+                index: 1,
+                advanceWidth: 100,
+                points: [{x: 10, y: 0, onCurve: true, lastPointOfContour: true}],
+                getPath: () => ({commands: []})
+            };
+            const component2 = {
+                index: 2,
+                advanceWidth: 100,
+                points: [{x: 110, y: 0, onCurve: true, lastPointOfContour: true}],
+                getPath: () => ({commands: []})
+            };
+            const component3 = {
+                index: 3,
+                advanceWidth: 100,
+                points: [{x: 210, y: 0, onCurve: true, lastPointOfContour: true}],
+                getPath: () => ({commands: []})
+            };
+            const composite = {
+                index: 10,
+                isComposite: true,
+                components: [
+                    {glyphIndex: 1},
+                    {glyphIndex: 2},
+                    {glyphIndex: 3}
+                ],
+                points: [
+                    component1.points[0],
+                    component2.points[0],
+                    component3.points[0]
+                ],
+                advanceWidth: 300,
+                leftSideBearing: 0
+            };
+
+            const glyphMap = {
+                1: component1,
+                2: component2,
+                3: component3,
+                10: composite
+            };
+
+            const font = {
+                glyphs: { get: (id) => glyphMap[id] },
+                tables: { hvar: {} },
+                variation: { get: () => ({}) },
+                defaultRenderOptions: { variation: {} }
+            };
+
+            const processor = new VariationProcessor(font);
+            // Fake HVAR per-component advance deltas to validate cumulative shifts.
+            processor.getVariableAdjustment = (gid, tableName, parameter) => {
+                if (tableName !== 'hvar' || parameter !== 'advanceWidth') return 0;
+                return {1: -10, 2: -20, 3: -30}[gid] || 0;
+            };
+
+            const transformed = processor.getTransform(composite, {});
+            assert.deepEqual(transformed.points.map((pt) => pt.x), [10, 100, 180]);
+        });
+
         it('transforms advanceWidth', function() {
             let font = fonts.hvar;
             let glyphPos = [];

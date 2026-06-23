@@ -65,9 +65,12 @@ function ligatureSubstitutionFormat1(action, tokens, index) {
 const SUBSTITUTIONS = {
     11: singleSubstitutionFormat1,
     12: singleSubstitutionFormat2,
+    61: chainingSubstitutionFormat3,
+    62: chainingSubstitutionFormat3,
     63: chainingSubstitutionFormat3,
     41: ligatureSubstitutionFormat1,
     51: chainingSubstitutionFormat3,
+    52: chainingSubstitutionFormat3,
     53: chainingSubstitutionFormat3
 };
 

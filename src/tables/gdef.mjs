@@ -57,6 +57,12 @@ function parseGDEFTable(data, start) {
     if (tableVersion >= 1.2) {
         gdef.markGlyphSets = p.parsePointer(markGlyphSets);
     }
+    if (tableVersion >= 1.3) {
+        const itemVarStoreOffset = p.parseOffset32();
+        gdef.itemVariationStore = itemVarStoreOffset
+            ? new Parser(data, start + itemVarStoreOffset).parseItemVariationStore()
+            : undefined;
+    }
     return gdef;
 }
 export default { parse: parseGDEFTable };
