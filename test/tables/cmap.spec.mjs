@@ -2,6 +2,7 @@ import assert from 'assert';
 import { unhex } from '../testutil.mjs';
 import { Parser } from '../../src/parse.mjs';
 import { parseCmapTableFormat14, parseCmapTableFormat0, makeCmapTable } from '../../src/tables/cmap.mjs';
+import cmapTable from '../../src/tables/cmap.mjs';
 import { Font, Path, Glyph, parse } from '../../src/opentype.mjs';
 import { readFileSync } from 'fs';
 const loadSync = (url, opt) => parse(readFileSync(url), opt);
@@ -81,6 +82,25 @@ describe('tables/cmap.mjs', function() {
         const glyphIds = font.stringToGlyphIndexes(testString);
         const expectedGlyphIds = [1,2,3,4];
         assert.deepEqual(glyphIds, expectedGlyphIds);
+    });
+
+    it('does not map format 12 code points beyond U+10FFFF', function() {
+        // A single format 12 group whose range straddles the Unicode maximum.
+        const cmapData =
+            '0000 0001' +              // version, numTables
+            '0003 000A 0000000C' +     // platformID 3, encodingID 10, offset 12
+            '000C 0000' +              // format 12, reserved
+            '00000000' +               // length (unused on this path)
+            '00000000' +               // language
+            '00000001' +               // numGroups
+            '0010FFFE 00110003 00000005'; // startCharCode, endCharCode, startGlyphId
+        const cmap = cmapTable.parse(unhex(cmapData), 0);
+        assert.equal(cmap.glyphIndexMap[0x10FFFE], 5);
+        assert.equal(cmap.glyphIndexMap[0x10FFFF], 6);
+        // Code points above U+10FFFF must not be mapped.
+        assert.equal(cmap.glyphIndexMap[0x110000], undefined);
+        assert.equal(cmap.glyphIndexMap[0x110003], undefined);
+        assert.equal(Object.keys(cmap.glyphIndexMap).length, 2);
     });
 
     // Helper: create a mock GlyphSet for makeCmapTable

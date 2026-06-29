@@ -36,12 +36,19 @@ function parseCmapTableFormat12or13(cmap, p, format) {
     cmap.groupCount = groupCount = p.parseULong();
     cmap.glyphIndexMap = {};
 
+    // Character codes in a format 12/13 subtable are Unicode code points, which
+    // never exceed U+10FFFF. Clamp each group to that range so a malformed group
+    // with an out-of-range endCharCode can neither map invalid code points nor
+    // spin the loop for billions of iterations. Format 4 is implicitly bounded
+    // by its 16-bit fields; this keeps 12/13 in line.
+    const unicodeMax = 0x10FFFF;
     for (let i = 0; i < groupCount; i += 1) {
         const startCharCode = p.parseULong();
         const endCharCode = p.parseULong();
         let startGlyphId = p.parseULong();
 
-        for (let c = startCharCode; c <= endCharCode; c += 1) {
+        const lastCharCode = endCharCode > unicodeMax ? unicodeMax : endCharCode;
+        for (let c = startCharCode; c <= lastCharCode; c += 1) {
             cmap.glyphIndexMap[c] = startGlyphId;
             if (format === 12) {
                 startGlyphId++;
