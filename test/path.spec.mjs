@@ -112,6 +112,21 @@ describe('path.mjs', function() {
         assert.equal(result, 'M100 200L300 200L300 400Z');
     });
 
+    it('should keep a final lineTo that lands near but not exactly on the start (#804)', function() {
+        // A legitimate final segment whose endpoint is within 1 absolute unit
+        // of the start -- which happens at small font sizes, where the whole
+        // glyph is scaled down -- must not be dropped. Pre-fix the
+        // `Math.abs(...) > 1` window removed it, closing the outline with the
+        // wrong diagonal Z instead of the real line (issue #804).
+        const path = new Path();
+        path.moveTo(0, 0);
+        path.lineTo(10, 30);
+        path.lineTo(0.4, 0.3); // near the start, but a real, distinct vertex
+        path.close();
+        const result = path.toPathData({optimize: true, flipY: false});
+        assert.equal(result, 'M0 0L10 30L0.40 0.30Z');
+    });
+
     it('should optimize SVG paths if path closing point matches starting point', function() {
         const optimizedResult = 'M0 50L0 250L50 250L100 250L150 250L200 250L200 50ZM250 50L250 250L300 250L350 250L400 250L450 250L450 50Z';
         assert.equal(testPath2.toPathData({flipY: false}), optimizedResult);
