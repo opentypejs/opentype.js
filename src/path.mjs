@@ -62,7 +62,14 @@ function optimizeCommands(commands) {
             startX = cmd.x;
             startY = cmd.y;
         } else if (cmd.type === 'L' && (!nextCommand || nextCommand.type === 'Z')) {
-            if(!(Math.abs(cmd.x - startX) > 1 || Math.abs(cmd.y - startY) > 1)) {
+            // This existing optimization removes a final lineTo that returns to
+            // the subpath start. The old test used an absolute 1-unit window, so
+            // at small font sizes -- where the whole glyph scales down -- a
+            // legitimate final segment ending within 1 unit of the start was
+            // dropped too, closing the outline with the wrong diagonal (issue
+            // #804). Require an exact return to the start instead, the same test
+            // the other redundancy checks in this function already use.
+            if (cmd.x === startX && cmd.y === startY) {
                 subpath.pop();
             }
         } else if (cmd.type === 'L' && previousCommand && previousCommand.x === cmd.x && previousCommand.y === cmd.y) {
