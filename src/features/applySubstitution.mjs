@@ -21,6 +21,22 @@ function singleSubstitutionFormat2(action, tokens, index) {
 }
 
 /**
+ * Apply chaining context substitution format 2.
+ * @param {Array} substitutions substitutions
+ * @param {any} tokens a list of tokens
+ * @param {number} index token index
+ */
+function chainingSubstitutionFormat2(action, tokens, index) {
+    for (let i = 0; i < action.substitution.length; i++) {
+        const substitution = action.substitution[i];
+        tokens[index + substitution.sequenceIndex].setState(
+            action.tag,
+            substitution.substitution
+        );
+    }
+}
+
+/**
  * Apply chaining context substitution format 3
  * @param {Array} substitutions substitutions
  * @param {any} tokens a list of tokens
@@ -65,6 +81,7 @@ function ligatureSubstitutionFormat1(action, tokens, index) {
 const SUBSTITUTIONS = {
     11: singleSubstitutionFormat1,
     12: singleSubstitutionFormat2,
+    62: chainingSubstitutionFormat2,
     63: chainingSubstitutionFormat3,
     41: ligatureSubstitutionFormat1,
     51: chainingSubstitutionFormat3,
