@@ -180,6 +180,15 @@ describe('font.mjs', function() {
             assert.ok(tables);
             assert.equal(tables.tableName, 'sfnt');
         });
+
+        it('includes every glyph when the font was parsed in lowMemory mode', function() {
+            const lowMemFont = loadSync('./test/fonts/Roboto-Black.ttf', {lowMemory: true});
+            assert.equal(lowMemFont.numGlyphs, 1294);
+            assert.equal(lowMemFont.glyphs.length, 0); // nothing accessed yet
+
+            const roundTripped = parse(lowMemFont.toArrayBuffer());
+            assert.equal(roundTripped.glyphs.length, 1294);
+        });
     });
 });
 
