@@ -600,6 +600,13 @@ Font.prototype.validate = function() {
  * @return {opentype.Table}
  */
 Font.prototype.toTables = function() {
+    // In lowMemory mode, glyphs are only materialized in `this.glyphs` on
+    // first access, so `this.glyphs.length` only counts glyphs touched so
+    // far. Touch every glyph before writing, or the output font silently
+    // drops whichever ones were never requested.
+    for (let i = 0; i < this.numGlyphs; i += 1) {
+        this.glyphs.get(i);
+    }
     return sfnt.fontToTable(this);
 };
 /**
