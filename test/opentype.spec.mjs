@@ -75,6 +75,45 @@ describe('opentype.mjs', function() {
     });
 });
 
+// See test/generate-collection-font.mjs for how the fixture is built. Its two
+// members share every table except `name`, so a member is only read correctly
+// if the absolute offsets in its own directory are honoured.
+describe('font collections', function() {
+    const COLLECTION = './test/fonts/TestCollection.ttc';
+
+    it('parses the first member when no name is given', function() {
+        const font = loadSync(COLLECTION);
+        assert.deepEqual(font.names.windows.postScriptName, {en: 'CollectionAlpha'});
+        assert.equal(font.unitsPerEm, 1000);
+    });
+
+    it('selects a member by PostScript name', function() {
+        const alpha = loadSync(COLLECTION, {postscriptName: 'CollectionAlpha'});
+        const beta = loadSync(COLLECTION, {postscriptName: 'CollectionBeta'});
+        assert.deepEqual(alpha.names.windows.postScriptName, {en: 'CollectionAlpha'});
+        assert.deepEqual(beta.names.windows.postScriptName, {en: 'CollectionBeta'});
+    });
+
+    it('reads the shared tables from a non-first member', function() {
+        // `glyf`, `loca` and `cmap` live once in the file and are pointed at by
+        // both directories. A parser that assumed a member's tables followed
+        // its directory would read member 0's here and still look correct, so
+        // this asserts the outline actually arrives.
+        const beta = loadSync(COLLECTION, {postscriptName: 'CollectionBeta'});
+        const glyph = beta.charToGlyph('A');
+        assert.equal(glyph.index, 1);
+        assert.equal(glyph.advanceWidth, 500);
+        assert.equal(glyph.path.toPathData(0), 'M0 500L0 0L500 0L500 500Z');
+    });
+
+    it('throws and lists the members when the name is not in the collection', function() {
+        assert.throws(
+            function() { loadSync(COLLECTION, {postscriptName: 'NotInThere'}); },
+            /no font named "NotInThere".*CollectionAlpha, CollectionBeta/
+        );
+    });
+});
+
 describe('opentype.js on low memory mode', function() {
     const opt = { lowMemory: true };
 
