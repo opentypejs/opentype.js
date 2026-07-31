@@ -46,13 +46,18 @@ import { PaletteManager } from './palettes.mjs';
 // Table Directory Entries //////////////////////////////////////////////
 /**
  * Parses OpenType table entries.
- * @param  {DataView}
- * @param  {Number}
+ * @param  {DataView} data
+ * @param  {Number} numTables
+ * @param  {Number} [directoryOffset] - file offset of the table directory.
+ *     Zero for a plain font, where the directory follows the file header. A
+ *     font collection holds several directories at arbitrary offsets over one
+ *     shared pool of tables; the offsets inside each record are absolute
+ *     either way, so only the directory itself has to be located.
  * @return {Object[]}
  */
-function parseOpenTypeTableEntries(data, numTables) {
+function parseOpenTypeTableEntries(data, numTables, directoryOffset = 0) {
     const tableEntries = [];
-    let p = 12;
+    let p = directoryOffset + 12;
     for (let i = 0; i < numTables; i += 1) {
         const tag = parse.getTag(data, p);
         const checksum = parse.getULong(data, p + 4);
@@ -63,6 +68,77 @@ function parseOpenTypeTableEntries(data, numTables) {
     }
 
     return tableEntries;
+}
+
+// Font Collections /////////////////////////////////////////////////////
+/**
+ * Parses the header of a font collection (.ttc / .otc).
+ * @param  {DataView} data
+ * @return {Number[]} file offset of each member font's table directory
+ */
+function parseCollectionHeader(data) {
+    const numFonts = parse.getULong(data, 8);
+    const offsets = [];
+    for (let i = 0; i < numFonts; i += 1) {
+        offsets.push(parse.getULong(data, 12 + i * 4));
+    }
+
+    return offsets;
+}
+
+/**
+ * PostScript names (name table, nameID 6) of the collection member whose
+ * table directory sits at `directoryOffset`.
+ *
+ * Returns every spelling the member records rather than one, because the same
+ * name can appear under several platforms and languages and a caller has no
+ * way to know which the font chose.
+ * @param  {DataView} data
+ * @param  {Number} directoryOffset
+ * @return {String[]}
+ */
+function parseCollectionMemberNames(data, directoryOffset) {
+    const numTables = parse.getUShort(data, directoryOffset + 4);
+    const entries = parseOpenTypeTableEntries(data, numTables, directoryOffset);
+    const nameEntry = entries.find(entry => entry.tag === 'name');
+    if (!nameEntry) return [];
+
+    const names = _name.parse(data, nameEntry.offset);
+    const found = [];
+    for (const platform of Object.values(names)) {
+        for (const text of Object.values(platform.postScriptName || {})) {
+            if (found.indexOf(text) === -1) found.push(text);
+        }
+    }
+
+    return found;
+}
+
+/**
+ * Picks one member out of a font collection.
+ * @param  {DataView} data
+ * @param  {String} [postscriptName] - member to select; the first member is
+ *     used when omitted, matching how a collection is usually presented.
+ * @return {Number} file offset of the selected member's table directory
+ */
+function selectCollectionMember(data, postscriptName) {
+    const offsets = parseCollectionHeader(data);
+    if (offsets.length === 0) {
+        throw new Error('Font collection contains no fonts');
+    }
+    if (postscriptName === undefined) return offsets[0];
+
+    const available = [];
+    for (const offset of offsets) {
+        const names = parseCollectionMemberNames(data, offset);
+        if (names.indexOf(postscriptName) !== -1) return offset;
+        available.push(...names);
+    }
+
+    throw new Error(
+        'Font collection has no font named "' + postscriptName + '". Available: ' +
+        (available.length ? available.join(', ') : '(none - no member declares a PostScript name)')
+    );
 }
 
 /**
@@ -129,6 +205,9 @@ function uncompressTable(data, tableEntry) {
  * Throws an error if the font could not be parsed.
  * @param  {ArrayBuffer}
  * @param  {Object} opt - options for parsing
+ * @param  {String} [opt.postscriptName] - for a font collection (.ttc/.otc),
+ *     which member to parse. Defaults to the first member. Throws, listing the
+ *     names the collection does contain, if there is no such member.
  * @return {opentype.Font}
  */
 function parseBuffer(buffer, opt={}) {
@@ -169,6 +248,24 @@ function parseBuffer(buffer, opt={}) {
 
         numTables = parse.getUShort(data, 12);
         tableEntries = parseWOFFTableEntries(data, numTables);
+    } else if (signature === 'ttcf') {
+        // A collection is N table directories over one shared pool of tables.
+        // Nothing below this point cares where a directory lives — table
+        // records carry absolute file offsets — so selecting a member is
+        // entirely a matter of reading from the right directory.
+        const directoryOffset = selectCollectionMember(data, opt.postscriptName);
+        const memberSignature = parse.getTag(data, directoryOffset);
+        if (memberSignature === 'OTTO') {
+            font.outlinesFormat = 'cff';
+        } else if (memberSignature === String.fromCharCode(0, 1, 0, 0) ||
+                   memberSignature === 'true' || memberSignature === 'typ1') {
+            font.outlinesFormat = 'truetype';
+        } else {
+            throw new Error('Unsupported OpenType signature ' + memberSignature + ' in font collection');
+        }
+
+        numTables = parse.getUShort(data, directoryOffset + 4);
+        tableEntries = parseOpenTypeTableEntries(data, numTables, directoryOffset);
     } else if (signature === 'wOF2') {
         const issue = 'https://github.com/opentypejs/opentype.js/issues/183#issuecomment-1147228025';
         throw new Error('WOFF2 require an external decompressor library, see examples at: ' + issue);

@@ -16,6 +16,7 @@ See [https://opentype.js.org/](https://opentype.js.org/) for a live demo.
 * Create a bézier path out of a piece of text.
 * Support for composite glyphs (accented letters).
 * Support for WOFF, OTF, TTF (both with TrueType `glyf` and PostScript `cff` outlines)
+* Support for font collections (TTC/OTC), selecting a member by PostScript name
 * Support for kerning (Using GPOS or the kern table).
 * Support for ligatures.
 * Support for TrueType font hinting.
@@ -139,6 +140,22 @@ if (!window.Module) {
 // decompress before parsing
 const font = opentype.parse(Module.decompress(await buffer));
 ```
+</details>
+
+<details>
+<summary>Loading a font collection (.ttc / .otc)</summary>
+
+A collection holds several fonts in one file over a shared pool of tables —
+the format most macOS system families ship as. Pass `postscriptName` to pick
+one; omit it to get the first member.
+
+```js
+const font = opentype.parse(buffer, { postscriptName: 'Helvetica-Bold' });
+```
+
+Asking for a name the file does not contain throws, and the message lists the
+names it does contain — which is also the quickest way to find out what is in
+a collection.
 </details>
 
 ### Craft a font
