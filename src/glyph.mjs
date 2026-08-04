@@ -232,7 +232,7 @@ Glyph.prototype.getPath = function(x, y, fontSize, options, font) {
             p.curveTo(x + (cmd.x1 * xScale), y + (-cmd.y1 * yScale),
                 x + (cmd.x2 * xScale), y + (-cmd.y2 * yScale),
                 x + (cmd.x * xScale), y + (-cmd.y * yScale));
-        } else if (cmd.type === 'Z' && p.stroke && p.strokeWidth) {
+        } else if (cmd.type === 'Z') {
             p.closePath();
         }
     }

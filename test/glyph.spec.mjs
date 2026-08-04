@@ -161,6 +161,17 @@ describe('glyph.mjs', function() {
         });
     });
 
+    describe('path data', function() {
+        it('should keep close path commands that separate independent shapes', function() {
+            // The path close commands are needed between independent shape parts
+            // in order to correctly render the stroke-linecap. See issue #799.
+            const font = loadSync('./test/fonts/FiraSansMedium.woff');
+            const glyph = font.getPaths('g', 0, 0, 16)[0];
+            const path_data = glyph.toPathData({decimalPlaces: 1, optimize: false, flipY: false});
+            assert.notEqual(path_data.indexOf('C2.7-2.5 2.9-2.8 3.1-2.9ZM2.4-5.7'), -1);
+        });
+    });
+
     describe('component transformation', function() {
         // @TODO test components more thoroughly,
         // maybe move to a separate glyf test file
