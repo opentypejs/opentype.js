@@ -19,10 +19,9 @@ describe('tables/gdef.mjs', function() {
         ' 00 08 00 0c 00 10 00 01 04 80 00 01 09 00 00 01' +
         ' 0d 80 00 02 00 05 00 2b 00 2b 00 01 00 2e 00 2e' +
         ' 00 02 00 4a 00 4a 00 04 00 65 00 65 00 01 00 7e' +
-        ' 00 7e 00 02 00 01 00 05 00 00 00 18 00 00 00 1e' +
-        ' 00 00 00 24 00 00 00 2a 00 00 00 30 00 01 00 01' +
-        ' 00 0a 00 01 00 01 00 0b 00 01 00 01 00 0c 00 01' +
-        ' 00 01 00 0d 00 01 00 01 00 0e';
+        ' 00 7e 00 02 00 01 00 02 00 00 00 0c 00 00 00 16' +
+        ' 00 01 00 03 00 05 00 06 00 07 00 02 00 02 00 0a' +
+        ' 00 0c 00 00 00 14 00 14 00 03';
 
     const table = {
         version: 1.2,
@@ -76,11 +75,14 @@ describe('tables/gdef.mjs', function() {
             ]
         },
         markGlyphSets: [
-            { format: 1, glyphs: [10] },
-            { format: 1, glyphs: [11] },
-            { format: 1, glyphs: [12] },
-            { format: 1, glyphs: [13] },
-            { format: 1, glyphs: [14] }
+            { format: 1, glyphs: [5, 6, 7] },
+            {
+                format: 2,
+                ranges: [
+                    { start: 10, end: 12, index: 0 },
+                    { start: 20, end: 20, index: 3 }
+                ]
+            }
         ]
     };
 
