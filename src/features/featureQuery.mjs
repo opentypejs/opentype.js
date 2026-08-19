@@ -163,7 +163,7 @@ function chainingSubstitutionFormat3(contextParams, subtable) {
                     lookup = this.getLookupMethod(lookupTable, subtable);
                 }
 
-                if (substitutionType === '12') {
+                if (substitutionType === '11' || substitutionType === '12') {
                     const glyphIndex = contextParams.get(lookupRecord.sequenceIndex);
                     const substitution = lookup(glyphIndex);
                     if (substitution) substitutions.push(substitution);
