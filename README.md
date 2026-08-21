@@ -16,6 +16,7 @@ See [https://opentype.js.org/](https://opentype.js.org/) for a live demo.
 * Create a bézier path out of a piece of text.
 * Support for composite glyphs (accented letters).
 * Support for WOFF, OTF, TTF (both with TrueType `glyf` and PostScript `cff` outlines)
+* Support for reading PostScript Type 1 fonts (`.pfa` and `.pfb`), which can be re-exported as OTF
 * Support for kerning (Using GPOS or the kern table).
 * Support for ligatures.
 * Support for TrueType font hinting.
