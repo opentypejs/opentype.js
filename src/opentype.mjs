@@ -21,6 +21,7 @@ import cvar from './tables/cvar.mjs';
 import avar from './tables/avar.mjs';
 import hvar from './tables/hvar.mjs';
 import glyf from './tables/glyf.mjs';
+import type1 from './tables/type1.mjs';
 import gdef from './tables/gdef.mjs';
 import gpos from './tables/gpos.mjs';
 import gsub from './tables/gsub.mjs';
@@ -146,6 +147,13 @@ function parseBuffer(buffer, opt={}) {
     // We can't rely on typed array view types, because they operate with the endianness of the host computer.
     // Instead we use DataViews where we can specify endianness.
     const data = new DataView(buffer, 0);
+
+    // PostScript Type 1 fonts (PFA/PFB) are not sfnt-based, so they are parsed
+    // by a dedicated module that returns a fully assembled Font.
+    if (type1.getType1Format(data)) {
+        return type1.parse(buffer);
+    }
+
     let numTables;
     let tableEntries = [];
     const signature = parse.getTag(data, 0);
