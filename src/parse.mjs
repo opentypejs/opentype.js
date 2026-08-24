@@ -894,7 +894,11 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
             console.warn('An embedded peak tuple is required in TupleVariationHeaders for the cvar table.');
         }
 
-        if(header.flags.privatePointNumbers) {
+        // keep track of whether this tuple uses private point numbers at all, since a packed
+        // point count of 0 is a valid encoding meaning "all points" and is indistinguishable
+        // from the default empty header.privatePoints once header.flags is gone
+        header.hasPrivatePoints = !!header.flags.privatePointNumbers;
+        if(header.hasPrivatePoints) {
             header.privatePoints = this.parsePackedPointNumbers();
         }
         delete header.flags; // we don't need to expose this
@@ -909,7 +913,7 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
             const parseDeltas = () => {
                 let pointsCount = 0;
                 if(flavor === 'gvar') {
-                    pointsCount = header.privatePoints.length || sharedPoints.length;
+                    pointsCount = (header.hasPrivatePoints ? header.privatePoints : sharedPoints).length;
                     if(!pointsCount) {
                         const glyph = glyphs.get(glyphIndex);
                         // make sure the path is available

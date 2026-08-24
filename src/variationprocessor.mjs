@@ -301,7 +301,9 @@ export class VariationProcessor {
                 continue;
             }
 
-            const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
+            // header.privatePoints being empty doesn't mean it's unused: a packed point count of 0
+            // is valid and means "all points", so hasPrivatePoints is what decides private vs. shared
+            const tuplePoints = header.hasPrivatePoints ? header.privatePoints : sharedPoints;
 
             if(flavor === 'gvar' && args.glyph && args.glyph.isComposite) {
                 /** @TODO: composite glyphs that are not explicitly targeted in the gvar table
