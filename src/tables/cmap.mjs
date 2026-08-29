@@ -173,6 +173,15 @@ function parseCmapTable(data, start) {
     let offset = -1;
     let platformId = null;
     let encodingId = null;
+    // The chosen sub-table's platform and encoding, which are not the loop's final values:
+    // parseCmapTableFormat0 picks its 8-bit decoding table from these.
+    let chosenPlatformId = null;
+    let chosenEncodingId = null;
+    // Lower is better. A platform 1 sub-table is Macintosh 8-bit and covers at most 256 code
+    // points; a Unicode one covers the font. Fonts carrying both are common — most of the macOS
+    // system faces do — and taking whichever the walk happened to reach first meant the 8-bit
+    // table won on directory order alone.
+    let bestRank = Infinity;
     const platform0Encodings = [0,1,2,3,4,6];
     const platform3Encodings = [0,1,10];
     for (let i = cmap.numTables - 1; i >= 0; i -= 1) {
@@ -182,11 +191,15 @@ function parseCmapTable(data, start) {
             (platformId === 0 && platform0Encodings.includes(encodingId)) ||
             (platformId === 1 && encodingId === 0) // MacOS <= 9
         ) {
-            // only use the first supported table
-            if (offset > 0) continue;
+            const rank = platformId === 3 ? 0 : (platformId === 0 ? 1 : 2);
+            // Ties keep the sub-table already chosen, which is the one this walk reached first.
+            if (offset > 0 && rank >= bestRank) continue;
+            bestRank = rank;
             offset = parse.getULong(data, start + 4 + (i * 8) + 4);
-            // allow for early break
-            if (format14Parser) {
+            chosenPlatformId = platformId;
+            chosenEncodingId = encodingId;
+            // Only a Windows table can rank better; anything else still needs the whole walk.
+            if (format14Parser && rank === 0) {
                 break;
             }
         } else if (platformId === 0 && encodingId === 5) {
@@ -195,8 +208,8 @@ function parseCmapTable(data, start) {
             if (format14Parser.parseUShort() !== 14) {
                 format14offset = -1;
                 format14Parser = null;
-            } else if (offset > 0) {
-                // we already got the regular table, early break
+            } else if (bestRank === 0) {
+                // we already got the best-ranked regular table, early break
                 break;
             }
         }
@@ -206,6 +219,9 @@ function parseCmapTable(data, start) {
         // There is no cmap table in the font that we support.
         throw new Error('No valid cmap sub-tables found.');
     }
+
+    platformId = chosenPlatformId;
+    encodingId = chosenEncodingId;
 
     const p = new parse.Parser(data, start + offset);
     cmap.format = p.parseUShort();
