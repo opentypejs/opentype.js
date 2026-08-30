@@ -231,8 +231,8 @@ function parseCmapTable(data, start) {
     return cmap;
 }
 
-function addSegment(t, code, glyphIndex) {
-    t.segments.push({
+function addSegment(segments, code, glyphIndex) {
+    segments.push({
         end: code,
         start: code,
         delta: -(code - glyphIndex),
@@ -269,6 +269,12 @@ function mergeSegments(segments) {
     return merged;
 }
 
+// The Format 4 length field is a USHORT, capping the subtable at 65535 bytes.
+// Each segment contributes 8 bytes (one entry in each of the four parallel arrays),
+// plus the 14-byte header and the 2-byte reservedPad, leaving room for at most
+// floor((65535 - 16) / 8) = 8189 segments before overflow.
+const CMAP4_MAX_SEGMENTS = 8189;
+
 // Make cmap table, format 4 by default, 12 if needed only
 function makeCmapTable(glyphs) {
     // Plan 0 is the base Unicode Plan but emojis, for example are on another plan, and needs cmap 12 format (with 32bit)
@@ -284,15 +290,44 @@ function makeCmapTable(glyphs) {
         }
     }
 
+    // Create the CMAP table with some values that still need calculation missing.
     let cmapTable = [
         {name: 'version', type: 'USHORT', value: 0},
-        {name: 'numTables', type: 'USHORT', value: isPlan0Only ? 1 : 2},
+        {name: 'numTables', type: 'USHORT', value: null},
 
         // CMAP 4 header
         {name: 'platformID', type: 'USHORT', value: 3},
         {name: 'encodingID', type: 'USHORT', value: 1},
-        {name: 'offset', type: 'ULONG', value: isPlan0Only ? 12 : (12 + 8)}
+        {name: 'offset', type: 'ULONG', value: null}
     ];
+
+    // Build and merge segments up front so we can measure the true segment count
+    // before committing to a table layout.
+    const allSegments = [];
+    for (i = 0; i < glyphs.length; i += 1) {
+        const glyph = glyphs.get(i);
+        for (let j = 0; j < glyph.unicodes.length; j += 1) {
+            addSegment(allSegments, glyph.unicodes[j], i);
+        }
+    }
+    allSegments.sort(function(a, b) { return a.start - b.start; });
+    const mergedSegments = mergeSegments(allSegments);
+
+    // Count BMP segments (those that fit in Format 4).  If after merging the
+    // count still exceeds what a USHORT length field can encode, Format 4 cannot
+    // represent the full mapping without silent truncation.  In that case we fall
+    // back to emitting Format 12 for all glyphs, keeping a minimal Format 4
+    // subtable (terminator only) for parsers that require its presence.
+    let bmpSegmentCount = 0;
+    for (let i = 0; i < mergedSegments.length; i++)
+        if(mergedSegments[i].start <= 0xFFFF)
+            bmpSegmentCount++;
+    const cmap4Overflows = bmpSegmentCount > CMAP4_MAX_SEGMENTS;
+    isPlan0Only = isPlan0Only && !cmap4Overflows;
+
+    // Fill in missing values in CMAP table
+    cmapTable[1].value = isPlan0Only ? 1 : 2;
+    cmapTable[4].value = isPlan0Only ? 12 : 20;
 
     if (!isPlan0Only)
         cmapTable.push(...[
@@ -315,18 +350,7 @@ function makeCmapTable(glyphs) {
 
     const t = new table.Table('cmap', cmapTable);
 
-    t.segments = [];
-    for (i = 0; i < glyphs.length; i += 1) {
-        const glyph = glyphs.get(i);
-        for (let j = 0; j < glyph.unicodes.length; j += 1) {
-            addSegment(t, glyph.unicodes[j], i);
-        }
-    }
-    t.segments.sort(function (a, b) {
-        return a.start - b.start;
-    });
-
-    t.segments = mergeSegments(t.segments);
+    t.segments = mergedSegments;
 
     addTerminatorSegment(t);
 
@@ -347,8 +371,11 @@ function makeCmapTable(glyphs) {
     for (i = 0; i < segCount; i += 1) {
         const segment = t.segments[i];
 
-        // CMAP 4
-        if (segment.end <= 65535 && segment.start <= 65535) {
+        // CMAP 4: when the table would overflow, emit only the terminator segment
+        // so that Format 4 remains structurally valid. All actual mappings are
+        // carried by the Format 12 subtable in that case.
+        if (segment.end <= 65535 && segment.start <= 65535 && !cmap4Overflows ||
+            (cmap4Overflows && segment.end === 0xFFFF && segment.start === 0xFFFF)) {
             endCounts.push({name: 'end_' + i, type: 'USHORT', value: segment.end});
             startCounts.push({name: 'start_' + i, type: 'USHORT', value: segment.start});
             idDeltas.push({name: 'idDelta_' + i, type: 'SHORT', value: segment.delta});
