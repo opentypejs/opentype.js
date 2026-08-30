@@ -887,7 +887,6 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
 
     for(let h = 0; h < count; h++) {
         const header = headers[h];
-        header.privatePoints = [];
         this.relativeOffset = serializedDataOffset;
         
         if(flavor === 'cvar' && !header.peakTuple) {
@@ -909,12 +908,16 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
             const parseDeltas = () => {
                 let pointsCount = 0;
                 if(flavor === 'gvar') {
-                    pointsCount = header.privatePoints.length || sharedPoints.length;
+                    // if the tuple had private points flag, use that list length (even if empty = all points).
+                    // if no flag, fall back to shared points length.
+                    pointsCount = header.privatePoints ? header.privatePoints.length : sharedPoints.length;
                     if(!pointsCount) {
                         const glyph = glyphs.get(glyphIndex);
                         // make sure the path is available
                         glyph.path;
-                        pointsCount = glyph.points.length;
+                        // composite glyphs have one gvar point per component (offset deltas),
+                        // not per resolved outline point
+                        pointsCount = glyph.isComposite ? glyph.components.length : glyph.points.length;
                         // add 4 phantom points, see https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructing_glyphs#phantoms
                         // @TODO: actually generate these points from glyph.getBoundingBox() and glyph.getMetrics(),
                         // as they may be influenced by variation as well

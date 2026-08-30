@@ -224,7 +224,8 @@ export class VariationProcessor {
             const component = glyph.components[c];
             const componentGlyph = this.font.glyphs.get(component.glyphIndex);
             const componentTransform = copyComponent(component);
-            const deltaIndex = tuplePoints.indexOf(c);
+            // an empty tuple point list means "all points": component c maps to delta index c
+            const deltaIndex = tuplePoints.length ? tuplePoints.indexOf(c) : c;
             if(deltaIndex > -1) {
                 componentTransform.dx += Math.round(header.deltas[deltaIndex] * factor);
                 componentTransform.dy += Math.round(header.deltasY[deltaIndex] * factor);
@@ -301,7 +302,10 @@ export class VariationProcessor {
                 continue;
             }
 
-            const tuplePoints = header.privatePoints.length ? header.privatePoints: sharedPoints;
+            // an empty privatePoints list means "all glyph points" (flag set, packed count = 0),
+            // which is different from privatePoints being undefined (no flag,
+            // use sharedPoints instead).
+            const tuplePoints = header.privatePoints ? header.privatePoints : sharedPoints;
 
             if(flavor === 'gvar' && args.glyph && args.glyph.isComposite) {
                 /** @TODO: composite glyphs that are not explicitly targeted in the gvar table

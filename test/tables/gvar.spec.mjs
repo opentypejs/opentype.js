@@ -9,6 +9,10 @@ describe('tables/gvar.mjs', function() {
         gvarTest2: loadSync('./test/fonts/TestGVARTwo.ttf'),
         gvarTest3: loadSync('./test/fonts/TestGVARThree.ttf'),
         gvarTest4: loadSync('./test/fonts/TestGVARFour.ttf'),
+        interVariable: loadSync('./test/fonts/InterVariable.ttf'),
+        // subset of Geist Italic (OFL 1.1), keeps the composite glyph "j" (uni0237 + uni0307)
+        // whose gvar tuples use the all-points encoding with component offset deltas
+        geistVariable: loadSync('./test/fonts/GeistVariableItalic-subset.ttf'),
         // Licensing for TestGVAREight and TestGVARNine is not clear,
         // so we can't include them
         // gvarTest8: loadSync('./test/fonts/TestGVAREight.ttf'),
@@ -152,5 +156,107 @@ describe('tables/gvar.mjs', function() {
             font.variation.set({slnt: -9});
             assert.equal(font.glyphs.get(6).toPathData({}, font), transformedPathData);
         });
+    });
+
+    it('correctly transforms glyphs with private point list flag and empty point list (all-points tuple)', function() {
+        // InterVariable glyphs D and J have gvar tuples where PRIVATE_POINT_NUMBERS flag is set
+        // but the packed point list is empty, which means "all glyph points" in the OpenType spec.
+        // before the fix, this was treated as "use shared points" which caused wrong deltas to be
+        // read and wrong glyph coordinates.
+        // reference coordinates verified with fontTools at wght=900.
+        const font = fonts.interVariable;
+
+        const testCases = [
+            {
+                name: 'D',
+                expectedPoints: [
+                    670, 0, 262, 0, 262, 344, 654, 344, 765, 344, 922, 414, 1004, 589, 1004, 744,
+                    1004, 900, 920, 1075, 759, 1146, 642, 1146, 256, 1146, 256, 1490, 664, 1490,
+                    894, 1490, 1228, 1311, 1410, 977, 1410, 744, 1410, 512, 1229, 178, 897, 0,
+                    500, 1490, 500, 0, 96, 0, 96, 1490
+                ],
+            },
+            {
+                name: 'J',
+                expectedPoints: [
+                    586, -20, 324, -20, 40, 232, 40, 466, 40, 559, 444, 559, 444, 458, 444, 376,
+                    518, 294, 586, 294, 654, 294, 726, 376, 726, 460, 726, 1490, 1124, 1490,
+                    1124, 468, 1124, 233, 845, -20
+                ],
+            },
+        ];
+
+        font.variation.set({ wght: 900 });
+
+        for (const { name, expectedPoints } of testCases) {
+            let glyphIndex = -1;
+            for (let i = 0; i < font.glyphs.length; i++) {
+                if (font.glyphs.get(i).name === name) { glyphIndex = i; break; }
+            }
+            const glyph = font.glyphs.get(glyphIndex);
+            const transformed = font.variation.getTransform(glyph).points;
+            assert.deepEqual(
+                transformed.map(p => [Math.round(p.x), Math.round(p.y)]).flat(),
+                expectedPoints,
+                `glyph ${name} at wght=900`
+            );
+        }
+    });
+
+    it('correctly transforms composite glyphs with all-points tuples (component offset deltas)', function() {
+        // the composite glyph "j" (uni0237 + uni0307) has gvar tuples using the all-points
+        // encoding (empty point list): for composite glyphs this means one delta per component
+        // (+ 4 phantom points), applied to the component dx/dy offsets.
+        // before the fix, the deltas were parsed with the resolved outline point count (reading
+        // past the tuple data) and never applied to the component offsets, so the dot of the "j"
+        // did not move with the weight axis.
+        // reference coordinates verified with fontTools at wght=100 and wght=900.
+        const font = fonts.geistVariable;
+
+        let glyphIndex = -1;
+        for (let i = 0; i < font.glyphs.length; i++) {
+            if (font.glyphs.get(i).name === 'j') { glyphIndex = i; break; }
+        }
+        const glyph = font.glyphs.get(glyphIndex);
+        // make sure the glyph is hydrated so isComposite/components are available
+        glyph.path;
+        assert.equal(glyph.isComposite, true);
+        assert.equal(glyph.components.length, 2);
+
+        // one delta per component + 4 phantom points
+        const variationData = font.tables.gvar.glyphVariations[glyphIndex];
+        assert.deepEqual(variationData.headers[0].deltas, [0, 12, 0, -31, 0, 0]);
+        assert.deepEqual(variationData.headers[0].deltasY, [0, 0, 0, 0, 0, 0]);
+        assert.deepEqual(variationData.headers[1].deltas, [0, 39, 0, 116, 0, 0]);
+        assert.deepEqual(variationData.headers[1].deltasY, [0, 0, 0, 0, 0, 0]);
+
+        const testCases = [
+            {
+                wght: 900,
+                expectedPoints: [
+                    -92, -150, -63, -13, -4, -13, 19, -13, 48, -2, 65, 24, 70, 48, 173, 540,
+                    368, 540, 263, 44, 247, -31, 187, -115, 88, -150, 13, -150, 181, 594,
+                    209, 730, 409, 730, 381, 594
+                ],
+            },
+            {
+                wght: 100,
+                expectedPoints: [
+                    -93, -150, -87, -122, -60, -122, -31, -122, 9, -108, 35, -66, 44, -24,
+                    161, 530, 191, 530, 73, -28, 63, -75, 30, -128, -22, -150, -60, -150,
+                    180, 628, 194, 698, 228, 698, 214, 628
+                ],
+            },
+        ];
+
+        for (const { wght, expectedPoints } of testCases) {
+            font.variation.set({ wght });
+            const transformed = font.variation.getTransform(glyph).points;
+            assert.deepEqual(
+                transformed.map(p => [Math.round(p.x), Math.round(p.y)]).flat(),
+                expectedPoints,
+                `composite glyph j at wght=${wght}`
+            );
+        }
     });
 });
