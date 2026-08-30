@@ -915,7 +915,9 @@ Parser.prototype.parseTupleVariationStore = function(tableOffset, axisCount, fla
                         const glyph = glyphs.get(glyphIndex);
                         // make sure the path is available
                         glyph.path;
-                        pointsCount = glyph.points.length;
+                        // composite glyphs have one gvar point per component (offset deltas),
+                        // not per resolved outline point
+                        pointsCount = glyph.isComposite ? glyph.components.length : glyph.points.length;
                         // add 4 phantom points, see https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructing_glyphs#phantoms
                         // @TODO: actually generate these points from glyph.getBoundingBox() and glyph.getMetrics(),
                         // as they may be influenced by variation as well

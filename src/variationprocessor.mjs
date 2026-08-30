@@ -224,7 +224,8 @@ export class VariationProcessor {
             const component = glyph.components[c];
             const componentGlyph = this.font.glyphs.get(component.glyphIndex);
             const componentTransform = copyComponent(component);
-            const deltaIndex = tuplePoints.indexOf(c);
+            // an empty tuple point list means "all points": component c maps to delta index c
+            const deltaIndex = tuplePoints.length ? tuplePoints.indexOf(c) : c;
             if(deltaIndex > -1) {
                 componentTransform.dx += Math.round(header.deltas[deltaIndex] * factor);
                 componentTransform.dy += Math.round(header.deltasY[deltaIndex] * factor);
