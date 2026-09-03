@@ -538,13 +538,21 @@ Font.prototype.drawMetrics = function(ctx, text, x, y, fontSize, options) {
 };
 
 /**
- * @param  {string}
- * @return {string}
+ * Look up the English string for a name record, falling back through the
+ * name table platforms (unicode, macintosh, windows) per property.
+ * Fonts are not required to store every standard name record on every
+ * platform: some only carry them on the Windows platform, while their
+ * Macintosh table holds nothing but custom (ID >= 256) names.
+ * @param  {string} name
+ * @return {string|undefined}
  */
 Font.prototype.getEnglishName = function(name) {
-    const translations = (this.names.unicode || this.names.macintosh || this.names.windows)[name];
-    if (translations) {
-        return translations.en;
+    const platforms = [this.names.unicode, this.names.macintosh, this.names.windows];
+    for (let i = 0; i < platforms.length; i++) {
+        const translations = platforms[i] && platforms[i][name];
+        if (translations && translations.en !== undefined) {
+            return translations.en;
+        }
     }
 };
 
