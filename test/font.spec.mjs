@@ -174,6 +174,55 @@ describe('font.mjs', function() {
         });
     });
 
+    describe('getEnglishName', function() {
+        // Some fonts only store the standard name records (IDs 0-17) on a single
+        // platform, while another platform table holds custom (ID >= 256) names.
+        // Looking names up on one platform table only makes those fonts report
+        // undefined for every standard name. See issue #570.
+        function windowsOnlyNames() {
+            return {
+                unicode: {},
+                macintosh: { 256: { en: 'Straight-sided six and nine' } },
+                windows: {
+                    fontFamily: { en: 'MyFont' },
+                    fontSubfamily: { en: 'Medium' }
+                }
+            };
+        }
+
+        it('returns the English string of the first platform that has the record', function() {
+            font.names.unicode.fontFamily = { en: 'Unicode name' };
+            font.names.macintosh.fontFamily = { en: 'Macintosh name' };
+            font.names.windows.fontFamily = { en: 'Windows name' };
+            assert.equal(font.getEnglishName('fontFamily'), 'Unicode name');
+        });
+
+        it('falls back per record to a platform that has it', function() {
+            font.names = windowsOnlyNames();
+            assert.equal(font.getEnglishName('fontFamily'), 'MyFont');
+            assert.equal(font.getEnglishName('fontSubfamily'), 'Medium');
+        });
+
+        it('skips platforms that have the record without an English translation', function() {
+            font.names.unicode.fontFamily = { de: 'Deutscher Name' };
+            font.names.macintosh.fontFamily = { en: 'Macintosh name' };
+            assert.equal(font.getEnglishName('fontFamily'), 'Macintosh name');
+        });
+
+        it('returns undefined when no platform has the record', function() {
+            font.names = windowsOnlyNames();
+            assert.equal(font.getEnglishName('designer'), undefined);
+        });
+
+        it('lets a font with names on one platform only be written out', function() {
+            font.names = windowsOnlyNames();
+            const parsed = parse(font.toArrayBuffer());
+            assert.equal(parsed.getEnglishName('fontFamily'), 'MyFont');
+            assert.equal(parsed.getEnglishName('fontSubfamily'), 'Medium');
+            assert.equal(parsed.getEnglishName('postScriptName'), 'MyFont-Medium');
+        });
+    });
+
     describe('toTables', function() {
         it('returns an sfnt font table', function() {
             const tables = font.toTables();
