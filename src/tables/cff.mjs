@@ -1619,6 +1619,10 @@ function makeCFFTable(glyphs, options) {
 
     const topDictOptions = options && options.topDict || {};
 
+    if(cffVersion < 2 && topDictOptions.isFixedPitch) {
+        attrs.isFixedPitch = topDictOptions.isFixedPitch;
+    }
+
     if(cffVersion < 2 && topDictOptions.paintType) {
         attrs.paintType = topDictOptions.paintType;
         attrs.strokeWidth = topDictOptions.strokeWidth || 0;
