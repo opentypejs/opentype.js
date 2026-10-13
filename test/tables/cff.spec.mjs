@@ -176,6 +176,14 @@ describe('tables/cff.mjs', function () {
         assert.equal(path.toSVG(), svg2);
     });
 
+    it('preserves isFixedPitch when writing', function() {
+        const font = loadSync('./test/fonts/SourceSansPro-Regular.otf');
+        assert.equal(font.tables.cff.topDict.isFixedPitch, 0);
+        font.tables.cff.topDict.isFixedPitch = 1;
+        const written = parse(font.toArrayBuffer());
+        assert.equal(written.tables.cff.topDict.isFixedPitch, 1);
+    });
+
     it('should not crash on CFF fonts with recursive subroutine calls', function () {
         // Regression test for CVE: CFF Charstring VM Unbounded Subroutine Recursion (CWE-674)
         // The test font has a local subroutine that calls itself, creating infinite recursion.
