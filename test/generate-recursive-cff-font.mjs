@@ -10,6 +10,7 @@
  */
 
 import { writeFileSync } from 'fs';
+import { fileURLToPath } from 'url';
 import {
     u8, u16, u32, i16, tag,
     makeHead, makeHhea, makeMaxp, makeOS2, makeName, makeHmtx, makeCmap, makePost,
@@ -127,6 +128,6 @@ function buildFont() {
 }
 
 const fontBytes = buildFont();
-const outputPath = new URL('./fonts/CFFRecursionTest.otf', import.meta.url).pathname;
+const outputPath = fileURLToPath(new URL('./fonts/CFFRecursionTest.otf', import.meta.url));
 writeFileSync(outputPath, fontBytes);
 console.log(`Written ${fontBytes.length} bytes to ${outputPath}`);
