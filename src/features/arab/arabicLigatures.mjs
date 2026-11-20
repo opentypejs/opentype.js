@@ -1,5 +1,5 @@
 /**
- * Apply Arabic required ligatures feature to a range of tokens
+ * Apply an Arabic ligature feature to a range of tokens.
  */
 
 import { ContextParams } from '../../tokenizer.mjs';
@@ -19,17 +19,18 @@ function getContextParams(tokens, index) {
 }
 
 /**
- * Apply Arabic required ligatures to a context range
+ * Apply Arabic ligatures to a context range.
  * @param {ContextRange} range a range of tokens
+ * @param {string} tag ligature feature to apply
  */
-function arabicRequiredLigatures(range) {
+function arabicLigatures(range, tag) {
     const script = 'arab';
-    let tokens = this.tokenizer.getRangeTokens(range);
+    const tokens = this.tokenizer.getRangeTokens(range).filter(token => !token.state.deleted);
     let contextParams = getContextParams(tokens);
     for (let index = 0; index < contextParams.context.length; index++) {
         contextParams.setCurrentIndex(index);
         let substitutions = this.query.lookupFeature({
-            tag: 'rlig', script, contextParams
+            tag, script, contextParams
         });
         if (substitutions.length) {
             for(let i = 0; i < substitutions.length; i++) {
@@ -41,5 +42,4 @@ function arabicRequiredLigatures(range) {
     }
 }
 
-export default arabicRequiredLigatures;
-export { arabicRequiredLigatures };
+export default arabicLigatures;

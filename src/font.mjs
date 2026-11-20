@@ -214,16 +214,20 @@ Font.prototype.charToGlyph = function(c) {
  * @param {any} options features options
  */
 Font.prototype.updateFeatures = function (options) {
-    // TODO: update all features options not only 'latn'.
     return this.defaultRenderOptions.features.map(feature => {
         if (feature.script === 'latn') {
             return {
                 script: 'latn',
                 tags: feature.tags.filter(tag => options[tag])
             };
-        } else {
-            return feature;
         }
+        if (feature.script === 'arab' && options && options.liga === false) {
+            return {
+                script: 'arab',
+                tags: feature.tags.filter(tag => tag !== 'liga')
+            };
+        }
+        return feature;
     });
 };
 
@@ -351,11 +355,8 @@ Font.prototype.getKerningValue = function(leftGlyph, rightGlyph) {
 Font.prototype.defaultRenderOptions = {
     kerning: true,
     features: [
-        /**
-         * these 4 features are required to render Arabic text properly
-         * and shouldn't be turned off when rendering arabic text.
-         */
-        { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig'] },
+        // Only liga is optional when shaping Arabic text.
+        { script: 'arab', tags: ['init', 'medi', 'fina', 'rlig', 'liga'] },
         { script: 'latn', tags: ['liga', 'rlig'] },
         { script: 'thai', tags: ['liga', 'rlig', 'ccmp'] },
     ],

@@ -8,7 +8,7 @@ import FeatureQuery from './features/featureQuery.mjs';
 import arabicWordCheck from './features/arab/contextCheck/arabicWord.mjs';
 import arabicSentenceCheck from './features/arab/contextCheck/arabicSentence.mjs';
 import arabicPresentationForms from './features/arab/arabicPresentationForms.mjs';
-import arabicRequiredLigatures from './features/arab/arabicRequiredLigatures.mjs';
+import arabicLigatures from './features/arab/arabicLigatures.mjs';
 import ccmpReplacementCheck from './features/ccmp/contextCheck/ccmpReplacement.mjs';
 import ccmpReplacement from './features/ccmp/ccmpReplacementLigatures.mjs';
 import latinWordCheck from './features/latn/contextCheck/latinWord.mjs';
@@ -177,15 +177,15 @@ function applyCcmpReplacement() {
 }
 
 /**
- * Apply required arabic ligatures
+ * Apply an enabled Arabic ligature feature.
  */
-function applyArabicRequireLigatures() {
-    if (!this.hasFeatureEnabled('arab', 'rlig')) return;
+function applyArabicLigatures(tag) {
+    if (!this.hasFeatureEnabled('arab', tag)) return;
     checkGlyphIndexStatus.call(this);
     const ranges = this.tokenizer.getContextRanges('arabicWord');
     for(let i = 0; i < ranges.length; i++) {
         const range = ranges[i];
-        arabicRequiredLigatures.call(this, range);
+        arabicLigatures.call(this, range, tag);
     }
 }
 
@@ -244,7 +244,8 @@ Bidi.prototype.applyFeaturesToContexts = function () {
     }
     if (this.checkContextReady('arabicWord')) {
         applyArabicPresentationForms.call(this);
-        applyArabicRequireLigatures.call(this);
+        applyArabicLigatures.call(this, 'rlig');
+        applyArabicLigatures.call(this, 'liga');
     }
     if (this.checkContextReady('latinWord')) {
         applyLatinLigatures.call(this);
