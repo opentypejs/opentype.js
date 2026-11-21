@@ -83,6 +83,21 @@ describe('path.mjs', function() {
         assert.equal(path.toPathData(3), expectedResult2);
     });
 
+    it('should separate a coordinate that rounds to negative zero', function() {
+        const path = new Path();
+        path.moveTo(0.15, 0.08);
+        path.quadraticCurveTo(0.11, -0.004, 0.08, 0.06);
+        path.close();
+
+        const pathData = path.toPathData(2);
+        assert.equal(pathData, 'M0.15 0.08Q0.11 0 0.08 0.06Z');
+        assert.deepStrictEqual(Path.fromSVG(pathData, {flipY: false}).commands[1],
+            {type: 'Q', x1: 0.11, y1: 0, x: 0.08, y: 0.06});
+
+        // A value that keeps its minus sign still needs no separator.
+        assert.equal(path.toPathData(3), 'M0.150 0.080Q0.110-0.004 0.080 0.060Z');
+    });
+
     it('should round finite exponential notation coordinates without NaN', function() {
         const path = new Path();
         path.moveTo(-172.78799999998984, 1.4210854715202004e-14);

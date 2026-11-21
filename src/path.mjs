@@ -582,12 +582,13 @@ Path.prototype.toPathData = function(options) {
     function packValues() {
         let s = '';
         for (let i = 0; i < arguments.length; i += 1) {
-            const v = arguments[i];
-            if (v >= 0 && i > 0) {
+            const value = floatToString(arguments[i]);
+            // A minus sign is a separator only if it survives rounding.
+            if (i > 0 && !value.startsWith('-')) {
                 s += ' ';
             }
 
-            s += floatToString(v);
+            s += value;
         }
 
         return s;
