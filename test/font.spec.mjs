@@ -131,6 +131,33 @@ describe('font.mjs', function() {
             assert.deepEqual(font.stringToGlyphIndexes('fffiffif'),
                 [ffGlyph.index, fiGlyph.index, ffiGlyph.index, fGlyph.index]);
         });
+
+        it('applies optional Arabic ligatures after required ones unless disabled', function() {
+            const characters = ['\0', 'ل', 'ا', 'م', '\uFEFB', '\uFDFB'];
+            const arabicFont = new Font({
+                familyName: 'Arabic Ligature Test',
+                styleName: 'Regular',
+                unitsPerEm: 1000,
+                ascender: 800,
+                descender: -200,
+                glyphs: characters.map((char, index) => new Glyph({
+                    index,
+                    name: index === 0 ? '.notdef' : `glyph${index}`,
+                    unicode: char.codePointAt(0),
+                    path: new Path(),
+                    advanceWidth: 1,
+                })),
+            });
+
+            // The optional ligature consumes the lam-alef glyph produced by rlig.
+            arabicFont.substitution.add('liga', { sub: [4, 3], by: 5 }, 'arab');
+            arabicFont.substitution.add('rlig', { sub: [1, 2], by: 4 }, 'arab');
+
+            assert.deepStrictEqual(arabicFont.stringToGlyphIndexes('لام'), [5]);
+            assert.deepStrictEqual(arabicFont.stringToGlyphIndexes('لام', {
+                features: { liga: false },
+            }), [3, 4]);
+        });
     });
 
     describe('stringToGlyphs', function() {
